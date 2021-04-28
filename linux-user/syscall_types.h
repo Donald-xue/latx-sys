@@ -579,6 +579,593 @@ STRUCT(floppy_max_errors,
        TYPE_INT, /* reset */
        TYPE_INT, /* recal */
        TYPE_INT) /* reporting */
+//STRUCT(drm_version,
+//       TYPE_INT, /* version_major */
+//       TYPE_INT, /* version_minor */
+//      TYPE_INT, /* version_patchlevel */
+//       TYPE_LONG, /* name_len (size_t) */
+//       TYPE_PTRVOID, /* name (char *) */
+//       TYPE_LONG, /* date_len (size_t) */
+//       TYPE_PTRVOID, /* date (char *) */
+//       TYPE_LONG, /* desc_len (size_t) */
+//       TYPE_PTRVOID) /* desc (char *) */
+
+STRUCT(drm_unique,
+       TYPE_LONG, /* unique_len (size_t) */
+       TYPE_PTRVOID) /* unique (char *) */
+
+STRUCT(drm_auth,
+       TYPE_INT) /* magic (u32) */
+
+STRUCT(drm_block,
+       TYPE_INT) /* unused */
+
+STRUCT(drm_control,
+       TYPE_INT, /* func (enum) */
+       TYPE_INT) /* irq */
+
+STRUCT(drm_irq_busid,
+       TYPE_INT, /* irq */
+       TYPE_INT, /* busnum */
+       TYPE_INT, /* devnum */
+       TYPE_INT) /* funcnum */
+
+STRUCT(drm_map,
+       TYPE_ULONG, /* offset */
+       TYPE_ULONG, /* size */
+       TYPE_INT, /* type (enum drm_map_type) */
+       TYPE_INT, /* flags (enum drm_map_flags) */
+       TYPE_PTRVOID, /* handle */
+       TYPE_INT) /* mtrr */
+
+STRUCT(drm_buf_desc,
+       TYPE_INT, /* count */
+       TYPE_INT, /* size */
+       TYPE_INT, /* low_mark */
+       TYPE_INT, /* high_mark */
+       TYPE_INT, /* flags (enum) */
+       TYPE_ULONG) /* agp_start */
+
+STRUCT(drm_buf_info,
+       TYPE_INT, /* count */
+       TYPE_PTRVOID) /* list (struct drm_buf_desc *) */
+
+STRUCT(drm_buf_pub,
+       TYPE_INT, /* idx */
+       TYPE_INT, /* total */
+       TYPE_INT, /* used */
+       TYPE_PTRVOID) /* address (void *) */
+
+STRUCT(drm_buf_map,
+       TYPE_INT, /* count */
+       TYPE_PTRVOID, /* virtual */
+       TYPE_PTRVOID) /* list (struct drm_buf_pub *) */
+
+STRUCT(drm_buf_free,
+       TYPE_INT, /* count */
+       TYPE_PTRVOID) /* list (int *) */
+
+STRUCT(drm_ctx_priv_map,
+       TYPE_INT, /* ctx_id (u32) */
+       TYPE_PTRVOID) /* handle */
+
+STRUCT(drm_client,
+       TYPE_INT, /* idx */
+       TYPE_INT, /* auth */
+       TYPE_ULONG, /* pid */
+       TYPE_ULONG, /* uid */
+       TYPE_ULONG, /* magic */
+       TYPE_ULONG) /* iocs */
+
+STRUCT(drm_stats_internal,
+       TYPE_ULONG, /* value */
+       TYPE_INT) /* type (enum drm_stat_type) */
+
+STRUCT(drm_stats,
+       TYPE_ULONG, /* count */
+       MK_ARRAY(MK_STRUCT(STRUCT_drm_stats_internal), 15)) /* data */
+
+STRUCT(drm_set_version,
+       TYPE_INT, /* drm_di_major */
+       TYPE_INT, /* drm_di_minor */
+       TYPE_INT, /* drm_dd_major */
+       TYPE_INT) /* drm_dd_minor */
+
+STRUCT(drm_modeset_ctl,
+       TYPE_INT, /* crtc (u32) */
+       TYPE_INT) /* cmd (u32) */
+
+STRUCT(drm_gem_close,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT) /* pad (u32) */
+
+STRUCT(drm_gem_flink,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT) /* name (u32) */
+
+STRUCT(drm_gem_open,
+       TYPE_INT, /* name (u32) */
+       TYPE_INT, /* handle (u32) */
+       TYPE_ULONGLONG) /* size (u64) */
+
+STRUCT(drm_get_cap,
+       TYPE_ULONGLONG, /* capability (u64) */
+       TYPE_ULONGLONG) /* value (u64) */
+
+STRUCT(drm_set_client_cap,
+       TYPE_ULONGLONG, /* capability (u64) */
+       TYPE_ULONGLONG) /* value (u64) */
+
+STRUCT(drm_ctx,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT) /* flags (enum drm_ctx_flags) */
+
+STRUCT(drm_ctx_res,
+       TYPE_INT, /* count */
+       TYPE_PTRVOID) /* contexts (struct drm_ctx *) */
+
+STRUCT(drm_draw,
+       TYPE_INT) /* handle (u32) */
+
+STRUCT(drm_dma,
+       TYPE_INT, /* context */
+       TYPE_INT, /* send_count */
+       TYPE_PTRVOID, /* send_indices */
+       TYPE_PTRVOID, /* send_sizes */
+       TYPE_INT, /* flags (enum drm_dma_flags) */
+       TYPE_INT, /* request_count */
+       TYPE_INT, /* request_size */
+       TYPE_PTRVOID, /* request_indices */
+       TYPE_PTRVOID, /* request_sizes */
+       TYPE_INT) /* granted_count */
+
+STRUCT(drm_lock,
+       TYPE_INT, /* context */
+       TYPE_INT) /* flags (enum drm_lock_flags) */
+
+STRUCT(drm_prime_handle,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT) /* fd (s32) */
+
+STRUCT(drm_agp_mode,
+       TYPE_ULONG) /* mode */
+
+STRUCT(drm_agp_info,
+       TYPE_INT, /* agp_version_major */
+       TYPE_INT, /* agp_version_minor */
+       TYPE_ULONG, /* mode */
+       TYPE_ULONG, /* aperture_base */
+       TYPE_ULONG, /* aperture_size */
+       TYPE_ULONG, /* memory_allowed */
+       TYPE_ULONG, /* memory_used */
+       TYPE_SHORT, /* id_vendor (u16) */
+       TYPE_SHORT) /* id_device (u16) */
+
+STRUCT(drm_agp_buffer,
+       TYPE_ULONG, /* size */
+       TYPE_ULONG, /* handle */
+       TYPE_ULONG, /* type */
+       TYPE_ULONG) /* physical */
+
+STRUCT(drm_agp_binding,
+       TYPE_ULONG, /* handle */
+       TYPE_ULONG) /* offset */
+
+STRUCT(drm_scatter_gather,
+       TYPE_ULONG, /* size */
+       TYPE_ULONG) /* handle */
+
+STRUCT(drm_wait_vblank_reply,
+       TYPE_INT, /* type (enum drm_vblank_seq_type) */
+       TYPE_INT, /* sequence (u32) */
+       TYPE_ULONG, /* tval_sec */
+       TYPE_ULONG) /* tval_usec */
+
+STRUCT(drm_update_draw,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* type (u32) */
+       TYPE_INT, /* num (u32) */
+       TYPE_ULONGLONG) /* data (u64) */
+
+STRUCT(drm_mode_card_res,
+       TYPE_ULONGLONG, /* fb_id_ptr (u64) */
+       TYPE_ULONGLONG, /* crtc_id_ptr (u64) */
+       TYPE_ULONGLONG, /* connector_id_ptr (u64) */
+       TYPE_ULONGLONG, /* encoder_id_ptr (u64) */
+       TYPE_INT, /* count_fbs (u32) */
+       TYPE_INT, /* count_crtcs (u32) */
+       TYPE_INT, /* count_connectors (u32) */
+       TYPE_INT, /* count_encoders (u32) */
+       TYPE_INT, /* min_width (u32) */
+       TYPE_INT, /* max_width (u32) */
+       TYPE_INT, /* min_height (u32) */
+       TYPE_INT) /* max_height (u32) */
+
+STRUCT(drm_mode_modeinfo,
+       TYPE_INT, /* clock (u32) */
+       TYPE_SHORT, /* hdisplay (u16) */
+       TYPE_SHORT, /* hsync_start (u16) */
+       TYPE_SHORT, /* hsync_end (u16) */
+       TYPE_SHORT, /* htotal (u16) */
+       TYPE_SHORT, /* hskew (u16) */
+       TYPE_SHORT, /* vdisplay (u16) */
+       TYPE_SHORT, /* vsync_start (u16) */
+       TYPE_SHORT, /* vsync_end (u16) */
+       TYPE_SHORT, /* vtotal (u16) */
+       TYPE_SHORT, /* vscan (u16) */
+       TYPE_INT, /* vrefresh (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* type (u32) */
+       MK_ARRAY(TYPE_CHAR, DRM_DISPLAY_MODE_LEN)) /* name */
+
+STRUCT(drm_mode_crtc,
+       TYPE_ULONGLONG, /* set_connectors_ptr (u64) */
+       TYPE_INT, /* count_connectors (u32) */
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* fb_id (u32) */
+       TYPE_INT, /* x (u32) */
+       TYPE_INT, /* y (u32) */
+       TYPE_INT, /* gamma_size (u32) */
+       TYPE_INT, /* mode_valid (u32) */
+       MK_STRUCT(STRUCT_drm_mode_modeinfo)) /* mode */
+
+STRUCT(drm_mode_cursor,
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* x (s32) */
+       TYPE_INT, /* y (s32) */
+       TYPE_INT, /* width (u32) */
+       TYPE_INT, /* height (u32) */
+       TYPE_INT) /* handle (u32) */
+
+STRUCT(drm_mode_crtc_lut,
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* gamma_size (u32) */
+       TYPE_ULONGLONG, /* red (u64) */
+       TYPE_ULONGLONG, /* green (u64) */
+       TYPE_ULONGLONG) /* blue (u64) */
+
+STRUCT(drm_mode_get_encoder,
+       TYPE_INT, /* encoder_id (u32) */
+       TYPE_INT, /* encoder_type (u32) */
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* possible_crtcs (u32) */
+       TYPE_INT) /* possible_clones (u32) */
+
+STRUCT(drm_mode_get_connector,
+       TYPE_ULONGLONG, /* encoders_ptr (u64) */
+       TYPE_ULONGLONG, /* modes_ptr (u64) */
+       TYPE_ULONGLONG, /* props_ptr (u64) */
+       TYPE_ULONGLONG, /* prop_values_ptr (u64) */
+       TYPE_INT, /* count_modes (u32) */
+       TYPE_INT, /* count_props (u32) */
+       TYPE_INT, /* count_encoders (u32) */
+       TYPE_INT, /* encoder_id (u32) */
+       TYPE_INT, /* connector_id (u32) */
+       TYPE_INT, /* connector_type (u32) */
+       TYPE_INT, /* connector_type_id (u32) */
+       TYPE_INT, /* connection (u32) */
+       TYPE_INT, /* mm_width (u32) */
+       TYPE_INT, /* mm_height (u32) */
+       TYPE_INT, /* subpixel (u32) */
+       TYPE_INT) /* pad (u32) */
+
+STRUCT(drm_mode_mode_cmd,
+       TYPE_INT, /* connector_id (u32) */
+       MK_STRUCT(STRUCT_drm_mode_modeinfo)) /* mode */
+
+STRUCT(drm_mode_get_property,
+       TYPE_ULONGLONG, /* values_ptr (u64) */
+       TYPE_ULONGLONG, /* enum_blob_ptr (u64) */
+       TYPE_INT, /* prop_id (u32) */
+       TYPE_INT, /* flags (u32) */
+       MK_ARRAY(TYPE_CHAR, DRM_PROP_NAME_LEN), /* name (u32) */
+       TYPE_INT, /* count_values (u32) */
+       TYPE_INT) /* count_enum_blobs (u32) */
+
+STRUCT(drm_mode_connector_set_property,
+       TYPE_ULONGLONG, /* value (u64) */
+       TYPE_INT, /* prop_id (u32) */
+       TYPE_INT) /* connector_id (u32) */
+
+STRUCT(drm_mode_get_blob,
+       TYPE_INT, /* blob_id (u32) */
+       TYPE_INT, /* length (u32) */
+       TYPE_ULONGLONG) /* data (u64) */
+
+STRUCT(drm_mode_fb_cmd,
+       TYPE_INT, /* width (u32) */
+       TYPE_INT, /* height (u32) */
+       TYPE_INT, /* pitch (u32) */
+       TYPE_INT, /* bpp (u32) */
+       TYPE_INT, /* depth (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT) /* handle (u32) */
+
+STRUCT(drm_mode_crtc_page_flip,
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* fb_id (u32) */
+       TYPE_INT, /* gamma_size (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* reserved (u32) */
+       TYPE_ULONGLONG) /* user_data (u64) */
+
+STRUCT(drm_mode_fb_dirty_cmd,
+       TYPE_INT, /* fb_id (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* color (u32) */
+       TYPE_INT, /* num_clips (u32) */
+       TYPE_ULONGLONG) /* clips_ptr (u64) */
+
+STRUCT(drm_mode_create_dumb,
+       TYPE_INT, /* height (u32) */
+       TYPE_INT, /* width (u32) */
+       TYPE_INT, /* bpp (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* pitch (u32) */
+       TYPE_ULONGLONG) /* size (u64) */
+
+STRUCT(drm_mode_map_dumb,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* pad (u32) */
+       TYPE_ULONGLONG) /* offset (u64) */
+
+STRUCT(drm_mode_destroy_dumb,
+       TYPE_INT) /* handle (u32) */
+
+STRUCT(drm_mode_get_plane_res,
+       TYPE_ULONGLONG, /* plane_id_ptr (u64) */
+       TYPE_INT) /* count_planes (u32) */
+
+STRUCT(drm_mode_get_plane,
+       TYPE_INT, /* plane_id (u32) */
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* fb_id (u32) */
+       TYPE_INT, /* possible_crtcs (u32) */
+       TYPE_INT, /* gamma_size (u32) */
+       TYPE_INT, /* count_format_types (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_ULONGLONG) /* format_type_ptr (u64) */
+
+STRUCT(drm_mode_set_plane,
+       TYPE_INT, /* plane_id (u32) */
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* fb_id (u32) */
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* crtc_x (s32) */
+       TYPE_INT, /* crtc_y (s32) */
+       TYPE_INT, /* crtc_w (u32) */
+       TYPE_INT, /* crtc_h (u32) */
+       TYPE_INT, /* src_x (u32) */
+       TYPE_INT, /* src_y (u32) */
+       TYPE_INT, /* src_h (u32) */
+       TYPE_INT) /* src_w (u32) */
+
+STRUCT(drm_mode_fb_cmd2,
+       TYPE_INT, /* fb_id (u32) */
+       TYPE_INT, /* width (u32) */
+       TYPE_INT, /* height (u32) */
+       TYPE_INT, /* pixel_format (u32) */
+       TYPE_INT, /* flags (u32) */
+       MK_ARRAY(TYPE_INT, 4), /* handles (u32) */
+       MK_ARRAY(TYPE_INT, 4), /* pitches (u32) */
+       MK_ARRAY(TYPE_INT, 4)) /* offsets (u32) */
+
+STRUCT(drm_mode_obj_get_properties,
+       TYPE_ULONGLONG, /* props_ptr (u64) */
+       TYPE_ULONGLONG, /* prop_values_ptr (u64) */
+       TYPE_INT, /* count_props (u32) */
+       TYPE_INT, /* obj_id (u32) */
+       TYPE_INT) /* obj_type (u32) */
+
+STRUCT(drm_mode_obj_set_property,
+       TYPE_ULONGLONG, /* value (u64) */
+       TYPE_INT, /* prop_id (u32) */
+       TYPE_INT, /* obj_id (u32) */
+       TYPE_INT) /* obj_type (u32) */
+
+STRUCT(drm_mode_cursor2,
+       TYPE_INT, /* flags (u32) */
+       TYPE_INT, /* crtc_id (u32) */
+       TYPE_INT, /* x (s32) */
+       TYPE_INT, /* y (s32) */
+       TYPE_INT, /* width (u32) */
+       TYPE_INT, /* height (u32) */
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* hot_x (s32) */
+       TYPE_INT) /* hot_y (s32) */
+
+STRUCT(drm_radeon_init,
+       TYPE_INT,
+       TYPE_ULONG,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_ULONG,
+       TYPE_ULONG,
+       TYPE_ULONG,
+       TYPE_ULONG,
+       TYPE_ULONG,
+       TYPE_ULONG)
+
+STRUCT(drm_radeon_cp_stop,
+       TYPE_ULONGLONG,
+       TYPE_ULONGLONG)
+
+STRUCT(drm_radeon_fullscreen,
+       TYPE_INT)
+
+STRUCT(drm_radeon_clear,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       MK_STRUCT(STRUCT_drm_radeon_clear_rect_t))
+
+STRUCT(drm_radeon_clear_rect_t,
+       MK_ARRAY(TYPE_CHAR, 5),
+       MK_ARRAY(TYPE_CHAR, 5))
+
+
+STRUCT(drm_radeon_vertex,
+       TYPE_ULONGLONG,
+       TYPE_ULONGLONG,
+       TYPE_ULONGLONG,
+       TYPE_ULONGLONG)
+
+STRUCT(drm_radeon_indices,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_stipple,
+       TYPE_PTRVOID)
+
+STRUCT(drm_radeon_indirect,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+//STRUCT(drm_radeon_texture_t,
+
+//STRUCT(drm_radeon_vertex2_t,
+
+//STRUCT(drm_radeon_cmd_buffer_t,
+
+STRUCT(drm_radeon_getparam,
+       TYPE_INT,
+       TYPE_PTRVOID)
+
+STRUCT(drm_radeon_mem_alloc,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_mem_free,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_mem_init_heap,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_irq_emit,
+       TYPE_PTRVOID)
+
+STRUCT(drm_radeon_irq_wait,
+       TYPE_INT)
+
+STRUCT(drm_radeon_setparam,
+       TYPE_INT,
+       TYPE_LONGLONG)
+
+STRUCT(drm_radeon_surface_alloc,
+       TYPE_ULONG,
+       TYPE_ULONG,
+       TYPE_ULONG)
+
+
+STRUCT(drm_radeon_gem_info,
+       TYPE_ULONGLONG, /* gart_size (u64) */
+       TYPE_ULONGLONG, /* vram_size (u64) */
+       TYPE_ULONGLONG) /* vram_visible (u64) */
+
+STRUCT(drm_radeon_gem_create,
+       TYPE_ULONGLONG, /* size (u64) */
+       TYPE_ULONGLONG, /* alignment (u64) */
+       TYPE_INT,       /* handle (u32) */
+       TYPE_INT,       /* initla_domain */
+       TYPE_INT)       /* flags (u32) */
+
+STRUCT(drm_radeon_gem_mmap,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* pad (u32)*/
+       TYPE_ULONGLONG, /* offset (u64) */
+       TYPE_ULONGLONG, /* size (u64) */
+       TYPE_ULONGLONG) /* addr_ptr (u64) */
+
+STRUCT(drm_radeon_gem_pread,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* pad (u32)*/
+       TYPE_ULONGLONG, /* offset (u64) */
+       TYPE_ULONGLONG, /* size (u64) */
+       TYPE_ULONGLONG) /* addr_ptr (u64) */
+
+STRUCT(drm_radeon_gem_pwrite,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT, /* pad (u32)*/
+       TYPE_ULONGLONG, /* offset (u64) */
+       TYPE_ULONGLONG, /* size (u64) */
+       TYPE_ULONGLONG) /* addr_ptr (u64) */
+
+STRUCT(drm_radeon_gem_set_domain,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_gem_wait_idle,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT) /* pad (u32) */
+
+STRUCT(drm_radeon_cs,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_ULONGLONG,
+       TYPE_ULONGLONG,
+       TYPE_ULONGLONG)
+
+STRUCT(drm_radeon_info,
+       TYPE_INT, /* reqeust (u32) */
+       TYPE_INT, /* pad (u32) */
+       TYPE_ULONGLONG) /* value (u64) */
+
+STRUCT(drm_radeon_gem_set_tiling,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_gem_get_tiling,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT)
+
+STRUCT(drm_radeon_gem_busy,
+       TYPE_INT, /* handle (u32) */
+       TYPE_INT) /* domain (u32) */
+
+STRUCT(drm_radeon_gem_va,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_ULONGLONG)
+
+STRUCT(drm_radeon_gem_op,
+       TYPE_INT,
+       TYPE_INT,
+       TYPE_ULONGLONG)
+
+STRUCT(drm_radeon_gem_userptr,
+       TYPE_ULONGLONG, /* addr (u64) */
+       TYPE_ULONGLONG, /* size (u64) */
+       TYPE_INT,       /* flags (u32) */
+       TYPE_INT)       /* handle (u32) */
 
 #if defined(CONFIG_USBFS)
 /* usb device ioctls */

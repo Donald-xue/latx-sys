@@ -88,6 +88,8 @@
 #define tchars host_tchars /* same as target */
 #define ltchars host_ltchars /* same as target */
 
+#include <drm/drm.h>
+#include <drm/radeon_drm.h>
 #include <linux/termios.h>
 #include <linux/unistd.h>
 #include <linux/cdrom.h>
@@ -5832,7 +5834,7 @@ static abi_long do_ioctl_drm(const IOCTLEntry *ie, uint8_t *buf_temp,
     struct drm_version *ver;
     struct target_drm_version *target_ver;
     abi_long ret;
-
+printf ("do_ioctl_drm==============>\n");
     switch (ie->host_cmd) {
     case DRM_IOCTL_VERSION:
         if (!lock_user_struct(VERIFY_WRITE, target_ver, arg, 0)) {
@@ -5951,8 +5953,8 @@ static abi_long do_ioctl(int fd, int cmd, abi_long arg)
     ie = ioctl_entries;
     for(;;) {
         if (ie->target_cmd == 0) {
-            qemu_log_mask(
-                LOG_UNIMP, "Unsupported ioctl: cmd=0x%04lx\n", (long)cmd);
+            printf(
+                "Unsupported ioctl: cmd=0x%04lx\n", (long)cmd);
             return -TARGET_ENOSYS;
         }
         if (ie->target_cmd == cmd)
