@@ -39,7 +39,8 @@ const char *path(const char *name)
     const char *ret;
 
     /* Only do absolute paths: quick and dirty, but should mostly be OK.  */
-    if (!base || !name || name[0] != '/') {
+    if (!base || !name || name[0] != '/'
+            || (name[0]  == '/' && name[1] == '\0')) {
         return name;
     }
 
