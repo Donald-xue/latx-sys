@@ -215,7 +215,9 @@ static void setup_sigcontext(struct target_sigcontext *sc,
     __put_user(env->regs[R_EDX], &sc->edx);
     __put_user(env->regs[R_ECX], &sc->ecx);
     __put_user(env->regs[R_EAX], &sc->eax);
-    __put_user(cs->exception_index, &sc->trapno);
+//printf("index = %d\n", cs->previous_exception_index);
+    __put_user(cs->previous_exception_index, &sc->trapno);
+cs->previous_exception_index = -1;
     __put_user(env->error_code, &sc->err);
     __put_user(env->eip, &sc->eip);
     __put_user(env->segs[R_CS].selector, (unsigned int *)&sc->cs);

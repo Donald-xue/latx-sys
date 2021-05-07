@@ -567,7 +567,7 @@ static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
     }
     if (cpu->exception_index >= EXCP_INTERRUPT) {
         /* exit request from the cpu execution loop */
-        *ret = cpu->exception_index;
+        cpu->previous_exception_index = *ret = cpu->exception_index;
         if (*ret == EXCP_DEBUG) {
             cpu_handle_debug_exception(cpu);
         }
@@ -582,7 +582,7 @@ static inline bool cpu_handle_exception(CPUState *cpu, int *ret)
         CPUClass *cc = CPU_GET_CLASS(cpu);
         cc->tcg_ops->do_interrupt(cpu);
 #endif
-        *ret = cpu->exception_index;
+       cpu->previous_exception_index = *ret = cpu->exception_index;
         cpu->exception_index = -1;
         return true;
 #else
