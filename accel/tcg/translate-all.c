@@ -249,6 +249,8 @@ static void cpu_gen_init(void)
     tcg_context_init(&tcg_init_ctx);
 }
 
+/* TODO: why? */
+#ifndef CONFIG_LATX
 /* Encode VAL as a signed leb128 sequence at P.
    Return P incremented past the encoded value.  */
 static uint8_t *encode_sleb128(uint8_t *p, target_long val)
@@ -268,6 +270,7 @@ static uint8_t *encode_sleb128(uint8_t *p, target_long val)
 
     return p;
 }
+#endif
 
 /* Decode a signed leb128 sequence at *PP; increment *PP past the
    decoded value.  Return the decoded value.  */
@@ -290,6 +293,8 @@ static target_long decode_sleb128(const uint8_t **pp)
     return val;
 }
 
+/* TODO: why? */
+#ifndef CONFIG_LATX
 /* Encode the data collected about the instructions while compiling TB.
    Place the data at BLOCK, and return the number of bytes consumed.
 
@@ -333,6 +338,7 @@ static int encode_search(TranslationBlock *tb, uint8_t *block)
 
     return p - block;
 }
+#endif
 
 /* The cpu state corresponding to 'searched_pc' is restored.
  * When reset_icount is true, current TB will be interrupted and
@@ -1849,10 +1855,17 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb_page_addr_t phys_pc, phys_page2;
     target_ulong virt_page2;
     tcg_insn_unit *gen_code_buf;
-    int gen_code_size, search_size, max_insns;
+    int max_insns;
+#ifndef CONFIG_LATX
+    int gen_code_size, search_size;
 #ifdef CONFIG_PROFILER
     TCGProfile *prof = &tcg_ctx->prof;
     int64_t ti;
+#endif
+#endif
+
+#ifdef CONFIG_LATX
+    int gen_code_size;
 #endif
 
     assert_memory_lock();
@@ -1876,7 +1889,9 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         max_insns = 1;
     }
 
+#ifndef CONFIG_LATX
  buffer_overflow:
+#endif
     tb = tcg_tb_alloc(tcg_ctx);
     if (unlikely(!tb)) {
         /* flush must be done */
@@ -1894,15 +1909,20 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->flags = flags;
     tb->cflags = cflags;
     tb->trace_vcpu_dstate = *cpu->trace_dstate;
+#ifndef CONFIG_LATX
+    /* TODO: why? */
     tcg_ctx->tb_cflags = cflags;
  tb_overflow:
+#endif
 
+#ifndef CONFIG_LATX
 #ifdef CONFIG_PROFILER
     /* includes aborted translations because of exceptions */
     qatomic_set(&prof->tb_count1, prof->tb_count1 + 1);
     ti = profile_getclock();
 #endif
 
+    /* TODO: new */
     gen_code_size = sigsetjmp(tcg_ctx->jmp_trans, 0);
     if (unlikely(gen_code_size != 0)) {
         goto error_return;
@@ -1916,6 +1936,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     max_insns = tb->icount;
 
     trace_translate_block(tb, tb->pc, tb->tc.ptr);
+#endif
 
     /* generate machine code */
     tb->jmp_reset_offset[0] = TB_JMP_RESET_OFFSET_INVALID;
@@ -1929,6 +1950,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         tcg_ctx->tb_jmp_target_addr = tb->jmp_target_arg;
     }
 
+#ifndef CONFIG_LATX
 #ifdef CONFIG_PROFILER
     qatomic_set(&prof->tb_count, prof->tb_count + 1);
     qatomic_set(&prof->interm_time,
@@ -2055,6 +2077,13 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     qatomic_set(&tcg_ctx->code_gen_ptr, (void *)
         ROUND_UP((uintptr_t)gen_code_buf + gen_code_size + search_size,
                  CODE_GEN_ALIGN));
+#else
+    gen_code_size = target_latx_host(env, tb);
+    tb->tc.size = gen_code_size;
+    qatomic_set(&tcg_ctx->code_gen_ptr, (void *)
+        ROUND_UP((uintptr_t)gen_code_buf + gen_code_size,
+                 CODE_GEN_ALIGN));
+#endif
 
     /* init jump list */
     qemu_spin_init(&tb->jmp_lock);

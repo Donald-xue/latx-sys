@@ -133,6 +133,9 @@
 #include "qapi/error.h"
 #include "fd-trans.h"
 #include "tcg/tcg.h"
+#ifdef CONFIG_LATX
+#include "env.h"
+#endif
 
 #ifndef CLONE_IO
 #define CLONE_IO                0x80000000      /* Clone io context */
@@ -10274,6 +10277,9 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #ifdef __NR_exit_group
         /* new thread calls */
     case TARGET_NR_exit_group:
+#ifdef CONFIG_LATX
+        latx_exit();
+#endif
         preexit_cleanup(cpu_env, arg1);
         return get_errno(exit_group(arg1));
 #endif

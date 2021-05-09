@@ -1298,6 +1298,9 @@ static inline unsigned get_mmuidx(TCGMemOpIdx oi)
 
 #ifdef CONFIG_TCG_INTERPRETER
 uintptr_t tcg_qemu_tb_exec(CPUArchState *env, const void *tb_ptr);
+#elif defined (CONFIG_LATX)
+#define tcg_qemu_tb_exec(env, tb_ptr) \
+    ((uintptr_t (*)(const void *, void *))context_switch_bt_to_native)(tb_ptr, env)
 #else
 typedef uintptr_t tcg_prologue_fn(CPUArchState *env, const void *tb_ptr);
 extern tcg_prologue_fn *tcg_qemu_tb_exec;

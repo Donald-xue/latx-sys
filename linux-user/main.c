@@ -49,6 +49,11 @@
 #include "cpu_loop-common.h"
 #include "crypto/init.h"
 
+#ifdef CONFIG_LATX
+#include "latx-config.h"
+#include "lsenv.h"
+#endif
+
 #ifndef AT_FLAGS_PRESERVE_ARGV0
 #define AT_FLAGS_PRESERVE_ARGV0_BIT 0
 #define AT_FLAGS_PRESERVE_ARGV0 (1 << AT_FLAGS_PRESERVE_ARGV0_BIT)
@@ -227,6 +232,75 @@ CPUArchState *cpu_copy(CPUArchState *env)
 
     return new_env;
 }
+
+#ifdef CONFIG_LATX
+#include "latx-options.h"
+
+static void handle_arg_latx_by_hand(const char *arg)
+{
+    option_by_hand = 1;
+}
+
+static void handle_arg_latx_flag_pattern(const char *arg)
+{
+    option_flag_pattern = 1;
+}
+
+static void handle_arg_latx_flag_reduction(const char *arg)
+{
+    option_flag_reduction = 1;
+}
+
+static void handle_arg_latx_print(const char *arg)
+{
+    options_parse_dump(arg);
+}
+
+static void handle_arg_latx_trace(const char *arg)
+{
+    options_parse_trace(arg);
+}
+
+static void handle_arg_latx_check(const char *arg)
+{
+    option_check = 1;
+}
+
+static void handle_arg_latx_tb_link(const char *arg)
+{
+    option_tb_link = 1;
+}
+
+static void handle_arg_latx_lbt(const char *arg)
+{
+    option_lbt = 1;
+}
+
+static void handle_arg_latx_ss(const char *arg)
+{
+   option_shadow_stack = 1;
+}
+
+static void handle_arg_latx_lsfpu(const char *arg)
+{
+    option_lsfpu = 1;
+}
+
+static void handle_arg_latx_profile(const char* arg)
+{
+    option_profile = 1;
+}
+
+static void handle_arg_latx_xmm128map(const char* arg)
+{
+    option_xmm128map = 1;
+}
+
+static void handle_arg_latx_ibtc(const char* arg)
+{
+    option_ibtc= 1;
+}
+#endif
 
 static void handle_arg_help(const char *arg)
 {
@@ -424,6 +498,34 @@ struct qemu_argument {
 };
 
 static const struct qemu_argument arg_table[] = {
+#ifdef CONFIG_LATX
+    {"latx-tr-bh",       "",                 false, handle_arg_latx_by_hand,
+    "",                 "LATX-translate-by-hand"},
+    {"latx-flag-ptn",    "",                 false, handle_arg_latx_flag_pattern,
+    "",                 "LATX-enable-flag-pattern-optimization"},
+    {"latx-flag-rdtn",   "",                 false, handle_arg_latx_flag_reduction,
+    "",                 "LATX-enable-flag-reduction-optimization"},
+    {"latx-dump",        "",                 true,  handle_arg_latx_print,
+    "bitmap",           "LATX-dump-transalte-info: 4 bits each for func,ir1,ir2,host"},
+    {"latx-trace",       "",                 true,  handle_arg_latx_trace,
+    "bitmap",           "LATX-trace-TB-execution: 2 bits each for TB,ir1,ir2"},
+    {"latx-check",       "",                 false, handle_arg_latx_check,
+    "",                 "LATX-enable-check with original qemu and X86-qemu-Mips"},
+    {"latx-tb-link",     "",                 false, handle_arg_latx_tb_link,
+    "",                 "LATX-enable-tb-link-optimization"},
+    {"latx-lbt",         "",                 false, handle_arg_latx_lbt,
+    "",                 "LATX-enable-loongson-binary-translation-instructions"},
+    {"latx-ss",          "",                 false, handle_arg_latx_ss,
+    "",                 "LATX-enable-shadowstack-optimization"},
+    {"latx-lsfpu",     "",                 false, handle_arg_latx_lsfpu,
+    "",                 "LATX-enable-loongson-fpu-optimization"},
+    {"latx-profile",     "",                 false, handle_arg_latx_profile,
+    "",                 "LATX-get-profile"},
+    {"latx-xmm128map",     "",                 false, handle_arg_latx_xmm128map,
+    "",                 "LATX-map-xmm-to-128bit-reg"},
+    {"latx-ibtc",     "",                 false, handle_arg_latx_ibtc,
+    "",                 "LATX use ibtc as indirect jmp cache"},
+#endif
     {"h",          "",                 false, handle_arg_help,
      "",           "print this help"},
     {"help",       "",                 false, handle_arg_help,
@@ -735,6 +837,13 @@ int main(int argc, char **argv, char **envp)
     cpu = cpu_create(cpu_type);
     env = cpu->env_ptr;
     cpu_reset(cpu);
+
+#ifdef CONFIG_LATX
+    latx_lsenv_init(env);
+    latx_set_parent_env(env);
+    latx_set_tls_ibtc_table(env);
+#endif
+
     thread_cpu = cpu;
 
     /*
@@ -772,6 +881,25 @@ int main(int argc, char **argv, char **envp)
 
     target_environ = envlist_to_environ(envlist, NULL);
     envlist_free(envlist);
+
+#ifdef CONFIG_LATX
+    /* we will try to reserve 0-4G for x86 with guest_base = 0, because
+     * base < mmap_min_addr is not allowed, we just skip the lowest page
+     * but take it as reserved to keep guest_base = 0
+     */
+    // if (!have_guest_base || guest_base <= 0x100000) {
+        // have_guest_base = true;
+        // guest_base = 0x100000;
+    // }
+
+    // if (guest_base == 0x100000) {
+        /* 0-1MB is naturally reserved, 1MB-(MAX_RESERVED_VA & host_page_mask)
+           is reserved by init_guest_space above
+         */
+        // guest_base = 0;
+        // qemu_log_mask(CPU_LOG_PAGE, "guest base set to zero\n");
+    // }
+#endif
 
     /*
      * Read in mmap_min_addr kernel parameter.  This value is used

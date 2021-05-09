@@ -69,6 +69,9 @@ static inline int handle_cpu_signal(uintptr_t pc, siginfo_t *info,
     unsigned long address = (unsigned long)info->si_addr;
     MMUAccessType access_type = is_write ? MMU_DATA_STORE : MMU_DATA_LOAD;
 
+#if defined(CONFIG_LATX_DEBUG)
+    uintptr_t epc = pc;
+#endif
     switch (helper_retaddr) {
     default:
         /*
@@ -174,6 +177,26 @@ static inline int handle_cpu_signal(uintptr_t pc, siginfo_t *info,
             g_assert_not_reached();
         }
     }
+
+#if defined(CONFIG_LATX_DEBUG)
+    printf("cpu%d signo %d si_code %d si_errno %d si_addr %p epc 0x%lx\n",
+            current_cpu->cpu_index, info->si_signo, info->si_code,
+            info->si_errno, info->si_addr, epc);
+    TranslationBlock *current_tb = tcg_tb_lookup(epc);
+    if (current_tb != NULL) {
+        int count =  current_tb->tc.size / 4;
+        unsigned int *ins_p = current_tb->tc.ptr;
+        printf("\n===== current_tb start pc = 0x%x =====\n",current_tb->pc);
+        for (int i = 0; i < count; i++) {
+            if ((unsigned long)(ins_p + i) == epc)
+                printf(" epc => ");
+            else
+                printf("\t");
+            printf("%p:\t0x%x\n", ins_p + i, *(ins_p + i));
+        }
+        printf("==============================================\n");
+    }
+#endif
 
     /* Convert forcefully to guest address space, invalid addresses
        are still valid segv ones */
@@ -750,6 +773,21 @@ int cpu_signal_handler(int host_signum, void *pinfo,
         break;
     }
 
+    return handle_cpu_signal(pc, info, is_write, &uc->uc_sigmask);
+}
+
+#elif defined(__loongarch__)
+
+int cpu_signal_handler(int host_signum, void *pinfo,
+                       void *puc)
+{
+    siginfo_t *info = pinfo;
+    ucontext_t *uc = puc;
+    greg_t pc = uc->uc_mcontext.__pc;
+    int is_write;
+
+    /* XXX: compute is_write */
+    is_write = 0;
     return handle_cpu_signal(pc, info, is_write, &uc->uc_sigmask);
 }
 

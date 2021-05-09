@@ -28,6 +28,15 @@
 #include "hw/i386/apic.h"
 #endif
 
+#ifdef CONFIG_LATX
+static void x86_cpu_exec_enter(CPUState *cs)
+{
+}
+
+static void x86_cpu_exec_exit(CPUState *cs)
+{
+}
+#else
 /* Frob eflags into and out of the CPU temporary format.  */
 
 static void x86_cpu_exec_enter(CPUState *cs)
@@ -48,6 +57,7 @@ static void x86_cpu_exec_exit(CPUState *cs)
 
     env->eflags = cpu_compute_eflags(env);
 }
+#endif
 
 static void x86_cpu_synchronize_from_tb(CPUState *cs,
                                         const TranslationBlock *tb)

@@ -377,6 +377,7 @@ bsd="no"
 linux="no"
 solaris="no"
 profiler="no"
+latx="no"
 cocoa="auto"
 softmmu="yes"
 linux_user="no"
@@ -680,6 +681,8 @@ elif check_define __arm__ ; then
   cpu="arm"
 elif check_define __aarch64__ ; then
   cpu="aarch64"
+elif check_define __loongarch__ ; then
+  cpu="loongarch"
 else
   cpu=$(uname -m)
 fi
@@ -688,7 +691,7 @@ ARCH=
 # Normalise host CPU name and set ARCH.
 # Note that this case should only have supported host CPUs, not guests.
 case "$cpu" in
-  ppc|ppc64|s390x|sparc64|x32|riscv32|riscv64)
+  ppc|ppc64|s390x|sparc64|x32|riscv32|riscv64|loongarch)
   ;;
   ppc64le)
     ARCH="ppc64"
@@ -1140,6 +1143,8 @@ for opt do
   --enable-libnfs) libnfs="enabled"
   ;;
   --enable-profiler) profiler="yes"
+  ;;
+  --enable-latx) latx="yes"
   ;;
   --disable-cocoa) cocoa="disabled"
   ;;
@@ -1786,6 +1791,7 @@ Advanced options (experts only):
   --tls-priority           default TLS protocol/cipher priority string
   --enable-gprof           QEMU profiling with gprof
   --enable-profiler        profiler support
+  --enable-latx            loongarch fast x86-transaction support
   --enable-debug-stack-usage
                            track the maximum stack usage of stacks created by qemu_alloc_stack
   --enable-plugins
@@ -5523,6 +5529,12 @@ if test "$static" = "yes" ; then
 fi
 if test "$profiler" = "yes" ; then
   echo "CONFIG_PROFILER=y" >> $config_host_mak
+fi
+if test "$latx" = "yes" ; then
+  echo "CONFIG_LATX=y" >> $config_host_mak
+fi
+if test "$debug" = "yes" ; then
+  echo "CONFIG_LATX_DEBUG=y" >> $config_host_mak
 fi
 if test "$want_tools" = "yes" ; then
   echo "CONFIG_TOOLS=y" >> $config_host_mak

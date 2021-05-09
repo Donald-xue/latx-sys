@@ -1397,6 +1397,18 @@ typedef struct HVFX86LazyFlags {
 } HVFX86LazyFlags;
 
 typedef struct CPUX86State {
+#ifdef CONFIG_LATX
+    ZMMReg xmm_regs[CPU_NB_REGS == 8 ? 8 : 32];
+    void *parent_lsenv;
+    void *ibtc_table_p;
+    /* ldq,only 10bits offset */
+    uint64_t vregs[5];
+    /* for debug,can be removed later */
+    uint64_t mips_regs[32];
+    /* TODO: why? in new qemu has no next_eip member */
+    target_ulong exception_next_eip;
+    struct TranslationBlock **tb_jmp_cache_ptr;
+#endif
     /* standard registers */
     target_ulong regs[CPU_NB_REGS];
     target_ulong eip;
@@ -1450,7 +1462,9 @@ typedef struct CPUX86State {
     float_status mmx_status; /* for 3DNow! float ops */
     float_status sse_status;
     uint32_t mxcsr;
+#ifndef CONFIG_LATX
     ZMMReg xmm_regs[CPU_NB_REGS == 8 ? 8 : 32];
+#endif
     ZMMReg xmm_t0;
     MMXReg mmx_t0;
 
@@ -1545,7 +1559,9 @@ typedef struct CPUX86State {
     /* exception/interrupt handling */
     int error_code;
     int exception_is_int;
+#ifndef CONFIG_LATX
     target_ulong exception_next_eip;
+#endif
     target_ulong dr[8]; /* debug registers; note dr4 and dr5 are unused */
     union {
         struct CPUBreakpoint *cpu_breakpoint[4];

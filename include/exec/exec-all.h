@@ -47,6 +47,10 @@ void gen_intermediate_code(CPUState *cpu, TranslationBlock *tb, int max_insns);
 void restore_state_to_opc(CPUArchState *env, TranslationBlock *tb,
                           target_ulong *data);
 
+#ifdef CONFIG_LATX
+#include "latx-config.h"
+#endif
+
 /**
  * cpu_restore_state:
  * @cpu: the vCPU state is to be restore to
@@ -444,6 +448,34 @@ struct tb_tc {
     size_t size;
 };
 
+#ifdef CONFIG_LATX
+struct IR1_INST;
+/* extra attributes we need in TB */
+typedef struct ExtraBlock{
+    uint64_t pc; /* for hash compare, it's ID of a ETB */
+    struct IR1_INST *_ir1_instructions;
+    int16  _ir1_num;
+    int8   _tb_type;
+    struct ExtraBlock* succ[2];  /* successors of this ETB */
+    struct TranslationBlock* tb; /* which tb this etb belongs to */
+    uint8 pending_use; /* indicate which eflags are used but hasn't defined yet */
+    /* flags is used to indicate the state of this ETB 
+     * bit0: set if succ[2] are set
+     * bit1: set if pending_use is set */
+    uint8 flags;
+#define SUCC_IS_SET_MASK 0x01
+#define PENDING_USE_IS_SET_MASK 0x02
+    int64 _execution_times; /* execution time of this TB */
+
+    /* historical field */
+    int8 _top_in;
+    int8 _top_out;
+    int8 _top_increment;
+    void *next_tb[2];
+    uint16_t size;
+} ETB;
+#endif
+
 struct TranslationBlock {
     target_ulong pc;   /* simulated PC corresponding to this block (EIP + CS base) */
     target_ulong cs_base; /* CS base for this block */
@@ -511,6 +543,10 @@ struct TranslationBlock {
     uintptr_t jmp_list_head;
     uintptr_t jmp_list_next[2];
     uintptr_t jmp_dest[2];
+#ifdef CONFIG_LATX
+    /* remember to free these memory when QEMU recycle one TB */
+    ETB extra_tb;
+#endif
 };
 
 /* Hide the qatomic_read to make code a little easier on the eyes */

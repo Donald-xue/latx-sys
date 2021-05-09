@@ -186,7 +186,18 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
 #endif /* DEBUG_DISAS */
 
     qemu_thread_jit_execute();
+#ifdef CONFIG_LATX
+    latx_before_exec_tb(env, itb);
+
     ret = tcg_qemu_tb_exec(env, tb_ptr);
+
+    if (ret & ~TB_EXIT_MASK) {
+        ret |= (uintptr_t)itb & 0xffffffff00000000LL;
+    }
+    latx_after_exec_tb(env, itb);
+#else
+    ret = tcg_qemu_tb_exec(env, tb_ptr);
+#endif
     cpu->can_do_io = 1;
     /*
      * TODO: Delay swapping back to the read-write region of the TB
@@ -390,8 +401,13 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
         goto out_unlock_next;
     }
 
+#ifdef CONFIG_LATX
+    /* check fpu rotate and patch the native jump address */
+    latx_tb_set_jmp_target(tb, n, tb_next);
+#else
     /* patch the native jump address */
     tb_set_jmp_target(tb, n, (uintptr_t)tb_next->tc.ptr);
+#endif
 
     /* add in TB jmp list */
     tb->jmp_list_next[n] = tb_next->jmp_list_head;
@@ -411,6 +427,48 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
     return;
 }
 
+#ifdef CONFIG_LATX
+TranslationBlock* latx_tb_find(void *cpu_state, ADDRX x86_pc)
+{
+    CPUState* cpu = env_cpu(cpu_state);
+    CPUArchState* env = (CPUArchState*)cpu_state;
+    target_ulong cs_base,pc;
+    TranslationBlock *tb;
+    uint32_t flags, hash;
+
+    /* get cflags */
+    uint32_t cflags = (curr_cflags(cpu) & ~CF_CLUSTER_MASK) |
+                       cpu->cluster_index << CF_CLUSTER_SHIFT;
+
+    /* get cs_base,flags,pc */
+    cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
+    pc = cs_base + (target_ulong)x86_pc;
+    hash = tb_jmp_cache_hash_func(pc);
+    tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
+
+    if (likely(tb &&
+               tb->pc == pc &&
+               tb->cs_base == cs_base &&
+               tb->flags == flags &&
+               tb->trace_vcpu_dstate == *cpu->trace_dstate &&
+               tb_cflags(tb) == cflags)) {
+        return tb;
+    }
+    tb = tb_htable_lookup(cpu, pc, cs_base, flags, cflags);
+    if (tb == NULL) {
+        return NULL;
+    }
+    qatomic_set(&cpu->tb_jmp_cache[hash], tb);
+    return tb;
+}
+
+#include "ibtc.h"
+extern ETB *etb_find(ADDRX);
+extern int option_shadow_stack;
+extern int option_profile;
+extern int option_ibtc;
+#endif
+
 static inline TranslationBlock *tb_find(CPUState *cpu,
                                         TranslationBlock *last_tb,
                                         int tb_exit, uint32_t cflags)
@@ -426,6 +484,17 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
     if (tb == NULL) {
         mmap_lock();
         tb = tb_gen_code(cpu, pc, cs_base, flags, cflags);
+#ifdef CONFIG_LATX
+        /* set tb field in etb */
+        ETB *etb;
+        if (option_shadow_stack || option_profile) {
+            etb = etb_find(pc);
+            etb->tb = tb;
+        }
+        if (last_tb == NULL && option_ibtc) { /* last tb is indirect block */
+            update_ibtc(pc, tb);
+        }
+#endif
         mmap_unlock();
         /* We add the TB in the virtual pc hash table for the fast lookup */
         qatomic_set(&cpu->tb_jmp_cache[tb_jmp_cache_hash_func(pc)], tb);
@@ -711,6 +780,10 @@ static inline void cpu_loop_exec_tb(CPUState *cpu, TranslationBlock *tb,
 
 /* main execution loop */
 
+#ifdef CONFIG_LATX
+#include "latx-config.h"
+#endif
+
 int cpu_exec(CPUState *cpu)
 {
     CPUClass *cc = CPU_GET_CLASS(cpu);
@@ -794,6 +867,9 @@ int cpu_exec(CPUState *cpu)
             }
 
             tb = tb_find(cpu, last_tb, tb_exit, cflags);
+#ifdef CONFIG_LATX
+            trace_tb_execution(tb);
+#endif
             cpu_loop_exec_tb(cpu, tb, &last_tb, &tb_exit);
             /* Try to align the host and virtual clocks
                if the guest is in advance */

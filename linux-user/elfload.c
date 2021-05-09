@@ -2406,7 +2406,8 @@ void probe_guest_base(const char *image_name, abi_ulong guest_loaddr,
     if (have_guest_base) {
         pgb_have_guest_base(image_name, guest_loaddr, guest_hiaddr, align);
     } else if (reserved_va) {
-        pgb_reserved_va(image_name, guest_loaddr, guest_hiaddr, align);
+        pgb_have_guest_base(image_name, guest_loaddr, guest_hiaddr, align);
+        // pgb_reserved_va(image_name, guest_loaddr, guest_hiaddr, align);
     } else if (guest_loaddr) {
         pgb_static(image_name, guest_loaddr, guest_hiaddr, align);
     } else {

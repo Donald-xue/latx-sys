@@ -163,7 +163,9 @@ const void *tcg_code_gen_epilogue;
 uintptr_t tcg_splitwx_diff;
 
 #ifndef CONFIG_TCG_INTERPRETER
+#ifndef CONFIG_LATX
 tcg_prologue_fn *tcg_qemu_tb_exec;
+#endif
 #endif
 
 struct tcg_region_tree {
@@ -1225,7 +1227,9 @@ void tcg_prologue_init(TCGContext *s)
     region.end = buf0 + total_size;
 
 #ifndef CONFIG_TCG_INTERPRETER
+#ifndef CONFIG_LATX
     tcg_qemu_tb_exec = (tcg_prologue_fn *)tcg_splitwx_to_rx(buf0);
+#endif
 #endif
 
     /* Compute a high-water mark, at which we voluntarily flush the buffer

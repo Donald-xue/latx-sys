@@ -21,6 +21,7 @@ subdir('hax')
 subdir('whpx')
 subdir('hvf')
 subdir('tcg')
+subdir('latx')
 
 target_arch += {'i386': i386_ss}
 target_softmmu_arch += {'i386': i386_softmmu_ss}

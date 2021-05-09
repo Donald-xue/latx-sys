@@ -57,7 +57,7 @@ python = import('python').find_installation()
 
 supported_oses = ['windows', 'freebsd', 'netbsd', 'openbsd', 'darwin', 'sunos', 'linux']
 supported_cpus = ['ppc', 'ppc64', 's390x', 'riscv32', 'riscv64', 'x86', 'x86_64',
-  'arm', 'aarch64', 'mips', 'mips64', 'sparc', 'sparc64']
+  'arm', 'aarch64', 'mips', 'mips64', 'sparc', 'sparc64', 'loongarch64']
 
 cpu = host_machine.cpu_family()
 targetos = host_machine.system()
@@ -256,6 +256,8 @@ if not get_option('tcg').disabled()
     tcg_arch = 'ppc'
   elif config_host['ARCH'] in ['riscv32', 'riscv64']
     tcg_arch = 'riscv'
+  elif config_host['ARCH'] in ['loongarch64']
+    tcg_arch = 'loongarch'
   endif
   add_project_arguments('-iquote', meson.current_source_dir() / 'tcg' / tcg_arch,
                         language: ['c', 'cpp', 'objc'])
@@ -1847,6 +1849,7 @@ if have_system or have_user
     'target/hppa',
     'target/i386',
     'target/i386/kvm',
+    'target/i386/latx',
     'target/mips',
     'target/ppc',
     'target/riscv',
@@ -2194,6 +2197,11 @@ foreach target : target_dirs
                                              extra_args : config_target['TARGET_SYSTBL_ABI'])
       endif
     endif
+    if 'CONFIG_LATX' in config_host
+      target_inc += include_directories('target/i386/latx')
+      target_inc += include_directories('target/i386/latx/include')
+      target_inc += include_directories('include/tcg')
+    endif
   endif
 
   if 'TARGET_XML_FILES' in config_target
@@ -2529,6 +2537,7 @@ endif
 summary_info += {'QEMU_CFLAGS':       config_host['QEMU_CFLAGS']}
 summary_info += {'QEMU_LDFLAGS':      config_host['QEMU_LDFLAGS']}
 summary_info += {'profiler':          config_host.has_key('CONFIG_PROFILER')}
+summary_info += {'latx':              config_host.has_key('CONFIG_LATX')}
 summary_info += {'link-time optimization (LTO)': get_option('b_lto')}
 summary_info += {'PIE':               get_option('b_pie')}
 summary_info += {'static build':      config_host.has_key('CONFIG_STATIC')}
