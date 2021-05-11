@@ -53,19 +53,7 @@ void latx_lsenv_init(CPUArchState *env)
     }
 }
 
-void latx_set_parent_env(CPUArchState *env)
-{
-    env->parent_lsenv = &lsenv_real;
-}
-
 void latx_set_tls_ibtc_table(CPUArchState *env)
 {
     env->ibtc_table_p = &ibtc_table;
-}
-
-void latx_copy_lsenv(CPUArchState *env)
-{
-    ENV *temp_lsenv = env->parent_lsenv;
-    memcpy(lsenv->tr_data, temp_lsenv->tr_data, sizeof(TRANSLATION_DATA));
-    memcpy(lsenv->fp_data, temp_lsenv->fp_data, sizeof(FLAG_PATTERN_DATA));
 }

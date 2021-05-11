@@ -6440,6 +6440,10 @@ static void *clone_func(void *arg)
     if (info->parent_tidptr)
         put_user_u32(info->tid, info->parent_tidptr);
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
+#ifdef CONFIG_LATX
+    latx_lsenv_init(env);
+    latx_set_tls_ibtc_table(env);
+#endif
     /* Enable signals.  */
     sigprocmask(SIG_SETMASK, &info->sigmask, NULL);
     /* Signal to the parent that we're ready.  */

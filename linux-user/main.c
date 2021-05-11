@@ -840,7 +840,6 @@ int main(int argc, char **argv, char **envp)
 
 #ifdef CONFIG_LATX
     latx_lsenv_init(env);
-    latx_set_parent_env(env);
     latx_set_tls_ibtc_table(env);
 #endif
 

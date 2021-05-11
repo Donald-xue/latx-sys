@@ -2675,8 +2675,8 @@ static int generate_native_jmp_glue(void *code_buf, int n)
             //tmp_opnd is set in indirect jmp translation
             la_append_ir2_opnd2i_em(LISA_SRLI_D, ret_opnd, tmp_opnd, TB_JMP_CACHE_BITS);
             la_append_ir2_opnd3_em(LISA_XOR, ret_opnd, tmp_opnd, ret_opnd);
-            la_append_ir2_opnd2ii(LISA_BSTRPICK_D, ret_opnd, ret_opnd, TB_JMP_CACHE_BITS - 1, 0); 
-            la_append_ir2_opnd2i_em(LISA_SLLI_D, ret_opnd, ret_opnd, 3); 
+            la_append_ir2_opnd2ii(LISA_BSTRPICK_D, ret_opnd, ret_opnd, TB_JMP_CACHE_BITS - 1, 0);
+            la_append_ir2_opnd2i_em(LISA_SLLI_D, ret_opnd, ret_opnd, 3);
             la_append_ir2_opnd2i_em(LISA_LD_D, addr_opnd, env_ir2_opnd, lsenv_offset_of_tb_jmp_cache_ptr(lsenv));
             ir2_opnd_set_em(&ret_opnd, EM_MIPS_ADDRESS, 32); //ret_opnd is used as tb addressing
             la_append_ir2_opnd3(LISA_LDX_D, ret_opnd, ret_opnd, addr_opnd);

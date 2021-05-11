@@ -795,7 +795,12 @@ void qbus_set_bus_hotplug_handler(BusState *bus);
 
 static inline bool qbus_is_hotpluggable(BusState *bus)
 {
+    /* TODO: why? */
+#ifdef CONFIG_LATX
+   return bus->hotplug_handler != 0;
+#elif
    return bus->hotplug_handler;
+#endif
 }
 
 void device_listener_register(DeviceListener *listener);

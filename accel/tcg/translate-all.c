@@ -925,7 +925,7 @@ static void page_lock_pair(PageDesc **ret_p1, tb_page_addr_t phys1,
 #elif defined(__s390x__)
   /* We have a +- 4GB range on the branches; leave some slop.  */
 # define MAX_CODE_GEN_BUFFER_SIZE  (3 * GiB)
-#elif defined(__mips__)
+#elif defined(__mips__) || defined (__loongarch__) && defined (CONFIG_LATX)
   /* We have a 256MB branch region, but leave room to make sure the
      main executable is also within that region.  */
 # define MAX_CODE_GEN_BUFFER_SIZE  (128 * MiB)

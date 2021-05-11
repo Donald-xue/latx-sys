@@ -20,6 +20,7 @@ extern __thread ENV *lsenv;
 int lsenv_offset_of_gpr(ENV *lsenv, int i);
 int lsenv_offset_of_eflags(ENV *lsenv);
 int lsenv_offset_of_ibtc_table(ENV *lsenv);
+int lsenv_offset_of_tb_jmp_cache_ptr(ENV *lsenv);
 int lsenv_offset_of_eip(ENV *lsenv);
 int lsenv_offset_of_top(ENV *lsenv);
 int lsenv_offset_of_vreg(ENV *lsenv, int i);

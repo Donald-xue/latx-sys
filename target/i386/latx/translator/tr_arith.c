@@ -4,20 +4,38 @@
 
 bool translate_add(IR1_INST *pir1)
 {
-    IR2_OPND src_opnd_0 =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
-
     IR2_OPND dest_opnd = ra_alloc_itemp();
         
-    la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd_0, src_opnd_1);
+    if (ir1_is_prefix_lock(pir1)) {
+        IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
+        /* mem addr */
+        IR2_OPND sc_opnd = ra_alloc_itemp();
+        IR2_OPND src_opnd_0 = ra_alloc_itemp();
+        IR2_OPND mem_opnd =
+            mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        int imm = ir2_opnd_imm(&mem_opnd);
+        mem_opnd._type = IR2_OPND_IREG;
 
-    fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+        la_append_ir2_opnd1(LISA_LABEL, label_ll);
+        la_append_ir2_opnd2i_em(LISA_LL_W, src_opnd_0, mem_opnd, imm);
+        la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd_0, src_opnd_1);
+        la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, dest_opnd);
+        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
+        la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
 
-    generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-
-    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+        ra_free_temp(sc_opnd);
+        ra_free_temp(src_opnd_0);
+    } else {
+        IR2_OPND src_opnd_0 =
+            load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+        la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd_0, src_opnd_1);
+        fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+        store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    }
 
     ra_free_temp(dest_opnd);
 
@@ -183,30 +201,49 @@ bool translate_sub(IR1_INST *pir1)
 
 bool translate_sbb(IR1_INST *pir1)
 {
-    IR2_OPND src_opnd_0 =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+    IR2_OPND dest_opnd = ra_alloc_itemp();
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
+    if (ir1_is_prefix_lock(pir1)) {
+        IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
+        /* mem addr */
+        IR2_OPND sc_opnd = ra_alloc_itemp();
+        IR2_OPND src_opnd_0 = ra_alloc_itemp();
+        IR2_OPND mem_opnd =
+            mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        int imm = ir2_opnd_imm(&mem_opnd);
+        mem_opnd._type = IR2_OPND_IREG;
 
-    IR2_OPND dest_opnd = ra_alloc_itemp();
-    IR2_OPND tmp_opnd = dest_opnd;
-    load_ireg_from_cf_opnd(&dest_opnd);
-    if (ir2_opnd_cmp(&src_opnd_0, &src_opnd_1)) {
-        la_append_ir2_opnd3_em(LISA_SUB_W, src_opnd_0, zero_ir2_opnd, dest_opnd);
-        dest_opnd = src_opnd_0;
-    } else {
-        la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, src_opnd_0, dest_opnd);
-        bool dest_opnd_is_temp = ir1_opnd_is_mem(ir1_get_opnd(pir1, 0)) ||
-                                 ir1_need_calculate_of(pir1) ||
-                                 ir1_need_calculate_cf(pir1);
-        if (!dest_opnd_is_temp)
-            dest_opnd = src_opnd_0;
-        la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, tmp_opnd, src_opnd_1);
+        load_ireg_from_cf_opnd(&dest_opnd);
+        la_append_ir2_opnd1(LISA_LABEL, label_ll);
+        la_append_ir2_opnd2i_em(LISA_LL_W, src_opnd_0, mem_opnd, imm);
+        if (ir2_opnd_cmp(&src_opnd_0, &src_opnd_1)) {
+            la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, zero_ir2_opnd, dest_opnd);
+        } else {
+            la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, src_opnd_0, dest_opnd);
+            la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, dest_opnd, src_opnd_1);
+        }
+        la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, dest_opnd);
+        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
+        la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
+
+        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+        ra_free_temp(sc_opnd);
+        ra_free_temp(src_opnd_0);
     }
-
-    generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-
-    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    else{
+        IR2_OPND src_opnd_0 =
+            load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+        load_ireg_from_cf_opnd(&dest_opnd);
+        if (ir2_opnd_cmp(&src_opnd_0, &src_opnd_1)) {
+            la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, zero_ir2_opnd, dest_opnd);
+        } else {
+            la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, src_opnd_0, dest_opnd);
+            la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, dest_opnd, src_opnd_1);
+        }
+        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+        store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    }
 
     ra_free_temp(dest_opnd);
     return true;

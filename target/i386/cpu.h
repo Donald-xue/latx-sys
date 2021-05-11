@@ -1399,7 +1399,6 @@ typedef struct HVFX86LazyFlags {
 typedef struct CPUX86State {
 #ifdef CONFIG_LATX
     ZMMReg xmm_regs[CPU_NB_REGS == 8 ? 8 : 32];
-    void *parent_lsenv;
     void *ibtc_table_p;
     /* ldq,only 10bits offset */
     uint64_t vregs[5];
