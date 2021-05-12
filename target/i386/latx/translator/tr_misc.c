@@ -28,7 +28,6 @@ bool translate_enter(IR1_INST *pir1) { return false; }
 bool translate_retf(IR1_INST *pir1) { return false; }
 bool translate_int_3(IR1_INST *pir1) { return false; }
 bool translate_into(IR1_INST *pir1) { return false; }
-bool translate_iret(IR1_INST *pir1) { return false; }
 bool translate_aam(IR1_INST *pir1) { return false; }
 bool translate_aad(IR1_INST *pir1) { return false; }
 bool translate_salc(IR1_INST *pir1) { return false; }
@@ -749,6 +748,33 @@ bool translate_callin(IR1_INST *pir1)
     /* 6. indirect linkage */
     /* env->tr_data->curr_tb->generate_tb_linkage_indirect(); */
     tr_generate_exit_tb(pir1, 0);
+    return true;
+}
+
+bool translate_iret(IR1_INST *pir1)
+{
+    /* 1. load ret_addr into $25 */
+    IR1_OPND seg_opnd;
+    IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
+    IR2_OPND eflags_opnd = ra_alloc_eflags();
+    IR2_OPND cs_opnd = ra_alloc_itemp();
+    IR2_OPND return_addr_opnd = ra_alloc_dbt_arg2();
+    load_ireg_from_ir1_2(return_addr_opnd, &esp_mem32_ir1_opnd,
+                         UNKNOWN_EXTENSION, false);
+
+    la_append_ir2_opnd2i(LISA_LD_W, cs_opnd, esp_opnd, 4);
+    la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, esp_opnd, 8);
+    ir1_opnd_build_reg(&seg_opnd, 16, X86_REG_CS);
+    store_ireg_to_ir1_seg(cs_opnd, &seg_opnd);
+
+    if (option_lbt) {
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
+    }
+    /* 2. adjust esp */
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, 12);
+
+    tr_generate_exit_tb(pir1, 0);
+
     return true;
 }
 

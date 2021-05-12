@@ -1158,7 +1158,7 @@ static void store_ireg_to_ir1_mem(IR2_OPND value_opnd, IR1_OPND *opnd1,
     return;
 }
 
-static void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
+void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 {
     lsassert(ir2_opnd_is_ireg(&seg_value_opnd));
 

@@ -1173,6 +1173,7 @@ void load_ireg_from_addr(IR2_OPND, ADDR);
 
 IR2_OPND load_ireg_from_ir1(IR1_OPND *, EXTENSION_MODE, bool is_xmm_hi);
 void load_ireg_from_ir1_2(IR2_OPND, IR1_OPND *, EXTENSION_MODE, bool is_xmm_hi);
+void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1);
 void store_ireg_to_ir1(IR2_OPND, IR1_OPND *, bool is_xmm_hi);
 
 extern void load_ireg_from_cf_opnd(IR2_OPND *a);
