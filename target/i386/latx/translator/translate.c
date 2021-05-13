@@ -706,7 +706,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     NULL,                //X86_INS_INVPCID,
     translate_invvpid,   //X86_INS_INVVPID,
     translate_iret,      //X86_INS_IRET,
-    NULL,                //X86_INS_IRETD,
+    translate_iret,      //X86_INS_IRETD,
     NULL,                //X86_INS_IRETQ,
     translate_fisttp,    //X86_INS_FISTTP,
     translate_fist,      //X86_INS_FIST,
@@ -2255,7 +2255,7 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 
     /* if fpu stack mode is used, we don't rely on tb after linking */
     if (option_lsfpu && option_tb_link && !ir1_is_indirect_jmp(branch) && !ir1_is_indirect_call(branch) &&
-        opcode != X86_INS_RET) {
+        opcode != X86_INS_RET && opcode != X86_INS_RET && opcode != X86_INS_IRETD) {
         /* 1. set a label for native code linkage */
         IR2_OPND goto_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
@@ -2300,7 +2300,7 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 #endif
 
     if (!option_lsfpu && option_tb_link && !ir1_is_indirect_jmp(branch) && !ir1_is_indirect_call(branch) &&
-        opcode != X86_INS_RET) {
+        opcode != X86_INS_RET && opcode != X86_INS_RET && opcode != X86_INS_IRETD) {
         /* 1. set a label for native code linkage */
         IR2_OPND goto_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
@@ -2366,6 +2366,8 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     // case X86_INS_JMPIN:  JUMPIN and CALLIN (part of jmp and call) are not standard i386 instruction 
     // case X86_INS_CALLIN:
     case X86_INS_RET:
+    case X86_INS_IRET:
+    case X86_INS_IRETD:
         //printf("cpu%d tb_addr = 0x%lx\n", current_cpu->cpu_index, tb_addr);
 indirect_call :
 indirect_jmp :

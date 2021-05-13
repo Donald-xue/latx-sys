@@ -1334,13 +1334,14 @@ bool translate_cmpxchg(IR1_INST *pir1)
  */
 bool translate_cmpxchg8b(IR1_INST *pir1)
 {
-    if (ir1_is_prefix_lock(pir1))
-        lsassertm(0, "The LOCK prefix is unimplemented.\n");
-
-    printf("FIXME: cmpxchg8b is NOT a thread safe implementation\n");
-    printf("FIXME: cmpxchg8b may be has bugs, please investigate it first if you are in trouble\n");
     IR1_OPND *reg_eax = NULL, *reg_edx = NULL, *reg_ebx= NULL, *reg_ecx= NULL;
     lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64);
+
+    IR2_OPND mem_opnd =
+        mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+    int imm = ir2_opnd_imm(&mem_opnd);
+    mem_opnd._type = IR2_OPND_IREG;
+
     reg_eax = &eax_ir1_opnd;
     reg_edx = &edx_ir1_opnd;
 
@@ -1356,6 +1357,12 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
     IR2_OPND t_dest_opnd = ra_alloc_itemp();
     IR2_OPND edx_eax_opnd = ra_alloc_itemp();
     IR2_OPND ecx_ebx_opnd = ra_alloc_itemp();
+    IR2_OPND sc_opnd = ra_alloc_itemp();
+    IR2_OPND src_opnd_0 = ra_alloc_itemp();
+    IR2_OPND label_unequal = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
+
      /*
      * Got EAX/EDX from IR1
       */
@@ -1378,25 +1385,26 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
      /*
      * Got m64 data from mem
       */
-    IR2_OPND src_opnd_0 =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-
-    la_append_ir2_opnd3_em(LISA_SUB_D, t_dest_opnd, edx_eax_opnd, src_opnd_0);
-    generate_eflag_calculation(t_dest_opnd, edx_eax_opnd, src_opnd_0, pir1, true);
-
-    IR2_OPND label_unequal = ir2_opnd_new_type(IR2_OPND_LABEL);
+    la_append_ir2_opnd1(LISA_LABEL, label_ll);
+    la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, ecx_ebx_opnd);
+    la_append_ir2_opnd2i_em(LISA_LL_D, src_opnd_0, mem_opnd, imm);
     la_append_ir2_opnd3(LISA_BNE, src_opnd_0, edx_eax_opnd, label_unequal);
+    la_append_ir2_opnd2i(LISA_SC_D, sc_opnd, mem_opnd, imm);
+    la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
     /* equal */
     store_ireg_to_ir1(ecx_ebx_opnd, ir1_get_opnd(pir1, 0), false);
-    IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd1(LISA_B, label_exit);
 
     /* unequal */
     la_append_ir2_opnd1(LISA_LABEL, label_unequal);
+    la_append_ir2_opnd0(LISA_DBAR);
     store_ireg_to_ir1(src_opnd_0, reg_eax, false);
     la_append_ir2_opnd2i_em(LISA_SRLI_D, src_opnd_0, src_opnd_0, 32);
     store_ireg_to_ir1(src_opnd_0, reg_edx, false);
+
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
+    la_append_ir2_opnd3_em(LISA_SUB_D, t_dest_opnd, edx_eax_opnd, src_opnd_0);
+    generate_eflag_calculation(t_dest_opnd, edx_eax_opnd, src_opnd_0, pir1, true);
 
     return true;
 }
