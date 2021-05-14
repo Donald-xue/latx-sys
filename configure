@@ -5532,9 +5532,9 @@ if test "$profiler" = "yes" ; then
 fi
 if test "$latx" = "yes" ; then
   echo "CONFIG_LATX=y" >> $config_host_mak
-fi
-if test "$debug" = "yes" ; then
-  echo "CONFIG_LATX_DEBUG=y" >> $config_host_mak
+  if test "$debug" = "yes" ; then
+    echo "CONFIG_LATX_DEBUG=y" >> $config_host_mak
+  fi
 fi
 if test "$want_tools" = "yes" ; then
   echo "CONFIG_TOOLS=y" >> $config_host_mak

@@ -798,7 +798,7 @@ static inline bool qbus_is_hotpluggable(BusState *bus)
     /* TODO: why? */
 #ifdef CONFIG_LATX
    return bus->hotplug_handler != 0;
-#elif
+#else
    return bus->hotplug_handler;
 #endif
 }
