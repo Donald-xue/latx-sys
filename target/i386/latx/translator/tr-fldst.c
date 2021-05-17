@@ -1,6 +1,6 @@
 #include <math.h>
 #include "common.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "env.h"
 #include "latx-options.h"
 

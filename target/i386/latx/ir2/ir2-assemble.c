@@ -1,7 +1,7 @@
 #include <assert.h>
 #include "ir2.h"
 #include "translate.h"
-#include "ir2_la_assemble.h"
+#include "ir2-la-assemble.h"
 
 void set_operand_into_instruction(GM_OPERAND_TYPE operand_type,
                                   IR2_OPND *p_opnd, uint32 *result);

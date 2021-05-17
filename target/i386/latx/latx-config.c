@@ -5,10 +5,10 @@
 #include "ir2.h"
 #include "env.h"
 #include "etb.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "latx-options.h"
 #include "etb.h"
-#include "shadow_stack.h"
+#include "shadow-stack.h"
 #include "profile.h"
 
 #include "trace.h"

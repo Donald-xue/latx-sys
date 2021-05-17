@@ -1,5 +1,5 @@
 #include "env.h"
-#include "shadow_stack.h"
+#include "shadow-stack.h"
 #include "latx-options.h"
 #include "profile.h"
 #include "ibtc.h"

@@ -1,8 +1,8 @@
 #include "common.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "env.h"
 #include "latx-options.h"
-#include "flag_lbt.h"
+#include "flag-lbt.h"
 
 static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {

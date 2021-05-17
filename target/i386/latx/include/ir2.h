@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#include "la_ir2.h"
+#include "la-ir2.h"
 
 #define IR2_ITEMP_MAX 4096
 

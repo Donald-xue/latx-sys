@@ -1,6 +1,6 @@
 #include "common.h"
 #include "translate.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "latx-options.h"
 
 static bool translate_mov_byhand_8_16_32(IR1_INST *pir1);

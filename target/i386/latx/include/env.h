@@ -2,10 +2,10 @@
 #define _ENV_H_
 
 #include "common.h"
-#include "flag_pattern.h"
+#include "flag-pattern.h"
 #include "translate.h"
 #include "latx-config.h"
-#include "shadow_stack.h"
+#include "shadow-stack.h"
 #include "lsenv.h"
 
 typedef struct ENV {

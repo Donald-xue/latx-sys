@@ -2,10 +2,10 @@
 #include "ir2.h"
 #include "ir1.h"
 #include "env.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include <string.h>
 
-#include "ir2_la_name.h"
+#include "ir2-la-name.h"
 IR2_OPND sp_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 3,  ._reg_num = 3,  ._addr = 0};
 IR2_OPND fp_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 22, ._reg_num = 22, ._addr = 0};
 IR2_OPND zero_ir2_opnd = {._type = IR2_OPND_GPR, .val = 0,  ._reg_num = 0,  ._addr = 0};

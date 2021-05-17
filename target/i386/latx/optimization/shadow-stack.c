@@ -1,7 +1,7 @@
 #include "env.h"
 #include "mem.h"
-#include "reg_alloc.h"
-#include "shadow_stack.h"
+#include "reg-alloc.h"
+#include "shadow-stack.h"
 #include "latx-options.h"
 
 SS_ITEM* ss_pop(SS* ss) 

@@ -1,9 +1,9 @@
 #include "common.h"
 #include "env.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "latx-options.h"
-#include "flag_lbt.h"
-#include "flag_pattern.h"
+#include "flag-lbt.h"
+#include "flag-pattern.h"
 
 bool translate_cmpxchg_byhand_8_16_32(IR1_INST *pir1);
 

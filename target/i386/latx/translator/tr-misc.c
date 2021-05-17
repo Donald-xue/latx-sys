@@ -1,8 +1,8 @@
 #include "common.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "latx-options.h"
 #include "env.h"
-#include "flag_lbt.h"
+#include "flag-lbt.h"
 
 bool translate_nop(IR1_INST *pir1) { return true; }
 bool translate_endbr32(IR1_INST *pir1) { return true; }

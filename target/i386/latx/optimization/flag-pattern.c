@@ -1,8 +1,8 @@
 #include "common.h"
 #include "env.h"
 #include "etb.h"
-#include "reg_alloc.h"
-#include "flag_pattern.h"
+#include "reg-alloc.h"
+#include "flag-pattern.h"
 #include "latx-options.h"
 #include <string.h>
 

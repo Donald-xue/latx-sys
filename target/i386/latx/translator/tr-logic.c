@@ -1,7 +1,7 @@
 #include "common.h"
 #include "env.h"
-#include "reg_alloc.h"
-#include "flag_lbt.h"
+#include "reg-alloc.h"
+#include "flag-lbt.h"
 #include "latx-options.h"
 
 bool translate_shrd_imm(IR1_INST *pir1);

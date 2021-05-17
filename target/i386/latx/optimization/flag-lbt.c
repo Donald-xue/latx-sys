@@ -1,8 +1,8 @@
 #include "common.h"
 #include "env.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "latx-options.h"
-#include "flag_lbt.h"
+#include "flag-lbt.h"
 
 bool generate_eflag_by_lbt(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1, IR1_INST *pir1, bool is_sx) {
     switch(ir1_opcode(pir1)) {

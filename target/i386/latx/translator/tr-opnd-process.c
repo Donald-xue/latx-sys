@@ -1,5 +1,5 @@
 #include "common.h"
-#include "reg_alloc.h"
+#include "reg-alloc.h"
 #include "env.h"
 #include "ir2.h"
 #include "latx-options.h"
