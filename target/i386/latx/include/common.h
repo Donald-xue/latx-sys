@@ -1,7 +1,7 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#include "types.h"
+#include "latx-types.h"
 #include "ds-set.h"
 #include "mem.h"
 #include "error.h"

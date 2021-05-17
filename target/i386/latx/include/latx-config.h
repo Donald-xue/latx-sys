@@ -1,7 +1,7 @@
 #ifndef _LATX_CONFIG_H_
 #define _LATX_CONFIG_H_
 
-#include "types.h"
+#include "latx-types.h"
 #include "qemu-def.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb);

@@ -2,7 +2,7 @@
 #define _X86TOMIPS_PROFILE_H_
 #define ETB_ARRAY_SIZE (1<<19)
 
-#include "types.h"
+#include "latx-types.h"
 #include "qemu-def.h"
 
 void profile_generate(void);

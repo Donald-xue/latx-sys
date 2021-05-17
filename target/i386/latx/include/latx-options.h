@@ -1,7 +1,7 @@
 #ifndef _LATX_OPTIONS_H_
 #define _LATX_OPTIONS_H_
 
-#include "types.h"
+#include "latx-types.h"
 
 extern int option_by_hand;
 extern int option_flag_pattern;

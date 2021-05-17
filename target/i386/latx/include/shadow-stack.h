@@ -1,7 +1,7 @@
 #ifndef _SHADOW_STACK_H_
 #define _SHADOW_STACK_H_
 
-#include "types.h"
+#include "latx-types.h"
 #include "qemu-def.h"
 
 typedef struct  {
