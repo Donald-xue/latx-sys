@@ -2198,9 +2198,7 @@ foreach target : target_dirs
       endif
     endif
     if 'CONFIG_LATX' in config_host
-      target_inc += include_directories('target/i386/latx')
       target_inc += include_directories('target/i386/latx/include')
-      target_inc += include_directories('include/tcg')
     endif
   endif
 
