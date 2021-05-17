@@ -141,8 +141,6 @@ extern bool ir2_opcode_is_rri_shift(IR2_OPCODE);
 extern bool ir2_opcode_is_convert(IR2_INS_TYPE opcode);
 extern bool ir2_opcode_is_fcmp(IR2_INS_TYPE opcode);
 
-const char *ir2_name(int value);
-
 extern IR2_OPND zero_ir2_opnd;
 extern IR2_OPND env_ir2_opnd;
 extern IR2_OPND sp_ir2_opnd;
