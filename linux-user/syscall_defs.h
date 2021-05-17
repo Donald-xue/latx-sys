@@ -932,6 +932,7 @@ struct target_rtc_pll_info {
 /* From <linux/wireless.h> */
 
 #define TARGET_SIOCGIWNAME     0x8B01          /* get name == wireless protocol */
+#define TARGET_SIOCGIWMODE     0x8B07          /* get operation mode            */
 
 /* From <linux/if_tun.h> */
 
