@@ -195,6 +195,31 @@ enum {
 };
 
 enum {
+    QEMU_IFLA_IPTUN_UNSPEC,
+    QEMU_IFLA_IPTUN_LINK,
+    QEMU_IFLA_IPTUN_LOCAL,
+    QEMU_IFLA_IPTUN_REMOTE,
+    QEMU_IFLA_IPTUN_TTL,
+    QEMU_IFLA_IPTUN_TOS,
+    QEMU_IFLA_IPTUN_ENCAP_LIMIT,
+    QEMU_IFLA_IPTUN_FLOWINFO,
+    QEMU_IFLA_IPTUN_FLAGS,
+    QEMU_IFLA_IPTUN_PROTO,
+    QEMU_IFLA_IPTUN_PMTUDISC,
+    QEMU_IFLA_IPTUN_6RD_PREFIX,
+    QEMU_IFLA_IPTUN_6RD_RELAY_PREFIX,
+    QEMU_IFLA_IPTUN_6RD_PREFIXLEN,
+    QEMU_IFLA_IPTUN_6RD_RELAY_PREFIXLEN,
+    QEMU_IFLA_IPTUN_ENCAP_TYPE,
+    QEMU_IFLA_IPTUN_ENCAP_FLAGS,
+    QEMU_IFLA_IPTUN_ENCAP_SPORT,
+    QEMU_IFLA_IPTUN_ENCAP_DPORT,
+    QEMU_IFLA_IPTUN_COLLECT_METADATA,
+    QEMU_IFLA_IPTUN_FWMARK,
+    QEMU___IFLA_IPTUN_MAX,
+};
+
+enum {
     QEMU_IFLA_INFO_UNSPEC,
     QEMU_IFLA_INFO_KIND,
     QEMU_IFLA_INFO_DATA,
@@ -621,6 +646,44 @@ static abi_long host_to_target_data_tun_nlattr(struct nlattr *nlattr,
     return 0;
 }
 
+static abi_long host_to_target_data_sit_nlattr(struct nlattr *nlattr,
+                                                  void *context)
+{
+    uint16_t *u16;
+    uint32_t *u32;
+
+    switch (nlattr->nla_type) {
+    /* uint8_t */
+    case QEMU_IFLA_IPTUN_TTL:
+    case QEMU_IFLA_IPTUN_TOS:
+    case QEMU_IFLA_IPTUN_PROTO:
+    case QEMU_IFLA_IPTUN_PMTUDISC:
+        break;
+    /* uint16_t */
+    case QEMU_IFLA_IPTUN_ENCAP_TYPE:
+    case QEMU_IFLA_IPTUN_FLAGS:
+    case QEMU_IFLA_IPTUN_ENCAP_FLAGS:
+    case QEMU_IFLA_IPTUN_ENCAP_SPORT:
+    case QEMU_IFLA_IPTUN_ENCAP_DPORT:
+        u16 = NLA_DATA(nlattr);
+        *u16 = tswap16(*u16);
+        break;
+    /* uint32_t */
+    case QEMU_IFLA_IPTUN_LINK:
+    case QEMU_IFLA_IPTUN_LOCAL:
+    case QEMU_IFLA_IPTUN_REMOTE:
+    case QEMU_IFLA_IPTUN_FWMARK:
+        u32 = NLA_DATA(nlattr);
+        *u32 = tswap32(*u32);
+        break;
+    default:
+        qemu_log_mask(LOG_UNIMP, "Unknown QEMU_IFLA_IPTUN type %d\n",
+                      nlattr->nla_type);
+        break;
+    }
+    return 0;
+}
+
 struct linkinfo_context {
     int len;
     char *name;
@@ -661,6 +724,12 @@ static abi_long host_to_target_data_linkinfo_nlattr(struct nlattr *nlattr,
                                                   nlattr->nla_len,
                                                   NULL,
                                                 host_to_target_data_tun_nlattr);
+        } else if (strncmp(li_context->name, "sit",
+                    li_context->len) == 0) {
+            return host_to_target_for_each_nlattr(NLA_DATA(nlattr),
+                                                  nlattr->nla_len,
+                                                  NULL,
+                                                host_to_target_data_sit_nlattr);
         } else {
             qemu_log_mask(LOG_UNIMP, "Unknown QEMU_IFLA_INFO_KIND %s\n",
                           li_context->name);
