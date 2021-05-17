@@ -353,11 +353,12 @@ bool translate_fucompp(IR1_INST *pir1)
 
 bool translate_ficom(IR1_INST *pir1)
 {
+    assert(0 && "translate_ficom need to implemented correctly");
     IR2_OPND st0_opnd = ra_alloc_st(0);
     IR2_OPND mint_opnd = ra_alloc_ftemp();
     IR2_OPND tmp_opnd = ra_alloc_itemp();
     load_freg_from_ir1_2(mint_opnd, ir1_get_opnd(pir1, 0), false, false);
-    append_ir2_opnd2(mips_cvt_d_l, mint_opnd, mint_opnd);
+    la_append_ir2_opnd2(LISA_FFINT_D_L, mint_opnd, mint_opnd);
     IR2_OPND sw_opnd = ra_alloc_itemp();
 
     /* load status_word */

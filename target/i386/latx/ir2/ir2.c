@@ -16,7 +16,7 @@ static const char *ir2_name(int value)
     };
 
     static const char *ir2_cc_name[] = {
-        "$cc0" , "$cc1" , "$cc2" , "$cc3" , 
+        "$cc0" , "$cc1" , "$cc2" , "$cc3" ,
         "$cc4" , "$cc5" , "$cc6" , "$cc7" ,
     };
     #endif
@@ -3450,109 +3450,13 @@ int ir2_opnd_to_string(IR2_OPND *opnd, char *str, bool hex)
     }
 }
 
-bool ir2_opcode_is_load(IR2_OPCODE opcode)
-{
-    if (opcode >= mips_ld && opcode <= mips_lld) {
-        return true;
-    }
-    if (opcode >= mips_lb && opcode <= mips_lwu && opcode != mips_lui) {
-        return true;
-    }
-    if (opcode == mips_ldc1 || opcode == mips_lwc1) {
-        return true;
-    }
-    if (opcode >= mips_gs_lq && opcode <= mips_gs_ldrc1) {
-        return true;
-    }
-    if (opcode >= mips_ldb && opcode <=mips_ldd){
-        return true;
-    }
-    if (opcode == mips_pref || opcode == mips_prefx) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_load_rl(IR2_OPCODE opcode)
-{
-    if (opcode == mips_lb || opcode == mips_lbu) {
-        return true;
-    }
-    if (opcode == mips_ldl || opcode == mips_ldr) {
-        return true;
-    }
-    if (opcode == mips_lwl || opcode == mips_lwr) {
-        return true;
-    }
-    if (opcode == mips_gs_ldlc1 || opcode == mips_gs_ldrc1) {
-        return true;
-    }
-    if (opcode == mips_gs_lwlc1 || opcode == mips_gs_lwrc1) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_load_not_rl(IR2_OPCODE opcode)
-{
-    return ir2_opcode_is_load(opcode) && !ir2_opcode_is_load_rl(opcode);
-}
-
-bool ir2_opcode_is_store(IR2_OPCODE opcode)
-{
-    if (opcode >= mips_sdi && opcode <= mips_sdr) {
-        return true;
-    }
-    if (opcode >= mips_sw && opcode <= mips_swr) {
-        return true;
-    }
-    if (opcode == mips_sb || opcode == mips_sh || opcode == mips_sc) {
-        return true;
-    }
-    if (opcode == mips_sdc1 || opcode == mips_swc1) {
-        return true;
-    }
-    if (opcode >= mips_gs_sq && opcode <= mips_gs_sdrc1) {
-        return true;
-    }
-    if (opcode >= mips_stb && opcode <=mips_std){
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_store_rl(IR2_OPCODE opcode)
-{
-    if (opcode == mips_sb) {
-        return true;
-    }
-    if (opcode == mips_sdl || opcode == mips_sdr) {
-        return true;
-    }
-    if (opcode == mips_swl || opcode == mips_swr) {
-        return true;
-    }
-    if (opcode == mips_gs_sdlc1 || opcode == mips_gs_sdrc1) {
-        return true;
-    }
-    if (opcode == mips_gs_swlc1 || opcode == mips_gs_swrc1) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_store_not_rl(IR2_OPCODE opcode)
-{
-    return ir2_opcode_is_store(opcode) && !ir2_opcode_is_store_rl(opcode);
-}
-
-bool ir2_opcode_is_branch(IR2_INS_TYPE opcode)
+bool ir2_opcode_is_branch(IR2_OPCODE opcode)
 {
     return (opcode >= LISA_BEQZ && opcode <= LISA_BCNEZ) ||
            (opcode >= LISA_B && opcode <= LISA_BGEU);
 }
 
-bool ir2_opcode_is_branch_with_3opnds(IR2_INS_TYPE opcode)
+bool ir2_opcode_is_branch_with_3opnds(IR2_OPCODE opcode)
 {
     if (opcode >= LISA_BEQ && opcode <= LISA_BGEU) {
         return true;
@@ -3560,50 +3464,12 @@ bool ir2_opcode_is_branch_with_3opnds(IR2_INS_TYPE opcode)
     return false;
 }
 
-bool ir2_opcode_is_f_branch(IR2_INS_TYPE opcode)
+bool ir2_opcode_is_f_branch(IR2_OPCODE opcode)
 {
     return (opcode == LISA_BCEQZ || opcode == LISA_BCNEZ);
 }
 
-bool ir2_opcode_is_rri(IR2_OPCODE opcode)
-{
-    if (ir2_opcode_is_rri_arith(opcode) || ir2_opcode_is_rri_logic(opcode) ||
-        ir2_opcode_is_rri_shift(opcode)) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_rri_arith(IR2_OPCODE opcode)
-{
-    if (opcode == mips_addi || opcode == mips_addiu || opcode == mips_daddi ||
-        opcode == mips_daddiu || opcode == mips_subiu ||
-        opcode == mips_dsubiu || opcode == mips_slti || opcode == mips_sltiu) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_rri_logic(IR2_OPCODE opcode)
-{
-    if (opcode == mips_andi || opcode == mips_ori || opcode == mips_xori) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_rri_shift(IR2_OPCODE opcode)
-{
-    if (opcode == mips_sll || opcode == mips_srl || opcode == mips_sra ||
-        opcode == mips_dsll || opcode == mips_dsrl || opcode == mips_dsra ||
-        opcode == mips_dsll32 || opcode == mips_dsrl32 ||
-        opcode == mips_dsra32) {
-        return true;
-    }
-    return false;
-}
-
-bool ir2_opcode_is_convert(IR2_INS_TYPE opcode)
+bool ir2_opcode_is_convert(IR2_OPCODE opcode)
 {
     switch (opcode) {
     case LISA_FCVT_D_S:
@@ -3622,12 +3488,12 @@ bool ir2_opcode_is_convert(IR2_INS_TYPE opcode)
     }
 }
 
-bool ir2_opcode_is_fcmp(IR2_INS_TYPE opcode)
+bool ir2_opcode_is_fcmp(IR2_OPCODE opcode)
 {
     return (opcode == LISA_FCMP_COND_S || opcode == LISA_FCMP_COND_D);
 }
 
-static IR2_INS_TYPE ir2_opcode_rrr_to_rri(IR2_INS_TYPE opcode)
+static IR2_OPCODE ir2_opcode_rrr_to_rri(IR2_OPCODE opcode)
 {
     switch (opcode) {
     case LISA_ADDI_ADDR:
@@ -3689,9 +3555,9 @@ void ir2_set_id(IR2_INST *ir2, int id) { ir2->_id = id; }
 
 int ir2_get_id(IR2_INST *ir2) { return ir2->_id; }
 
-IR2_INS_TYPE ir2_opcode(IR2_INST *ir2) { return (IR2_INS_TYPE)(ir2->_opcode); }
+IR2_OPCODE ir2_opcode(IR2_INST *ir2) { return (IR2_OPCODE)(ir2->_opcode); }
 
-void ir2_set_opcode(IR2_INST *ir2, IR2_INS_TYPE type) { 
+void ir2_set_opcode(IR2_INST *ir2, IR2_OPCODE type) {
     ir2->_opcode = type;
 }
 
@@ -3939,1448 +3805,12 @@ static inline int uint16_eb(uint16 imm)
     return 0;
 }
 
-IR2_INST *append_ir2_opnd3(IR2_OPCODE opcode, IR2_OPND opnd0, IR2_OPND opnd1,
-                           IR2_OPND opnd2)
-{
-
-    if (ir2_opnd_is_imm(&opnd2)) {
-        IR2_OPCODE new_opcode = ir2_opcode_rrr_to_rri(opcode);
-        return append_ir2_opnd2i(new_opcode, opnd0, opnd1,
-                                 ir2_opnd_imm(&opnd2));
-    }
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p); /* insert into tr_data's ir2 array */
-
-    switch (opcode) {
-    case mips_add_addr:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-#ifdef N64 /* validate address */
-        if (ir2_opnd_is_mips_address(&opnd1)) {
-            lsassert(ir2_opnd_is_sx(&opnd2, 32) &&
-                     !ir2_opnd_is_mips_address(&opnd2));
-            ir2_build(p, mips_daddu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, EM_MIPS_ADDRESS, 32);
-        } else if (ir2_opnd_is_mips_address(&opnd2)) {
-            lsassert(ir2_opnd_is_sx(&opnd1, 32) &&
-                     !ir2_opnd_is_mips_address(&opnd1));
-            ir2_build(p, mips_daddu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, EM_MIPS_ADDRESS, 32);
-        } else if (ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32)) {
-            ir2_build(p, mips_addu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-            if (!ir2_opnd_is_sx(&opnd0, 32)) {
-                ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_build(p, mips_daddu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-#else
-        lsassert(ir2_opnd_is_sx(&opnd1) && opnd2.is_sx());
-        ir2_build(p, mips_addu, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32))
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_add_addrx:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-#ifdef N64 /* validate address */
-        if (ir2_opnd_is_x86_address(&opnd1)) {
-            lsassert(!ir2_opnd_is_x86_address(&opnd2));
-            ir2_build(p, mips_daddu, opnd0, opnd1, opnd2);
-            if (ir2_opnd_is_sx(&opnd2, 32)) {
-                ir2_opnd_set_em(&opnd0, EM_X86_ADDRESS, 32);
-            } else {
-                ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-            }
-        } else if (ir2_opnd_is_x86_address(&opnd2)) {
-            lsassert(!ir2_opnd_is_x86_address(&opnd1));
-            ir2_build(p, mips_daddu, opnd0, opnd1, opnd2);
-            if (ir2_opnd_is_sx(&opnd1, 32)) {
-                ir2_opnd_set_em(&opnd0, EM_X86_ADDRESS, 32);
-            } else {
-                ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-            }
-        } else if (ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32)) {
-            ir2_build(p, mips_addu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-            if (!ir2_opnd_is_sx(&opnd0, 32)) {
-                ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_build(p, mips_addu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-#else
-        ir2_build(p, mips_addu, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32))
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_sub_addr:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-#ifdef N64 /* validate address */
-        if (ir2_opnd_is_mips_address(&opnd1) &&
-            ir2_opnd_is_mips_address(&opnd2)) {
-            ir2_build(p, mips_dsubu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        } else if (ir2_opnd_is_mips_address(&opnd1) &&
-                   ir2_opnd_is_sx(&opnd2, 32)) {
-            ir2_build(p, mips_dsubu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, EM_MIPS_ADDRESS, 32);
-        } else if (ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32)) {
-            ir2_build(p, mips_subu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em_sub2(&opnd0, &opnd1, &opnd2);
-            if (!ir2_opnd_is_sx(&opnd0, 32)) {
-                ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_build(p, mips_dsubu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-#else
-        lsassert(ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32));
-        ir2_build(p, mips_subu, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_sub2(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32))
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_sub_addrx:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-#ifdef N64 /* validate address */
-        if (ir2_opnd_is_x86_address(&opnd1) &&
-            ir2_opnd_is_x86_address(&opnd2)) {
-            ir2_build(p, mips_dsubu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        } else if (ir2_opnd_is_x86_address(&opnd1) &&
-                   ir2_opnd_is_sx(&opnd2, 32)) {
-            ir2_build(p, mips_dsubu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, EM_X86_ADDRESS, 32);
-        } else if (ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32)) {
-            ir2_build(p, mips_subu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em_sub2(&opnd0, &opnd1, &opnd2);
-            if (!ir2_opnd_is_sx(&opnd0, 32)) {
-                ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_build(p, mips_dsubu, opnd0, opnd1, opnd2);
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-#else
-        lsassert(ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32));
-        ir2_build(p, mips_subu, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_sub2(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32))
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_daddu:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-        break;
-    case mips_dsubu:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_sub2(&opnd0, &opnd1, &opnd2);
-        break;
-    case mips_addu:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        lsassert(ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_add2(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32)) {
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        }
-        break;
-    case mips_subu:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        lsassert(ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_sub2(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32)) {
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        }
-        break;
-    case mips_and:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        if (ir2_opnd_is_x86_address(&opnd1) ||
-            ir2_opnd_is_x86_address(&opnd2)) {
-            ir2_opnd_set_em(&opnd0, EM_X86_ADDRESS, 32);
-        } else if (ir2_opnd_is_mips_address(&opnd1) ||
-                   ir2_opnd_is_mips_address(&opnd2)) {
-            ir2_opnd_set_em(&opnd0, EM_MIPS_ADDRESS, 32);
-        } else {
-            ir2_opnd_set_em_and2(&opnd0, &opnd1, &opnd2);
-        }
-        break;
-    case mips_or:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        if (ir2_opnd_is_ax(&opnd1, 32) || ir2_opnd_is_ax(&opnd2, 32)) {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-        if (ir2_opnd_is_mips_address(&opnd1) ||
-            ir2_opnd_is_mips_address(&opnd2)) {
-            /*if (opnd1.is_mips_address() && opnd2 == zero_ir2_opnd)*/
-            if (ir2_opnd_is_mips_address(&opnd1) &&
-                ir2_opnd_cmp(&opnd2, &zero_ir2_opnd)) {
-                ir2_opnd_set_em_mov(&opnd0, &opnd1);
-            } else {
-                lsassertm(0, "not implemented yet\n");
-            }
-        } else if (ir2_opnd_is_x86_address(&opnd1)) {
-            lsassert(!ir2_opnd_is_address(&opnd2));
-            if (ir2_opnd_is_zx(&opnd2, 32)) {
-                ir2_opnd_set_em(&opnd0, EM_X86_ADDRESS, 32);
-            } else {
-                ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-            }
-        } else if (ir2_opnd_is_x86_address(&opnd2)) {
-            lsassert(!ir2_opnd_is_address(&opnd1));
-            if (ir2_opnd_is_zx(&opnd1, 32)) {
-                ir2_opnd_set_em(&opnd0, EM_X86_ADDRESS, 32);
-            } else {
-                ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_opnd_set_em_or2(&opnd0, &opnd1, &opnd2);
-        }
-        break;
-    case mips_nor:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        if (ir2_opnd_is_ax(&opnd1, 32) || ir2_opnd_is_ax(&opnd2, 32)) {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        } else if (ir2_opnd_is_address(&opnd1) || ir2_opnd_is_address(&opnd2)) {
-            lsassertm(0, "not implemented yet\n");
-        } else {
-            ir2_opnd_set_em_nor2(&opnd0, &opnd1, &opnd2);
-        }
-        break;
-    case mips_xor:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        if (ir2_opnd_is_ax(&opnd1, 32) || ir2_opnd_is_ax(&opnd2, 32)) {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        } else {
-            ir2_opnd_set_em_xor2(&opnd0, &opnd1, &opnd2);
-        }
-        break;
-    case mips_sllv:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        break;
-    case mips_dsllv:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        break;
-    case mips_srlv:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        lsassert(ir2_opnd_is_sx(&opnd1, 32));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        break;
-    case mips_dsrlv:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        if (ir2_opnd_is_ax(&opnd1, 32)) {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        } else if (ir2_opnd_is_address(&opnd1)) {
-            lsassertm(0, "not implemented yet\n");
-        } else if (ir2_opnd_is_zx(&opnd1, 63)) {
-            ir2_opnd_set_em_mov(&opnd0, &opnd1);
-        } else {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-        break;
-    case mips_srav:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        lsassert(ir2_opnd_is_sx(&opnd1, 32));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        break;
-    case mips_dsrav:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        if (ir2_opnd_is_ax(&opnd1, 32)) {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        } else if (ir2_opnd_is_address(&opnd1)) {
-            lsassertm(0, "not implemented yet\n");
-        } else if (ir2_opnd_is_sx(&opnd1, 63)) {
-            ir2_opnd_set_em_mov(&opnd0, &opnd1);
-        } else {
-            ir2_opnd_set_em(&opnd0, UNKNOWN_EXTENSION, 32);
-        }
-        break;
-    case mips_sltu:
-    case mips_slt:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em(&opnd0, ZERO_EXTENSION, 1);
-        break;
-    case mips_dmult_g:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_dmult_g(&opnd0, &opnd1, &opnd2);
-        break;
-    case mips_dmultu_g:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_dmultu_g(&opnd0, &opnd1, &opnd2);
-        break;
-    case mips_mult_g:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_dmult_g(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32)) {
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        }
-        break;
-    case mips_multu_g:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        lsassert(ir2_opnd_is_sx(&opnd1, 32) && ir2_opnd_is_sx(&opnd2, 32));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        ir2_opnd_set_em_dmultu_g(&opnd0, &opnd1, &opnd2);
-        if (!ir2_opnd_is_sx(&opnd0, 32)) {
-            ir2_opnd_set_em(&opnd0, SIGN_EXTENSION, 32);
-        }
-        break;
-    case mips_movz:
-    case mips_movn:
-        lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                 ir2_opnd_is_ireg(&opnd2));
-        ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        // ir2_opnd_set_em_movcc(&opnd0, &opnd1, &opnd2);
-        // arg error
-        ir2_opnd_set_em_movcc(&opnd0, &opnd1, &opnd0);
-        break;
-    default:
-        if (ir2_opcode_is_branch(opcode)) {
-            lsassert(ir2_opnd_is_ireg(&opnd0) && ir2_opnd_is_ireg(&opnd1) &&
-                     ir2_opnd_is_label(&opnd2));
-            ir2_build(p, opcode, opnd0, opnd1, opnd2);
-            p = append_ir2_opnd0(mips_nop);
-        } else if (ir2_opnd_is_freg(&opnd0)) {
-            lsassert(ir2_opnd_is_freg(&opnd1) && ir2_opnd_is_freg(&opnd2));
-            ir2_build(p, opcode, opnd0, opnd1, opnd2);
-        } else {
-            lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                      ir2_name(opcode));
-        }
-        break;
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd2i(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src,
-                            int32 imm)
-{
-
-    int base_ireg_num = ir2_opnd_base_reg_num(&src);
-
-#ifdef N64 /* validate address */
-    if (ir2_opcode_is_load(opcode) || ir2_opcode_is_store(opcode)) {
-        base_ireg_num = em_validate_address(base_ireg_num);
-    }
-#endif
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p);
-
-    IR2_OPND ir2_opnd_tmp;
-
-    switch (opcode) {
-    case mips_load_addr:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-#ifdef N64 /* validate address */
-        ir2_build(p, mips_ld, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, EM_X86_ADDRESS, 32);
-#else
-        ir2_build(p, mips_lw, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_load_addrx:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-#ifdef N64 /* validate address */
-        ir2_build(p, mips_lwu, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, EM_X86_ADDRESS, 32);
-#else
-        ir2_build(p, mips_lw, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_store_addr:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-#ifdef N64 /* validate address */
-        ir2_build(p, mips_sdi, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-#else
-        ir2_build(p, mips_sw, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-#endif
-        break;
-    case mips_store_addrx:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, mips_sw, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        break;
-    case mips_subi_addr:
-        opcode = mips_addi_addr;
-        imm = -imm;
-    case mips_addi_addr:
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-#ifdef N64 /* validate address */
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        if (ir2_opnd_is_mips_address(&src)) {
-            ir2_build(p, mips_daddiu, dest, src, ir2_opnd_tmp);
-            ir2_opnd_set_em(&dest, EM_MIPS_ADDRESS, 32);
-        } else if (ir2_opnd_is_sx(&src, 32)) {
-            ir2_build(p, mips_addiu, dest, src, ir2_opnd_tmp);
-            ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-            if (!ir2_opnd_is_sx(&dest, 32)) {
-                ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_build(p, mips_daddiu, dest, src, ir2_opnd_tmp);
-            ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        }
-#else
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src) &&
-                 ir2_opnd_is_sx(&src));
-        ir2_build(p, mips_addiu, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        if (!ir2_opnd_is_sx(dest, 32))
-            ir2_opnd_set_em(dest, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_subi_addrx:
-        opcode = mips_addi_addrx;
-        imm = -imm;
-    case mips_addi_addrx:
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-#ifdef N64 /* validate address */
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        if (ir2_opnd_is_x86_address(&src)) {
-            ir2_build(p, mips_daddiu, dest, src, ir2_opnd_tmp);
-            ir2_opnd_set_em(&dest, EM_X86_ADDRESS, 32);
-        } else if (ir2_opnd_is_sx(&src, 32)) {
-            ir2_build(p, mips_addiu, dest, src, ir2_opnd_tmp);
-            ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-            if (!ir2_opnd_is_sx(&dest, 32)) {
-                ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-            }
-        } else {
-            ir2_build(p, mips_daddiu, dest, src, ir2_opnd_tmp);
-            ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        }
-#else
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src) &&
-                 ir2_opnd_is_sx(&src));
-        ir2_build(p, mips_addiu, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        if (!ir2_opnd_is_sx(&dest, 32))
-            ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-#endif
-        break;
-    case mips_ld:
-    case mips_ldr:
-    case mips_ldl:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, UNKNOWN_EXTENSION, 32);
-        break;
-    case mips_lw:
-    case mips_lwr:
-    case mips_lwl:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-        break;
-    case mips_lh:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 16);
-        break;
-    case mips_lb:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 8);
-        break;
-    case mips_lwu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, ZERO_EXTENSION, 32);
-        break;
-    case mips_lhu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, ZERO_EXTENSION, 16);
-        break;
-    case mips_lbu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, ZERO_EXTENSION, 8);
-        break;
-    case mips_ldc1:
-    case mips_lwc1:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        break;
-    case mips_sdi:
-    case mips_sdr:
-    case mips_sdl:
-    case mips_sw:
-    case mips_swr:
-    case mips_swl:
-    case mips_sh:
-    case mips_sb:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        break;
-    case mips_sdc1:
-    case mips_swc1:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_opnd_build2(&ir2_opnd_tmp, IR2_OPND_MEM, base_ireg_num, imm);
-        ir2_build(p, opcode, dest, ir2_opnd_tmp, ir2_opnd_new_none());
-        break;
-    case mips_subiu:
-        opcode = mips_addiu;
-        imm = -imm;
-    case mips_addiu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src) &&
-                 ir2_opnd_is_sx(&src, 32));
-        lsassertm(!ir2_opnd_is_address(&src),
-                  "should use addi_addr or addi_addrx\n");
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        if (!ir2_opnd_is_sx(&dest, 32)) {
-            ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-        }
-        break;
-    case mips_dsubiu:
-        opcode = mips_daddiu;
-        imm = -imm;
-    case mips_daddiu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassertm(!ir2_opnd_is_address(&src),
-                  "should use addi_addr or addi_addrx\n");
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        break;
-    case mips_daddi:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
-        break;
-    case mips_slti:
-    case mips_sltiu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em(&dest, ZERO_EXTENSION, 1);
-        break;
-    case mips_andi:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_and(&dest, &src, ZERO_EXTENSION, uint16_eb(imm));
-        break;
-    case mips_ori:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_or(&dest, &src, ZERO_EXTENSION, uint16_eb(imm));
-        break;
-    case mips_xori:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_xor(&dest, &src, ZERO_EXTENSION, uint16_eb(imm));
-        break;
-    case mips_sll:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_dsll(&dest, &src, imm);
-        if (!ir2_opnd_is_sx(&dest, 32)) {
-            ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-        }
-        break;
-    case mips_sra:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src) &&
-                 ir2_opnd_is_sx(&src, 32));
-        lsassert((uint32)imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        if (!ir2_opnd_is_sx(&src, 32)) {
-            ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-        } else {
-            ir2_opnd_set_em_mov(&dest, &src);
-        }
-        ir2_opnd_set_em_dsra(&dest, &dest, imm); /* may be a problem */
-        lsassert(ir2_opnd_is_sx(&dest, 32));
-        break;
-    case mips_srl:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src) &&
-                 ir2_opnd_is_sx(&src, 32));
-        lsassert((uint32)imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        if (!ir2_opnd_is_zx(&src, 32)) {
-            ir2_opnd_set_em(&dest, ZERO_EXTENSION, 32);
-        } else {
-            ir2_opnd_set_em_mov(&dest, &src);
-        }
-        ir2_opnd_set_em_dsrl(&dest, &dest, imm);
-        lsassert(ir2_opnd_is_sx(&dest, 32));
-        break;
-    case mips_dsll:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_dsll(&dest, &src, imm);
-        break;
-    case mips_dsll32:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_build(p, opcode, dest, src, ir2_opnd_new(IR2_OPND_IMM, imm));
-        ir2_opnd_set_em_dsll(&dest, &src, 32 + imm);
-        break;
-    case mips_dsra:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_dsra(&dest, &src, imm);
-        break;
-    case mips_dsra32:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_build(p, opcode, dest, src, ir2_opnd_new(IR2_OPND_IMM, imm));
-        ir2_opnd_set_em_dsra(&dest, &src, 32 + imm);
-        break;
-    case mips_dsrl:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        ir2_opnd_set_em_dsrl(&dest, &src, imm);
-        break;
-    case mips_dsrl32:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert((uint32)imm <= 31);
-        ir2_build(p, opcode, dest, src, ir2_opnd_new(IR2_OPND_IMM, imm));
-        ir2_opnd_set_em_dsrl(&dest, &src, 32 + imm);
-        break;
-    case mips_ldb:
-    case mips_ldh:
-    case mips_ldw:
-    case mips_ldd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -512 && imm <= 511);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_stb:
-    case mips_sth:
-    case mips_stw:
-    case mips_std:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(imm >= -512 && imm <= 511);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_vclrstriv:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(imm >= 0 && imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_shfb:
-    case mips_shfh:
-    case mips_shfw:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert((imm & 0xffffff00) == 0);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insveb:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=15);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insveh:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=7);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insvew:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=3);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insved:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=1);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insertb:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(0 <= imm && imm <=15);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_inserth:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(0 <= imm && imm <=7);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insertw:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(0 <= imm && imm <=3);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_insertd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(0 <= imm && imm <=1);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_sb:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=15);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_sh:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=7);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_sw:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=3);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_sd:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=1);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_ub:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=15);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_uh:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=7);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_copy_uw:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=3);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_shfd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert((imm & 0xffffff00) == 0);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_sldib:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert((imm & 0xfffffff0) == 0);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_vshufirh:
-    case mips_vshufilh:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert((imm & 0xffffff00) == 0);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_andib:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert((imm & 0xffffff00) == 0);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_vsrains_sb:
-    case mips_vsrains_sh:
-    case mips_vsrains_ub:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_sllib:
-    case mips_srlib:
-    case mips_sraib:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(imm >=0 && imm <= 7);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_sllih:
-    case mips_srlih:
-    case mips_sraih:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(imm >=0 && imm <= 15);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_slliw:
-    case mips_srliw:
-    case mips_sraiw:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(imm >=0 && imm <= 31);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_sllid:
-    case mips_srlid:
-    case mips_sraid:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(imm >=0 && imm <= 63);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_splatib:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=15);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_splatih:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=7);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_splatiw:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=3);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    case mips_splatid:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        lsassert(0 <= imm && imm <=1);
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IMM, imm);
-        ir2_build(p, opcode, dest, src, ir2_opnd_tmp);
-        break;
-    default:
-        printf("[LATX] [error] not implemented in %s : %d", __func__,
-               __LINE__);
-        exit(-1);
-        break;
-    }
-
-#ifdef N64
-    if (base_ireg_num != ir2_opnd_base_reg_num(&src)) {
-        ra_free_itemp(base_ireg_num);
-    }
-#endif
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd2(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src)
-{
-
-    IR2_OPND ir2_opnd_tmp;
-
-    if (ir2_opcode_is_load(opcode) || ir2_opcode_is_store(opcode)) {
-        ir2_opnd_build(&ir2_opnd_tmp, IR2_OPND_IREG,
-                       ir2_opnd_base_reg_num(&src));
-        return append_ir2_opnd2i(opcode, dest, ir2_opnd_tmp,
-                                 ir2_opnd_imm(&src));
-    } else if (opcode == mips_mov64) {
-        if (ir2_opnd_cmp(&dest, &src)) {
-            return NULL;
-        } else {
-            IR2_INST *p = append_ir2_opnd3(mips_or, dest, src, zero_ir2_opnd);
-            ir2_opnd_set_em_mov(&dest, &src);
-            return p;
-        }
-    } else if (opcode == mips_mov32_sx) {
-        if (ir2_opnd_cmp(&dest, &src) && ir2_opnd_is_sx(&src, 32)) {
-            return NULL;
-        } else {
-            return append_ir2_opnd2i(mips_sll, dest, src, 0);
-        }
-    } else if (opcode == mips_mov32_zx) {
-        if (ir2_opnd_cmp(&dest, &src) && ir2_opnd_is_zx(&src, 32)) {
-            return NULL;
-        } else {
-            return append_ir2_opnd3(mips_and, dest, src, n1_ir2_opnd);
-        }
-    } else if (opcode == mips_mov_addrx) {
-#ifdef N64
-        if (ir2_opnd_cmp(&dest, &src) && ir2_opnd_is_zx(&src, 32)) {
-            if (!(ir2_opnd_cmp(&dest, &zero_ir2_opnd))) {
-                ir2_opnd_set_em(&dest, EM_X86_ADDRESS, 32);
-            }
-            return NULL;
-        } else {
-            IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
-            if (pir1 != NULL) {
-                BITS_SET(pir1->flags, FI_ZX_ADDR_USED);
-            }
-            IR2_INST *p = append_ir2_opnd3(mips_and, dest, src, n1_ir2_opnd);
-            ir2_opnd_set_em(&dest, EM_X86_ADDRESS, 32);
-            return p;
-        }
-#else
-        if (ir2_opnd_cmp(&dest, &src) && ir2_opnd_is_sx(&src)) {
-            return NULL;
-        } else {
-            return append_ir2_opnd2i(mips_sll, dest, src, 0);
-        }
-#endif
-    }
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p);
-
-    IR2_OPND ir2_opnd_none = ir2_opnd_new_none();
-
-    switch (opcode) {
-    case mips_cfc1:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_creg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-        break;
-    case mips_ctc1:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_creg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_mfc1:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
-        break;
-    case mips_dmfc1:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        ir2_opnd_set_em(&dest, UNKNOWN_EXTENSION, 32);
-        break;
-    case mips_mtc1:
-    case mips_dmtc1:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_mult:
-    case mips_multu:
-    case mips_div:
-    case mips_divu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src) &&
-                 ir2_opnd_is_sx(&dest, 32) && ir2_opnd_is_sx(&src, 32));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        lsenv->tr_data->hi_em = SIGN_EXTENSION;
-        lsenv->tr_data->lo_em = SIGN_EXTENSION;
-        break;
-    case mips_dmult:
-    case mips_dmultu:
-    case mips_ddiv:
-    case mips_ddivu:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        lsenv->tr_data->hi_em = UNKNOWN_EXTENSION;
-        lsenv->tr_data->lo_em = UNKNOWN_EXTENSION;
-        break;
-    case mips_teq:
-    case mips_tne:
-    case mips_tge:
-    case mips_tlt:
-
-    case mips_x86adcb:
-    case mips_x86adch:
-    case mips_x86adcw:
-    case mips_x86adcd:
-
-    case mips_x86addb:
-    case mips_x86addh:
-    case mips_x86addw:
-    case mips_x86addd:
-
-    case mips_x86sbcb:
-    case mips_x86sbch:
-    case mips_x86sbcw:
-    case mips_x86sbcd:
-
-    case mips_x86subb:
-    case mips_x86subh:
-    case mips_x86subw:
-    case mips_x86subd:
-
-    case mips_x86xorb:
-    case mips_x86xorh:
-    case mips_x86xorw:
-    case mips_x86xord:
-
-    case mips_x86andb:
-    case mips_x86andh:
-    case mips_x86andw:
-    case mips_x86andd:
-
-    case mips_x86orb:
-    case mips_x86orh:
-    case mips_x86orw:
-    case mips_x86ord:
-
-    case mips_x86sllvb:
-    case mips_x86sllvh:
-    case mips_x86sllvw:
-    case mips_x86sllvd:
-
-    case mips_x86srlvb:
-    case mips_x86srlvh:
-    case mips_x86srlvw:
-    case mips_x86srlvd:
-
-    case mips_x86sravb:
-    case mips_x86sravh:
-    case mips_x86sravw:
-    case mips_x86sravd:
-
-    case mips_x86rclvb:
-    case mips_x86rclvh:
-    case mips_x86rclvw:
-    case mips_x86rclvd:
-
-    case mips_x86rcrvb:
-    case mips_x86rcrvh:
-    case mips_x86rcrvw:
-    case mips_x86rcrvd:
-
-    case mips_x86rotlvb:
-    case mips_x86rotlvh:
-    case mips_x86rotlvw:
-    case mips_x86rotlvd:
-
-    case mips_x86rotrvb:
-    case mips_x86rotrvh:
-    case mips_x86rotrvw:
-    case mips_x86rotrvd:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_sqrt_d:
-    case mips_sqrt_s:
-    case mips_rsqrt_s:
-    case mips_rsqrt_d:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_c_un_d:
-    case mips_c_un_s:
-    case mips_c_lt_d:
-    case mips_c_lt_s:
-    case mips_cvt_l_d:
-    case mips_cvt_w_d:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_biadd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_pmovmskb:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_floor_l_d:
-    case mips_floor_l_s:
-    case mips_ceil_l_d:
-    case mips_trunc_l_d:
-    case mips_round_l_d:
-    case mips_round_l_s:
-    case mips_floor_w_d:
-    case mips_ceil_w_d:
-    case mips_trunc_w_d:
-    case mips_round_w_d:
-    case mips_floor_w_s:
-    case mips_ceil_w_s:
-    case mips_trunc_w_s:
-    case mips_round_w_s:
-    case mips_movev:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_vsignfillb:
-    case mips_vsignfillh:
-    case mips_vsignfillw:
-    case mips_vsignfilld:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_vgetsignb:
-    case mips_vgetsignh:
-    case mips_vgetsignw:
-    case mips_vgetsignd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_frcpw:
-    case mips_frcpd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_fsqrtw:
-    case mips_fsqrtd:
-    case mips_frsqrtw:
-    case mips_frsqrtd:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_vacc8b_ud:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    case mips_insveb:
-    case mips_insveh:
-    case mips_insvew:
-    case mips_insved:
-        lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-        ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        break;
-    default:
-        if (opcode == mips_mov_d || ir2_opcode_is_convert(opcode) ||
-            ir2_opcode_is_fcmp(opcode)) {
-            lsassert(ir2_opnd_is_freg(&dest) && ir2_opnd_is_freg(&src));
-            ir2_build(p, opcode, dest, src, ir2_opnd_none);
-        } else if (ir2_opcode_is_branch(opcode) &&
-                   !ir2_opcode_is_branch_with_3opnds(opcode) &&
-                   opcode != mips_b) {
-            lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_label(&src));
-            ir2_build(p, opcode, dest, src, ir2_opnd_none);
-            p = append_ir2_opnd0(mips_nop);
-        } else {
-            lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                      ir2_name(opcode));
-        }
-        break;
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd1i(IR2_OPCODE opcode, IR2_OPND dest, int32 imm)
-{
-
-    IR2_INST *p = ir2_allocate();
-    IR2_OPND ir2_opnd_imm;
-
-    ir2_append(p);
-
-    ir2_opnd_build(&ir2_opnd_imm, IR2_OPND_IMM, imm);
-
-    if (opcode == mips_lui) {
-        // lsassert(ir2_opnd_is_ireg(&dest) && imm >= -32768 && imm <= 32767);
-        lsassert(ir2_opnd_is_ireg(&dest) && imm >= -32768 && imm <= 65535);
-        ir2_build(p, opcode, dest, ir2_opnd_imm, ir2_opnd_new_none());
-        if (imm == 0) {
-            ir2_opnd_set_em(&dest, ZERO_EXTENSION, 0);
-        } else {
-            ir2_opnd_set_em(&dest, int16_em(imm), int16_eb(imm) + 16);
-        }
-    } else if (opcode == mips_teqi || opcode == mips_tgei ||
-               opcode == mips_tgeiu || opcode == mips_tlti ||
-               opcode == mips_tltiu || opcode == mips_tnei) {
-        ir2_build(p, opcode, dest, ir2_opnd_imm, ir2_opnd_new_none());
-    } else if (opcode == mips_mfflag || opcode == mips_mtflag) {
-        ir2_build(p, opcode, dest, ir2_opnd_imm, ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, ZERO_EXTENSION, 0);
-    } else if ((opcode >= mips_x86rotlb && opcode <= mips_x86rotl32d) || 
-               (opcode >= mips_x86rotrb && opcode <= mips_x86rotr32d)) {
-        ir2_build(p, opcode, dest, ir2_opnd_imm, ir2_opnd_new_none());
-    } else if (opcode == mips_ldib || opcode == mips_ldid){
-        lsassert(imm >= -512 && imm <=511);
-        lsassert(ir2_opnd_is_freg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_imm, ir2_opnd_new_none());
-    } else if (opcode == mips_pref){
-        lsassert(imm >= 0 && imm <=31);
-        ir2_build(p, opcode, ir2_opnd_imm, dest, ir2_opnd_new_none());
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd1(IR2_OPCODE opcode, IR2_OPND dest)
-{
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p);
-
-    if (opcode == mips_jr || opcode == mips_jalr) {
-        lsassert(ir2_opnd_is_ireg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-        p = append_ir2_opnd0(mips_nop);
-    } else if (opcode == mips_label) {
-        lsassert(ir2_opnd_is_label(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-    } else if (opcode == mips_j || opcode == mips_b ||
-               ir2_opcode_is_f_branch(opcode)) {
-        lsassert(ir2_opnd_is_label(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-        p = append_ir2_opnd0(mips_nop);
-    } else if (opcode == mips_mfhi) {
-        lsassert(ir2_opnd_is_ireg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, lsenv->tr_data->hi_em, 32);
-    } else if (opcode == mips_mflo) {
-        lsassert(ir2_opnd_is_ireg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, lsenv->tr_data->lo_em, 32);
-    } else if ((opcode >= mips_x86incb && opcode <= mips_x86incd) || 
-             (opcode >= mips_x86decb && opcode <= mips_x86decd)) {
-        lsassert(ir2_opnd_is_ireg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-    } else if (opcode == mips_mftop) {
-        lsassert(ir2_opnd_is_ireg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_new_none(), ir2_opnd_new_none());
-        ir2_opnd_set_em(&dest, ZERO_EXTENSION, 3);
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnda(IR2_OPCODE opcode, ADDR addr)
-{
-
-    IR2_INST *p = ir2_allocate();
-    IR2_OPND ir2_opnd_addr;
-    IR2_OPND ir2_opnd_none = ir2_opnd_new_none();
-
-    ir2_opnd_build(&ir2_opnd_addr, IR2_OPND_ADDR, addr);
-    ir2_append(p);
-
-    if (opcode == mips_j || opcode == mips_jal) {
-        ir2_build(p, opcode, ir2_opnd_addr, ir2_opnd_none, ir2_opnd_none);
-
-        p = append_ir2_opnd0(mips_nop);
-    } else if (opcode == mips_x86_inst) {
-        ir2_build(p, opcode, ir2_opnd_addr, ir2_opnd_none, ir2_opnd_none);
-    } else if (opcode == mips_dup) {
-        ir2_build(p, opcode, ir2_opnd_addr, ir2_opnd_none, ir2_opnd_none);
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opndi(IR2_OPCODE opcode, int32 imm)
-{
-
-    IR2_INST *p = ir2_allocate();
-    IR2_OPND ir2_opnd_imm;
-
-    ir2_append(p);
-    ir2_opnd_build(&ir2_opnd_imm, IR2_OPND_IMM, imm);
-
-    if (opcode == mips_mttop) {
-        lsassert(imm >= -32768 && imm <= 32767);
-        ir2_build(p, opcode, ir2_opnd_imm, ir2_opnd_new_none(), ir2_opnd_new_none());
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd0(IR2_OPCODE opcode)
-{
-
-    IR2_INST *p = ir2_allocate();
-    IR2_OPND ir2_opnd_none = ir2_opnd_new_none();
-
-    ir2_append(p);
-
-    if (opcode == mips_nop || opcode == mips_break || opcode == mips_setop ||
-        opcode == mips_clrtop || opcode == mips_inctop || opcode == mips_dectop) {
-        ir2_build(p, opcode, ir2_opnd_none, ir2_opnd_none, ir2_opnd_none);
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd3_not_nop(IR2_OPCODE opcode, IR2_OPND src1,
-                                   IR2_OPND src2, IR2_OPND target_label)
-{
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p); /* insert into tr_data's ir2 array */
-    if (ir2_opcode_is_branch(opcode)) {
-        lsassert(ir2_opnd_is_ireg(&src1) && ir2_opnd_is_ireg(&src2) &&
-                 ir2_opnd_is_label(&target_label));
-        ir2_build(p, opcode, src1, src2, target_label);
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnda_not_nop(IR2_OPCODE opcode, ADDR addr)
-{
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p); /* insert into tr_data's ir2 array */
-    IR2_OPND ir2_opnd_addr;
-    IR2_OPND ir2_opnd_none = ir2_opnd_new_none();
-    ir2_opnd_build(&ir2_opnd_addr, IR2_OPND_ADDR, addr);
-    if (opcode == mips_j || opcode == mips_jal) {
-        ir2_build(p, opcode, ir2_opnd_addr, ir2_opnd_none, ir2_opnd_none);
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd1_not_nop(IR2_OPCODE opcode, IR2_OPND dest)
-{
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p);
-    IR2_OPND ir2_opnd_none = ir2_opnd_new_none();
-    if (opcode == mips_jr || opcode == mips_jalr) {
-        lsassert(ir2_opnd_is_ireg(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_none, ir2_opnd_none);
-    } else if (opcode == mips_b || ir2_opcode_is_f_branch(opcode)) {
-        lsassert(ir2_opnd_is_label(&dest));
-        ir2_build(p, opcode, dest, ir2_opnd_none, ir2_opnd_none);
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
-IR2_INST *append_ir2_opnd2ii(IR2_OPCODE opcode, IR2_OPND opnd0, IR2_OPND opnd1, int32 opnd2, int32 opnd3){
-
-    IR2_INST *p = ir2_allocate();
-    ir2_append(p);
-    if (opcode == mips_vextrinsd) {
-        lsassert(ir2_opnd_is_freg(&opnd0));
-        lsassert(ir2_opnd_is_freg(&opnd1));
-        p->_opcode = opcode;
-        p->_opnd[0] = opnd0;
-        p->_opnd[1] = opnd1;
-        lsassert(0 <= opnd2 && opnd2 <=1);
-        lsassert(0 <= opnd3 && opnd3 <=1);
-        IR2_OPND ir2_opnd_imm1;
-        IR2_OPND ir2_opnd_imm2;
-        ir2_opnd_build(&ir2_opnd_imm1, IR2_OPND_IMM, opnd2);
-        ir2_opnd_build(&ir2_opnd_imm2, IR2_OPND_IMM, opnd3);
-        p->_opnd[2] = ir2_opnd_imm1;
-        p->_opnd[3] = ir2_opnd_imm2;
-    } else {
-        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
-                  ir2_name(opcode));
-    }
-
-    return p;
-}
-
 /********************************************
  *                                          *
  *     LA IR2 implementation.               *
  *                                          *
  ********************************************/
-bool la_ir2_opcode_is_load(IR2_INS_TYPE opcode)
+bool la_ir2_opcode_is_load(IR2_OPCODE opcode)
 {
     if (opcode >= LISA_LD_B && opcode <=  LISA_LD_D) {
         return true;
@@ -5415,7 +3845,7 @@ bool la_ir2_opcode_is_load(IR2_INS_TYPE opcode)
     return false;
 }
 
-bool la_ir2_opcode_is_store(IR2_INS_TYPE opcode)
+bool la_ir2_opcode_is_store(IR2_OPCODE opcode)
 {
     if (opcode >= LISA_ST_B && opcode <= LISA_ST_D) {
         return true;
@@ -5455,7 +3885,7 @@ IR2_OPND create_ir2_opnd(IR2_OPND_TYPE type, int val) {
     return res;
 }
 
-IR2_INST *la_append_ir2_opnd0(IR2_INS_TYPE type) {
+IR2_INST *la_append_ir2_opnd0(IR2_OPCODE type) {
 
     IR2_OPND ir2_opnd_none = ir2_opnd_new_none();
     IR2_INST *pir2 = ir2_allocate();
@@ -5466,7 +3896,7 @@ IR2_INST *la_append_ir2_opnd0(IR2_INS_TYPE type) {
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnd1(IR2_INS_TYPE type, IR2_OPND op0) {
+IR2_INST *la_append_ir2_opnd1(IR2_OPCODE type, IR2_OPND op0) {
     /*
      * FIXME: Might be handle mfhi/mflo later.
      */
@@ -5484,7 +3914,7 @@ IR2_INST *la_append_ir2_opnd1(IR2_INS_TYPE type, IR2_OPND op0) {
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnd2(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1) {
+IR2_INST *la_append_ir2_opnd2(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1) {
     IR2_INST *pir2 = ir2_allocate();
     pir2->_opcode = type;
     pir2->op_count = 2;
@@ -5496,7 +3926,7 @@ IR2_INST *la_append_ir2_opnd2(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1) {
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnd3(IR2_INS_TYPE type, IR2_OPND op0, 
+IR2_INST *la_append_ir2_opnd3(IR2_OPCODE type, IR2_OPND op0,
                       IR2_OPND op1, IR2_OPND op2) {
     IR2_INST *pir2 = ir2_allocate();
     pir2->_opcode = type;
@@ -5510,7 +3940,7 @@ IR2_INST *la_append_ir2_opnd3(IR2_INS_TYPE type, IR2_OPND op0,
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnd4(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1, 
+IR2_INST *la_append_ir2_opnd4(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1,
                       IR2_OPND op2, IR2_OPND op3) {
     IR2_INST *pir2 = ir2_allocate();
     pir2->_opcode = type;
@@ -5525,17 +3955,17 @@ IR2_INST *la_append_ir2_opnd4(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1,
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opndi(IR2_INS_TYPE type, int imm) {
+IR2_INST *la_append_ir2_opndi(IR2_OPCODE type, int imm) {
     IR2_OPND opnd = create_ir2_opnd(IR2_OPND_IMMH, imm);
     return la_append_ir2_opnd1(type, opnd);
 }
 
-IR2_INST *la_append_ir2_opnd1i(IR2_INS_TYPE type, IR2_OPND op0, int imm) {
+IR2_INST *la_append_ir2_opnd1i(IR2_OPCODE type, IR2_OPND op0, int imm) {
     IR2_OPND opnd = create_ir2_opnd(IR2_OPND_IMMH, imm);
     return la_append_ir2_opnd2(type, op0, opnd);
 }
 
-IR2_INST *la_append_ir2_opnd2i(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1, int imm) {
+IR2_INST *la_append_ir2_opnd2i(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1, int imm) {
     if(type == LISA_ANDI || type == LISA_ORI || type == LISA_XORI || type == LISA_LU52I_D)
         lsassert((unsigned int)(imm) <= 0xfff);
     else
@@ -5559,13 +3989,13 @@ IR2_INST *la_append_ir2_opnd2i(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1, in
     return la_append_ir2_opnd3(type, op0, op1, opnd);
 }
 
-IR2_INST *la_append_ir2_opnd3i(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1,
+IR2_INST *la_append_ir2_opnd3i(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1,
         IR2_OPND op2, int imm0) {
     IR2_OPND imm0_opnd = create_ir2_opnd(IR2_OPND_IMMH, imm0);
     return la_append_ir2_opnd4(type, op0, op1, op2, imm0_opnd);
 }
 
-IR2_INST *la_append_ir2_opnd2ii(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1,
+IR2_INST *la_append_ir2_opnd2ii(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1,
         int imm0, int imm1) {
     IR2_OPND imm0_opnd = create_ir2_opnd(IR2_OPND_IMMH, imm0);
     IR2_OPND imm1_opnd = create_ir2_opnd(IR2_OPND_IMMH, imm1);
@@ -5573,10 +4003,10 @@ IR2_INST *la_append_ir2_opnd2ii(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1,
 }
 
 //ir2 with extension mode handling
-IR2_INST *la_append_ir2_opnd3_em(IR2_INS_TYPE opcode, IR2_OPND op0, 
+IR2_INST *la_append_ir2_opnd3_em(IR2_OPCODE opcode, IR2_OPND op0,
                       IR2_OPND op1, IR2_OPND op2) {
     if (ir2_opnd_is_imm(&op2)) {
-        IR2_INS_TYPE new_opcode = ir2_opcode_rrr_to_rri(opcode);
+        IR2_OPCODE new_opcode = ir2_opcode_rrr_to_rri(opcode);
         return la_append_ir2_opnd2i_em(new_opcode, op0, op1,
                                  ir2_opnd_imm(&op2));
     }
@@ -5835,7 +4265,7 @@ IR2_INST *la_append_ir2_opnd3_em(IR2_INS_TYPE opcode, IR2_OPND op0,
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnd2i_em(IR2_INS_TYPE opcode, IR2_OPND dest, IR2_OPND src, int imm)
+IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src, int imm)
 {
     if(opcode == LISA_ANDI || opcode == LISA_ORI || 
 			opcode == LISA_XORI || opcode == LISA_LU52I_D)
@@ -6072,7 +4502,7 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_INS_TYPE opcode, IR2_OPND dest, IR2_OPND s
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnd2_em(IR2_INS_TYPE opcode, IR2_OPND dest, IR2_OPND src) {
+IR2_INST *la_append_ir2_opnd2_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src) {
     if (opcode == LISA_MOV64) {
         if (ir2_opnd_cmp(&dest, &src)) {
             return NULL;
@@ -6362,7 +4792,7 @@ IR2_INST *la_append_ir2_opnd2_em(IR2_INS_TYPE opcode, IR2_OPND dest, IR2_OPND sr
     return p;
 }
 
-IR2_INST *la_append_ir2_opnd1i_em(IR2_INS_TYPE opcode, IR2_OPND op0, int imm) {
+IR2_INST *la_append_ir2_opnd1i_em(IR2_OPCODE opcode, IR2_OPND op0, int imm) {
     IR2_INST *pir2 = ir2_allocate();
     IR2_OPND op1= create_ir2_opnd(IR2_OPND_IMMH, imm);
     pir2->_opcode = opcode;
@@ -6380,7 +4810,7 @@ IR2_INST *la_append_ir2_opnd1i_em(IR2_INS_TYPE opcode, IR2_OPND op0, int imm) {
     return pir2;
 }
 
-IR2_INST *la_append_ir2_opnda(IR2_INS_TYPE opcode, ADDR addr)
+IR2_INST *la_append_ir2_opnda(IR2_OPCODE opcode, ADDR addr)
 {
     IR2_INST *p = ir2_allocate();
     IR2_OPND ir2_opnd_addr;

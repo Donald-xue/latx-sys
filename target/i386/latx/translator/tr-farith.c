@@ -486,7 +486,7 @@ bool translate_fdivp(IR1_INST *pir1)
 
 bool translate_fnop(IR1_INST *pir1)
 {
-    append_ir2_opnd0(mips_nop);
+    /* append_ir2_opnd0(mips_nop); */
     return true;
 }
 
@@ -1206,6 +1206,8 @@ bool translate_fxch(IR1_INST *pir1)
 }
 bool translate_ftst(IR1_INST *pir1)
 {
+    return false;
+#if 0
     IR2_OPND status_word = ra_alloc_itemp();
     append_ir2_opnd2i(mips_lh, status_word, env_ir2_opnd,
                       lsenv_offset_of_status_word(lsenv));
@@ -1253,8 +1255,8 @@ bool translate_ftst(IR1_INST *pir1)
                       lsenv_offset_of_status_word(lsenv));
     ra_free_temp(status_word);
     ra_free_temp(f_zero);
-
     return true;
+#endif
 }
 
 bool translate_fptan(IR1_INST *pir1)

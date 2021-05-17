@@ -21,7 +21,7 @@ static bool translate_and_byhand_32(IR1_INST *pir1, bool is_and)
 {
     IR2_OPND src_opnd_0;
     IR2_OPND src_opnd_1;
-    IR2_INS_TYPE lisa_opcode = LISA_INVALID;
+    IR2_OPCODE lisa_opcode = LISA_INVALID;
     bool is_opnd_sx = false;
 
     /* 1. prepare source operands and opcode */

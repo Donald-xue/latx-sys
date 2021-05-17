@@ -91,8 +91,8 @@ void ir2_build(IR2_INST *, IR2_OPCODE, IR2_OPND, IR2_OPND, IR2_OPND);
 
 void ir2_set_id(IR2_INST *, int);
 int ir2_get_id(IR2_INST *);
-IR2_INS_TYPE ir2_opcode(IR2_INST *);
-void ir2_set_opcode(IR2_INST *ir2, IR2_INS_TYPE type);
+IR2_OPCODE ir2_opcode(IR2_INST *);
+void ir2_set_opcode(IR2_INST *ir2, IR2_OPCODE type);
 int ir2_dump(IR2_INST *);
 int ir2_to_string(IR2_INST *, char *);
 IR2_INST *ir2_prev(IR2_INST *);
@@ -109,37 +109,11 @@ uint32 ir2_assemble(IR2_INST *);
 bool ir2_op_check(IR2_INST *);
 
 
-/* TODO */
-IR2_INST *append_ir2_opnd2ii(IR2_OPCODE, IR2_OPND, IR2_OPND, int32, int32);
-IR2_INST *append_ir2_opnd3(IR2_OPCODE, IR2_OPND, IR2_OPND, IR2_OPND);
-IR2_INST *append_ir2_opnd2i(IR2_OPCODE, IR2_OPND, IR2_OPND, int32);
-IR2_INST *append_ir2_opnd2(IR2_OPCODE, IR2_OPND, IR2_OPND);
-IR2_INST *append_ir2_opnd1i(IR2_OPCODE, IR2_OPND, int32);
-IR2_INST *append_ir2_opnd1(IR2_OPCODE, IR2_OPND);
-IR2_INST *append_ir2_opnd0(IR2_OPCODE);
-IR2_INST *append_ir2_opnda(IR2_OPCODE, ADDR);
-IR2_INST *append_ir2_opndi(IR2_OPCODE, int32);
-
-/* TODO */
-IR2_INST *append_ir2_opnd3_not_nop(IR2_OPCODE, IR2_OPND, IR2_OPND, IR2_OPND);
-IR2_INST *append_ir2_opnd1_not_nop(IR2_OPCODE, IR2_OPND);
-IR2_INST *append_ir2_opnda_not_nop(IR2_OPCODE, ADDR);
-
-extern bool ir2_opcode_is_load(IR2_OPCODE);
-extern bool ir2_opcode_is_load_rl(IR2_OPCODE);
-extern bool ir2_opcode_is_load_not_rl(IR2_OPCODE);
-extern bool ir2_opcode_is_store(IR2_OPCODE);
-extern bool ir2_opcode_is_store_rl(IR2_OPCODE);
-extern bool ir2_opcode_is_store_not_rl(IR2_OPCODE);
-extern bool ir2_opcode_is_branch(IR2_INS_TYPE);
-extern bool ir2_opcode_is_branch_with_3opnds(IR2_INS_TYPE);
-extern bool ir2_opcode_is_f_branch(IR2_INS_TYPE opcode);
-extern bool ir2_opcode_is_rri(IR2_OPCODE);
-extern bool ir2_opcode_is_rri_arith(IR2_OPCODE);
-extern bool ir2_opcode_is_rri_logic(IR2_OPCODE);
-extern bool ir2_opcode_is_rri_shift(IR2_OPCODE);
-extern bool ir2_opcode_is_convert(IR2_INS_TYPE opcode);
-extern bool ir2_opcode_is_fcmp(IR2_INS_TYPE opcode);
+bool ir2_opcode_is_branch(IR2_OPCODE);
+bool ir2_opcode_is_branch_with_3opnds(IR2_OPCODE);
+bool ir2_opcode_is_f_branch(IR2_OPCODE opcode);
+bool ir2_opcode_is_convert(IR2_OPCODE opcode);
+bool ir2_opcode_is_fcmp(IR2_OPCODE opcode);
 
 extern IR2_OPND zero_ir2_opnd;
 extern IR2_OPND env_ir2_opnd;
@@ -161,22 +135,22 @@ extern IR2_OPND fcc6_ir2_opnd;
 extern IR2_OPND fcc7_ir2_opnd;
 
 IR2_OPND create_ir2_opnd(IR2_OPND_TYPE type, int val);
-IR2_INST *la_append_ir2_opnd0(IR2_INS_TYPE type);
-IR2_INST *la_append_ir2_opndi(IR2_INS_TYPE type, int imm);
-IR2_INST *la_append_ir2_opnd1(IR2_INS_TYPE type, IR2_OPND op0);
-IR2_INST *la_append_ir2_opnd1i(IR2_INS_TYPE type, IR2_OPND op0, int imm);
-IR2_INST *la_append_ir2_opnd2(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1);
-IR2_INST *la_append_ir2_opnd2i(IR2_INS_TYPE type, IR2_OPND op0,IR2_OPND op1, int imm);
-IR2_INST *la_append_ir2_opnd2ii(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1, int imm0, int imm1);
-IR2_INST *la_append_ir2_opnd3(IR2_INS_TYPE type, IR2_OPND op0,IR2_OPND op1, IR2_OPND op2);
-IR2_INST *la_append_ir2_opnd3i(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1, IR2_OPND op2, int imm0);
-IR2_INST *la_append_ir2_opnd4(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1, IR2_OPND op2, IR2_OPND op3);
+IR2_INST *la_append_ir2_opnd0(IR2_OPCODE type);
+IR2_INST *la_append_ir2_opndi(IR2_OPCODE type, int imm);
+IR2_INST *la_append_ir2_opnd1(IR2_OPCODE type, IR2_OPND op0);
+IR2_INST *la_append_ir2_opnd1i(IR2_OPCODE type, IR2_OPND op0, int imm);
+IR2_INST *la_append_ir2_opnd2(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1);
+IR2_INST *la_append_ir2_opnd2i(IR2_OPCODE type, IR2_OPND op0,IR2_OPND op1, int imm);
+IR2_INST *la_append_ir2_opnd2ii(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1, int imm0, int imm1);
+IR2_INST *la_append_ir2_opnd3(IR2_OPCODE type, IR2_OPND op0,IR2_OPND op1, IR2_OPND op2);
+IR2_INST *la_append_ir2_opnd3i(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1, IR2_OPND op2, int imm0);
+IR2_INST *la_append_ir2_opnd4(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1, IR2_OPND op2, IR2_OPND op3);
 
-IR2_INST *la_append_ir2_opnd1i_em(IR2_INS_TYPE opcode, IR2_OPND op0, int imm);
-IR2_INST *la_append_ir2_opnd2_em(IR2_INS_TYPE type, IR2_OPND op0, IR2_OPND op1);
-IR2_INST *la_append_ir2_opnd2i_em(IR2_INS_TYPE type, IR2_OPND op0,IR2_OPND op1, int imm);
-IR2_INST *la_append_ir2_opnd3_em(IR2_INS_TYPE type, IR2_OPND op0,IR2_OPND op1, IR2_OPND op2);
-IR2_INST *la_append_ir2_opnda(IR2_INS_TYPE opcode, ADDR addr);
-bool la_ir2_opcode_is_store(IR2_INS_TYPE opcode);
-bool la_ir2_opcode_is_load(IR2_INS_TYPE opcode);
+IR2_INST *la_append_ir2_opnd1i_em(IR2_OPCODE opcode, IR2_OPND op0, int imm);
+IR2_INST *la_append_ir2_opnd2_em(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1);
+IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE type, IR2_OPND op0,IR2_OPND op1, int imm);
+IR2_INST *la_append_ir2_opnd3_em(IR2_OPCODE type, IR2_OPND op0,IR2_OPND op1, IR2_OPND op2);
+IR2_INST *la_append_ir2_opnda(IR2_OPCODE opcode, ADDR addr);
+bool la_ir2_opcode_is_store(IR2_OPCODE opcode);
+bool la_ir2_opcode_is_load(IR2_OPCODE opcode);
 #endif

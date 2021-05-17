@@ -86,7 +86,7 @@ typedef struct {
 } GM_OPERAND_PLACE_RELATION;
 
 typedef struct {
-    IR2_INS_TYPE type;
+    IR2_OPCODE type;
     uint32_t opcode;
     GM_OPERAND_TYPE opnd[4];
 } GM_LA_OPCODE_FORMAT;

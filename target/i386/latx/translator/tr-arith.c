@@ -401,7 +401,7 @@ bool translate_imul(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_itemp();
     lsassertm(ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 64,
               "64-bit translate_imul is unimplemented.\n");
-    IR2_INS_TYPE opcode;
+    IR2_OPCODE opcode;
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
         opcode = LISA_MUL_D;
     else

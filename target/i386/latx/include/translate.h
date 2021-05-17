@@ -1151,8 +1151,6 @@ void tr_load_registers_from_env(uint8 gpr_to_load, uint8 fpr_to_load,
                                 uint8 xmm_lo_to_load, uint8 xmm_hi_to_load,
                                 uint8 vreg_to_load);
 void tr_load_guest_base(void);
-void tr_save_all_regs_to_env(void);
-void tr_load_all_regs_from_env(void);
 
 void tr_gen_call_to_helper(ADDR);
 
@@ -1225,9 +1223,7 @@ extern void rotate_fpu_to_bias(int bias);
 
 extern void tr_gen_call_to_helper_prologue(int use_fp);
 extern void tr_gen_call_to_helper_epilogue(int use_fp);
-extern void tr_gen_call_to_helper0(ADDR func);
 extern void tr_gen_call_to_helper1(ADDR func, int use_fp);
-extern void tr_gen_call_to_helper2(ADDR func, int arg2);
 extern void tr_load_top_from_env(void);
 extern void tr_gen_top_mode_init(void);
 

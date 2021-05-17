@@ -11,7 +11,7 @@ static bool translate_add_byhand_32(IR1_INST *pir1)
 {
     IR2_OPND src_opnd_0;
     IR2_OPND src_opnd_1;
-    IR2_INS_TYPE lisa_opcode = LISA_INVALID;
+    IR2_OPCODE lisa_opcode = LISA_INVALID;
     bool is_opnd_sx = false;
 
     /* 1. prepare source operands and opcode */
@@ -86,7 +86,7 @@ static bool translate_add_byhand_8_16(IR1_INST *pir1)
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
-    IR2_INS_TYPE lisa_opcode = LISA_ADD_D;
+    IR2_OPCODE lisa_opcode = LISA_ADD_D;
 
     /* 1. src prefer extension_mode */
     if (ir1_need_calculate_of(pir1)) {
@@ -158,7 +158,7 @@ static bool translate_sub_byhand_32(IR1_INST *pir1, bool is_sub)
 {
     IR2_OPND src_opnd_0;
     IR2_OPND src_opnd_1;
-    IR2_INS_TYPE lisa_opcode = LISA_INVALID;
+    IR2_OPCODE lisa_opcode = LISA_INVALID;
     bool is_opnd_sx = false;
 
     /* 1. prepare source operands and opcode */
@@ -243,7 +243,7 @@ static bool translate_sub_byhand_8_16(IR1_INST *pir1, bool is_sub)
 {
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
-    IR2_INS_TYPE lisa_opcode = LISA_SUB_D;
+    IR2_OPCODE lisa_opcode = LISA_SUB_D;
 
     /* 1. src prefer extension_mode */
     if (ir1_need_calculate_of(pir1)) {
@@ -398,7 +398,7 @@ static bool translate_adc_byhand_8_16(IR1_INST *pir1)
 
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
-    IR2_INS_TYPE lisa_opcode = LISA_ADD_D;
+    IR2_OPCODE lisa_opcode = LISA_ADD_D;
     /* 1. src prefer extension_mode */
     if (ir1_need_calculate_of(pir1)) {
         src_prefer_em = SIGN_EXTENSION;
@@ -599,7 +599,7 @@ bool translate_xor_byhand(IR1_INST *pir1)
 static bool translate_inc_byhand_32(IR1_INST *pir1)
 {
     IR2_OPND src_opnd_0;
-    IR2_INS_TYPE lisa_opcode;
+    IR2_OPCODE lisa_opcode;
     bool is_opnd_sx = false;
 
     if (ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0))) {
@@ -643,10 +643,11 @@ static bool translate_inc_byhand_32(IR1_INST *pir1)
 
 static bool translate_inc_byhand_8_16(IR1_INST *pir1)
 {
+    assert(0 && "translate_inc_byhand_8_16 need to be implemented correctly");
     /* 1. set src prefer_em */
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
-    IR2_INS_TYPE lisa_opcode = mips_daddu;
+    IR2_OPCODE lisa_opcode = LISA_ADD_D;
     if (ir1_need_calculate_of(pir1)) {
         src_prefer_em = SIGN_EXTENSION;
         is_opnd_sx = true;
@@ -698,7 +699,7 @@ bool translate_inc_byhand(IR1_INST *pir1)
 static bool translate_dec_byhand_32(IR1_INST *pir1)
 {
     IR2_OPND src_opnd_0, src_opnd_1, dest_opnd;
-    IR2_INS_TYPE lisa_opcode;
+    IR2_OPCODE lisa_opcode;
     bool is_opnd_sx = false;
     bool dest_opnd_is_temp;
 
@@ -744,7 +745,7 @@ static bool translate_dec_byhand_8_16(IR1_INST *pir1)
     /* 1. set src prefer_em */
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
-    IR2_INS_TYPE lisa_opcode = LISA_SUB_D;
+    IR2_OPCODE lisa_opcode = LISA_SUB_D;
     if (ir1_need_calculate_of(pir1)) {
         src_prefer_em = SIGN_EXTENSION;
         is_opnd_sx = true;
@@ -841,7 +842,7 @@ static bool translate_neg_byhand_8_16(IR1_INST *pir1)
     /* 1. set src prefer_em */
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
-    IR2_INS_TYPE lisa_opcode = LISA_SUB_D;
+    IR2_OPCODE lisa_opcode = LISA_SUB_D;
     if (ir1_need_calculate_of(pir1)) {
         src_prefer_em = SIGN_EXTENSION;
         is_opnd_sx = true;

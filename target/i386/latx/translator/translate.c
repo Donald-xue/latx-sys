@@ -2102,6 +2102,7 @@ bool tr_ir2_generate(void *tb, void *petb)
         }
 
         bool translation_success = ir1_translate(pir1);
+        assert(translation_success && "ir1_translate fail");
     }
 
     if (option_dump_ir2) {
@@ -2592,7 +2593,7 @@ void generate_context_switch_native_to_bt(void)
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
 
     /* 5. restore ra */
-    la_append_ir2_opnd2i(LISA_LD_D, ir2_opnd_new(IR2_OPND_IREG, 1), sp_ir2_opnd, 
+    la_append_ir2_opnd2i(LISA_LD_D, ir2_opnd_new(IR2_OPND_IREG, 1), sp_ir2_opnd,
                         extra_space + 80);
 
     /* 6. restore callee-saved registers. s0-s7 ($16-$23), gp($28), and s8($30) */
@@ -2606,7 +2607,7 @@ void generate_context_switch_native_to_bt(void)
     /* 8. return */
     la_append_ir2_opnd3(LISA_OR, a0_ir2_opnd, t5_ir2_opnd, zero_ir2_opnd);
 
-    la_append_ir2_opnd2i(LISA_JIRL, zero_ir2_opnd, 
+    la_append_ir2_opnd2i(LISA_JIRL, zero_ir2_opnd,
                          ir2_opnd_new(IR2_OPND_IREG, 1), 0);
 }
 
@@ -3039,8 +3040,8 @@ int generate_native_rotate_fpu_by(void *code_buf_addr)
         fprintf(stderr, "[fpu rotate] native jump glue at %p. size = %d\n",
                 code_buf, mips_num);
     ss_match_fail_native = (ADDR)code_buf;
-    mips_num = 0;
 
+    mips_num = 0;
     mips_num = ss_generate_match_fail_native_code(code_buf);
     total_mips_num += mips_num;
     code_buf += mips_num * 4;
@@ -3051,6 +3052,7 @@ int generate_native_rotate_fpu_by(void *code_buf_addr)
 static int ss_generate_match_fail_native_code(void* code_buf){
     //we don't use shadow stack.
     return 0;
+#if 0
     tr_init(NULL);
     int total_mips_num = 0;
     // ss_x86_addr is not equal to x86_addr, compare esp
@@ -3059,7 +3061,7 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     append_ir2_opnd2i(mips_load_addrx, ss_esp, ss_opnd, -(int)sizeof(SS_ITEM) + (int)offsetof(SS_ITEM, x86_esp));
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
     IR2_OPND temp_result = ra_alloc_itemp();
-    
+
     // if esp < ss_esp, that indicates ss has less item
     IR2_OPND label_exit_with_fail_match = ir2_opnd_new_type(IR2_OPND_LABEL);
     append_ir2_opnd3_not_nop(mips_bne, temp_result, zero_ir2_opnd, label_exit_with_fail_match);
@@ -3109,9 +3111,9 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     IR2_OPND last_executed_tb = ra_alloc_dbt_arg1();
     IR2_OPND top_out = ra_alloc_itemp();
     IR2_OPND top_in = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_lbu, top_out, last_executed_tb, 
+    append_ir2_opnd2i(mips_lbu, top_out, last_executed_tb,
         offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_out));
-    append_ir2_opnd2i(mips_lbu, top_in, ret_tb_addr, 
+    append_ir2_opnd2i(mips_lbu, top_in, ret_tb_addr,
         offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_in));
     append_ir2_opnd3(mips_beq, top_in, top_out, label_no_rotate);
     //top_in != top_out, rotate fpu
@@ -3126,7 +3128,7 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     append_ir2_opnd1(mips_jr, ret_mips_addr);
     ra_free_temp(ret_tb_addr);
     ra_free_temp(ret_mips_addr);
-    
+
     // finally match failed: adjust esp, load last_execut_tb
     append_ir2_opnd1(mips_label, label_exit_with_fail_match);
     append_ir2_opnd3(mips_add_addrx, esp_opnd, esp_opnd, esp_change_bytes);
@@ -3136,13 +3138,14 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     //load_ireg_from_addr(indirect_lookup_code_addr, tb_look_up_native);
     //append_ir2(mips_jr, indirect_lookup_code_addr);
     //ra_free_temp(indirect_lookup_code_addr);
-    
+
     ra_free_temp(ss_esp);
     ra_free_temp(ss_x86_addr);
     tr_fini(false);
     total_mips_num = tr_ir2_assemble(code_buf) + 1;
 
     return total_mips_num;
+#endif
 }
 
 /* we have no inst to mov from gpr to top, so we have to be silly */
@@ -3374,32 +3377,6 @@ void tr_fpu_disable_top_mode(void)
     }
 }
 
-void tr_save_all_regs_to_env(void)
-{
-    tr_save_registers_to_env(0xff, 0xff, 0xff, 0xff, 0x11);
-    static int map[23] = { 2,4,5,6,7,8,9,10,11,12,13,14,16,17,18,
-        24,25,26,27,28,29,30,31 };
-    for (int i = 0; i < 23; ++i) {
-        IR2_OPND opnd;
-        ir2_opnd_build(&opnd, IR2_OPND_IREG, map[i]);
-        append_ir2_opnd2i(mips_store_addr, opnd, env_ir2_opnd,
-                          lsenv_offset_of_mips_regs(lsenv, map[i]));
-    }
-}
-
-void tr_load_all_regs_from_env(void)
-{
-    tr_load_registers_from_env(0xff, 0xff, 0xff, 0xff, 0x11);
-    static int map[23] = { 2,4,5,6,7,8,9,10,11,12,13,14,16,17,18,
-        24,25,26,27,28,29,30,31 };
-    for (int i = 0; i < 23; ++i) {
-        IR2_OPND opnd;
-        ir2_opnd_build(&opnd, IR2_OPND_IREG, map[i]);
-        append_ir2_opnd2i(mips_load_addr, opnd, env_ir2_opnd,
-                          lsenv_offset_of_mips_regs(lsenv,map[i]));
-    }
-}
-
 void tr_save_registers_to_env(uint8 gpr_to_save, uint8 fpr_to_save,
                               uint8 xmm_lo_to_save, uint8 xmm_hi_to_save,
                               uint8 vreg_to_save)
@@ -3605,19 +3582,6 @@ void tr_gen_call_to_helper_epilogue(int use_fp)
                                0x1|options_to_save());
 }
 
-/* helper with zero arg */
-void tr_gen_call_to_helper0(ADDR func_addr)
-{
-    IR2_OPND func_addr_opnd = ra_alloc_dbt_arg2();
-
-    tr_gen_call_to_helper_prologue(0);
-
-    load_ireg_from_addr(func_addr_opnd, (ADDR)func_addr);
-    append_ir2_opnd1(mips_jalr, func_addr_opnd);
-
-    tr_gen_call_to_helper_epilogue(0);
-}
-
 /* helper with 1 default arg(CPUArchState*) */ 
 void tr_gen_call_to_helper1(ADDR func, int use_fp)
 {
@@ -3632,22 +3596,4 @@ void tr_gen_call_to_helper1(ADDR func, int use_fp)
     la_append_ir2_opnd2i(LISA_JIRL, ir2_opnd_new(IR2_OPND_IREG, 1), func_addr_opnd, 0);
 
     tr_gen_call_to_helper_epilogue(use_fp);
-}
-
-/* helper with 2 arg(CPUArchState*, int) */ 
-void tr_gen_call_to_helper2(ADDR func, int arg2)
-{
-    IR2_OPND func_addr_opnd = ra_alloc_dbt_arg2();
-    IR2_OPND a0_opnd = ir2_opnd_new(IR2_OPND_IREG, 4);
-    IR2_OPND a1_opnd = ir2_opnd_new(IR2_OPND_IREG, 5);
-
-    tr_gen_call_to_helper_prologue(1);
-
-    load_ireg_from_addr(func_addr_opnd, func);
-    load_ireg_from_imm32(a1_opnd, arg2, SIGN_EXTENSION);
-
-    append_ir2_opnd1_not_nop(mips_jalr, func_addr_opnd);
-    append_ir2_opnd2(mips_mov64, a0_opnd, env_ir2_opnd);
-
-    tr_gen_call_to_helper_epilogue(1);
 }

@@ -10,6 +10,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     IR2_OPND eflags_opnd = ra_alloc_eflags();
 
     switch (ir1_opcode(pir1)) {
+#if 0
     case X86_INS_ADD:
     case X86_INS_XADD: {
         IR2_OPND cf_opnd = ra_alloc_itemp();
@@ -62,7 +63,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     case X86_INS_SUB:
     case X86_INS_CMPSB:
     case X86_INS_CMPSW:
-    case X86_INS_CMPSD:    
+    case X86_INS_CMPSD:
     case X86_INS_CMP:
     case X86_INS_CMPXCHG:
     case X86_INS_DEC: {
@@ -165,6 +166,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         ra_free_temp(t_dest_opnd);
         return;
     }
+#endif
     case X86_INS_SHLD: {
         if (ir2_opnd_is_imm(&src1)) {
             IR2_OPND t_dest_opnd = ra_alloc_itemp();
@@ -207,6 +209,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         }
         return;
     }
+#if 0
     case X86_INS_SHR:
     case X86_INS_SAR: {
         IR2_OPND t_dest_opnd = ra_alloc_itemp();
@@ -260,6 +263,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         ra_free_temp(eflags_cf_of_cleared);
         return;
     }
+#endif
     default:
         break;
     }
@@ -383,6 +387,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
     IR2_OPND eflags_opnd = ra_alloc_eflags();
     switch (ir1_opcode(pir1)) {
+#if 0
     case X86_INS_ADD:
     case X86_INS_INC: {
         if (ir2_opnd_is_imm(&src1)) {
@@ -537,7 +542,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     }
     case X86_INS_SCASB:
     case X86_INS_SCASW:
-    case X86_INS_SCASD:    
+    case X86_INS_SCASD:
     case X86_INS_SBB:
     case X86_INS_CMPSB:
     case X86_INS_CMPSW:
@@ -730,6 +735,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         ra_free_temp(t_of_opnd);
         return;
     }
+#endif
     case X86_INS_SHLD:
     case X86_INS_SHRD: {
         if (ir2_opnd_is_imm(&src1)) {
@@ -763,6 +769,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         }
         return;
     }
+#if 0
     case X86_INS_SHR: {
         IR2_OPND label_temp = ir2_opnd_new_type(IR2_OPND_LABEL);
         if (ir2_opnd_is_imm(&src1)) {
@@ -826,6 +833,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         ra_free_temp(eflags_cf_of_cleared);
         return;
     }
+#endif
     default:
         break;
     }
@@ -838,6 +846,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 static void generate_cf_not_sx(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
+#if 0
     IR2_OPND eflags_opnd = ra_alloc_eflags();
 
     switch (ir1_opcode(pir1)) {
@@ -898,7 +907,7 @@ static void generate_cf_not_sx(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     default:
         break;
     }
-
+#endif
     /* lsenv->tr_data->curr_tb->dump(); */
     lsassertm(0, "%s for %s is not implemented\n", __FUNCTION__,
               ir1_name(ir1_opcode(pir1)));
@@ -907,6 +916,7 @@ static void generate_cf_not_sx(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 static void generate_of_not_sx(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
+#if 0
     IR2_OPND eflags_opnd = ra_alloc_eflags();
 
     switch (ir1_opcode(pir1)) {
@@ -931,7 +941,7 @@ static void generate_of_not_sx(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     default:
         break;
     }
-
+#endif
     /* lsenv->tr_data->curr_tb->dump(); */
     lsassertm(0, "%s for %s is not implemented\n", __FUNCTION__,
               ir1_name(ir1_opcode(pir1)));

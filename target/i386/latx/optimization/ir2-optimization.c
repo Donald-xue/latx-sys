@@ -41,7 +41,9 @@ static bool has_dependency(IR2_INST *p1, IR2_INST *p2)
 }
 
 static void tri_schedule_one_ir2(IR2_INST *p, int max_distance)
-{ /* max_distance default is 10 */
+{
+#if 0
+    /* max_distance default is 10 */
     int distance = 0;
     /* 1. scan backward to find a proper position */
     IR2_INST *ir2_first = lsenv->tr_data->first_ir2;
@@ -83,10 +85,12 @@ static void tri_schedule_one_ir2(IR2_INST *p, int max_distance)
         ir2_remove(p);
         ir2_insert_after(p, ir2_block);
     }
+#endif
 }
 
 static void ir2_schedule(TranslationBlock *tb)
 {
+#if 0
     /* 1. scan forward, from the second ir2 */
     IR2_INST *ir2_current = ir2_next(lsenv->tr_data->first_ir2);
     while (ir2_current != NULL) {
@@ -105,10 +109,12 @@ static void ir2_schedule(TranslationBlock *tb)
 
         ir2_current = ir2_next(ir2_current);
     }
+#endif
 }
 
 static void tri_separate_branch_from_ldst(TranslationBlock *tb)
 {
+#if 0
     IR2_INST *ir2_current = lsenv->tr_data->first_ir2;
     IR2_INST *ir2_prev = NULL;
     bool is_prev_ldst_not_rl = false;
@@ -157,10 +163,12 @@ static void tri_separate_branch_from_ldst(TranslationBlock *tb)
 
         ir2_current = ir2_next(ir2_current);
     }
+#endif
 }
 
 static void tri_avoid_last_ir2_is_ldst_not_rl(void)
 {
+#if 0
     IR2_INST *ir2_curr = lsenv->tr_data->last_ir2;
     while (ir2_opcode(ir2_curr) == LISA_LABEL ||
            ir2_opcode(ir2_curr) == LISA_X86_INST) {
@@ -175,9 +183,12 @@ static void tri_avoid_last_ir2_is_ldst_not_rl(void)
         append_ir2_opnd0(mips_nop);
         /* fprintf(stderr, "last meaningful ir2 is ldst not rl!\n"); */
     }
+#endif
 }
+
 static void tri_avoid_leading_label(void)
 {
+#if 0
     IR2_INST *ir2_current = lsenv->tr_data->first_ir2;
     while (ir2_current != NULL) {
         if (ir2_opcode(ir2_current) == LISA_X86_INST) {
@@ -192,10 +203,12 @@ static void tri_avoid_leading_label(void)
             return;
         }
     }
+#endif
 }
 
 void tr_ir2_optimize(void)
 {
+    assert(0 && "tr_ir2_optimize need to be implemented correctly");
     /* temporarily disabled to prevent reschedule ldc1 before dectop/inctop */
     if (0) { /* if (option_to_execute_ir2_optimize) */
         ir2_schedule(lsenv->tr_data->curr_tb);
