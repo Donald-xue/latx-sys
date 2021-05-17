@@ -722,6 +722,16 @@ static void host_signal_handler(int host_signum, siginfo_t *info,
     sig = host_to_target_signal(host_signum);
     if (sig < 1 || sig > TARGET_NSIG)
         return;
+
+    /* FIXME: When get siganl SIGFPE, the program should be killed,
+     * or it will be endless-looping. For now we just exit simply,
+     * maybe there is a better way.
+     */
+    if (sig == SIGFPE) {
+       printf("ERROR!!! get signal SIGFPE\n");
+       exit(0);
+    }
+
     trace_user_host_signal(env, host_signum, sig);
 
     rewind_if_in_safe_syscall(puc);
