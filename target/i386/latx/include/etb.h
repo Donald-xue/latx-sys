@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "latx-config.h"
-#include "ir1/ir1.h"
+#include "ir1.h"
 
 #define MAX_DEPTH 5 
 typedef enum {

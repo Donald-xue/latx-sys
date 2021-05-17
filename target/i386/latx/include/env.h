@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "flag_pattern.h"
-#include "translator/translate.h"
+#include "translate.h"
 #include "latx-config.h"
 #include "shadow_stack.h"
 #include "lsenv.h"

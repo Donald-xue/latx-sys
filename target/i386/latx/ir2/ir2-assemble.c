@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "ir2.h"
-#include "translator/translate.h"
+#include "translate.h"
 #include "ir2_la_assemble.h"
 
 void set_operand_into_instruction(GM_OPERAND_TYPE operand_type,

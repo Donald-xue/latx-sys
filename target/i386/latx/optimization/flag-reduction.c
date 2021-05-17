@@ -1,7 +1,7 @@
 #include "common.h"
 #include "etb.h"
-#include "ir1/ir1.h"
-#include "translator/translate.h"
+#include "ir1.h"
+#include "translate.h"
 
 typedef struct {
     uint8 use;

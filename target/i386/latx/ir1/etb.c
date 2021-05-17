@@ -2,7 +2,7 @@
 #include "mem.h"
 #include "env.h"
 #include "etb.h"
-#include "ir2/ir2.h"
+#include "ir2.h"
 
 /*
  * functions to access ETB items

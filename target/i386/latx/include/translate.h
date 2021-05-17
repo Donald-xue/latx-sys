@@ -2,8 +2,8 @@
 #define _TAANSLATE_H_
 
 #include "common.h"
-#include "ir1/ir1.h"
-#include "ir2/ir2.h"
+#include "ir1.h"
+#include "ir2.h"
 
 bool translate_add(IR1_INST *pir1);
 bool translate_push(IR1_INST *pir1);

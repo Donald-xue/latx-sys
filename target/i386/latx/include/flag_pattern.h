@@ -2,8 +2,8 @@
 #define _FLAG_PATTERN_H_
 
 #include "etb.h"
-#include "ir1/ir1.h"
-#include "ir2/ir2.h"
+#include "ir1.h"
+#include "ir2.h"
 
 void fp_init(void);
 bool fp_is_save_dest_opnd(IR1_INST *pir1, IR2_OPND dest);

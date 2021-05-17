@@ -1,6 +1,6 @@
 #include "common.h"
 #include "ir2.h"
-#include "ir1/ir1.h"
+#include "ir1.h"
 #include "env.h"
 #include "reg_alloc.h"
 #include <string.h>
