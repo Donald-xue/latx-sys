@@ -1,28 +1,28 @@
-incapstone_data = configuration_data()
-incapstone_data.set('CAPSTONE_USE_SYS_DYN_MEM', '1')
+capStone_data = configuration_data()
+capStone_data.set('CAPSTONE_USE_SYS_DYN_MEM', '1')
 
-incapstone_files = files(
-  'capstone/cs.c',
-  'capstone/MCInst.c',
-  'capstone/MCInstrDesc.c',
-  'capstone/MCRegisterInfo.c',
-  'capstone/SStream.c',
-  'capstone/utils.c'
+capStone_files = files(
+  'capStone/cs.c',
+  'capStone/MCInst.c',
+  'capStone/MCInstrDesc.c',
+  'capStone/MCRegisterInfo.c',
+  'capStone/SStream.c',
+  'capStone/utils.c'
 )
 
-incapstone_data.set('CAPSTONE_HAS_X86', 1)
-incapstone_files += files(
-  'capstone/arch/X86/X86Disassembler.c',
-  'capstone/arch/X86/X86DisassemblerDecoder.c',
-  'capstone/arch/X86/X86ATTInstPrinter.c',
-  'capstone/arch/X86/X86IntelInstPrinter.c',
-  'capstone/arch/X86/X86Mapping.c',
-  'capstone/arch/X86/X86Module.c'
+capStone_data.set('CAPSTONE_HAS_X86', 1)
+capStone_files += files(
+  'capStone/arch/X86/X86Disassembler.c',
+  'capStone/arch/X86/X86DisassemblerDecoder.c',
+  'capStone/arch/X86/X86ATTInstPrinter.c',
+  'capStone/arch/X86/X86IntelInstPrinter.c',
+  'capStone/arch/X86/X86Mapping.c',
+  'capStone/arch/X86/X86Module.c'
 )
 
-configure_file(output: 'capstone-defs.h', configuration: incapstone_data)
+configure_file(output: 'capStone-defs.h', configuration: capStone_data)
 
-incapstone_cargs = [
+capStone_cargs = [
   # FIXME: There does not seem to be a way to completely replace the c_args
   # that come from add_project_arguments() -- we can only add to them.
   # So: disable all warnings with a big hammer.
@@ -31,16 +31,16 @@ incapstone_cargs = [
   # Include all configuration defines via a header file, which will wind up
   # as a dependency on the object file, and thus changes here will result
   # in a rebuild.
-  '-include', 'capstone-defs.h'
+  '-include', 'capStone-defs.h'
 ]
 
-libincapstone = static_library('capstone',
+libcapStone = static_library('capStone',
                              build_by_default: false,
-                             sources: incapstone_files,
-                             c_args: incapstone_cargs,
-                             include_directories: 'capstone/include')
-incapstone = declare_dependency(link_with: libincapstone,
-                              include_directories: 'capstone/include/capstone')
+                             sources: capStone_files,
+                             c_args: capStone_cargs,
+                             include_directories: 'capStone/include')
+capStone = declare_dependency(link_with: libcapStone,
+                              include_directories: 'capStone/include/capstone')
 
 i386_ss.add(when: 'CONFIG_LATX', if_true: files(
   'env.c',
@@ -51,7 +51,7 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: files(
   'latx-profile.c'
 ))
 
-i386_ss.add(when: 'CONFIG_LATX', if_true: incapstone)
+i386_ss.add(when: 'CONFIG_LATX', if_true: capStone)
 
 subdir('diStorm')
 subdir('ir1')

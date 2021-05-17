@@ -1,7 +1,7 @@
 #ifndef _IR1_H_
 #define _IR1_H_
 
-#include "../capstone/include/capstone/capstone.h"
+#include "../capStone/include/capstone/capstone.h"
 #include "common.h"
 
 #define eax_index 0
