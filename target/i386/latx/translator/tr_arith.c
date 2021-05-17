@@ -424,11 +424,17 @@ bool translate_div(IR1_INST *pir1)
     IR2_OPND result = ra_alloc_itemp();
     IR2_OPND result_remainder = ra_alloc_itemp();
 
+    IR2_OPND label_z = ir2_opnd_new_type(IR2_OPND_LABEL);
+
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8) {
         IR2_OPND large_opnd =
             load_ireg_from_ir1(&ax_ir1_opnd, ZERO_EXTENSION, false);
 
         la_append_ir2_opnd3(LISA_DIV_DU, result, large_opnd, small_opnd);
+	la_append_ir2_opnd3(LISA_BNE, small_opnd, zero_ir2_opnd, label_z);
+	la_append_ir2_opndi(LISA_BREAK, 0x7);
+	la_append_ir2_opnd1(LISA_LABEL, label_z);
+
         la_append_ir2_opnd3(LISA_MOD_DU, result_remainder, large_opnd, small_opnd);
         /*  result larger than uint8 would raise an exception */
         ir2_opnd_set_em(&result, ZERO_EXTENSION, 8); 
@@ -447,6 +453,10 @@ bool translate_div(IR1_INST *pir1)
         la_append_ir2_opnd3_em(LISA_OR, large_opnd, large_opnd_high_bits, large_opnd);
 
         la_append_ir2_opnd3(LISA_DIV_DU, result, large_opnd, small_opnd);
+	la_append_ir2_opnd3(LISA_BNE, small_opnd, zero_ir2_opnd, label_z);
+	la_append_ir2_opndi(LISA_BREAK, 0x7);
+	la_append_ir2_opnd1(LISA_LABEL, label_z);
+
         la_append_ir2_opnd3(LISA_MOD_DU, result_remainder, large_opnd, small_opnd);
         /*  result larger than uint16 would raise an exception */
         ir2_opnd_set_em(&result, ZERO_EXTENSION, 16);
@@ -474,6 +484,9 @@ bool translate_div(IR1_INST *pir1)
         }
 
         la_append_ir2_opnd3(LISA_DIV_DU, ir2_eax, large_opnd, small_opnd);
+	la_append_ir2_opnd3(LISA_BNE, small_opnd, zero_ir2_opnd, label_z);
+	la_append_ir2_opndi(LISA_BREAK, 0x7);
+	la_append_ir2_opnd1(LISA_LABEL, label_z);
         la_append_ir2_opnd3(LISA_MOD_DU, ir2_edx, large_opnd, small_opnd);
         ir2_opnd_set_em(&ir2_eax, ZERO_EXTENSION, 32);
         ir2_opnd_set_em(&ir2_edx, ZERO_EXTENSION, 32);
@@ -491,10 +504,15 @@ bool translate_idiv(IR1_INST *pir1)
     IR2_OPND src_opnd_0 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
 
+    IR2_OPND label_z = ir2_opnd_new_type(IR2_OPND_LABEL);
+
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8) {
         IR2_OPND src_opnd_1 =
             load_ireg_from_ir1(&ax_ir1_opnd, SIGN_EXTENSION, false);
         la_append_ir2_opnd3(LISA_MOD_D, dest_opnd, src_opnd_1, src_opnd_0);
+	la_append_ir2_opnd3(LISA_BNE, src_opnd_0, zero_ir2_opnd, label_z);
+	la_append_ir2_opndi(LISA_BREAK, 0x7);
+	la_append_ir2_opnd1(LISA_LABEL, label_z);
         la_append_ir2_opnd3(LISA_DIV_D, src_opnd_1, src_opnd_1, src_opnd_0);
         store_ireg_to_ir1(dest_opnd, &ah_ir1_opnd, false);
     } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
@@ -508,6 +526,9 @@ bool translate_idiv(IR1_INST *pir1)
         la_append_ir2_opnd2i_em(LISA_SLLI_W, temp_src, src_opnd_2, 16);
         la_append_ir2_opnd3(LISA_OR, temp_src, temp_src, src_opnd_1);
         la_append_ir2_opnd3(LISA_DIV_D, temp1_opnd, temp_src, src_opnd_0);
+	la_append_ir2_opnd3(LISA_BNE, src_opnd_0, zero_ir2_opnd, label_z);
+	la_append_ir2_opndi(LISA_BREAK, 0x7);
+	la_append_ir2_opnd1(LISA_LABEL, label_z);
         store_ireg_to_ir1(temp1_opnd, &ax_ir1_opnd, false);
         la_append_ir2_opnd3(LISA_MOD_D, temp1_opnd, temp_src, src_opnd_0);
         store_ireg_to_ir1(temp1_opnd, &dx_ir1_opnd, false);
@@ -525,6 +546,9 @@ bool translate_idiv(IR1_INST *pir1)
         la_append_ir2_opnd2i_em(LISA_SLLI_D, temp_src, src_opnd_2, 32);
         la_append_ir2_opnd3_em(LISA_OR, temp_src, temp_src, src_opnd_1);
         la_append_ir2_opnd3(LISA_DIV_D, temp1_opnd, temp_src, src_opnd_0);
+	la_append_ir2_opnd3(LISA_BNE, src_opnd_0, zero_ir2_opnd, label_z);
+	la_append_ir2_opndi(LISA_BREAK, 0x7);
+	la_append_ir2_opnd1(LISA_LABEL, label_z);
         store_ireg_to_ir1(temp1_opnd, &eax_ir1_opnd, false);
         la_append_ir2_opnd3(LISA_MOD_D, temp1_opnd, temp_src, src_opnd_0);
         store_ireg_to_ir1(temp1_opnd, &edx_ir1_opnd, false);
