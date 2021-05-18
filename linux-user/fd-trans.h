@@ -94,4 +94,8 @@ extern TargetFdTrans target_eventfd_trans;
      defined(__NR_inotify_init1))
 extern TargetFdTrans target_inotify_trans;
 #endif
+#if (defined(TARGET_NR_fanotify_init) && defined(__NR_fanotify_init) && \
+     defined(CONFIG_FANOTIFY))
+extern TargetFdTrans target_fanotify_trans;
+#endif
 #endif

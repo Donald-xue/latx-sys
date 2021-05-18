@@ -477,6 +477,28 @@ static int sys_inotify_init1(int flags)
 #undef TARGET_NR_inotify_rm_watch
 #endif /* CONFIG_INOTIFY  */
 
+#if defined(CONFIG_INOTIFY)
+#include <sys/fanotify.h> 
+#if defined(TARGET_NR_fanotify_init) && defined(__NR_fanotify_init)
+static int sys_fanotify_init(unsigned int flags, unsigned int event_f_flags)
+{
+  return (fanotify_init(flags, event_f_flags));
+}
+#endif
+#if defined(TARGET_NR_fanotify_mark) && defined(__NR_fanotify_mark)
+static int sys_fanotify_mark(int fanotify_fd, unsigned int flags,
+                         uint64_t mask, int dirfd, const char *pathname)
+{
+ return (fanotify_mark(fanotify_fd, flags, mask, dirfd, pathname));
+}
+#endif
+#else
+#undef TARGET_NR_fanotify_init
+#undef __NR_fanotify_init
+#undef TARGET_NR_fanotify_mark
+#undef __NR_fanotify_mark
+#endif
+
 #if defined(TARGET_NR_prlimit64)
 #ifndef __NR_prlimit64
 # define __NR_prlimit64 -1
@@ -12482,7 +12504,22 @@ defined(__loongarch__)
     case TARGET_NR_inotify_rm_watch:
         return get_errno(sys_inotify_rm_watch(arg1, arg2));
 #endif
-
+#if defined(TARGET_NR_fanotify_init) && defined(__NR_fanotify_init)
+    case TARGET_NR_fanotify_init:
+        ret = get_errno(sys_fanotify_init(arg1, target_to_host_bitmask(arg2,
+                                          fcntl_flags_tbl)));
+        if (ret >= 0) {
+            fd_trans_register(ret, &target_fanotify_trans);
+        }
+        return ret;
+#endif
+#if defined(TARGET_NR_fanotify_mark) && defined(__NR_fanotify_mark)
+	case TARGET_NR_fanotify_mark:
+        p = lock_user_string(arg5);
+        ret = get_errno(sys_fanotify_mark(arg1, arg2, arg3, arg4, path(p)));
+        unlock_user(p, arg5, 0);
+        return ret;
+#endif
 #if defined(TARGET_NR_mq_open) && defined(__NR_mq_open)
     case TARGET_NR_mq_open:
         {

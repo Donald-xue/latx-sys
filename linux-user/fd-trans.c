@@ -21,6 +21,9 @@
 #ifdef CONFIG_INOTIFY
 #include <sys/inotify.h>
 #endif
+#ifdef CONFIG_FANOTIFY
+#include <sys/fanotify.h>
+#endif
 #include <linux/netlink.h>
 #ifdef CONFIG_RTNETLINK
 #include <linux/rtnetlink.h>
@@ -1552,5 +1555,32 @@ static abi_long host_to_target_data_inotify(void *buf, size_t len)
 
 TargetFdTrans target_inotify_trans = {
     .host_to_target_data = host_to_target_data_inotify,
+};
+#endif
+
+#if (defined(TARGET_NR_fanotify_init) && defined(__NR_fanotify_init) && \
+     defined(CONFIG_FANOTIFY))
+static abi_long host_to_target_data_fanotify(void *buf, size_t len)
+{
+    struct fanotify_event_metadata *ev;
+    int i;
+    uint32_t name_len;
+
+    for (i = 0; i < len; i += sizeof(struct fanotify_event_metadata) + name_len) {
+        ev = (struct fanotify_event_metadata *)((char *)buf + i);
+        name_len = ev->event_len;
+
+        ev->metadata_len = tswap16(ev->metadata_len);
+        ev->mask = tswap64(ev->mask);
+        ev->fd = tswap32(ev->fd);
+        ev->pid = tswap32(ev->pid);
+        ev->event_len = tswap32(ev->event_len);
+    }
+
+    return len;
+}
+
+TargetFdTrans target_fanotify_trans = {
+    .host_to_target_data = host_to_target_data_fanotify,
 };
 #endif
