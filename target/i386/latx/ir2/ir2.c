@@ -4270,10 +4270,13 @@ IR2_INST *la_append_ir2_opnd3_em(IR2_OPCODE opcode, IR2_OPND op0,
 IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src, int imm)
 {
     if(opcode == LISA_ANDI || opcode == LISA_ORI || 
-			opcode == LISA_XORI || opcode == LISA_LU52I_D)
+       opcode == LISA_XORI || opcode == LISA_LU52I_D) {
         lsassert((unsigned int)(imm) <= 0xfff);
-    else
-        lsassert(imm >= -2048 && imm <= 2047);
+    } else if (opcode == LISA_SUBIU || opcode == LISA_DSUBIU) {
+        lsassert(imm > -2048 && imm <= 2048);
+    } else {
+        lsassert(imm >= -2048 && imm < 2048);
+    }
 
     /*
      * This code is used for add AND xx, n1.

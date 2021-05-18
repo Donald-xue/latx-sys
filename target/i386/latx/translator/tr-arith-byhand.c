@@ -155,6 +155,12 @@ bool translate_add_byhand(IR1_INST *pir1)
         return translate_add(pir1);
 }
 
+static int ir1_opnd_is_sub_12bit_imm(IR1_OPND *opnd)
+{
+    return ir1_opnd_is_imm(opnd) && ir1_opnd_simm(opnd) > -2048 &&
+           ir1_opnd_simm(opnd) <= 2048;
+}
+
 static bool translate_sub_byhand_32(IR1_INST *pir1, bool is_sub)
 {
     IR2_OPND src_opnd_0;
@@ -184,7 +190,7 @@ static bool translate_sub_byhand_32(IR1_INST *pir1, bool is_sub)
         lisa_opcode = LISA_SUBI_ADDRX;
     } else { /* difficult to determine which is x86 address */
         src_opnd_0 = load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-        if (ir1_opnd_is_simm_within_16bit(ir1_get_opnd(pir1, 0) + 1))
+        if (ir1_opnd_is_sub_12bit_imm(ir1_get_opnd(pir1, 0) + 1))
             src_opnd_1 =
                 ir2_opnd_new(IR2_OPND_IMM, ir1_opnd_simm(ir1_get_opnd(pir1, 0) + 1));
         else
