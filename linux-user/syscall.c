@@ -12027,6 +12027,10 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
     case TARGET_NR_setfsgid32:
         return get_errno(setfsgid(arg1));
 #endif
+#ifdef TARGET_NR_pivot_root
+    case TARGET_NR_pivot_root:
+        return get_errno(syscall(__NR_pivot_root, (char *)arg1, (char *)arg2));
+#endif
 #ifdef TARGET_NR_mincore
     case TARGET_NR_mincore:
         {
