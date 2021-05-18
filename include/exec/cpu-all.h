@@ -231,6 +231,7 @@ extern const TargetPageBits target_page;
 #define TARGET_PAGE_SIZE   (1 << TARGET_PAGE_BITS)
 #define TARGET_PAGE_MASK   ((target_long)-1 << TARGET_PAGE_BITS)
 #endif
+#define TARGET_HUGEPAGE_SIZE 0x2000000
 
 #define TARGET_PAGE_ALIGN(addr) ROUND_UP((addr), TARGET_PAGE_SIZE)
 

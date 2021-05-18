@@ -459,7 +459,11 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
     if (!(flags & MAP_FIXED)) {
         host_len = len + offset - host_offset;
         host_len = HOST_PAGE_ALIGN(host_len);
-        start = mmap_find_vma(real_start, host_len, TARGET_PAGE_SIZE);
+        if (flags & MAP_HUGETLB) {
+             start = mmap_find_vma(real_start, host_len, TARGET_HUGEPAGE_SIZE);
+        } else {
+             start = mmap_find_vma(real_start, host_len, TARGET_PAGE_SIZE);
+        }
         if (start == (abi_ulong)-1) {
             errno = ENOMEM;
             goto fail;
