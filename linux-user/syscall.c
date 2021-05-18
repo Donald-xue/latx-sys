@@ -7961,13 +7961,36 @@ static int open_self_stat(void *cpu_env, int fd)
     CPUState *cpu = env_cpu((CPUArchState *)cpu_env);
     TaskState *ts = cpu->opaque;
     g_autoptr(GString) buf = g_string_new(NULL);
-    int i;
+    int i = 0;
 
-    for (i = 0; i < 44; i++) {
-        if (i == 0) {
-            /* pid */
-            g_string_printf(buf, FMT_pid " ", getpid());
-        } else if (i == 1) {
+    FILE *fp;
+    char *orig = NULL;
+    char *word = NULL;
+    size_t orig_len = 0;
+    int word_len = 0;
+
+    fp = fopen("/proc/self/stat", "r");
+    if (fp == NULL || getline(&orig, &orig_len, fp) == -1)
+        return -1;
+
+    word = orig;
+
+    do {
+        orig = word;
+        word = strchr(orig, ' ');
+
+        /* last word */
+        if (NULL == word) {
+            /* Find a pointer to '\0' */
+            word = strchr(orig, '\0');
+            if (NULL == word)
+                return -1;
+            /* Don't enter the loop next time */
+            i = -1;
+        }
+        word_len = ++word - orig;
+
+        if (i == 1) {
             /* app name */
             gchar *bin = g_strrstr(ts->bprm->argv[0], "/");
             bin = bin ? bin + 1 : ts->bprm->argv[0];
@@ -7976,15 +7999,18 @@ static int open_self_stat(void *cpu_env, int fd)
             /* stack bottom */
             g_string_printf(buf, TARGET_ABI_FMT_ld " ", ts->info->start_stack);
         } else {
-            /* for the rest, there is MasterCard */
-            g_string_printf(buf, "0%c", i == 43 ? '\n' : ' ');
+            if (write(fd, orig, word_len) != word_len)
+                return -1;
+            continue;
         }
 
         if (write(fd, buf->str, buf->len) != buf->len) {
             return -1;
         }
-    }
 
+    } while(++i);
+
+    fclose(fp);
     return 0;
 }
 
