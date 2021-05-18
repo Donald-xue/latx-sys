@@ -10074,41 +10074,8 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #endif
 #if defined(TARGET_NR_syslog)
     case TARGET_NR_syslog:
-        {
-            int len = arg2;
-
-            switch (arg1) {
-            case TARGET_SYSLOG_ACTION_CLOSE:         /* Close log */
-            case TARGET_SYSLOG_ACTION_OPEN:          /* Open log */
-            case TARGET_SYSLOG_ACTION_CLEAR:         /* Clear ring buffer */
-            case TARGET_SYSLOG_ACTION_CONSOLE_OFF:   /* Disable logging */
-            case TARGET_SYSLOG_ACTION_CONSOLE_ON:    /* Enable logging */
-            case TARGET_SYSLOG_ACTION_CONSOLE_LEVEL: /* Set messages level */
-            case TARGET_SYSLOG_ACTION_SIZE_UNREAD:   /* Number of chars */
-            case TARGET_SYSLOG_ACTION_SIZE_BUFFER:   /* Size of the buffer */
-                return get_errno(sys_syslog((int)arg1, NULL, (int)arg3));
-            case TARGET_SYSLOG_ACTION_READ:          /* Read from log */
-            case TARGET_SYSLOG_ACTION_READ_CLEAR:    /* Read/clear msgs */
-            case TARGET_SYSLOG_ACTION_READ_ALL:      /* Read last messages */
-                {
-                    if (len < 0) {
-                        return -TARGET_EINVAL;
-                    }
-                    if (len == 0) {
-                        return 0;
-                    }
-                    p = lock_user(VERIFY_WRITE, arg2, arg3, 0);
-                    if (!p) {
-                        return -TARGET_EFAULT;
-                    }
-                    ret = get_errno(sys_syslog((int)arg1, p, (int)arg3));
-                    unlock_user(p, arg2, arg3);
-                }
-                return ret;
-            default:
-                return -TARGET_EINVAL;
-            }
-        }
+        p = lock_user_string(arg2);
+        return get_errno(sys_syslog(arg1, p, arg3));
         break;
 #endif
     case TARGET_NR_setitimer:
