@@ -12473,6 +12473,7 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 
 #ifdef TARGET_NR_set_robust_list
     case TARGET_NR_set_robust_list:
+         return get_errno(syscall(__NR_set_robust_list, arg1, arg2));
     case TARGET_NR_get_robust_list:
         /* The ABI for supporting robust futexes has userspace pass
          * the kernel a pointer to a linked list which is updated by
@@ -12486,7 +12487,7 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
          * holding a mutex that is shared with another process via
          * shared memory).
          */
-        return -TARGET_ENOSYS;
+        return get_errno(syscall(__NR_get_robust_list, arg1, arg2,arg3));
 #endif
 
 #if defined(TARGET_NR_utimensat)
