@@ -12753,6 +12753,20 @@ defined(__loongarch__)
     /* Not implemented for now... */
 /*     case TARGET_NR_mq_notify: */
 /*         break; */
+    case TARGET_NR_mq_notify:
+        {
+            struct sigevent host_sevp = { {0}, }, *phost_sevp = NULL;
+            if (arg2) {
+                phost_sevp = &host_sevp;
+                ret = target_to_host_sigevent(phost_sevp, arg2);
+                if (ret != 0) {
+                    return ret;
+                }
+            }
+
+            ret = get_errno(syscall(__NR_mq_notify, arg1, phost_sevp));
+        }
+        break;
 
     case TARGET_NR_mq_getsetattr:
         {
