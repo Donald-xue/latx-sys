@@ -11342,6 +11342,11 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
             return -TARGET_EFAULT;
         }
         ret = get_errno(fstatat(arg1, path(p), &st, arg4));
+
+        if (!strcmp((const char *)p, "self/task/")
+            || is_proc_myself((const char *)p, "task/"))
+            st.st_nlink--;
+
         unlock_user(p, arg2, 0);
         if (!is_error(ret))
             ret = host_to_target_stat64(cpu_env, arg3, &st);
