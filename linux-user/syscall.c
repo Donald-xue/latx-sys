@@ -2222,6 +2222,7 @@ static abi_long do_setsockopt(int sockfd, int level, int optname,
     int val;
     struct ip_mreqn *ip_mreq;
     struct ip_mreq_source *ip_mreq_source;
+    struct group_req *group_req;
 
     switch(level) {
     case SOL_TCP:
@@ -2284,6 +2285,15 @@ static abi_long do_setsockopt(int sockfd, int level, int optname,
             ip_mreq_source = lock_user(VERIFY_READ, optval_addr, optlen, 1);
             ret = get_errno(setsockopt(sockfd, level, optname, ip_mreq_source, optlen));
             unlock_user (ip_mreq_source, optval_addr, 0);
+            break;
+        case MCAST_JOIN_GROUP:
+        case MCAST_LEAVE_GROUP:
+            if (optlen < sizeof (struct group_req))
+                return -TARGET_EINVAL;
+
+            group_req = lock_user(VERIFY_READ, optval_addr, optlen, 1);
+            ret = get_errno(setsockopt(sockfd, level, optname, group_req, optlen));
+            unlock_user (group_req, optval_addr, 0);
             break;
 
         default:
