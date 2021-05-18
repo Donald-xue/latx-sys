@@ -12537,6 +12537,12 @@ defined(__loongarch__)
                                  arg3, arg4, arg5, arg6));
       }
 #endif
+#if defined(TARGET_NR_request_key) && defined(__NR_request_key)
+  case TARGET_NR_request_key:
+      {
+          return get_errno(syscall(__NR_request_key, arg1, arg2, arg3, arg4));
+      }
+#endif
 #if defined(TARGET_NR_mq_open) && defined(__NR_mq_open)
     case TARGET_NR_mq_open:
         {
