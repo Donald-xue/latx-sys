@@ -12524,6 +12524,12 @@ defined(__loongarch__)
         unlock_user(p, arg5, 0);
         return ret;
 #endif
+#if defined(TARGET_NR_add_key) && defined(__NR_add_key)
+  case TARGET_NR_add_key:
+      {
+          return get_errno(syscall(__NR_add_key, arg1, arg2, arg3, arg4, arg5));
+      }
+#endif
 #if defined(TARGET_NR_mq_open) && defined(__NR_mq_open)
     case TARGET_NR_mq_open:
         {
