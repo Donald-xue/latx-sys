@@ -1500,3 +1500,53 @@ bool translate_movd(IR1_INST *pir1)
     }
     return true;
 }
+bool translate_pusha(IR1_INST *pir1) {
+    IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
+                              -lsenv->tr_data->curr_esp_need_decrease);
+    lsenv->tr_data->curr_esp_need_decrease = 0;
+
+    int esp_decrement = 4;
+    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16)
+        esp_decrement = 2;
+
+    IR1_OPND mem_ir1_opnd;
+    for (int i = 0; i < 8; i++) {
+        ir1_opnd_build_mem(&mem_ir1_opnd, esp_decrement << 3, X86_REG_ESP,
+                           -esp_decrement * (i + 1));
+        IR2_OPND src_opnd = ra_alloc_gpr(i);
+        store_ireg_to_ir1(src_opnd, &mem_ir1_opnd, false);
+    }
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, -esp_decrement * 8);
+
+    return true;
+}
+bool translate_popa(IR1_INST *pir1) {
+    IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
+                              -lsenv->tr_data->curr_esp_need_decrease);
+    lsenv->tr_data->curr_esp_need_decrease = 0;
+
+    int esp_increment = 4;
+    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16)
+        esp_increment = 2;
+
+    lsassert(esp_increment == 4);//only support 32,
+
+    IR1_OPND mem_ir1_opnd;
+    IR2_OPND dst_opnd;
+
+    for (int i = 7; i >= 0; i--) {
+        if (i == esp_index) {
+            // skip esp
+            continue;
+        }
+        dst_opnd = ra_alloc_gpr(i);
+        ir1_opnd_build_mem(&mem_ir1_opnd, esp_increment << 3, X86_REG_ESP,
+                           esp_increment * (7 - i));
+        load_ireg_from_ir1_2(dst_opnd, &mem_ir1_opnd, UNKNOWN_EXTENSION, false);
+    }
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, esp_increment * 8);
+
+    return true;
+}

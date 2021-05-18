@@ -10,8 +10,6 @@ bool translate_daa(IR1_INST *pir1) { return false; }
 bool translate_das(IR1_INST *pir1) { return false; }
 bool translate_aaa(IR1_INST *pir1) { return false; }
 bool translate_aas(IR1_INST *pir1) { return false; }
-bool translate_pusha(IR1_INST *pir1) { return false; }
-bool translate_popa(IR1_INST *pir1) { return false; }
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
 bool translate_outs(IR1_INST *pir1) { return false; }
