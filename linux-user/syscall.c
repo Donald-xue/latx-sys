@@ -8534,6 +8534,17 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 
             if (!(p = lock_user_string(arg1)))
                 goto execve_efault;
+
+            if (is_proc_myself((const char *)p, "exe")) {
+                char real[PATH_MAX], *temp;
+                temp = realpath(exec_path, real);
+
+                if (temp == NULL) {
+                    ret = get_errno(-1);
+                    goto execve_end;
+                }
+            }
+
             /* Although execve() is not an interruptible syscall it is
              * a special case where we must use the safe_syscall wrapper:
              * if we allow a signal to happen before we make the host
