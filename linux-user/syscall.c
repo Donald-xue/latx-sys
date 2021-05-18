@@ -9806,7 +9806,15 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
         /* ??? msync/mlock/munlock are broken for softmmu.  */
 #ifdef TARGET_NR_msync
     case TARGET_NR_msync:
-        return get_errno(msync(g2h(cpu, arg1), arg2, arg3));
+        {
+            if ((arg1 & ~qemu_host_page_mask) != 0) {
+                return -TARGET_EINVAL;
+            }
+            if (page_check_range(arg1, arg2, PAGE_VALID))
+                return -TARGET_ENOMEM;
+            return get_errno(msync(g2h(cpu, arg1), arg2, arg3));
+        }
+        return ret;
 #endif
 #ifdef TARGET_NR_mlock
     case TARGET_NR_mlock:
