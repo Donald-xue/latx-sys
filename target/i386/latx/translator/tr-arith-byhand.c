@@ -4,6 +4,7 @@
 #include "latx-options.h"
 #include "flag-lbt.h"
 #include "flag-pattern.h"
+#include "translate.h"
 
 bool translate_cmpxchg_byhand_8_16_32(IR1_INST *pir1);
 

@@ -1,7 +1,7 @@
 #include "common.h"
 #include "ir2.h"
 #include "ir1.h"
-#include "env.h"
+#include "lsenv.h"
 #include "reg-alloc.h"
 #include <string.h>
 

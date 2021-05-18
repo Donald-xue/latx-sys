@@ -1,8 +1,9 @@
 #include <math.h>
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include "latx-options.h"
+#include "translate.h"
 
 /* TODO: long_double */
 /* bool is_long_double_ir1_opnd(IR1_OPND* opnd){ */

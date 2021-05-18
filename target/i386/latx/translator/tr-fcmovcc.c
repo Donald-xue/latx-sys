@@ -1,7 +1,7 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
 #include "flag-lbt.h"
+#include "translate.h"
 
 bool translate_fcmovb(IR1_INST *pir1){
     IR2_OPND cf_opnd = ra_alloc_itemp();

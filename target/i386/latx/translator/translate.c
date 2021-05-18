@@ -1,8 +1,5 @@
-#include "common.h"
-#include "env.h"
+#include "lsenv.h"
 #include "etb.h"
-#include "ir2.h"
-#include "ir1.h"
 #include "reg-alloc.h"
 #include "flag-pattern.h"
 #include "shadow-stack.h"
@@ -12,11 +9,10 @@
 #include "fpu/softfloat.h"
 #include "profile.h"
 #include "ibtc.h"
+#include "translate.h"
 
 void label_dispose(void *code_cache_addr);
 
-ADDR context_switch_bt_to_native;
-ADDR ss_match_fail_native;
 extern void *helper_tb_lookup_ptr(CPUArchState *);
 static int ss_generate_match_fail_native_code(void* code_buf);
 
@@ -58,9 +54,10 @@ static int ss_generate_match_fail_native_code(void* code_buf);
  * flags is <succid> for now
  */
 
+ADDR context_switch_bt_to_native;
 ADDR context_switch_native_to_bt_ret_0;
 ADDR context_switch_native_to_bt;
-int context_switch_is_init;
+ADDR ss_match_fail_native;
 
 ADDR native_rotate_fpu_by; /* native_rotate_fpu_by(step, return_address) */
 ADDR native_jmp_glue_0;
@@ -286,6 +283,12 @@ void etb_add_succ(void* petb,int depth)
     return;
 }
     
+/* func to access QEMU's data */
+static inline uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
+{
+    return cpu_ldub_code((CPUX86State *)cpu, (target_ulong)pc);
+}
+
 IR1_INST *get_ir1_list(void *etb, ADDRX pc, int *p_ir1_num)
 {
     static uint8_t inst_cache[64];
@@ -344,14 +347,21 @@ int8 get_etb_type(IR1_INST *pir1)
 
 }
 
+/* func to access QEMU's TB */
+static inline ADDRX qm_tb_get_pc(void *tb)
+{
+    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
+    return (ADDRX)ptb->pc;
+}
+
 void *tr_disasm(void *tb)
 {
     ADDRX pc = qm_tb_get_pc(tb);
     ETB *qm_etb = qm_tb_get_extra_tb(tb);
     ETB *etb = etb_find(pc);
     /* update profile info */
-    etb_array[tb_num++] = etb;
-    lsassert(tb_num < ETB_ARRAY_SIZE);
+    etb_array[etb_num++] = etb;
+    lsassert(etb_num < ETB_ARRAY_SIZE);
     /* get ir1 instructions */
     IR1_INST *ir1_list = etb->_ir1_instructions;
     int ir1_num = etb->_ir1_num;
@@ -2205,6 +2215,12 @@ void label_dispose(void *code_cache_addr)
     }
 }
 
+static inline void *qm_tb_get_code_cache(void *tb)
+{
+    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
+    return ptb->tc.ptr;
+}
+
 int tr_translate_tb(void *tb, void* etb)
 {
     if (option_dump)
@@ -2821,6 +2837,105 @@ static int generate_native_jmp_glue(void *code_buf, int n)
     return mips_num;
 }
 
+static int ss_generate_match_fail_native_code(void* code_buf){
+    //we don't use shadow stack.
+    return 0;
+#if 0
+    tr_init(NULL);
+    int total_mips_num = 0;
+    // ss_x86_addr is not equal to x86_addr, compare esp
+    IR2_OPND ss_opnd = ra_alloc_ss();
+    IR2_OPND ss_esp = ra_alloc_itemp();
+    append_ir2_opnd2i(mips_load_addrx, ss_esp, ss_opnd, -(int)sizeof(SS_ITEM) + (int)offsetof(SS_ITEM, x86_esp));
+    IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
+    IR2_OPND temp_result = ra_alloc_itemp();
+
+    // if esp < ss_esp, that indicates ss has less item
+    IR2_OPND label_exit_with_fail_match = ir2_opnd_new_type(IR2_OPND_LABEL);
+    append_ir2_opnd3_not_nop(mips_bne, temp_result, zero_ir2_opnd, label_exit_with_fail_match);
+    append_ir2_opnd3(mips_sltu, temp_result, esp_opnd, ss_esp);
+    // x86_addr is not equal, but esp match, it indicates that the x86_addr has been changed
+    append_ir2_opnd3_not_nop(mips_beq, esp_opnd, ss_esp, label_exit_with_fail_match);
+    append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
+
+    // pop till find, compare esp with ss_esp each time
+    IR2_OPND label_pop_till_find = ir2_opnd_new_type(IR2_OPND_LABEL);
+    append_ir2_opnd1(mips_label, label_pop_till_find);
+    append_ir2_opnd2i(mips_load_addrx, ss_esp, ss_opnd, -(int)sizeof(SS_ITEM) + (int)offsetof(SS_ITEM, x86_esp));
+    IR2_OPND label_esp_equal = ir2_opnd_new_type(IR2_OPND_LABEL);
+    append_ir2_opnd3(mips_beq, esp_opnd, ss_esp, label_esp_equal);
+    append_ir2_opnd3_not_nop(mips_bne, temp_result, zero_ir2_opnd, label_exit_with_fail_match);
+    append_ir2_opnd3(mips_slt, temp_result, esp_opnd, ss_esp);
+    append_ir2_opnd1_not_nop(mips_b, label_pop_till_find);
+    append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
+    ra_free_temp(temp_result);
+
+    // esp equal, adjust esp with 24#reg value
+    append_ir2_opnd1(mips_label, label_esp_equal);
+    append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
+    IR2_OPND etb_addr = ra_alloc_itemp();
+    append_ir2_opnd2i(mips_load_addr, etb_addr, ss_opnd, (int)offsetof(SS_ITEM, return_tb));
+    IR2_OPND ret_tb_addr = ra_alloc_itemp();
+    append_ir2_opnd2i(mips_load_addr, ret_tb_addr, etb_addr, offsetof(ETB, tb));
+    /* check if etb->tb is set */
+    IR2_OPND label_have_no_native_code = ir2_opnd_new_type(IR2_OPND_LABEL);
+    append_ir2_opnd3(mips_beq, ret_tb_addr, zero_ir2_opnd, label_have_no_native_code);
+    IR2_OPND ss_x86_addr = ra_alloc_itemp();
+    append_ir2_opnd2i(mips_load_addrx, ss_x86_addr, ret_tb_addr, (int)offsetof(TranslationBlock, pc));
+    IR2_OPND x86_addr = ra_alloc_dbt_arg2();
+    append_ir2_opnd3(mips_bne, ss_x86_addr, x86_addr, label_exit_with_fail_match);
+
+    // after several ss_pop, finally match successfully
+    IR2_OPND esp_change_bytes = ra_alloc_mda();
+    append_ir2_opnd3(mips_add_addrx, esp_opnd, esp_opnd, esp_change_bytes);
+    IR2_OPND ret_mips_addr = ra_alloc_itemp();
+    append_ir2_opnd2i(mips_load_addr, ret_mips_addr, ret_tb_addr,
+        offsetof(TranslationBlock, tc) + offsetof(struct tb_tc, ptr));
+    //before jump to the target tb, check whether top_out and top_in are equal
+    //NOTE: last_executed_tb is already set before jumping to ss_match_fail_native
+    IR2_OPND rotate_step = ra_alloc_dbt_arg1();
+    IR2_OPND rotate_ret_addr = ra_alloc_dbt_arg2();
+    IR2_OPND label_no_rotate = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND last_executed_tb = ra_alloc_dbt_arg1();
+    IR2_OPND top_out = ra_alloc_itemp();
+    IR2_OPND top_in = ra_alloc_itemp();
+    append_ir2_opnd2i(mips_lbu, top_out, last_executed_tb,
+        offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_out));
+    append_ir2_opnd2i(mips_lbu, top_in, ret_tb_addr,
+        offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_in));
+    append_ir2_opnd3(mips_beq, top_in, top_out, label_no_rotate);
+    //top_in != top_out, rotate fpu
+    append_ir2_opnd3(mips_subu, rotate_step, top_out, top_in);
+    append_ir2_opnda_not_nop(mips_j, native_rotate_fpu_by);
+    append_ir2_opnd2(mips_mov64, rotate_ret_addr, ret_mips_addr);
+    ra_free_temp(top_in);
+    ra_free_temp(top_out);
+
+    //top_in == top_out, directly go to next tb
+    append_ir2_opnd1(mips_label, label_no_rotate);
+    append_ir2_opnd1(mips_jr, ret_mips_addr);
+    ra_free_temp(ret_tb_addr);
+    ra_free_temp(ret_mips_addr);
+
+    // finally match failed: adjust esp, load last_execut_tb
+    append_ir2_opnd1(mips_label, label_exit_with_fail_match);
+    append_ir2_opnd3(mips_add_addrx, esp_opnd, esp_opnd, esp_change_bytes);
+    append_ir2_opnd1(mips_label, label_have_no_native_code);
+    append_ir2_opnda(mips_j, context_switch_native_to_bt_ret_0);
+    //IR2_OPND indirect_lookup_code_addr = ra_alloc_itemp();
+    //load_ireg_from_addr(indirect_lookup_code_addr, tb_look_up_native);
+    //append_ir2(mips_jr, indirect_lookup_code_addr);
+    //ra_free_temp(indirect_lookup_code_addr);
+
+    ra_free_temp(ss_esp);
+    ra_free_temp(ss_x86_addr);
+    tr_fini(false);
+    total_mips_num = tr_ir2_assemble(code_buf) + 1;
+
+    return total_mips_num;
+#endif
+}
+
 /* note: native_rotate_fpu_by rotate data between mapped fp registers instead
  * of the in memory env->fpregs
  */
@@ -3047,105 +3162,6 @@ int generate_native_rotate_fpu_by(void *code_buf_addr)
     code_buf += mips_num * 4;
 
     return total_mips_num;
-}
-
-static int ss_generate_match_fail_native_code(void* code_buf){
-    //we don't use shadow stack.
-    return 0;
-#if 0
-    tr_init(NULL);
-    int total_mips_num = 0;
-    // ss_x86_addr is not equal to x86_addr, compare esp
-    IR2_OPND ss_opnd = ra_alloc_ss();
-    IR2_OPND ss_esp = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_load_addrx, ss_esp, ss_opnd, -(int)sizeof(SS_ITEM) + (int)offsetof(SS_ITEM, x86_esp));
-    IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-    IR2_OPND temp_result = ra_alloc_itemp();
-
-    // if esp < ss_esp, that indicates ss has less item
-    IR2_OPND label_exit_with_fail_match = ir2_opnd_new_type(IR2_OPND_LABEL);
-    append_ir2_opnd3_not_nop(mips_bne, temp_result, zero_ir2_opnd, label_exit_with_fail_match);
-    append_ir2_opnd3(mips_sltu, temp_result, esp_opnd, ss_esp);
-    // x86_addr is not equal, but esp match, it indicates that the x86_addr has been changed
-    append_ir2_opnd3_not_nop(mips_beq, esp_opnd, ss_esp, label_exit_with_fail_match);
-    append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
-
-    // pop till find, compare esp with ss_esp each time
-    IR2_OPND label_pop_till_find = ir2_opnd_new_type(IR2_OPND_LABEL);
-    append_ir2_opnd1(mips_label, label_pop_till_find);
-    append_ir2_opnd2i(mips_load_addrx, ss_esp, ss_opnd, -(int)sizeof(SS_ITEM) + (int)offsetof(SS_ITEM, x86_esp));
-    IR2_OPND label_esp_equal = ir2_opnd_new_type(IR2_OPND_LABEL);
-    append_ir2_opnd3(mips_beq, esp_opnd, ss_esp, label_esp_equal);
-    append_ir2_opnd3_not_nop(mips_bne, temp_result, zero_ir2_opnd, label_exit_with_fail_match);
-    append_ir2_opnd3(mips_slt, temp_result, esp_opnd, ss_esp);
-    append_ir2_opnd1_not_nop(mips_b, label_pop_till_find);
-    append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
-    ra_free_temp(temp_result);
-
-    // esp equal, adjust esp with 24#reg value
-    append_ir2_opnd1(mips_label, label_esp_equal);
-    append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
-    IR2_OPND etb_addr = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_load_addr, etb_addr, ss_opnd, (int)offsetof(SS_ITEM, return_tb));
-    IR2_OPND ret_tb_addr = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_load_addr, ret_tb_addr, etb_addr, offsetof(ETB, tb));
-    /* check if etb->tb is set */
-    IR2_OPND label_have_no_native_code = ir2_opnd_new_type(IR2_OPND_LABEL);
-    append_ir2_opnd3(mips_beq, ret_tb_addr, zero_ir2_opnd, label_have_no_native_code);
-    IR2_OPND ss_x86_addr = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_load_addrx, ss_x86_addr, ret_tb_addr, (int)offsetof(TranslationBlock, pc));
-    IR2_OPND x86_addr = ra_alloc_dbt_arg2();
-    append_ir2_opnd3(mips_bne, ss_x86_addr, x86_addr, label_exit_with_fail_match);
-
-    // after several ss_pop, finally match successfully
-    IR2_OPND esp_change_bytes = ra_alloc_mda();
-    append_ir2_opnd3(mips_add_addrx, esp_opnd, esp_opnd, esp_change_bytes);
-    IR2_OPND ret_mips_addr = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_load_addr, ret_mips_addr, ret_tb_addr,
-        offsetof(TranslationBlock, tc) + offsetof(struct tb_tc, ptr));
-    //before jump to the target tb, check whether top_out and top_in are equal
-    //NOTE: last_executed_tb is already set before jumping to ss_match_fail_native
-    IR2_OPND rotate_step = ra_alloc_dbt_arg1();
-    IR2_OPND rotate_ret_addr = ra_alloc_dbt_arg2();
-    IR2_OPND label_no_rotate = ir2_opnd_new_type(IR2_OPND_LABEL);
-    IR2_OPND last_executed_tb = ra_alloc_dbt_arg1();
-    IR2_OPND top_out = ra_alloc_itemp();
-    IR2_OPND top_in = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_lbu, top_out, last_executed_tb,
-        offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_out));
-    append_ir2_opnd2i(mips_lbu, top_in, ret_tb_addr,
-        offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_in));
-    append_ir2_opnd3(mips_beq, top_in, top_out, label_no_rotate);
-    //top_in != top_out, rotate fpu
-    append_ir2_opnd3(mips_subu, rotate_step, top_out, top_in);
-    append_ir2_opnda_not_nop(mips_j, native_rotate_fpu_by);
-    append_ir2_opnd2(mips_mov64, rotate_ret_addr, ret_mips_addr);
-    ra_free_temp(top_in);
-    ra_free_temp(top_out);
-
-    //top_in == top_out, directly go to next tb
-    append_ir2_opnd1(mips_label, label_no_rotate);
-    append_ir2_opnd1(mips_jr, ret_mips_addr);
-    ra_free_temp(ret_tb_addr);
-    ra_free_temp(ret_mips_addr);
-
-    // finally match failed: adjust esp, load last_execut_tb
-    append_ir2_opnd1(mips_label, label_exit_with_fail_match);
-    append_ir2_opnd3(mips_add_addrx, esp_opnd, esp_opnd, esp_change_bytes);
-    append_ir2_opnd1(mips_label, label_have_no_native_code);
-    append_ir2_opnda(mips_j, context_switch_native_to_bt_ret_0);
-    //IR2_OPND indirect_lookup_code_addr = ra_alloc_itemp();
-    //load_ireg_from_addr(indirect_lookup_code_addr, tb_look_up_native);
-    //append_ir2(mips_jr, indirect_lookup_code_addr);
-    //ra_free_temp(indirect_lookup_code_addr);
-
-    ra_free_temp(ss_esp);
-    ra_free_temp(ss_x86_addr);
-    tr_fini(false);
-    total_mips_num = tr_ir2_assemble(code_buf) + 1;
-
-    return total_mips_num;
-#endif
 }
 
 /* we have no inst to mov from gpr to top, so we have to be silly */
@@ -3549,7 +3565,7 @@ static void convert_fpregs_x80_to_64(void)
     }
 }
 
-void tr_gen_call_to_helper_prologue(int use_fp)
+static void tr_gen_call_to_helper_prologue(int use_fp)
 {
 
     tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
@@ -3569,7 +3585,7 @@ void tr_gen_call_to_helper_prologue(int use_fp)
     }
 }
 
-void tr_gen_call_to_helper_epilogue(int use_fp)
+static void tr_gen_call_to_helper_epilogue(int use_fp)
 {
     if (use_fp) {
         IR2_OPND func_addr_opnd = ra_alloc_dbt_arg2();

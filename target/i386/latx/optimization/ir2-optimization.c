@@ -1,10 +1,7 @@
 #include "common.h"
-#include "env.h"
-#include "etb.h"
+#include "lsenv.h"
 
-static void ir2_schedule(TranslationBlock *tb);
-static void tri_separate_branch_from_ldst(TranslationBlock *tb);
-
+#if 0
 static bool has_dependency(IR2_INST *p1, IR2_INST *p2)
 {
     IR2_OPND empty_opnd = ir2_opnd_new_none();
@@ -36,13 +33,13 @@ static bool has_dependency(IR2_INST *p1, IR2_INST *p2)
             }
         }
     }
-
     return false;
 }
+#endif
 
+#if 0
 static void tri_schedule_one_ir2(IR2_INST *p, int max_distance)
 {
-#if 0
     /* max_distance default is 10 */
     int distance = 0;
     /* 1. scan backward to find a proper position */
@@ -85,8 +82,8 @@ static void tri_schedule_one_ir2(IR2_INST *p, int max_distance)
         ir2_remove(p);
         ir2_insert_after(p, ir2_block);
     }
-#endif
 }
+#endif
 
 static void ir2_schedule(TranslationBlock *tb)
 {

@@ -1,6 +1,7 @@
 #include "common.h"
-#include "env.h"
+#include "lsenv.h"
 #include "reg-alloc.h"
+#include "translate.h"
 
 EXTENSION_MODE ir1_opnd_em(IR1_OPND *opnd)
 {

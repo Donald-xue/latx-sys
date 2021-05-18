@@ -1,8 +1,8 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
 #include "latx-options.h"
 #include "flag-pattern.h"
+#include "translate.h"
 
 bool translate_jz(IR1_INST *pir1){
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL); 

@@ -1,8 +1,9 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include "flag-lbt.h"
 #include "latx-options.h"
+#include "translate.h"
 
 bool translate_pop(IR1_INST *pir1)
 {

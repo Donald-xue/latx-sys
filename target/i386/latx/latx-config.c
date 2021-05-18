@@ -1,17 +1,19 @@
 #include "common.h"
-#include "latx-config.h"
 #include "diStorm/distorm.h"
 #include "ir1.h"
 #include "ir2.h"
-#include "env.h"
+#include "lsenv.h"
 #include "etb.h"
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "etb.h"
+#include "ibtc.h"
 #include "shadow-stack.h"
+#include "flag-reduction.h"
 #include "profile.h"
-
 #include "trace.h"
+#include "translate.h"
+#include "latx-config.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {
@@ -49,332 +51,6 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
      */
     return tr_translate_tb(tb, etb);
 }
-
-int lsenv_offset_of_mips_regs(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->mips_regs[i]) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_gpr(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->regs[i]) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_eflags(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->eflags) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_ibtc_table(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->ibtc_table_p) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_tb_jmp_cache_ptr(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->tb_jmp_cache_ptr) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_eip(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->eip) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_top(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->fpstt) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_get_top(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return cpu->fpstt;
-}
-
-void lsenv_set_top(ENV *lsenv, int new_fpstt)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    cpu->fpstt = new_fpstt;
-}
-
-int lsenv_offset_of_status_word(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->fpus) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_control_word(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->fpuc) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_get_fpu_control_word(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return cpu->fpuc;
-}
-
-int lsenv_offset_of_tag_word(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->fptags[0]) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_fpr(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR) & (cpu->fpregs[i].d) - (ADDR)lsenv->cpu_state);
-}
-
-void lsenv_set_fpregs(ENV *lsenv, int i, FPReg new_value)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    cpu->fpregs[i] = new_value;
-}
-
-FPReg lsenv_get_fpregs(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return cpu->fpregs[i];
-}
-
-int lsenv_offset_of_mmx(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->fpregs[i]) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_mxcsr(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->mxcsr) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_seg_base(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->segs[i].base) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_seg_selector(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->segs[i].selector) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_seg_limit(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->segs[i].limit) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_seg_flags(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->segs[i].flags) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_gdt_base(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->gdt.base) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_gdt_limit(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->gdt.limit) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_exception_index(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    CPUState *cpu_state = env_cpu(cpu);
-    return (int)((ADDR)(&cpu_state->exception_index) - (ADDR)lsenv->cpu_state);
-}
-
-/* virtual registers */
-int lsenv_offset_of_vreg(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->vregs[i]) - (ADDR)lsenv->cpu_state);
-}
-
-int lsenv_offset_of_guest_base(ENV *lsenv)
-{
-    return lsenv_offset_of_vreg(lsenv, 0);
-}
-
-int lsenv_offset_of_last_executed_tb(ENV *lsenv)
-{
-    return lsenv_offset_of_vreg(lsenv, 1);
-}
-
-int lsenv_offset_of_next_eip(ENV *lsenv)
-{
-    return lsenv_offset_of_vreg(lsenv, 2);
-}
-
-int lsenv_offset_of_top_bias(ENV *lsenv)
-{
-    return lsenv_offset_of_vreg(lsenv, 3);
-}
-
-int lsenv_offset_of_ss(ENV *lsenv)
-{
-    return lsenv_offset_of_vreg(lsenv, 4);
-}
-
-
-/* Instead save intno in helper_raise_int, we save intno in translate_int. */
-void helper_raise_int(void)
-{
-    set_CPUX86State_error_code(lsenv, 0);
-    set_CPUX86State_exception_is_int(lsenv, 1);
-    set_CPUState_can_do_io(lsenv, 1);
-    siglongjmp_cpu_jmp_env();
-}
-void set_CPUX86State_error_code(ENV *lsenv, int error_code)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    cpu->error_code = error_code;
-}
-void set_CPUX86State_exception_is_int(ENV *lsenv, int exception_is_int)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    cpu->exception_is_int = exception_is_int;
-}
-int lsenv_offset_exception_next_eip(ENV *lsenv)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->exception_next_eip) - (ADDR)lsenv->cpu_state);
-}
-void set_CPUState_can_do_io(ENV *lsenv, int can_do_io)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    CPUState *cs = env_cpu(cpu);
-    cs->can_do_io = can_do_io;
-}
-void siglongjmp_cpu_jmp_env(void)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-
-    /* siglongjmp will skip the execution of latx_after_exec_tb
-     * which is expected to reset top_bias/top
-     */
-    TranslationBlock *last_tb =
-        (TranslationBlock *)lsenv_get_last_executed_tb(lsenv);
-    latx_after_exec_tb(cpu, last_tb);
-
-    CPUState *cpu_state = env_cpu(cpu);
-    siglongjmp(cpu_state->jmp_env, 1);
-}
-
-int lsenv_offset_of_xmm(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (int)((ADDR)(&cpu->xmm_regs[i]) - (ADDR)lsenv->cpu_state);
-}
-
-ADDR lsenv_get_vreg(ENV *lsenv, int i)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    return (ADDR)cpu->vregs[i];
-}
-
-void lsenv_set_vreg(ENV *lsenv, int i, ADDR val)
-{
-    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
-    cpu->vregs[i] = (uint64_t)val;
-}
-
-ADDR lsenv_get_guest_base(ENV *lsenv) { return (ADDR)lsenv_get_vreg(lsenv, 0); }
-
-void lsenv_set_guest_base(ENV *lsenv, ADDR gbase)
-{
-    lsenv_set_vreg(lsenv, 0, gbase);
-}
-
-ADDR lsenv_get_last_executed_tb(ENV *lsenv)
-{
-    return (ADDR)lsenv_get_vreg(lsenv, 1);
-}
-
-void lsenv_set_last_executed_tb(ENV *lsenv, ADDR tb)
-{
-    lsenv_set_vreg(lsenv, 1, tb);
-}
-
-ADDRX lsenv_get_next_eip(ENV *lsenv) { return (ADDRX)lsenv_get_vreg(lsenv, 2); }
-
-void lsenv_set_next_eip(ENV *lsenv, ADDRX eip)
-{
-    lsenv_set_vreg(lsenv, 2, eip);
-}
-
-int lsenv_get_top_bias(ENV *lsenv) { return (int)lsenv_get_vreg(lsenv, 3); }
-
-void lsenv_set_top_bias(ENV *lsenv, int top_bias)
-{
-    lsenv_set_vreg(lsenv, 3, top_bias);
-}
-
-int lsenv_offset_of_tr_data(ENV *lsenv)
-{
-    return (ADDR)(&lsenv->tr_data) - (ADDR)lsenv;
-}
-
-int lsenv_get_last_executed_tb_top_out(ENV *lsenv)
-{
-    ETB *etb =
-        &((TranslationBlock *)(lsenv_get_last_executed_tb(lsenv)))->extra_tb;
-    return etb->_top_out;
-}
-
-uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
-{
-    return cpu_ldub_code((CPUX86State *)cpu, (target_ulong)pc);
-}
-
-ADDRX qm_tb_get_pc(void *tb)
-{
-    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
-    return (ADDRX)ptb->pc;
-}
-
-ETB *qm_tb_get_extra_tb(void *tb)
-{
-    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
-    return &ptb->extra_tb;
-}
-
-void *qm_tb_get_code_cache(void *tb)
-{
-    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
-    return ptb->tc.ptr;
-}
-
-void *qm_tb_get_jmp_target_arg(void *tb)
-{
-    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
-    return &(ptb->jmp_target_arg[0]);
-}
-
-void *qm_tb_get_jmp_reset_offset(void *tb)
-{
-    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
-    return &(ptb->jmp_reset_offset[0]);
-}
-
-ADDR cpu_get_guest_base(void) { return guest_base; }
 
 void trace_tb_execution(struct TranslationBlock *tb)
 {
@@ -537,4 +213,65 @@ void latx_after_exec_tb(CPUArchState *env, struct TranslationBlock *tb)
 int target_latx_fpu_rotate(void *code_buf_addr)
 {
     return generate_native_rotate_fpu_by(code_buf_addr);
+}
+
+static void xtm_capstone_init(void)
+{
+    if (cs_open(CS_ARCH_X86, CS_MODE_32, &handle) != CS_ERR_OK) {
+        fprintf(stderr, "%s %s %d error : cs_open \n", __FILE__, __func__,
+                __LINE__);
+        exit(-1);
+    }
+    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+}
+
+static QHT etb_qht_real;
+
+static void __attribute__((__constructor__)) latx_init(void)
+{
+    context_switch_bt_to_native = 0;
+    context_switch_native_to_bt_ret_0 = 0;
+    context_switch_native_to_bt = 0;
+    /* context_switch_is_init = 0; */
+    native_rotate_fpu_by = 0;
+
+    options_init();
+    xtm_capstone_init();
+
+    etb_qht = &etb_qht_real;
+    etb_qht_init();
+    ss_init(&shadow_stack);
+}
+
+void latx_exit(void)
+{
+    if (option_profile) {
+        profile_generate();
+        profile_dump(10);
+    }
+}
+
+static __thread ENV lsenv_real;
+static __thread TRANSLATION_DATA tr_data_real;
+static __thread FLAG_PATTERN_DATA fp_data_real;
+
+/* global lsenv defined here */
+__thread ENV *lsenv;
+
+void latx_lsenv_init(CPUArchState *env)
+{
+    lsenv = &lsenv_real;
+    lsenv->cpu_state = env;
+    lsenv->tr_data = &tr_data_real;
+    lsenv->fp_data = &fp_data_real;
+
+    env->vregs[4] = (uint64_t)shadow_stack._ssi_current;
+    if (option_dump) {
+        fprintf(stderr, "[LATX] env init : %p\n", lsenv->cpu_state);
+    }
+}
+
+void latx_set_tls_ibtc_table(CPUArchState *env)
+{
+    env->ibtc_table_p = &ibtc_table;
 }

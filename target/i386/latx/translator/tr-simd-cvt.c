@@ -1,7 +1,8 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include "latx-options.h"
+#include "translate.h"
 
 /* bool translate_cvtpd2pi(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtpd2dq(IR1_INST * pir1) { return false; } */

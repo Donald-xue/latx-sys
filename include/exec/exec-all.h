@@ -47,10 +47,6 @@ void gen_intermediate_code(CPUState *cpu, TranslationBlock *tb, int max_insns);
 void restore_state_to_opc(CPUArchState *env, TranslationBlock *tb,
                           target_ulong *data);
 
-#ifdef CONFIG_LATX
-#include "latx-config.h"
-#endif
-
 /**
  * cpu_restore_state:
  * @cpu: the vCPU state is to be restore to
@@ -449,6 +445,7 @@ struct tb_tc {
 };
 
 #ifdef CONFIG_LATX
+#include "latx-types.h"
 struct IR1_INST;
 /* extra attributes we need in TB */
 typedef struct ExtraBlock{

@@ -1,7 +1,7 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
 #include "latx-options.h"
+#include "translate.h"
 
 /* bool translate_psllw(IR1_INST * pir1) { return false; } */
 /* bool translate_pslld(IR1_INST * pir1) { return false; } */

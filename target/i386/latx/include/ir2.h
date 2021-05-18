@@ -2,7 +2,6 @@
 #define _IR2_H_
 
 #include "common.h"
-
 #include "la-ir2.h"
 
 #define IR2_ITEMP_MAX 4096

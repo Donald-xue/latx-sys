@@ -2,23 +2,7 @@
 #include "etb.h"
 #include "ir1.h"
 #include "translate.h"
-
-typedef struct {
-    uint8 use;
-    uint8 def;
-    uint8 undef;
-} IR1_EFLAG_USEDEF;
-
-#define __CF (1 << CF_USEDEF_BIT_INDEX)
-#define __PF (1 << PF_USEDEF_BIT_INDEX)
-#define __AF (1 << AF_USEDEF_BIT_INDEX)
-#define __ZF (1 << ZF_USEDEF_BIT_INDEX)
-#define __SF (1 << SF_USEDEF_BIT_INDEX)
-#define __OF (1 << OF_USEDEF_BIT_INDEX)
-#define __DF (1 << DF_USEDEF_BIT_INDEX)
-#define __INVALID (1 << 7)
-
-#define __ALL_EFLAGS (__OF | __SF | __ZF | __AF | __PF | __CF)
+#include "flag-reduction.h"
 
 static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {__INVALID, __INVALID, __INVALID},                 //X86_INS_INVALID = 0,
@@ -1550,7 +1534,8 @@ static const IR1_EFLAG_USEDEF *ir1_opcode_to_eflag_usedef(IR1_INST *ir1)
 }
 
 
-uint8 pending_use_of_succ(ETB* etb, int max_depth) {
+uint8 pending_use_of_succ(ETB* etb, int max_depth)
+{
     if((!etb->succ[0] && !etb->succ[1]) || max_depth==0)
         return -1;
     uint8 pending_use = 0;
@@ -1591,15 +1576,16 @@ uint8 pending_use_of_succ(ETB* etb, int max_depth) {
     return pending_use;
 }
 
-void free_etb(ETB* etb) {
-    if(etb == NULL) return;
-    if(etb->succ[0]) 
-        free_etb(etb->succ[0]);
-    if(etb->succ[1])
-        free_etb(etb->succ[1]);
-    mm_free(etb->_ir1_instructions);
-    mm_free(etb);
-}
+/* static void free_etb(ETB* etb) {
+ *     if(etb == NULL) return;
+ *     if(etb->succ[0])
+ *         free_etb(etb->succ[0]);
+ *     if(etb->succ[1])
+ *         free_etb(etb->succ[1]);
+ *     mm_free(etb->_ir1_instructions);
+ *     mm_free(etb);
+ * }
+ */
 
 void tb_flag_reduction(void *tb)
 {

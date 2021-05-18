@@ -1,7 +1,8 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include "latx-options.h"
+#include "translate.h"
 
 static void update_fcsr_enable(IR2_OPND control_word, IR2_OPND fcsr)
 {

@@ -1,8 +1,10 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
 #include "ir2.h"
 #include "latx-options.h"
+#include "lsenv.h"
+#include "translate.h"
+
 /*
  * FIXME: LA only support 12bit.
  * Modify it for LA platform.

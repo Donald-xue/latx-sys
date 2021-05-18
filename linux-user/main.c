@@ -51,7 +51,6 @@
 
 #ifdef CONFIG_LATX
 #include "latx-config.h"
-#include "lsenv.h"
 #endif
 
 #ifndef AT_FLAGS_PRESERVE_ARGV0

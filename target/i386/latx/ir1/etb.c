@@ -1,74 +1,58 @@
 #include "common.h"
-#include "mem.h"
 #include "env.h"
 #include "etb.h"
-#include "ir2.h"
 
-/*
- * functions to access ETB items
- */
-IR1_INST *etb_ir1_inst_first(ETB *etb) { return etb->_ir1_instructions; }
+/* global etb_qht defined here */
+QHT *etb_qht;
+/* global etb_array defined here */
+ETB *etb_array[ETB_ARRAY_SIZE];
+/* global etb_num defined here */
+int etb_num;
 
-IR1_INST *etb_ir1_inst_last(ETB *etb)
+static bool etb_lookup_custom(const void *ap, const void *bp)
 {
-    return etb->_ir1_instructions + etb->_ir1_num - 1;
+    ETB *etb = (ETB*)ap;
+    ADDRX pc = *(ADDRX *)bp;
+    return etb->pc == pc;
 }
 
-IR1_INST *etb_ir1_inst(ETB *etb, const int i)
+static bool etb_cmp(const void *ap, const void *bp)
 {
-    return etb->_ir1_instructions + i;
+    ETB *p = (ETB*)ap;
+    ETB *q = (ETB*)bp;
+    return p->pc == q->pc;
 }
 
-int etb_ir1_num(ETB *etb) { return etb->_ir1_num; }
-
-int8 etb_get_top_in(ETB *etb) { return etb->_top_in; }
-
-void etb_set_top_in(ETB *etb, int8 top_in)
+void etb_qht_init(void)
 {
-    lsassert(top_in >= 0 && top_in <= 7);
-    etb->_top_in = top_in;
+    unsigned int mode = QHT_MODE_AUTO_RESIZE;
+
+    qht_init(etb_qht, etb_cmp, 1 << 10, mode);
 }
 
-int8 etb_get_top_out(ETB *etb) { return etb->_top_out; }
-
-void etb_set_top_out(ETB *etb, int8 top_out)
+static void etb_init(ETB *etb)
 {
-    lsassert(top_out >= 0 && top_out <= 7);
-    etb->_top_out = top_out;
+    memset(etb, 0, sizeof(ETB));
+    etb->_top_out = -1;
+    etb->_top_in = -1;
 }
 
-int8 etb_get_top_increment(ETB *etb) { return etb->_top_increment; }
+static ETB *fast_table[1 << 10];
 
-void etb_check_top_in(struct TranslationBlock *tb, int top)
+ETB *etb_find(ADDRX pc)
 {
-    ETB *etb = &tb->extra_tb;
-    if (etb_get_top_in(etb) == -1) {
-        lsassert(etb_get_top_out(etb) == -1);
-        etb_set_top_in(etb, top);
-    } else {
-        /*
-        assertm(top_in() == top, "\n%s: TB<0x%x>: top_in<%d> does not equal
-        top<%d>\n\
-            NOTE: last_tb_executed: first time: 0x%x, current time: 0x%x\n",\
-            BIN_INFO::get_exe_short_name(), this->addr(), top_in(), top,\
-            _last_tb_x86_addr, env->last_executed_tb()->addr());
-            */
+    uint32_t hash = pc & 0x3ff;
+    if (fast_table[hash] && fast_table[hash]->pc == pc)
+        return fast_table[hash];
+
+    ETB *etb = (ETB*)qht_lookup_custom(etb_qht, &pc, hash, etb_lookup_custom);
+    if (etb == NULL) {
+        etb = (ETB*)mm_malloc(sizeof(ETB));
+        etb_init(etb);
+        etb->pc = pc;
+        lsassertm(etb,"memory is full\n");
+        qht_insert(etb_qht, etb, hash, NULL);
     }
-}
-
-void etb_check_top_out(ETB *etb, int top)
-{
-    lsassert(etb_get_top_in(etb) != -1);
-
-    if (etb_get_top_out(etb) == -1) {
-        etb_set_top_out(etb, top);
-    } else {
-        /*
-        assertm(top_out() == top, "\n%s: TB<0x%x>: top_out<%d> does not equal
-        top<%d>\n\
-            NOTE: last_tb_executed: first time: 0x%x, current time: 0x%x\n",\
-            BIN_INFO::get_exe_short_name(), this->addr(), top_out(), top,\
-            _last_tb_x86_addr, env->last_executed_tb()->addr());
-            */
-    }
+    fast_table[hash] = etb;
+    return etb;
 }

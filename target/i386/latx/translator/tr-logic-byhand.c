@@ -1,9 +1,9 @@
 #include "common.h"
-#include "translate.h"
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "flag-lbt.h"
 #include "flag-pattern.h"
+#include "translate.h"
 
 static bool translate_and_byhand_32(IR1_INST *pir1, bool is_and);
 bool translate_rol_byhand_imm(IR1_INST *pir1);

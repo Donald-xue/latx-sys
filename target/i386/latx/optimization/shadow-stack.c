@@ -1,8 +1,11 @@
-#include "env.h"
+#include "lsenv.h"
 #include "mem.h"
 #include "reg-alloc.h"
-#include "shadow-stack.h"
 #include "latx-options.h"
+#include "shadow-stack.h"
+
+/* global shadow_stack is defined here */
+SS shadow_stack;
 
 SS_ITEM* ss_pop(SS* ss) 
 {
@@ -81,50 +84,19 @@ void ss_pop_till_find(SS* ss, ADDRX x86_esp)
     return;
 }
 
-/* etb_qht functions and etb_array */
-bool etb_cmp(const void *ap, const void *bp)
-{
-    ETB *p = (ETB*)ap;
-    ETB *q = (ETB*)bp;
-    return p->pc == q->pc;
-}
-
-void etb_qht_init(void)
-{
-    unsigned int mode = QHT_MODE_AUTO_RESIZE;
-
-    qht_init(etb_qht, etb_cmp, 1 << 10, mode);
-}
-
-bool etb_lookup_custom(const void *ap, const void *bp)
-{
-    ETB *etb = (ETB*)ap;
-    ADDRX pc = *(ADDRX *)bp;
-    return etb->pc == pc;
-}
-
-void etb_init(ETB *etb)
-{
-    memset(etb, 0, sizeof(ETB));
-    etb->_top_out = -1;
-    etb->_top_in = -1;
-}
-
-ETB *etb_find(ADDRX pc)
-{
-    static ETB *fast_table[1 << 10];
-    uint32_t hash = pc & 0x3ff;
-    if (fast_table[hash] && fast_table[hash]->pc == pc)
-        return fast_table[hash];
-
-    ETB *etb = (ETB*)qht_lookup_custom(etb_qht, &pc, hash, etb_lookup_custom);
-    if (etb == NULL) {
-        etb = (ETB*)mm_malloc(sizeof(ETB));
-        etb_init(etb);
-        etb->pc = pc;
-        lsassertm(etb,"memory is full\n");
-        qht_insert(etb_qht, etb, hash, NULL);
+void dump_shadow_stack(int debug_type) {
+    switch (debug_type) {
+        case 1: fprintf(stderr,"%dcall      :",debug_type); break;
+        case 2: fprintf(stderr,"%dcallin    :",debug_type); break;
+        case 3: fprintf(stderr,"%dret chain :",debug_type); break;
+        case 4: fprintf(stderr,"%dret null  :",debug_type); break;
+        case 5: fprintf(stderr,"%dret fail  :",debug_type); break;
+        default: fprintf(stderr,"%derror    :",debug_type);
     }
-    fast_table[hash] = etb;
-    return etb;
+    CPUArchState* env = (CPUArchState*)(lsenv->cpu_state);
+    SS_ITEM* curr_ss = (SS_ITEM*)(env->vregs[4]);//ss
+    for (SS_ITEM* p = shadow_stack._ssi_first + 1; p < curr_ss; p++) {
+        fprintf(stderr, "%lx ", (uint64_t)p->x86_callee_addr);
+    }
+    fprintf(stderr, "\n");
 }

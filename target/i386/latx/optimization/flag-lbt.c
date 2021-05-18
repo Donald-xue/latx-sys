@@ -1,7 +1,7 @@
-#include "common.h"
 #include "env.h"
 #include "reg-alloc.h"
 #include "latx-options.h"
+#include "translate.h"
 #include "flag-lbt.h"
 
 bool generate_eflag_by_lbt(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1, IR1_INST *pir1, bool is_sx) {

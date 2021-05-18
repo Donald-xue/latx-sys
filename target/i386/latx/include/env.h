@@ -1,12 +1,67 @@
 #ifndef _ENV_H_
 #define _ENV_H_
 
-#include "common.h"
 #include "flag-pattern.h"
-#include "translate.h"
-#include "latx-config.h"
-#include "shadow-stack.h"
-#include "lsenv.h"
+
+typedef struct {
+    int16 virtual_id;
+    int8 physical_id;
+} TEMP_REG_STATUS;
+
+static const TEMP_REG_STATUS itemp_status_default[] = {
+    {0, 4}, {0, 5},  {0, 6},  {0, 7},  {0, 8},
+    {0, 9}, {0, 10}, {0, 11}, {0, 12}, {0, 13}};
+
+static const TEMP_REG_STATUS ftemp_status_default[] = {
+    {0, 9}, {0, 10}, {0, 11}, {0, 12}, {0, 13}, {0, 14}, {0, 15},
+};
+
+#define itemp_status_num \
+    (sizeof(itemp_status_default) / sizeof(TEMP_REG_STATUS))
+#define ftemp_status_num \
+    (sizeof(ftemp_status_default) / sizeof(TEMP_REG_STATUS))
+
+typedef struct TRANSLATION_DATA {
+    EXTENSION_MODE
+    ireg_em[IR2_ITEMP_MAX]; /* extension mode of the 32 integer registers */
+    int8 ireg_eb[IR2_ITEMP_MAX]; /* bits number where the extension starts */
+    EXTENSION_MODE hi_em;
+    EXTENSION_MODE lo_em;
+
+    void *curr_tb; /* from QEMU */
+
+    /* ir1 */
+    IR1_INST *ir1_inst_array;
+    int ir1_nr;
+    IR1_INST *curr_ir1_inst;
+    /* uint8       ir1_dump_threshold[MAX_IR1_NUM_PER_TB]; */
+
+    /* ir2 */
+    IR2_INST *ir2_inst_array;
+    int ir2_inst_num_max;
+    int ir2_inst_num_current;
+    int real_ir2_inst_num;
+
+    /* the list of ir2 */
+    IR2_INST *first_ir2;
+    IR2_INST *last_ir2;
+
+    /* label number */
+    int label_num;
+
+    /* temp register number */
+    int itemp_num;
+    int ftemp_num;
+    TEMP_REG_STATUS itemp_status[itemp_status_num];
+    TEMP_REG_STATUS ftemp_status[ftemp_status_num];
+
+    int curr_top;               /* top value (changes when translating) */
+    int curr_esp_need_decrease; /* curr_esp need to decrease */
+
+    /* TODO : support static translation */
+    uint8 curr_ir1_skipped_eflags; /* these eflag calculation can be skipped */
+                                   /* (because of flag pattern, etc) */
+} TRANSLATION_DATA;
 
 typedef struct ENV {
     void *cpu_state;            /* from QEMU,CPUArchState */
@@ -14,77 +69,6 @@ typedef struct ENV {
     FLAG_PATTERN_DATA *fp_data; /* from LATX */
 } ENV;
 
-extern __thread ENV *lsenv;
-
-/* func to access ENV's attributes */
-int lsenv_offset_of_gpr(ENV *lsenv, int i);
-int lsenv_offset_of_eflags(ENV *lsenv);
-int lsenv_offset_of_ibtc_table(ENV *lsenv);
-int lsenv_offset_of_tb_jmp_cache_ptr(ENV *lsenv);
-int lsenv_offset_of_eip(ENV *lsenv);
-int lsenv_offset_of_top(ENV *lsenv);
-int lsenv_offset_of_vreg(ENV *lsenv, int i);
-int lsenv_offset_of_guest_base(ENV *lsenv);
-int lsenv_offset_of_last_executed_tb(ENV *lsenv);
-int lsenv_offset_of_next_eip(ENV *lsenv);
-int lsenv_offset_of_top_bias(ENV *lsenv);
-int lsenv_offset_of_status_word(ENV *lsenv);
-int lsenv_offset_of_control_word(ENV *lsenv);
-int lsenv_offset_of_tag_word(ENV *lsenv);
-int lsenv_offset_of_fpr(ENV *lsenv, int i);
-int lsenv_offset_of_mxcsr(ENV *lsenv);
-int lsenv_offset_of_seg_base(ENV *lsenv, int i);
-int lsenv_offset_of_seg_selector(ENV *lsenv, int i);
-int lsenv_offset_of_seg_limit(ENV *lsenv, int i);
-int lsenv_offset_of_seg_flags(ENV *lsenv, int i);
-int lsenv_offset_of_gdt_base(ENV *lsenv);
-int lsenv_offset_of_gdt_limit(ENV *lsenv);
-int lsenv_offset_of_mmx(ENV *lsenv, int i);
-int lsenv_offset_of_xmm(ENV *lsenv, int i);
-int lsenv_offset_of_tr_data(ENV *lsenv);
-int lsenv_offset_of_current_tb(ENV *lsenv);
-int lsenv_offset_of_ss(ENV *lsenv);
-int lsenv_offset_of_mips_regs(ENV *lsenv,int i);
-
-/* func to access ENV's interrupt/exception attributes */
-int lsenv_offset_exception_index(ENV *lsenv);
-int lsenv_offset_exception_next_eip(ENV *lsenv);
-void set_CPUX86State_error_code(ENV *lsenv, int error_code);
-void set_CPUX86State_exception_is_int(ENV *lsenv, int exception_is_int);
-void set_CPUState_can_do_io(ENV *lsenv, int can_do_io);
-void helper_raise_int(void);
-void siglongjmp_cpu_jmp_env(void);
-
-/* FPU top */
-int lsenv_get_top(ENV *lsenv);
-void lsenv_set_top(ENV *lsenv, int new_fpstt);
-void lsenv_set_fpregs(ENV *lsenv, int i, FPReg new_value);
-FPReg lsenv_get_fpregs(ENV *lsenv, int i);
-int lsenv_get_fpu_control_word(ENV *lsenv);
-/* virtual registers */
-uint64_t lsenv_get_vreg(ENV *lsenv, int i);
-void lsenv_set_vreg(ENV *lsenv, int i, uint64_t val);
-ADDR lsenv_get_guest_base(ENV *lsenv);
-void lsenv_set_guest_base(ENV *lsenv, ADDR gbase);
-ADDR lsenv_get_last_executed_tb(ENV *lsenv);
-void lsenv_set_last_executed_tb(ENV *lsenv, ADDR tb);
-ADDRX lsenv_get_next_eip(ENV *lsenv);
-void lsenv_set_next_eip(ENV *lsenv, ADDRX eip);
-int lsenv_get_top_bias(ENV *lsenv);
-void lsenv_set_top_bias(ENV *lsenv, int top_bias);
-int lsenv_get_last_executed_tb_top_out(ENV *lsenv);
-
-/* func to access QEMU's data */
-uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc);
-ADDR cpu_get_guest_base(void);
-
-/* func to access QEMU's TB */
-ADDRX qm_tb_get_pc(void *tb);
-void *qm_tb_get_code_cache(void *tb);
-void *qm_tb_get_jmp_reset_offset(void *tb);
-void *qm_tb_get_jmp_target_arg(void *tb);
-
-void latx_exit(void);
 /* eflags mask */
 #define CF_BIT (1 << 0)
 #define PF_BIT (1 << 2)

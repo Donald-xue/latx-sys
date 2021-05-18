@@ -1,8 +1,9 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include <string.h>
 #include "latx-options.h"
+#include "translate.h"
 
 IR2_OPND ra_alloc_gpr(int gpr_num)
 {

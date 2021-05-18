@@ -1,8 +1,11 @@
-#include "common.h"
 #include "reg-alloc.h"
 #include "latx-options.h"
-#include "env.h"
+#include "latx-config.h"
+#include "shadow-stack.h"
+#include "etb.h"
+#include "lsenv.h"
 #include "flag-lbt.h"
+#include "translate.h"
 
 bool translate_nop(IR1_INST *pir1) { return true; }
 bool translate_endbr32(IR1_INST *pir1) { return true; }
@@ -584,28 +587,52 @@ bool translate_ret_without_ss_opt(IR1_INST *pir1);
 bool translate_ret_with_ss_opt(IR1_INST *pir1);
 void ss_gen_push(IR1_INST *pir1);
 
+static inline void set_CPUX86State_error_code(ENV *lsenv, int error_code)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    cpu->error_code = error_code;
+}
 
-void dump_shadow_stack(int debug_type);
 bool translate_ins(IR1_INST *pir1) {
     printf("FIXME: the instruction INSD is used, but LATX do not support it.\n");
     return true;
 }
 
-void dump_shadow_stack(int debug_type) {
-    switch (debug_type) {
-        case 1: fprintf(stderr,"%dcall      :",debug_type); break;
-        case 2: fprintf(stderr,"%dcallin    :",debug_type); break;
-        case 3: fprintf(stderr,"%dret chain :",debug_type); break;
-        case 4: fprintf(stderr,"%dret null  :",debug_type); break;
-        case 5: fprintf(stderr,"%dret fail  :",debug_type); break;
-        default: fprintf(stderr,"%derror    :",debug_type);
-    }
-    CPUArchState* env = (CPUArchState*)(lsenv->cpu_state);
-    SS_ITEM* curr_ss = (SS_ITEM*)(env->vregs[4]);//ss
-    for (SS_ITEM* p = ss._ssi_first + 1; p < curr_ss; p++) {
-        fprintf(stderr, "%lx ", (uint64_t)p->x86_callee_addr);
-    }
-    fprintf(stderr, "\n");
+static inline void set_CPUX86State_exception_is_int(ENV *lsenv, int exception_is_int)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    cpu->exception_is_int = exception_is_int;
+}
+
+static inline void set_CPUState_can_do_io(ENV *lsenv, int can_do_io)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    CPUState *cs = env_cpu(cpu);
+    cs->can_do_io = can_do_io;
+}
+
+static void siglongjmp_cpu_jmp_env(void)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+
+    /* siglongjmp will skip the execution of latx_after_exec_tb
+     * which is expected to reset top_bias/top
+     */
+    TranslationBlock *last_tb =
+        (TranslationBlock *)lsenv_get_last_executed_tb(lsenv);
+    latx_after_exec_tb(cpu, last_tb);
+
+    CPUState *cpu_state = env_cpu(cpu);
+    siglongjmp(cpu_state->jmp_env, 1);
+}
+
+/* Instead save intno in helper_raise_int, we save intno in translate_int. */
+static void helper_raise_int(void)
+{
+    set_CPUX86State_error_code(lsenv, 0);
+    set_CPUX86State_exception_is_int(lsenv, 1);
+    set_CPUState_can_do_io(lsenv, 1);
+    siglongjmp_cpu_jmp_env();
 }
 
 void ss_gen_push(IR1_INST *pir1) {

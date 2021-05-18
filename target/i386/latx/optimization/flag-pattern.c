@@ -1,10 +1,11 @@
-#include "common.h"
-#include "env.h"
+#include "lsenv.h"
 #include "etb.h"
 #include "reg-alloc.h"
-#include "flag-pattern.h"
+#include "translate.h"
+#include "flag-reduction.h"
 #include "latx-options.h"
 #include <string.h>
+#include "flag-pattern.h"
 
 typedef enum {
     CMP_JO = (X86_INS_CMP << 16) + X86_INS_JO,

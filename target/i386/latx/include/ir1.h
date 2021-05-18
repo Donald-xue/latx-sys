@@ -4,6 +4,8 @@
 #include "../capStone/include/capstone/capstone.h"
 #include "common.h"
 
+extern csh handle;
+
 #define eax_index 0
 #define ecx_index 1
 #define edx_index 2

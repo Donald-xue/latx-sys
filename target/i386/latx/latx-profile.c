@@ -18,16 +18,15 @@ static int64 ir1_inst_executed = 0;
 static int64 ir1_inst_executed_by_opcode[X86_INS_ENDING];
 static int64 ir1_inst_executed_by_group[X86_GRP_ENDING] = {0};
 static int64 ir2_inst_executed_zx_address = 0;
-int64 indirect_block_cnt = 0;
+static int64 indirect_block_cnt = 0;
+
 int64 ibtc_hit_cnt = 0;
 int64 context_switch_time = 0;
 int64 fpu_call_helper_times = 0; /* aggregate */
 int64 fpu_call_xxx_times[PROFILE_HELPER_NUM];
-ETB *etb_array[ETB_ARRAY_SIZE];
-int tb_num = 0;
 
 static inline void profile_sum(void) {
-    for (int i=0; i<tb_num; ++i) {
+    for (int i=0; i<etb_num; ++i) {
         ETB *etb = etb_array[i];
 
         tb_executed += etb->_execution_times;
@@ -121,10 +120,10 @@ static inline int cmp_fpu_call_helper_count(const void *op1, const void *op2) {
 static inline void profile_sort_tb(void) {
     if (unique_tb != NULL)
         mm_free(unique_tb);
-    unique_tb = (ETB **)mm_calloc(tb_num, sizeof(ETB *));
+    unique_tb = (ETB **)mm_calloc(etb_num, sizeof(ETB *));
     int n = 0;
     
-    for (int i=0; i<tb_num; ++i) {
+    for (int i=0; i<etb_num; ++i) {
         ETB *etb = etb_array[i];
         if (etb->_execution_times > 10)
             unique_tb[n++] = etb;
@@ -219,7 +218,7 @@ static inline void profile_dump_fpu_call_helper(void) {
 static inline void profile_dump_tb(int top_n) {
     if (top_n >unique_tb_num)
         top_n = unique_tb_num;
-    fprintf(stderr, "%d TB execute %" PRId64 " times, and top %d are: \n", tb_num, tb_executed, top_n);
+    fprintf(stderr, "%d TB execute %" PRId64 " times, and top %d are: \n", etb_num, tb_executed, top_n);
 
     fprintf(stderr, " rank ir1_num ir2_num  exec_count percentage x86_addr <function>\n");
     for (int i=0; i<top_n; ++i) {

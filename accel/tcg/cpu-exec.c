@@ -144,6 +144,13 @@ static void init_delay_params(SyncClocks *sc, const CPUState *cpu)
 }
 #endif /* CONFIG USER ONLY */
 
+#ifdef CONFIG_LATX
+#include "latx-config.h"
+#include "latx-options.h"
+#include "etb.h"
+#include "ibtc.h"
+#endif
+
 /* Execute a TB, and fix up the CPU state afterwards if necessary */
 /*
  * Disable CFI checks.
@@ -461,12 +468,6 @@ TranslationBlock* latx_tb_find(void *cpu_state, ADDRX x86_pc)
     qatomic_set(&cpu->tb_jmp_cache[hash], tb);
     return tb;
 }
-
-#include "ibtc.h"
-extern ETB *etb_find(ADDRX);
-extern int option_shadow_stack;
-extern int option_profile;
-extern int option_ibtc;
 #endif
 
 static inline TranslationBlock *tb_find(CPUState *cpu,
@@ -779,11 +780,6 @@ static inline void cpu_loop_exec_tb(CPUState *cpu, TranslationBlock *tb,
 }
 
 /* main execution loop */
-
-#ifdef CONFIG_LATX
-#include "latx-config.h"
-#endif
-
 int cpu_exec(CPUState *cpu)
 {
     CPUClass *cc = CPU_GET_CLASS(cpu);

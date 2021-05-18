@@ -1,7 +1,6 @@
 #ifndef _FLAG_LBT_H_
 #define _FLAG_LBT_H_
 
-#include "etb.h"
 #include "ir1.h"
 #include "ir2.h"
 

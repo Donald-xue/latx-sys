@@ -1,7 +1,8 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include "latx-options.h"
+#include "translate.h"
 
 bool translate_popf(IR1_INST *pir1)
 {

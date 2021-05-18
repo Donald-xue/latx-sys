@@ -69,6 +69,8 @@ IR1_OPND ebp_mem32_ir1_opnd;
 IR1_OPND esi_mem32_ir1_opnd;
 IR1_OPND edi_mem32_ir1_opnd;
 
+csh handle;
+
 static IR1_OPND ir1_opnd_new_static_reg(IR1_OPND_TYPE opnd_type, int size,
                                         x86_reg reg)
 {
@@ -202,18 +204,6 @@ static void __attribute__((__constructor__)) x86tomisp_ir1_init(void)
     edi_mem32_ir1_opnd =
         ir1_opnd_new_static_mem(X86_OP_MEM, 32, X86_REG_EDI, 0);
 };
-
-void xtm_capstone_init(void);
-csh handle;
-void xtm_capstone_init(void)
-{
-    if (cs_open(CS_ARCH_X86, CS_MODE_32, &handle) != CS_ERR_OK) {
-        fprintf(stderr, "%s %s %d error : cs_open \n", __FILE__, __func__,
-                __LINE__);
-        exit(-1);
-    }
-    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
-}
 
 ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc)
 {

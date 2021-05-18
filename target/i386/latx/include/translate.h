@@ -1025,72 +1025,6 @@ bool translate_div_byhand(IR1_INST *pir1);
 bool translate_imul_byhand(IR1_INST *pir1);
 bool translate_cmpxchg_byhand(IR1_INST *pir1);
 
-typedef struct {
-    int16 virtual_id;
-    int8 physical_id;
-} TEMP_REG_STATUS;
-
-static const TEMP_REG_STATUS itemp_status_default[] = {
-    {0, 4}, {0, 5},  {0, 6},  {0, 7},  {0, 8},
-    {0, 9}, {0, 10}, {0, 11}, {0, 12}, {0, 13}};
-#define ITEMP_BITMAP                                                   \
-    ((1 << 4) | (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8) | (1 << 9) | \
-     (1 << 10) | (1 << 11) | (1 << 12) | (1 << 13))
-
-static const TEMP_REG_STATUS ftemp_status_default[] = {
-    {0, 9}, {0, 10}, {0, 11}, {0, 12}, {0, 13}, {0, 14}, {0, 15},
-};
-#define FTEMP_BITMAP                                                   \
-    (1 << 9) | (1 << 10) | (1 << 11) | (1 << 12) | (1 << 13) | \
-    (1 << 14) | (1 << 15))
-
-#define itemp_status_num \
-    (sizeof(itemp_status_default) / sizeof(TEMP_REG_STATUS))
-#define ftemp_status_num \
-    (sizeof(ftemp_status_default) / sizeof(TEMP_REG_STATUS))
-
-typedef struct TRANSLATION_DATA {
-    EXTENSION_MODE
-    ireg_em[IR2_ITEMP_MAX]; /* extension mode of the 32 integer registers */
-    int8 ireg_eb[IR2_ITEMP_MAX]; /* bits number where the extension starts */
-    EXTENSION_MODE hi_em;
-    EXTENSION_MODE lo_em;
-
-    void *curr_tb; /* from QEMU */
-
-    /* ir1 */
-    IR1_INST *ir1_inst_array;
-    int ir1_nr;
-    IR1_INST *curr_ir1_inst;
-    /* uint8       ir1_dump_threshold[MAX_IR1_NUM_PER_TB]; */
-
-    /* ir2 */
-    IR2_INST *ir2_inst_array;
-    int ir2_inst_num_max;
-    int ir2_inst_num_current;
-    int real_ir2_inst_num;
-
-    /* the list of ir2 */
-    IR2_INST *first_ir2;
-    IR2_INST *last_ir2;
-
-    /* label number */
-    int label_num;
-
-    /* temp register number */
-    int itemp_num;
-    int ftemp_num;
-    TEMP_REG_STATUS itemp_status[itemp_status_num];
-    TEMP_REG_STATUS ftemp_status[ftemp_status_num];
-
-    int curr_top;               /* top value (changes when translating) */
-    int curr_esp_need_decrease; /* curr_esp need to decrease */
-
-    /* TODO : support static translation */
-    uint8 curr_ir1_skipped_eflags; /* these eflag calculation can be skipped */
-                                   /* (because of flag pattern, etc) */
-} TRANSLATION_DATA;
-
 IR1_INST *tr_init_for_each_ir1_in_tb(IR1_INST *ir1_list, int ir1_nr, int index);
 
 void tr_init(void *tb);
@@ -1106,6 +1040,10 @@ int tr_ir2_assemble(void *code_start_addr);
 int8 get_etb_type(IR1_INST *pir1);
 IR1_INST *get_ir1_list(void *tb, ADDRX pc, int *p_ir1_num);
 
+
+extern ADDR context_switch_native_to_bt_ret_0;
+extern ADDR context_switch_native_to_bt;
+extern ADDR ss_match_fail_native;
 
 /* target_latx_host()
  * ---------------------------------------
@@ -1127,23 +1065,20 @@ IR1_INST *get_ir1_list(void *tb, ADDRX pc, int *p_ir1_num);
  * |  -----------------------------------
  * --------------------------------------- */
 
-extern void tr_ir2_optimize(void);
-extern void tr_skip_eflag_calculation(int usedef_bits);
-extern void tr_fpu_push(void);
-extern void tr_fpu_pop(void);
-extern void tr_fpu_inc(void);
-extern void tr_fpu_dec(void);
-extern void tr_fpu_enable_top_mode(void);
-extern void tr_fpu_disable_top_mode(void);
+void tr_ir2_optimize(void);
+void tr_skip_eflag_calculation(int usedef_bits);
+void tr_fpu_push(void);
+void tr_fpu_pop(void);
+void tr_fpu_inc(void);
+void tr_fpu_dec(void);
+void tr_fpu_enable_top_mode(void);
+void tr_fpu_disable_top_mode(void);
 
-// #define GPR_USEDEF_TO_SAVE (0x7)
-// #define FPR_USEDEF_TO_SAVE (0xff)
-// #define XMM_LO_USEDEF_TO_SAVE (0xf)
-// #define XMM_HI_USEDEF_TO_SAVE (0xf)
 extern int GPR_USEDEF_TO_SAVE;
 extern int FPR_USEDEF_TO_SAVE;
 extern int XMM_LO_USEDEF_TO_SAVE;
 extern int XMM_HI_USEDEF_TO_SAVE;
+
 void tr_save_registers_to_env(uint8 gpr_to_save, uint8 fpr_to_save,
                               uint8 xmm_lo_to_save, uint8 xmm_hi_to_save,
                               uint8 vreg_to_save);
@@ -1157,8 +1092,8 @@ void tr_gen_call_to_helper(ADDR);
 /* operand conversion */
 IR2_OPND convert_mem_opnd(IR1_OPND *);
 IR2_OPND convert_mem_opnd_with_bias_within_imm_bits(IR1_OPND *opnd1, int bias, int bits);
-extern void load_ireg_from_ir1_addrx(IR1_OPND *, IR2_OPND);
-extern IR2_OPND mem_ir1_to_ir2_opnd(IR1_OPND *, bool is_xmm_hi);
+void load_ireg_from_ir1_addrx(IR1_OPND *, IR2_OPND);
+IR2_OPND mem_ir1_to_ir2_opnd(IR1_OPND *, bool is_xmm_hi);
 IR2_OPND convert_mem_opnd_with_bias(IR1_OPND *, int);
 IR2_OPND convert_mem_addr(ADDR);
 IR2_OPND convert_gpr_opnd(IR1_OPND *, EXTENSION_MODE);
@@ -1174,8 +1109,8 @@ void load_ireg_from_ir1_2(IR2_OPND, IR1_OPND *, EXTENSION_MODE, bool is_xmm_hi);
 void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1);
 void store_ireg_to_ir1(IR2_OPND, IR1_OPND *, bool is_xmm_hi);
 
-extern void load_ireg_from_cf_opnd(IR2_OPND *a);
-extern IR2_OPND load_ireg_from_cf_void(void);
+void load_ireg_from_cf_opnd(IR2_OPND *a);
+IR2_OPND load_ireg_from_cf_void(void);
 
 /* load to freg */
 IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert);
@@ -1188,15 +1123,15 @@ void load_freg128_from_ir1_mem(IR2_OPND opnd2, IR1_OPND *opnd1);
 void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
                                                  IR2_OPND mem_opnd, int mem_imm);
 /* load two singles from ir1 pack */
-extern void load_singles_from_ir1_pack(IR2_OPND single0, IR2_OPND single1,
+void load_singles_from_ir1_pack(IR2_OPND single0, IR2_OPND single1,
                                        IR1_OPND *opnd1, bool is_xmm_hi);
 /* store two single into a pack */
-extern void store_singles_to_ir2_pack(IR2_OPND single0, IR2_OPND single1,
+void store_singles_to_ir2_pack(IR2_OPND single0, IR2_OPND single1,
                                       IR2_OPND pack);
 
 /* fcsr */
-extern IR2_OPND set_fpu_fcsr_rounding_field_by_x86(void);
-extern void set_fpu_fcsr(IR2_OPND);
+IR2_OPND set_fpu_fcsr_rounding_field_by_x86(void);
+void set_fpu_fcsr(IR2_OPND);
 
 int generate_native_rotate_fpu_by(void *code_buf);
 void generate_context_switch_bt_to_native(void *code_buf);
@@ -1205,7 +1140,7 @@ void generate_context_switch_native_to_bt(void);
 void generate_eflag_calculation(IR2_OPND, IR2_OPND, IR2_OPND, IR1_INST *,
                                 bool has_address);
 
-extern void em_convert_gpr_to_addrx(IR1_OPND *);
+void em_convert_gpr_to_addrx(IR1_OPND *);
 void em_recognize_address(IR1_INST *);
 int em_validate_address(int);
 
@@ -1215,16 +1150,20 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id); /* TODO */
 void tr_generate_goto_tb(void);                          /* TODO */
 
 /* rotate fpu */
-extern ADDR
-    native_rotate_fpu_by; /* native_rotate_fpu_by(step, return_address) */
-extern void rotate_fpu_to_top(int top);
-extern void rotate_fpu_by(int step);
-extern void rotate_fpu_to_bias(int bias);
+/* native_rotate_fpu_by(step, return_address) */
+extern ADDR native_rotate_fpu_by;
+void rotate_fpu_to_top(int top);
+void rotate_fpu_by(int step);
+void rotate_fpu_to_bias(int bias);
 
-extern void tr_gen_call_to_helper_prologue(int use_fp);
-extern void tr_gen_call_to_helper_epilogue(int use_fp);
-extern void tr_gen_call_to_helper1(ADDR func, int use_fp);
-extern void tr_load_top_from_env(void);
-extern void tr_gen_top_mode_init(void);
+void tr_gen_call_to_helper1(ADDR func, int use_fp);
+void tr_load_top_from_env(void);
+void tr_gen_top_mode_init(void);
+
+#include "qemu-def.h"
+static inline ADDR cpu_get_guest_base(void)
+{
+    return guest_base;
+}
 
 #endif

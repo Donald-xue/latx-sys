@@ -1,7 +1,7 @@
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
 #include "latx-options.h"
+#include "translate.h"
 
 /* bool translate_pcmpeqb(IR1_INST * pir1) { return false; } */
 /* bool translate_pcmpeqw(IR1_INST * pir1) { return false; } */

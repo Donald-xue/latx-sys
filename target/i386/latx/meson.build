@@ -43,7 +43,6 @@ capStone = declare_dependency(link_with: libcapStone,
                               include_directories: 'capStone/include/capstone')
 
 i386_ss.add(when: 'CONFIG_LATX', if_true: files(
-  'env.c',
   'error.c',
   'mem.c',
   'latx-config.c',

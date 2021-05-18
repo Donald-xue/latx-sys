@@ -1,8 +1,9 @@
 #include <math.h>
 #include "common.h"
 #include "reg-alloc.h"
-#include "env.h"
+#include "lsenv.h"
 #include "latx-options.h"
+#include "translate.h"
 
 bool translate_fadd(IR1_INST *pir1)
 {

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "env.h"
 #include "reg-alloc.h"
+#include "translate.h"
 
 bool translate_add(IR1_INST *pir1)
 {

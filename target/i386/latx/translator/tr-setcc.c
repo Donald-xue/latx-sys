@@ -1,8 +1,8 @@
-#include "common.h"
-#include "reg-alloc.h"
 #include "env.h"
+#include "reg-alloc.h"
 #include "latx-options.h"
 #include "flag-lbt.h"
+#include "translate.h"
 
 bool translate_setz(IR1_INST *pir1)
 {
