@@ -14,7 +14,6 @@ bool translate_pusha(IR1_INST *pir1) { return false; }
 bool translate_popa(IR1_INST *pir1) { return false; }
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
-bool translate_ins(IR1_INST *pir1) { return false; }
 bool translate_outs(IR1_INST *pir1) { return false; }
 bool translate_cdqe(IR1_INST *pir1) { return false; }
 bool translate_cwd(IR1_INST *pir1) { return false; }
@@ -589,6 +588,11 @@ void ss_gen_push(IR1_INST *pir1);
 
 
 void dump_shadow_stack(int debug_type);
+bool translate_ins(IR1_INST *pir1) {
+    printf("FIXME: the instruction INSD is used, but LATX do not support it.\n");
+    return true;
+}
+
 void dump_shadow_stack(int debug_type) {
     switch (debug_type) {
         case 1: fprintf(stderr,"%dcall      :",debug_type); break;
