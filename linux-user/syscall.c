@@ -8615,6 +8615,10 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
         unlock_user(p, arg2, 0);
         return ret;
 #endif
+#ifdef TARGET_NR_execveat
+    case TARGET_NR_execveat:
+        return get_errno(syscall(__NR_execveat, arg1, arg2, arg3, arg4, arg5));
+#endif
     case TARGET_NR_execve:
         {
             char **argp, **envp;
@@ -9047,6 +9051,10 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
     case TARGET_NR_pipe2:
         return do_pipe(cpu_env, arg1,
                        target_to_host_bitmask(arg2, fcntl_flags_tbl), 1);
+#endif
+#ifdef TARGET_NR_ptrace
+    case TARGET_NR_ptrace:
+        return get_errno(syscall(__NR_ptrace, arg1, arg2, arg3, arg4));
 #endif
     case TARGET_NR_times:
         {
@@ -10090,6 +10098,10 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #ifdef TARGET_NR_accept4
     case TARGET_NR_accept4:
         return do_accept4(arg1, arg2, arg3, arg4);
+#endif
+#ifdef TARGET_NR_perf_event_open
+    case TARGET_NR_perf_event_open:
+        return get_errno(syscall(__NR_perf_event_open, arg1, arg2, arg3, arg4, arg5));
 #endif
 #ifdef TARGET_NR_bind
     case TARGET_NR_bind:
