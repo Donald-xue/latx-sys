@@ -133,6 +133,7 @@
 #include "qapi/error.h"
 #include "fd-trans.h"
 #include "tcg/tcg.h"
+#include <linux/nsfs.h>
 #ifdef CONFIG_LATX
 #include "env.h"
 #endif

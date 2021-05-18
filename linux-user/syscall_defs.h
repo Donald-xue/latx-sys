@@ -1263,6 +1263,12 @@ struct target_rtc_pll_info {
 #define TARGET_VT_RELDISP             0x5605
 #define TARGET_VT_DISALLOCATE         0x5608
 
+/* NSIO */
+#define TARGET_NS_GET_USERNS          TARGET_IO(0xb7, 0x01)
+#define TARGET_NS_GET_PARENT          TARGET_IO(0xb7, 0x02)
+#define TARGET_NS_GET_NSTYPE          TARGET_IO(0xb7, 0x03)
+#define TARGET_NS_GET_OWNER_UID       TARGET_IO(0xb7, 0x04)
+
 /* device mapper */
 #define TARGET_DM_VERSION             TARGET_IOWRU(0xfd, 0x00)
 #define TARGET_DM_REMOVE_ALL          TARGET_IOWRU(0xfd, 0x01)
