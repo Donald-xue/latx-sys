@@ -11896,7 +11896,7 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #ifdef TARGET_NR_mincore
     case TARGET_NR_mincore:
         {
-            void *a = lock_user(VERIFY_READ, arg1, arg2, 0);
+	    void *a = g2h(cpu, arg1);
             if (!a) {
                 return -TARGET_ENOMEM;
             }
@@ -11907,7 +11907,6 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
                 ret = get_errno(mincore(a, arg2, p));
                 unlock_user(p, arg3, ret);
             }
-            unlock_user(a, arg1, 0);
         }
         return ret;
 #endif
