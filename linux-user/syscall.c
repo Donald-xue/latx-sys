@@ -4686,8 +4686,10 @@ static inline abi_ulong do_shmat(CPUArchState *cpu_env,
 
     mmap_lock();
 
-    if (shmaddr)
+    if (shmaddr) {
+	shmflg |= SHM_REMAP;
         host_raddr = shmat(shmid, (void *)g2h_untagged(shmaddr), shmflg);
+    }
     else {
         abi_ulong mmap_start;
 
