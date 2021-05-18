@@ -287,6 +287,10 @@ static type name (type1 arg1,type2 arg2,type3 arg3,type4 arg4,type5 arg5,	\
 
 #define __NR_sys_gettid __NR_gettid
 _syscall0(int, sys_gettid)
+#define __NR_sys_setreuid __NR_setreuid
+_syscall2(int, sys_setreuid, uid_t, ruid, uid_t, euid)
+#define __NR_sys_setregid __NR_setregid
+_syscall2(int, sys_setregid, gid_t, rgid, gid_t, egid)
 
 /* For the 64-bit guest on 32-bit host case we must emulate
  * getdents using getdents64, because otherwise the host
@@ -11466,9 +11470,9 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
         return get_errno(high2lowgid(getegid()));
 #endif
     case TARGET_NR_setreuid:
-        return get_errno(setreuid(low2highuid(arg1), low2highuid(arg2)));
+        return get_errno(sys_setreuid(low2highuid(arg1), low2highuid(arg2)));
     case TARGET_NR_setregid:
-        return get_errno(setregid(low2highgid(arg1), low2highgid(arg2)));
+        return get_errno(sys_setregid(low2highgid(arg1), low2highgid(arg2)));
     case TARGET_NR_getgroups:
         {
             int gidsetsize = arg1;
