@@ -442,7 +442,8 @@ static int sys_renameat2(int oldfd, const char *old,
 #ifdef CONFIG_INOTIFY
 #include <sys/inotify.h>
 
-#if defined(TARGET_NR_inotify_init) && defined(__NR_inotify_init)
+#if defined(TARGET_NR_inotify_init) && defined(__NR_inotify_init) || \
+defined(__loongarch__)
 static int sys_inotify_init(void)
 {
   return (inotify_init());
@@ -12450,7 +12451,8 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
     case TARGET_NR_futex_time64:
         return do_futex_time64(cpu, arg1, arg2, arg3, arg4, arg5, arg6);
 #endif
-#if defined(TARGET_NR_inotify_init) && defined(__NR_inotify_init)
+#if (defined(TARGET_NR_inotify_init) && defined(__NR_inotify_init)) || \
+defined(__loongarch__)
     case TARGET_NR_inotify_init:
         ret = get_errno(sys_inotify_init());
         if (ret >= 0) {
