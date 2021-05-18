@@ -39,7 +39,6 @@ Object *container_get(Object *root, const char *path)
         if (!child) {
             child = object_new("container");
             object_property_add_child(obj, parts[i], child);
-            object_unref(child);
         }
     }
 
