@@ -156,6 +156,7 @@
      IOCTL(FICLONE, IOC_W, TYPE_INT)
      IOCTL(FICLONERANGE, IOC_W, MK_PTR(MK_STRUCT(STRUCT_file_clone_range)))
 #endif
+     IOCTL_SPECIAL(FIDEDUPERANGE, IOC_W | IOC_R, do_ioctl_fideduperange ,MK_PTR(MK_STRUCT(STRUCT_file_dedupe_range)))
 
 #ifdef FIGETBSZ
      IOCTL(FIGETBSZ, IOC_R, MK_PTR(TYPE_LONG))

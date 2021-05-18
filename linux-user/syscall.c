@@ -4958,6 +4958,68 @@ static abi_long do_ioctl_fs_ioc_fiemap(const IOCTLEntry *ie, uint8_t *buf_temp,
 }
 #endif
 
+static abi_long do_ioctl_fideduperange(const IOCTLEntry *ie, uint8_t *buf_temp,
+                                       int fd, int cmd, abi_long arg)
+{
+    int target_size_in, target_size_out;
+    struct file_dedupe_range  *same;
+    const argtype *arg_type = ie->arg_type;
+    const argtype extent_arg_type[] = { MK_STRUCT(STRUCT_file_dedupe_range_info) };
+    void *argptr, *p;
+    abi_long ret;
+    int i, extent_size = thunk_type_size(extent_arg_type, 0);
+    uint32_t inbufsz;
+
+    assert(arg_type[0] == TYPE_PTR);
+    assert(ie->access == IOC_RW);
+    arg_type++;
+    target_size_in = thunk_type_size(arg_type, 0);
+    argptr = lock_user(VERIFY_READ, arg, target_size_in, 1);
+    if (!argptr) {
+        return -TARGET_EFAULT;
+    }
+    thunk_convert(buf_temp, argptr, arg_type, THUNK_HOST);
+    unlock_user(argptr, arg, 0);
+    same = (struct file_dedupe_range *)buf_temp;
+    if (same->dest_count !=0 ){
+        inbufsz = target_size_in + same->dest_count * extent_size;
+        assert(inbufsz < MAX_STRUCT_SIZE);
+        argptr = lock_user(VERIFY_READ, arg, inbufsz, 1);
+        if (!argptr) {
+            return -TARGET_EFAULT;
+        }
+        thunk_convert(buf_temp, argptr, arg_type, THUNK_HOST);
+        unlock_user(argptr, arg, 0);
+        memcpy(same->info, argptr + target_size_in, extent_size);
+    }
+    ret = get_errno(safe_ioctl(fd, ie->host_cmd, same));
+    if (!is_error(ret)) {
+        target_size_out = target_size_in;
+        if (same->dest_count != 0) {
+            target_size_out += same->dest_count * extent_size;
+        }
+        argptr = lock_user(VERIFY_WRITE, arg, target_size_out, 0);
+        if (!argptr) {
+            ret = -TARGET_EFAULT;
+        } else {
+            /* Convert the struct fiemap */
+            thunk_convert(argptr, same, arg_type, THUNK_TARGET);
+
+            if (same->dest_count != 0) {
+                p = argptr + target_size_in;
+                /* ...and then all the struct fiemap_extents */
+                for (i = 0; i < same->dest_count; i++) {
+                    thunk_convert(p, &same->info[i], extent_arg_type,
+                                  THUNK_TARGET);
+                    p += extent_size;
+                }
+            }
+            unlock_user(argptr, arg, target_size_out);
+        }
+    }
+    return ret;
+}
+
 static abi_long do_ioctl_ifconf(const IOCTLEntry *ie, uint8_t *buf_temp,
                                 int fd, int cmd, abi_long arg)
 {

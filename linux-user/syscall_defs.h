@@ -1027,6 +1027,7 @@ struct target_rtc_pll_info {
 
 #define TARGET_FICLONE    TARGET_IOW(0x94, 9, int)
 #define TARGET_FICLONERANGE TARGET_IOW(0x94, 13, struct file_clone_range)
+#define TARGET_FIDEDUPERANGE TARGET_IOWR(0x94, 54, struct file_dedupe_range)
 
 /*
  * Note that the ioctl numbers for FS_IOC_<GET|SET><FLAGS|VERSION>

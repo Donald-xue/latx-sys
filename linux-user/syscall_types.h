@@ -335,6 +335,22 @@ STRUCT(file_clone_range,
        TYPE_ULONGLONG, /* src_length */
        TYPE_ULONGLONG) /* dest_offset */
 
+STRUCT(file_dedupe_range_info,
+       TYPE_LONGLONG,  /* dest_fd */
+       TYPE_ULONGLONG, /* dest_offset */
+       TYPE_ULONGLONG, /* byte_deduped */
+       TYPE_INT,       /* status */
+       TYPE_INT)      /* reserved */
+
+STRUCT(file_dedupe_range,
+       TYPE_ULONGLONG, /* src_offset */
+       TYPE_ULONGLONG, /* src_length */
+       TYPE_SHORT,     /* dest_count */
+       TYPE_SHORT,     /* reserved1  */
+       TYPE_INT,      /* reserved2  */
+       MK_ARRAY(MK_STRUCT(STRUCT_file_dedupe_range_info),0)
+       )
+
 STRUCT(fiemap_extent,
        TYPE_ULONGLONG, /* fe_logical */
        TYPE_ULONGLONG, /* fe_physical */
