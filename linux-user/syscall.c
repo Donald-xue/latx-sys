@@ -2224,6 +2224,7 @@ static abi_long do_setsockopt(int sockfd, int level, int optname,
 #endif
         case IP_MULTICAST_TTL:
         case IP_MULTICAST_LOOP:
+	case IP_MULTICAST_IF:
             val = 0;
             if (optlen >= sizeof(uint32_t)) {
                 if (get_user_u32(val, optval_addr))
@@ -2269,6 +2270,7 @@ static abi_long do_setsockopt(int sockfd, int level, int optname,
         case IPV6_RECVPKTINFO:
         case IPV6_UNICAST_HOPS:
         case IPV6_MULTICAST_HOPS:
+	case IPV6_MULTICAST_IF:
         case IPV6_MULTICAST_LOOP:
         case IPV6_RECVERR:
         case IPV6_RECVHOPLIMIT:
