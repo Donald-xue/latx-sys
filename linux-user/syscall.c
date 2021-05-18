@@ -9921,15 +9921,27 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #endif
 #ifdef TARGET_NR_mlock
     case TARGET_NR_mlock:
+    {
+        if (page_check_range(arg1, arg2, PAGE_VALID))
+            return -TARGET_ENOMEM;
         return get_errno(mlock(g2h(cpu, arg1), arg2));
+    }
 #endif
 #ifdef TARGET_NR_mlock2
     case TARGET_NR_mlock2:
+    {
+        if (page_check_range(arg1, arg2, PAGE_VALID))
+            return -TARGET_ENOMEM;
         return get_errno(mlock2(g2h(cpu, arg1), arg2, arg3));
+    }
 #endif
 #ifdef TARGET_NR_munlock
     case TARGET_NR_munlock:
+    {
+        if (page_check_range(arg1, arg2, PAGE_VALID))
+            return -TARGET_ENOMEM;
         return get_errno(munlock(g2h(cpu, arg1), arg2));
+    }
 #endif
 #ifdef TARGET_NR_mlockall
     case TARGET_NR_mlockall:
