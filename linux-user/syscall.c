@@ -12530,6 +12530,13 @@ defined(__loongarch__)
           return get_errno(syscall(__NR_add_key, arg1, arg2, arg3, arg4, arg5));
       }
 #endif
+#if defined(TARGET_NR_keyctl) && defined(__NR_keyctl)
+  case TARGET_NR_keyctl:
+      {
+          return get_errno(syscall(__NR_keyctl, arg1, arg2, \
+                                 arg3, arg4, arg5, arg6));
+      }
+#endif
 #if defined(TARGET_NR_mq_open) && defined(__NR_mq_open)
     case TARGET_NR_mq_open:
         {
