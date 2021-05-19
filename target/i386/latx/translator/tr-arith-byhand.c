@@ -650,7 +650,7 @@ static bool translate_inc_byhand_32(IR1_INST *pir1)
 
 static bool translate_inc_byhand_8_16(IR1_INST *pir1)
 {
-    assert(0 && "translate_inc_byhand_8_16 need to be implemented correctly");
+    /* assert(0 && "translate_inc_byhand_8_16 need to be implemented correctly"); */
     /* 1. set src prefer_em */
     EXTENSION_MODE src_prefer_em = UNKNOWN_EXTENSION;
     bool is_opnd_sx = false;
