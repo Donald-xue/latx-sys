@@ -8,7 +8,7 @@
 static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
-    IR2_OPND eflags_opnd = ra_alloc_eflags();
+    /* IR2_OPND eflags_opnd = ra_alloc_eflags(); */
 
     switch (ir1_opcode(pir1)) {
 #if 0
@@ -386,7 +386,7 @@ static void generate_sf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
-    IR2_OPND eflags_opnd = ra_alloc_eflags();
+    /* IR2_OPND eflags_opnd = ra_alloc_eflags(); */
     switch (ir1_opcode(pir1)) {
 #if 0
     case X86_INS_ADD:

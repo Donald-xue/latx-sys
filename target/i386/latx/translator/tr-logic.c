@@ -685,7 +685,7 @@ bool translate_bswap(IR1_INST *pir1)
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
     la_append_ir2_opnd2(LISA_REVB_2W, bswap_opnd, bswap_opnd);
-    #warning high 32bit sign extension may corrupt, add.w 0 to resolve
+    /* TODO: #warning high 32bit sign extension may corrupt, add.w 0 to resolve */
     //lsassert(ir2_opnd_is_sx(&bswap_opnd, 32));
     ir2_opnd_set_em(&bswap_opnd, SIGN_EXTENSION, 32);
 

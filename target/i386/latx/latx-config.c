@@ -227,6 +227,8 @@ static void xtm_capstone_init(void)
 
 static QHT etb_qht_real;
 
+/* defined in etb.c */
+extern QHT *etb_qht;
 static void __attribute__((__constructor__)) latx_init(void)
 {
     context_switch_bt_to_native = 0;

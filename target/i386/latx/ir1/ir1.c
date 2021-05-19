@@ -490,8 +490,9 @@ longx ir1_opnd_simm(IR1_OPND *opnd)
             return (longx)((int16_t)(opnd->imm));
         case 32:
             return (longx)((int32_t)(opnd->imm));
-        case 64:
-            lsassert(0);
+        /* case 64:
+         *     lsassert(0);
+         */
         default:
             lsassert(0);
         }

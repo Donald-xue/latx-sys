@@ -152,4 +152,7 @@ IR2_INST *la_append_ir2_opnd3_em(IR2_OPCODE type, IR2_OPND op0,IR2_OPND op1, IR2
 IR2_INST *la_append_ir2_opnda(IR2_OPCODE opcode, ADDR addr);
 bool la_ir2_opcode_is_store(IR2_OPCODE opcode);
 bool la_ir2_opcode_is_load(IR2_OPCODE opcode);
+
+/* from ir2-optimization.c */
+void tr_ir2_optimize(void);
 #endif

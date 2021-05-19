@@ -1157,8 +1157,10 @@ int operands_extract(_CodeInfo* ci, _DInst* di, _InstInfo* ii, _OpType type,
         operands_set_tsi(op, O_REG, 16, R_AX);
         break;
     case OT_ACC_FULL_NOT64: /* No REX.W support for IN/OUT. */
-        vrex &= ~PREFIX_EX_W;
     case OT_ACC_FULL:
+        if (type == OT_ACC_FULL_NOT64) {
+            vrex &= ~PREFIX_EX_W;
+        }
         if (effOpSz == Decode16Bits) {
             ps->usedPrefixes |= INST_PRE_OP_SIZE;
             operands_set_tsi(op, O_REG, 16, R_AX);

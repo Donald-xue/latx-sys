@@ -1,7 +1,6 @@
 #ifndef _ETB_H_
 #define _ETB_H_
 
-#include "common.h"
 #include "ir1.h"
 #include "qemu-def.h"
 
@@ -16,7 +15,6 @@ typedef enum {
     TB_TYPE_JUMPIN,
 } TB_TYPE;
 
-extern QHT *etb_qht;
 #define ETB_ARRAY_SIZE (1<<19)
 extern ETB *etb_array[ETB_ARRAY_SIZE];
 extern int etb_num;
@@ -112,6 +110,5 @@ static inline void etb_check_top_out(ETB *etb, int top_out)
 }
 
 void etb_qht_init(void);
-ETB *etb_find(ADDRX pc);
 
 #endif

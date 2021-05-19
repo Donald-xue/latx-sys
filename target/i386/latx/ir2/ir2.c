@@ -1,9 +1,11 @@
 #include "common.h"
-#include "ir2.h"
 #include "ir1.h"
 #include "lsenv.h"
 #include "reg-alloc.h"
+#include "translate.h"
 #include <string.h>
+
+#include "ir2.h"
 
 static const char *ir2_name(int value)
 {
@@ -3230,7 +3232,7 @@ IR2_OPND a0_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 4,  ._reg_num = 4,  ._ad
 IR2_OPND t5_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 17,  ._reg_num = 17,  ._addr = 0};
 IR2_OPND ra_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 1,  ._reg_num = 1,  ._addr = 0};
 /* TODO: interesting */
-#warning FIXME:Is f32_ir2_opnd Num 8 ???
+/* TODO: #warning FIXME:Is f32_ir2_opnd Num 8 ??? */
 IR2_OPND f32_ir2_opnd = {._type = IR2_OPND_FPR,  .val = 8, ._reg_num = 8,  ._addr = 0};
 
 /*
@@ -4309,11 +4311,12 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
         ir2_set_opcode(pir2, LISA_ST_W);
         break;
     case LISA_SUBI_ADDR:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        opcode = LISA_ADDI_ADDR;
-        imm = -imm;
     case LISA_ADDI_ADDR:
         lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
+        if (opcode == LISA_SUBI_ADDR) {
+            imm = -imm;
+        }
+        opcode = LISA_ADDI_ADDR;
         if (ir2_opnd_is_mips_address(&src)) {
             ir2_set_opcode(pir2, LISA_ADDI_D);
             ir2_opnd_set_em(&dest, EM_MIPS_ADDRESS, 32);
@@ -4329,11 +4332,12 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
         }
         break;
     case LISA_SUBI_ADDRX:
-        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        opcode = LISA_ADDI_ADDRX;
-        imm = -imm;
     case LISA_ADDI_ADDRX:
         lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
+        if (opcode == LISA_SUBI_ADDRX) {
+            imm = -imm;
+        }
+        opcode = LISA_ADDI_ADDRX;
         if (ir2_opnd_is_x86_address(&src)) {
             ir2_set_opcode(pir2, LISA_ADDI_D);
             ir2_opnd_set_em(&dest, EM_X86_ADDRESS, 32);
@@ -4358,6 +4362,9 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
     case LISA_LL_W:
         lsassertm(((imm % 4) == 0), "ll_w imm %d error.\n", imm);
         imm = imm >> 2;
+        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
+        ir2_opnd_set_em(&dest, SIGN_EXTENSION, 32);
+        break;
     case LISA_LD_W:
     case LISA_LDR_W:
     case LISA_LDL_W:
@@ -4385,9 +4392,11 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
         ir2_opnd_set_em(&dest, ZERO_EXTENSION, 8);
         break;
     case LISA_SUBIU:
-        ir2_set_opcode(pir2, LISA_ADDI_W);
-        imm = -imm;
     case LISA_ADDI_W:
+        if (opcode == LISA_SUBIU) {
+            ir2_set_opcode(pir2, LISA_ADDI_W);
+            imm = -imm;
+        }
         lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
         lsassert(ir2_opnd_is_sx(&src, 32));
         lsassertm(!ir2_opnd_is_address(&src),
@@ -4398,9 +4407,11 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
         }
         break;
     case LISA_DSUBIU:
-        ir2_set_opcode(pir2, LISA_ADDI_D);
-        imm = -imm;
     case LISA_ADDI_D:
+        if (opcode == LISA_DSUBIU) {
+            ir2_set_opcode(pir2, LISA_ADDI_D);
+            imm = -imm;
+        }
         lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
         lsassertm(!ir2_opnd_is_address(&src),
                   "should use addi_addr or addi_addrx\n");

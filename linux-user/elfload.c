@@ -2365,6 +2365,7 @@ static void pgb_dynamic(const char *image_name, long align)
     }
 }
 
+#ifndef CONFIG_LATX
 static void pgb_reserved_va(const char *image_name, abi_ulong guest_loaddr,
                             abi_ulong guest_hiaddr, long align)
 {
@@ -2396,6 +2397,7 @@ static void pgb_reserved_va(const char *image_name, abi_ulong guest_loaddr,
         exit(EXIT_FAILURE);
     }
 }
+#endif
 
 void probe_guest_base(const char *image_name, abi_ulong guest_loaddr,
                       abi_ulong guest_hiaddr)
@@ -2406,8 +2408,11 @@ void probe_guest_base(const char *image_name, abi_ulong guest_loaddr,
     if (have_guest_base) {
         pgb_have_guest_base(image_name, guest_loaddr, guest_hiaddr, align);
     } else if (reserved_va) {
+#ifdef CONFIG_LATX
         pgb_have_guest_base(image_name, guest_loaddr, guest_hiaddr, align);
-        // pgb_reserved_va(image_name, guest_loaddr, guest_hiaddr, align);
+#else
+        pgb_reserved_va(image_name, guest_loaddr, guest_hiaddr, align);
+#endif
     } else if (guest_loaddr) {
         pgb_static(image_name, guest_loaddr, guest_hiaddr, align);
     } else {

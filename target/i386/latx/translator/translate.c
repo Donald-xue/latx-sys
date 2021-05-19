@@ -11,8 +11,6 @@
 #include "ibtc.h"
 #include "translate.h"
 
-void label_dispose(void *code_cache_addr);
-
 extern void *helper_tb_lookup_ptr(CPUArchState *);
 static int ss_generate_match_fail_native_code(void* code_buf);
 
@@ -388,7 +386,92 @@ void *tr_disasm(void *tb)
     return etb;
 }
 
-int tr_ir2_assemble(void *code_start_addr)
+static void label_dispose(void)
+{
+    /* 1. record the positions of label */
+    int *label_num_to_ir2_num =
+        (int *)alloca(lsenv->tr_data->label_num * 4 + 20);
+    memset(label_num_to_ir2_num, -1, lsenv->tr_data->label_num * 4 + 20);
+    int ir2_num = 0;
+    IR2_INST *ir2_current = lsenv->tr_data->first_ir2;
+    while (ir2_current != NULL) {
+        if (ir2_current->_opcode == LISA_LABEL) {
+            int label_num = ir2_current->_opnd[0]._label_id;
+            lsassertm(label_num_to_ir2_num[label_num] == -1,
+                      "label %d is in multiple positions\n", label_num);
+            label_num_to_ir2_num[label_num] = ir2_num;
+        } else if (ir2_current->_opcode == LISA_X86_INST) {
+            /* will not be assembled */
+        } else {
+            ir2_num++;
+        }
+        ir2_current = ir2_next(ir2_current);
+    }
+
+    /* 2. resolve the offset of successor linkage code */
+    /* @jmp_target_arg recoed the jmp  inst position */
+    /* @jmp_reset_offset record the successor inst of jmp(exclude delay slot).
+     */
+    /*                   when the tb is removed from buffer. the jmp inst use
+     */
+    /*                   this position to revert the original "fall through".
+     */
+    {
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+
+        /* prologue/epilogue has no tb */
+        if (tb) {
+            /* ctx->jmp_insn_offset point to tb->jmp_target_arg */
+            int label_id_0 = tb->jmp_reset_offset[0];
+            if (label_id_0 != TB_JMP_RESET_OFFSET_INVALID) {
+                tb->jmp_reset_offset[0] =
+                    (label_num_to_ir2_num[label_id_0] << 2) + 8;
+                tb->jmp_target_arg[0] = (label_num_to_ir2_num[label_id_0] << 2);
+            }
+
+            int label_id_1 = tb->jmp_reset_offset[1];
+            if (label_id_1 != TB_JMP_RESET_OFFSET_INVALID) {
+                tb->jmp_reset_offset[1] =
+                    (label_num_to_ir2_num[label_id_1] << 2) + 8;
+                tb->jmp_target_arg[1] = (label_num_to_ir2_num[label_id_1] << 2);
+            }
+        }
+    }
+
+    /* 3. resolve the branch instructions */
+    ir2_num = 0;
+    ir2_current = lsenv->tr_data->first_ir2;
+    while (ir2_current != NULL) {
+        IR2_OPCODE opcode = ir2_current->_opcode;
+        if (ir2_opcode_is_branch(opcode) || ir2_opcode_is_f_branch(opcode)) {
+            IR2_OPND *label_opnd = NULL;
+            if (ir2_current->_opcode == LISA_B ||
+                ir2_current->_opcode == LISA_BL)
+                label_opnd = &ir2_current->_opnd[0];
+            else if (ir2_opcode_is_branch_with_3opnds(opcode))
+                label_opnd = &ir2_current->_opnd[2];
+            else if (ir2_opcode_is_f_branch(opcode))
+                label_opnd = &ir2_current->_opnd[1];
+            if(label_opnd && ir2_opnd_is_label(label_opnd)) {
+                int label_num = label_opnd->_label_id;
+                lsassert(label_num > 0 && label_num <= lsenv->tr_data->label_num);
+                int target_ir2_num = label_num_to_ir2_num[label_num];
+                lsassertm(target_ir2_num != -1, "label %d is not inserted\n",
+                          label_num);
+                ir2_opnd_convert_label_to_imm(label_opnd,
+                                              target_ir2_num - ir2_num);
+            }
+        }
+
+        if (ir2_current->_opcode != LISA_LABEL &&
+            ir2_current->_opcode != LISA_X86_INST) {
+            ir2_num++;
+        }
+        ir2_current = ir2_next(ir2_current);
+    }
+}
+
+int tr_ir2_assemble(const void *code_start_addr)
 {
     if (option_dump) {
         fprintf(stderr, "[LATX] Assemble IR2.\n");
@@ -398,12 +481,12 @@ int tr_ir2_assemble(void *code_start_addr)
     ra_temp_register_allocation();
 
     /* 2. label dispose */
-    label_dispose(code_start_addr);
+    label_dispose();
 
     /* 3. assemble */
     IR2_INST *pir2 = lsenv->tr_data->first_ir2;
 
-    void *code_addr = code_start_addr;
+    void *code_addr = (void *) code_start_addr;
     int code_nr = 0;
 
     while (pir2 != NULL) {
@@ -2130,92 +2213,7 @@ bool tr_ir2_generate(void *tb, void *petb)
     return true;
 }
 
-void label_dispose(void *code_cache_addr)
-{
-    /* 1. record the positions of label */
-    int *label_num_to_ir2_num =
-        (int *)alloca(lsenv->tr_data->label_num * 4 + 20);
-    memset(label_num_to_ir2_num, -1, lsenv->tr_data->label_num * 4 + 20);
-    int ir2_num = 0;
-    IR2_INST *ir2_current = lsenv->tr_data->first_ir2;
-    while (ir2_current != NULL) {
-        if (ir2_current->_opcode == LISA_LABEL) {
-            int label_num = ir2_current->_opnd[0]._label_id;
-            lsassertm(label_num_to_ir2_num[label_num] == -1,
-                      "label %d is in multiple positions\n", label_num);
-            label_num_to_ir2_num[label_num] = ir2_num;
-        } else if (ir2_current->_opcode == LISA_X86_INST) {
-            /* will not be assembled */
-        } else {
-            ir2_num++;
-        }
-        ir2_current = ir2_next(ir2_current);
-    }
-
-    /* 2. resolve the offset of successor linkage code */
-    /* @jmp_target_arg recoed the jmp  inst position */
-    /* @jmp_reset_offset record the successor inst of jmp(exclude delay slot).
-     */
-    /*                   when the tb is removed from buffer. the jmp inst use
-     */
-    /*                   this position to revert the original "fall through".
-     */
-    {
-        TranslationBlock *tb = lsenv->tr_data->curr_tb;
-
-        /* prologue/epilogue has no tb */
-        if (tb) {
-            /* ctx->jmp_insn_offset point to tb->jmp_target_arg */
-            int label_id_0 = tb->jmp_reset_offset[0];
-            if (label_id_0 != TB_JMP_RESET_OFFSET_INVALID) {
-                tb->jmp_reset_offset[0] =
-                    (label_num_to_ir2_num[label_id_0] << 2) + 8;
-                tb->jmp_target_arg[0] = (label_num_to_ir2_num[label_id_0] << 2);
-            }
-
-            int label_id_1 = tb->jmp_reset_offset[1];
-            if (label_id_1 != TB_JMP_RESET_OFFSET_INVALID) {
-                tb->jmp_reset_offset[1] =
-                    (label_num_to_ir2_num[label_id_1] << 2) + 8;
-                tb->jmp_target_arg[1] = (label_num_to_ir2_num[label_id_1] << 2);
-            }
-        }
-    }
-
-    /* 3. resolve the branch instructions */
-    ir2_num = 0;
-    ir2_current = lsenv->tr_data->first_ir2;
-    while (ir2_current != NULL) {
-        IR2_OPCODE opcode = ir2_current->_opcode;
-        if (ir2_opcode_is_branch(opcode) || ir2_opcode_is_f_branch(opcode)) {
-            IR2_OPND *label_opnd = NULL;
-            if (ir2_current->_opcode == LISA_B ||
-                ir2_current->_opcode == LISA_BL)
-                label_opnd = &ir2_current->_opnd[0];
-            else if (ir2_opcode_is_branch_with_3opnds(opcode))
-                label_opnd = &ir2_current->_opnd[2];
-            else if (ir2_opcode_is_f_branch(opcode))
-                label_opnd = &ir2_current->_opnd[1];
-            if(label_opnd && ir2_opnd_is_label(label_opnd)) {
-                int label_num = label_opnd->_label_id;
-                lsassert(label_num > 0 && label_num <= lsenv->tr_data->label_num);
-                int target_ir2_num = label_num_to_ir2_num[label_num];
-                lsassertm(target_ir2_num != -1, "label %d is not inserted\n",
-                          label_num);
-                ir2_opnd_convert_label_to_imm(label_opnd,
-                                              target_ir2_num - ir2_num);
-            }
-        }
-
-        if (ir2_current->_opcode != LISA_LABEL &&
-            ir2_current->_opcode != LISA_X86_INST) {
-            ir2_num++;
-        }
-        ir2_current = ir2_next(ir2_current);
-    }
-}
-
-static inline void *qm_tb_get_code_cache(void *tb)
+static inline const void *qm_tb_get_code_cache(void *tb)
 {
     struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
     return ptb->tc.ptr;
@@ -2295,7 +2293,7 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     IR2_OPND tb_ptr_opnd = ra_alloc_dbt_arg1();
     ADDR tb_addr = (ADDR)tb;
 #ifndef N64
-#warning need to implement la_append_ir2_opnd1i_em APIs.
+/*TODO:  #warning need to implement la_append_ir2_opnd1i_em APIs. */
     la_append_ir2_opnd1i(LISA_LU12I_W, tb_ptr_opnd, tb_addr >> 12);
     la_append_ir2_opnd2i(LISA_ORI, tb_ptr_opnd, tb_ptr_opnd, tb_addr >> 20);
     ir2_opnd_set_em(&tb_ptr_opnd, EM_X86_ADDRESS, 32);

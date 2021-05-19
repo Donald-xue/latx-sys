@@ -1036,7 +1036,7 @@ void *tr_disasm(void *tb);
 void etb_add_succ(void* etb,int depth);
 int tr_translate_tb(void *tb, void *etb);
 bool tr_ir2_generate(void *tb, void *etb);
-int tr_ir2_assemble(void *code_start_addr);
+int tr_ir2_assemble(const void *code_start_addr);
 int8 get_etb_type(IR1_INST *pir1);
 IR1_INST *get_ir1_list(void *tb, ADDRX pc, int *p_ir1_num);
 
@@ -1065,7 +1065,6 @@ extern ADDR ss_match_fail_native;
  * |  -----------------------------------
  * --------------------------------------- */
 
-void tr_ir2_optimize(void);
 void tr_skip_eflag_calculation(int usedef_bits);
 void tr_fpu_push(void);
 void tr_fpu_pop(void);

@@ -924,6 +924,7 @@ IR2_OPND load_ireg_from_ir1(IR1_OPND *opnd1, EXTENSION_MODE em, bool is_xmm_hi)
             break;
         }
         lsassert(0);
+        break;
     }
 
     case X86_OP_MEM: {
@@ -976,6 +977,7 @@ void load_ireg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, EXTENSION_MODE em,
             break;
         }
         lsassert(0);
+        break;
     }
     case X86_OP_MEM:  {
         load_ireg_from_ir1_mem(opnd2, opnd1, em, is_xmm_hi);
@@ -1302,6 +1304,7 @@ void store_ireg_to_ir1(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi)
             return;
         }
         lsassert(0);
+        return;
     }
 
     case X86_OP_MEM:
@@ -1341,7 +1344,7 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
     la_append_ir2_opnd3(LISA_BEQ, itemp_reg, zero_ir2_opnd, label_exit);
 	//Identify SNAN and change opnd2 to SNAN
 	//exp==0x7fff && bit[62]==0 && bit[61:0]!=0
-	#warning assume SNAN->QNAN when V, should check other cases
+	/* TODO:  #warning assume SNAN->QNAN when V, should check other cases */
     la_append_ir2_opnd2_em(LISA_MOVFR2GR_D, itemp_reg, opnd2);
     la_append_ir2_opnd2ii(LISA_BSTRINS_D, itemp_reg, zero_ir2_opnd, 51, 51);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, opnd2, itemp_reg);
@@ -1463,7 +1466,7 @@ IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
             lsassert(0);
         }
         lsassert(0);
-
+        break;
     }
     case X86_OP_MEM: {
         IR2_OPND ret_opnd = ra_alloc_ftemp_internal();
@@ -1498,6 +1501,7 @@ void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi,
             lsassert(0);
         }
         lsassertm(0,"REG:%s\n", ir1_reg_name(opnd1->reg));
+        return;
     }
 
     case X86_OP_MEM: {
@@ -1708,6 +1712,7 @@ void store_freg_to_ir1(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi,
             lsassert(0);
         }
         lsassertm(0, "REG:%s\n", ir1_reg_name(opnd1->reg));
+        return;
     }
     case X86_OP_MEM: {
         store_freg_to_ir1_mem(opnd2, opnd1, is_xmm_hi, is_convert);

@@ -147,7 +147,7 @@ static void init_delay_params(SyncClocks *sc, const CPUState *cpu)
 #ifdef CONFIG_LATX
 #include "latx-config.h"
 #include "latx-options.h"
-#include "etb.h"
+/* #include "etb.h" */
 #include "ibtc.h"
 #endif
 
