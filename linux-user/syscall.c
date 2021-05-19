@@ -805,6 +805,9 @@ safe_syscall6(ssize_t, pwritev2, int, fd, const struct iovec *, iov, int, iovcnt
 safe_syscall6(ssize_t, process_vm_readv, pid_t, pid, const struct iovec *, lvec,
               unsigned long, liovcnt, const struct iovec *, rvec,
               unsigned long, riovcnt, unsigned long, flags)
+safe_syscall6(ssize_t, process_vm_writev, pid_t, pid, const struct iovec *, lvec,
+              unsigned long, liovcnt, const struct iovec *, rvec,
+              unsigned long, riovcnt, unsigned long, flags)
 safe_syscall3(int, connect, int, fd, const struct sockaddr *, addr,
               socklen_t, addrlen)
 safe_syscall6(ssize_t, sendto, int, fd, const void *, buf, size_t, len,
@@ -13474,6 +13477,23 @@ defined(__loongarch__)
                                 arg5 ,arg6));
                 unlock_iovec(lvec, arg2, arg3, 1);
                 unlock_iovec(rvec, arg4, arg5, 1);
+            } else {
+                ret = -host_to_target_errno(errno);
+            }
+        }
+        return ret;
+#endif
+#if defined(TARGET_NR_process_vm_writev) && defined(__NR_process_vm_writev)
+    case TARGET_NR_process_vm_writev:
+        {
+            struct iovec *lvec = lock_iovec(VERIFY_WRITE, arg2, arg3, 1);
+            struct iovec *rvec = lock_iovec(VERIFY_WRITE, arg4, arg5, 1);
+
+            if (lvec != NULL && rvec != NULL) {
+                ret = get_errno(safe_process_vm_writev(arg1, lvec, arg3, rvec,
+                                arg5 ,arg6));
+                unlock_iovec(lvec, arg2, arg3, 0);
+                unlock_iovec(rvec, arg4, arg5, 0);
             } else {
                 ret = -host_to_target_errno(errno);
             }
