@@ -927,17 +927,21 @@ static bool translate_not_byhand_8_16(IR1_INST *pir1)
 bool translate_not_byhand(IR1_INST *pir1)
 {
     /* There is no way that an address has 'not' operation */
-    lsassert(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0)));
-    if (option_by_hand) {
-        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
-            return translate_not_byhand_32(pir1);
-        else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
-            lsassertm(0, "%s for 64bit is not implemented yet.\n",
-                      __FUNCTION__);
+    if(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0))){
+    //lsassert(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0)));
+        if (option_by_hand) {
+            if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
+                return translate_not_byhand_32(pir1);
+            else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
+                lsassertm(0, "%s for 64bit is not implemented yet.\n",
+                          __FUNCTION__);
+            } else
+                return translate_not_byhand_8_16(pir1);
         } else
-            return translate_not_byhand_8_16(pir1);
-    } else
-        return translate_not(pir1);
+            return translate_not(pir1);
+    }else{
+            return translate_not(pir1);
+    }
 }
 
 static bool translate_mul_byhand_32(IR1_INST *pir1)
