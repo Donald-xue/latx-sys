@@ -802,6 +802,9 @@ safe_syscall6(ssize_t, preadv2, int, fd, const struct iovec *, iov, int, iovcnt,
               unsigned long, pos_l, unsigned long, pos_h, int, flags)
 safe_syscall6(ssize_t, pwritev2, int, fd, const struct iovec *, iov, int, iovcnt,
               unsigned long, pos_l, unsigned long, pos_h, int, flags)
+safe_syscall6(ssize_t, process_vm_readv, pid_t, pid, const struct iovec *, lvec,
+              unsigned long, liovcnt, const struct iovec *, rvec,
+              unsigned long, riovcnt, unsigned long, flags)
 safe_syscall3(int, connect, int, fd, const struct sockaddr *, addr,
               socklen_t, addrlen)
 safe_syscall6(ssize_t, sendto, int, fd, const void *, buf, size_t, len,
@@ -13459,6 +13462,23 @@ defined(__loongarch__)
 #if defined(TARGET_NR_delete_module) && defined(__NR_delete_module)
     case TARGET_NR_delete_module:
         return get_errno(syscall(__NR_delete_module, arg1, arg2));
+#endif
+#if defined(TARGET_NR_process_vm_readv) && defined(__NR_process_vm_readv)
+    case TARGET_NR_process_vm_readv:
+        {
+            struct iovec *lvec = lock_iovec(VERIFY_WRITE, arg2, arg3, 0);
+            struct iovec *rvec = lock_iovec(VERIFY_WRITE, arg4, arg5, 0);
+
+            if (lvec != NULL && rvec != NULL) {
+                ret = get_errno(safe_process_vm_readv(arg1, lvec, arg3, rvec,
+                                arg5 ,arg6));
+                unlock_iovec(lvec, arg2, arg3, 1);
+                unlock_iovec(rvec, arg4, arg5, 1);
+            } else {
+                ret = -host_to_target_errno(errno);
+            }
+        }
+        return ret;
 #endif
 #if defined(TARGET_NR_copy_file_range) && defined(__NR_copy_file_range)
     case TARGET_NR_copy_file_range:
