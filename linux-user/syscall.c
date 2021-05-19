@@ -13500,6 +13500,10 @@ defined(__loongarch__)
         }
         return ret;
 #endif
+#if defined(TARGET_NR_remap_file_pages) && defined(__NR_remap_file_pages)
+    case TARGET_NR_remap_file_pages:
+        return get_errno(syscall(__NR_remap_file_pages, arg1, arg2, arg3, arg4, arg5));
+#endif
 #if defined(TARGET_NR_copy_file_range) && defined(__NR_copy_file_range)
     case TARGET_NR_copy_file_range:
         {
