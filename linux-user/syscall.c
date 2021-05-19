@@ -12142,7 +12142,10 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
            turns private file-backed mappings into anonymous mappings.
            This will break MADV_DONTNEED.
            This is a hint, so ignoring and returning success is ok.  */
-        return 0;
+	/* TODO: the commets above needs verify */
+        if (page_check_range(arg1, arg2, PAGE_VALID))
+            return -TARGET_ENOMEM;
+        return get_errno(syscall(__NR_madvise, arg1, arg2, arg3));
 #endif
 #ifdef TARGET_NR_fcntl64
     case TARGET_NR_fcntl64:
