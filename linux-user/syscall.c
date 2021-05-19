@@ -13456,7 +13456,10 @@ defined(__loongarch__)
     case TARGET_NR_membarrier:
         return get_errno(membarrier(arg1, arg2));
 #endif
-
+#if defined(TARGET_NR_delete_module) && defined(__NR_delete_module)
+    case TARGET_NR_delete_module:
+        return get_errno(syscall(__NR_delete_module, arg1, arg2));
+#endif
 #if defined(TARGET_NR_copy_file_range) && defined(__NR_copy_file_range)
     case TARGET_NR_copy_file_range:
         {
