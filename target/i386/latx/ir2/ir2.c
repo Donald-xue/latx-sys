@@ -3232,7 +3232,7 @@ IR2_OPND a0_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 4,  ._reg_num = 4,  ._ad
 IR2_OPND t5_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 17,  ._reg_num = 17,  ._addr = 0};
 IR2_OPND ra_ir2_opnd = {._type = IR2_OPND_GPR,   .val = 1,  ._reg_num = 1,  ._addr = 0};
 /* TODO: interesting */
-/* TODO: #warning FIXME:Is f32_ir2_opnd Num 8 ??? */
+#warning FIXME:Is f32_ir2_opnd Num 8 ???
 IR2_OPND f32_ir2_opnd = {._type = IR2_OPND_FPR,  .val = 8, ._reg_num = 8,  ._addr = 0};
 
 /*

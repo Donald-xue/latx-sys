@@ -2293,7 +2293,7 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     IR2_OPND tb_ptr_opnd = ra_alloc_dbt_arg1();
     ADDR tb_addr = (ADDR)tb;
 #ifndef N64
-/*TODO:  #warning need to implement la_append_ir2_opnd1i_em APIs. */
+#warning need to implement la_append_ir2_opnd1i_em APIs.
     la_append_ir2_opnd1i(LISA_LU12I_W, tb_ptr_opnd, tb_addr >> 12);
     la_append_ir2_opnd2i(LISA_ORI, tb_ptr_opnd, tb_ptr_opnd, tb_addr >> 20);
     ir2_opnd_set_em(&tb_ptr_opnd, EM_X86_ADDRESS, 32);

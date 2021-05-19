@@ -636,7 +636,7 @@ bool translate_fnclex(IR1_INST *pir1) { return true; }
 
 bool translate_finit(IR1_INST *pir1)
 {
-    /* TODO: #warning: checking for pending unmasked exceptions? */
+    #warning: checking for pending unmasked exceptions?
     translate_fninit(pir1);
     return true;
 }

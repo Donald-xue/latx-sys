@@ -1344,7 +1344,7 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
     la_append_ir2_opnd3(LISA_BEQ, itemp_reg, zero_ir2_opnd, label_exit);
 	//Identify SNAN and change opnd2 to SNAN
 	//exp==0x7fff && bit[62]==0 && bit[61:0]!=0
-	/* TODO:  #warning assume SNAN->QNAN when V, should check other cases */
+    #warning assume SNAN->QNAN when V, should check other cases
     la_append_ir2_opnd2_em(LISA_MOVFR2GR_D, itemp_reg, opnd2);
     la_append_ir2_opnd2ii(LISA_BSTRINS_D, itemp_reg, zero_ir2_opnd, 51, 51);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, opnd2, itemp_reg);
