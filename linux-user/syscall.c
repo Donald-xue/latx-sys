@@ -138,6 +138,8 @@
 #include "env.h"
 #endif
 
+#include <linux/perf_event.h>
+
 #ifndef CLONE_IO
 #define CLONE_IO                0x80000000      /* Clone io context */
 #endif

@@ -1270,6 +1270,11 @@ struct target_rtc_pll_info {
 #define TARGET_NS_GET_NSTYPE          TARGET_IO(0xb7, 0x03)
 #define TARGET_NS_GET_OWNER_UID       TARGET_IO(0xb7, 0x04)
 
+/* PERF */
+#define TARGET_PERF_EVENT_IOC_RESET     TARGET_IO(0x24, 0x03)
+#define TARGET_PERF_EVENT_IOC_ENABLE    TARGET_IO(0x24, 0x00)
+#define TARGET_PERF_EVENT_IOC_DISABLE   TARGET_IO(0x24, 0x01)
+
 /* device mapper */
 #define TARGET_DM_VERSION             TARGET_IOWRU(0xfd, 0x00)
 #define TARGET_DM_REMOVE_ALL          TARGET_IOWRU(0xfd, 0x01)
