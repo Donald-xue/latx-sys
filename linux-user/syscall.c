@@ -13508,6 +13508,10 @@ defined(__loongarch__)
     case TARGET_NR_sched_getattr:
         return get_errno(syscall(__NR_sched_getattr, arg1, arg2, arg3, arg4));
 #endif
+#if defined(TARGET_NR_sched_setattr) && defined(__NR_sched_setattr)
+    case TARGET_NR_sched_setattr:
+        return get_errno(syscall(__NR_sched_setattr, arg1, arg2, arg3));
+#endif
 #if defined(TARGET_NR_copy_file_range) && defined(__NR_copy_file_range)
     case TARGET_NR_copy_file_range:
         {
