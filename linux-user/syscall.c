@@ -6805,6 +6805,11 @@ static int target_to_host_fcntl_cmd(int cmd)
         ret = F_GET_SEALS;
         break;
 #endif
+#ifdef F_CANCELLK
+    case TARGET_F_CANCELLK:
+        ret = F_CANCELLK;
+        break;
+#endif
     default:
         ret = -TARGET_EINVAL;
         break;
