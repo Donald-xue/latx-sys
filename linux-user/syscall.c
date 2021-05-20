@@ -2235,6 +2235,7 @@ static abi_long do_setsockopt(int sockfd, int level, int optname,
     struct ip_mreqn *ip_mreq;
     struct ip_mreq_source *ip_mreq_source;
     struct group_req *group_req;
+    struct tpacket_req *req;
 
     switch(level) {
     case SOL_TCP:
@@ -2442,6 +2443,25 @@ static abi_long do_setsockopt(int sockfd, int level, int optname,
                                        &val, sizeof(val)));
             break;
 
+        default:
+            goto unimplemented;
+        }
+        break;
+    case SOL_PACKET:
+        switch(optname) {
+        case PACKET_RX_RING:
+        case PACKET_TX_RING:
+            req = lock_user(VERIFY_READ, optval_addr, optlen, 1);
+            ret = get_errno(setsockopt(sockfd, level, optname, req, optlen));
+            unlock_user (req, optval_addr, 0);
+            break;
+        case PACKET_VERSION:
+            if (optlen != sizeof(val))
+                return -TARGET_EINVAL;
+            if (get_user_u32(val, optval_addr))
+                return -TARGET_EFAULT;
+            ret = get_errno(setsockopt(sockfd, level, optname, &val, optlen));
+            break;
         default:
             goto unimplemented;
         }
