@@ -43,7 +43,7 @@ bool x86_cpu_exec_interrupt(CPUState *cpu, int int_req);
 /* helper.c */
 bool x86_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
                       MMUAccessType access_type, int mmu_idx,
-                      bool probe, uintptr_t retaddr);
+                      bool probe, uintptr_t retaddr, void *info);
 
 void breakpoint_handler(CPUState *cs);
 

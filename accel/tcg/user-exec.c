@@ -211,7 +211,7 @@ static inline int handle_cpu_signal(uintptr_t pc, siginfo_t *info,
 
     cc = CPU_GET_CLASS(cpu);
     cc->tcg_ops->tlb_fill(cpu, address, 0, access_type,
-                          MMU_USER_IDX, false, pc);
+                          MMU_USER_IDX, false, pc, info);
     g_assert_not_reached();
 }
 
@@ -243,7 +243,7 @@ static int probe_access_internal(CPUArchState *env, target_ulong addr,
             CPUState *cpu = env_cpu(env);
             CPUClass *cc = CPU_GET_CLASS(cpu);
             cc->tcg_ops->tlb_fill(cpu, addr, fault_size, access_type,
-                                  MMU_USER_IDX, false, ra);
+                                  MMU_USER_IDX, false, ra, NULL);
             g_assert_not_reached();
         }
     }

@@ -685,8 +685,9 @@ do_check_protect_pse36:
 
 bool x86_cpu_tlb_fill(CPUState *cs, vaddr addr, int size,
                       MMUAccessType access_type, int mmu_idx,
-                      bool probe, uintptr_t retaddr)
+                      bool probe, uintptr_t retaddr, void *info)
 {
+    siginfo_t *info_test = info;
     X86CPU *cpu = X86_CPU(cs);
     CPUX86State *env = &cpu->env;
 
@@ -695,7 +696,10 @@ bool x86_cpu_tlb_fill(CPUState *cs, vaddr addr, int size,
     env->cr[2] = addr;
     env->error_code = (access_type == MMU_DATA_STORE) << PG_ERROR_W_BIT;
     env->error_code |= PG_ERROR_U_MASK;
-    cs->exception_index = EXCP0E_PAGE;
+    if (info_test->si_signo == SIGBUS)
+        cs->exception_index = EXCP0B_NOSEG;
+    else
+        cs->exception_index = EXCP0E_PAGE;
     env->exception_is_int = 0;
     env->exception_next_eip = -1;
     cpu_loop_exit_restore(cs, retaddr);

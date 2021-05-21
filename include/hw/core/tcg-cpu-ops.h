@@ -56,7 +56,7 @@ struct TCGCPUOps {
      */
     bool (*tlb_fill)(CPUState *cpu, vaddr address, int size,
                      MMUAccessType access_type, int mmu_idx,
-                     bool probe, uintptr_t retaddr);
+                     bool probe, uintptr_t retaddr, void *info);
     /** @debug_excp_handler: Callback for handling debug exceptions */
     void (*debug_excp_handler)(CPUState *cpu);
 
