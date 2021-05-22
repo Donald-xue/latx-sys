@@ -790,6 +790,9 @@ safe_syscall6(int,futex,int *,uaddr,int,op,int,val, \
 safe_syscall6(int,futex_time64,int *,uaddr,int,op,int,val, \
               const struct timespec *,timeout,int *,uaddr2,int,val3)
 #endif
+#if defined(__NR_pivot_root)
+safe_syscall2(int, pivot_root, const char *, new_root, const char *, put_old)
+#endif
 safe_syscall2(int, rt_sigsuspend, sigset_t *, newset, size_t, sigsetsize)
 safe_syscall2(int, kill, pid_t, pid, int, sig)
 safe_syscall2(int, tkill, int, tid, int, sig)
@@ -12068,7 +12071,19 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #endif
 #ifdef TARGET_NR_pivot_root
     case TARGET_NR_pivot_root:
-        return get_errno(syscall(__NR_pivot_root, (char *)arg1, (char *)arg2));
+        {
+            void *p2;
+            p = lock_user_string(arg1);
+            p2 = lock_user_string(arg2);
+            if (!p || !p2) {
+                ret = -TARGET_EFAULT;
+            } else {
+                ret = get_errno(safe_pivot_root(p, p2));
+            }
+            unlock_user(p2, arg2, 0);
+            unlock_user(p, arg1, 0);
+        }
+        return ret;
 #endif
 #ifdef TARGET_NR_mincore
     case TARGET_NR_mincore:
