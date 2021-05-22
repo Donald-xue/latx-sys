@@ -539,7 +539,8 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
          * On any other target/host host mmap() handles this error correctly.
          */
         if (end < start || !guest_range_valid_untagged(start, len)) {
-            errno = ENOMEM;
+            //errno = ENOMEM;
+            errno = EFAULT;
             goto fail;
         }
 
@@ -775,15 +776,20 @@ abi_long target_mremap(abi_ulong old_addr, abi_ulong old_size,
         }
     } else {
         int prot = 0;
+        int num_pages = 0;
         if (reserved_va && old_size < new_size) {
             abi_ulong addr;
-            for (addr = old_addr + old_size;
-                 addr < old_addr + new_size;
-                 addr++) {
+            for (addr = TARGET_PAGE_ALIGN(old_addr + old_size);
+                 addr < TARGET_PAGE_ALIGN(old_addr + new_size);
+                 addr += TARGET_PAGE_SIZE) {
                 prot |= page_get_flags(addr);
+                num_pages++;
             }
         }
         if (prot == 0) {
+            if (reserved_va && new_size > old_size && num_pages)
+                munmap(g2h_untagged(TARGET_PAGE_ALIGN(old_addr + old_size)),
+                                        num_pages*TARGET_PAGE_SIZE);
             host_addr = mremap(g2h_untagged(old_addr),
                                old_size, new_size, flags);
 
