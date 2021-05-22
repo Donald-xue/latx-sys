@@ -1175,11 +1175,23 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 
     /* 2. update seg cache : read data in GDT and store into seg cache */
 
+    /* TI = 0 : GDT, TI = 1 : LDT */
+    IR2_OPND label_ldt = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_base_end = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND is_ldt = ra_alloc_itemp_internal(); /* [51:48] [15: 0] limit */
+    IR2_OPND dt_opnd = ra_alloc_itemp_internal();
+    la_append_ir2_opnd2i_em(LISA_ANDI, is_ldt, seg_value_opnd, 0x4);
+    la_append_ir2_opnd3(LISA_BNE, is_ldt, zero_ir2_opnd, label_ldt);
     /* 2.1 get gdt base */
-    IR2_OPND gdt_opnd = ra_alloc_itemp_internal();
-    la_append_ir2_opnd2i_em(LISA_LD_W, gdt_opnd, env_ir2_opnd,
+    la_append_ir2_opnd2i_em(LISA_LD_W, dt_opnd, env_ir2_opnd,
                       lsenv_offset_of_gdt_base(lsenv));
-    la_append_ir2_opnd3_em(LISA_AND, gdt_opnd, gdt_opnd, n1_ir2_opnd);
+    la_append_ir2_opnd1(LISA_B, label_base_end);
+    /* 2.1 get ldt base */
+    la_append_ir2_opnd1(LISA_LABEL, label_ldt);
+    la_append_ir2_opnd2i_em(LISA_LD_W, dt_opnd, env_ir2_opnd,
+                      lsenv_offset_of_ldt_base(lsenv));
+    la_append_ir2_opnd1(LISA_LABEL, label_base_end);
+    la_append_ir2_opnd3_em(LISA_AND, dt_opnd, dt_opnd, n1_ir2_opnd);
 
     /* 2.2 get entry offset of gdt and add it on gdt-base */
     IR2_OPND offset_in_gdt_opnd = ra_alloc_itemp_internal();
@@ -1189,23 +1201,23 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
      */
     load_ireg_from_imm32(offset_imm16, 0xfff8, ZERO_EXTENSION);
     la_append_ir2_opnd3_em(LISA_AND, offset_in_gdt_opnd, seg_value_opnd, offset_imm16);
-    la_append_ir2_opnd3_em(LISA_ADD_D, gdt_opnd, gdt_opnd, offset_in_gdt_opnd);
+    la_append_ir2_opnd3_em(LISA_ADD_D, dt_opnd, dt_opnd, offset_in_gdt_opnd);
     //append_ir2_opnd2i(mips_andi, offset_in_gdt_opnd, seg_value_opnd, 0xfff8);
-    //append_ir2_opnd3(mips_daddu, gdt_opnd, gdt_opnd, offset_in_gdt_opnd);
+    //append_ir2_opnd3(mips_daddu, dt_opnd, dt_opnd, offset_in_gdt_opnd);
 
     if (cpu_get_guest_base() != 0) {
         /* 2.3 add guest-base */
         IR2_OPND guest_base = ra_alloc_guest_base();
-        if (!ir2_opnd_is_address(&gdt_opnd)) {
-            la_append_ir2_opnd2_em(LISA_MOV_ADDRX, gdt_opnd, gdt_opnd);
+        if (!ir2_opnd_is_address(&dt_opnd)) {
+            la_append_ir2_opnd2_em(LISA_MOV_ADDRX, dt_opnd, dt_opnd);
         }
-        la_append_ir2_opnd3_em(LISA_ADD_ADDR, gdt_opnd, gdt_opnd, guest_base);
-        ir2_opnd_set_em(&gdt_opnd, EM_MIPS_ADDRESS, 32);
+        la_append_ir2_opnd3_em(LISA_ADD_ADDR, dt_opnd, dt_opnd, guest_base);
+        ir2_opnd_set_em(&dt_opnd, EM_MIPS_ADDRESS, 32);
     }
 
     /* 2.4 read segment entry */
     IR2_OPND gdt_entry = ra_alloc_itemp_internal();
-    la_append_ir2_opnd2i_em(LISA_LD_D, gdt_entry, gdt_opnd, 0);
+    la_append_ir2_opnd2i_em(LISA_LD_D, gdt_entry, dt_opnd, 0);
 
     IR2_OPND seg_limit = ra_alloc_itemp_internal(); /* [51:48] [15: 0] limit */
     IR2_OPND seg_base = ra_alloc_itemp_internal();  /* [63:56] [39:16] base */

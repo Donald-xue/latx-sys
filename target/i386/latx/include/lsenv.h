@@ -140,6 +140,12 @@ static inline int lsenv_offset_of_seg_flags(ENV *lsenv, int i)
     return (int)((ADDR)(&cpu->segs[i].flags) - (ADDR)lsenv->cpu_state);
 }
 
+static inline int lsenv_offset_of_ldt_base(ENV *lsenv)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&cpu->ldt.base) - (ADDR)lsenv->cpu_state);
+}
+
 static inline int lsenv_offset_of_gdt_base(ENV *lsenv)
 {
     CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
