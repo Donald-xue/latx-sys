@@ -3604,6 +3604,10 @@ static abi_long do_accept4(int fd, abi_ulong target_addr,
         return -TARGET_EINVAL;
     }
 
+    if (page_check_range((target_ulong)target_addr, addrlen, 0)) {
+        return -TARGET_EINVAL;
+    }
+
     if (!access_ok(thread_cpu, VERIFY_WRITE, target_addr, addrlen)) {
         return -TARGET_EFAULT;
     }
