@@ -770,8 +770,12 @@ abi_long target_mremap(abi_ulong old_addr, abi_ulong old_size,
             host_addr = mremap(g2h_untagged(old_addr), old_size, new_size,
                                flags | MREMAP_FIXED,
                                g2h_untagged(mmap_start));
-            if (reserved_va) {
-                mmap_reserve(old_addr, old_size);
+            if (host_addr == MAP_FAILED)
+                errno = EFAULT;
+            else {
+                if (reserved_va) {
+                    mmap_reserve(old_addr, old_size);
+                }
             }
         }
     } else {
