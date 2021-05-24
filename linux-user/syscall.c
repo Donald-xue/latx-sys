@@ -9995,7 +9995,14 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 #endif
 #ifdef TARGET_NR_mlockall
     case TARGET_NR_mlockall:
-        return get_errno(mlockall(target_to_host_mlockall_arg(arg1)));
+    {
+        if (arg1 & ~(TARGET_MCL_CURRENT | TARGET_MCL_FUTURE | TARGET_MCL_ONFAULT)) {
+            return -TARGET_EINVAL;
+        } else {
+            ret = get_errno(mlockall(target_to_host_mlockall_arg(arg1)));
+        }
+    }
+    return ret;
 #endif
 #ifdef TARGET_NR_munlockall
     case TARGET_NR_munlockall:
