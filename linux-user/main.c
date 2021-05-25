@@ -68,8 +68,14 @@ static const char *cpu_model;
 static const char *cpu_type;
 static const char *seed_optarg;
 unsigned long mmap_min_addr;
+#ifdef CONFIG_GUEST_BASE_ZERO
+uintptr_t guest_base = 0;
+bool have_guest_base = 1;
+#else
 uintptr_t guest_base;
 bool have_guest_base;
+#endif
+
 
 /*
  * Used to implement backwards-compatibility for the `-strace`, and
