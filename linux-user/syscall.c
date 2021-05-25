@@ -8437,6 +8437,7 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
                             abi_long arg8)
 {
     CPUState *cpu = env_cpu(cpu_env);
+    CPUArchState *env = cpu->env_ptr;
     abi_long ret;
 #if defined(TARGET_NR_stat) || defined(TARGET_NR_stat64) \
     || defined(TARGET_NR_lstat) || defined(TARGET_NR_lstat64) \
@@ -8452,11 +8453,15 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
 
     switch(num) {
     case TARGET_NR_exit:
+        /*
+         * During thread exit, need to free gdt table to avoid memory leak.
+         */
+        assert(env->gdt.base);
+        target_munmap(env->gdt.base, sizeof(uint64_t) * TARGET_GDT_ENTRIES);
         /* In old applications this may be used to implement _exit(2).
            However in threaded applications it is used for thread termination,
            and _exit_group is used for application termination.
            Do thread termination if we have more then one thread.  */
-
         if (block_signals()) {
             return -TARGET_ERESTARTSYS;
         }

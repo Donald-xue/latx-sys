@@ -217,6 +217,20 @@ CPUArchState *cpu_copy(CPUArchState *env)
     new_cpu->tcg_cflags = cpu->tcg_cflags;
     memcpy(new_env, env, sizeof(CPUArchState));
 
+    /*
+     * NOTE: Current QEMU only has one and only one gdt_table ptr.
+     * On the other hand, Wine leverage fs reg for TEB storage, detail information
+     * please refer to link: https://wiki.winehq.org/Wine_Developer%27s_Guide/Kernel_modules
+     * Current QEMU has one and only one gdt for all threads, that will lead to wine cannot get
+     * correct ldt in gdt table. The new thread ldt will overwrite the previous thread ldt addr.
+     * To solve this issue, create a per-thread gdt for each thread to make sure ldt entry safe.
+     */
+    new_env->gdt.base = target_mmap(0, sizeof(uint64_t) * TARGET_GDT_ENTRIES,
+                                    PROT_READ|PROT_WRITE,
+                                    MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+    assert(new_env->gdt.base > 0);
+    memcpy((void *)(uintptr_t)new_env->gdt.base, (void *)(uintptr_t)env->gdt.base,
+                                    sizeof(uint64_t) * TARGET_GDT_ENTRIES);
     /* Clone all break/watchpoints.
        Note: Once we support ptrace with hw-debug register access, make sure
        BP_CPU break/watchpoints are handled correctly on clone. */
