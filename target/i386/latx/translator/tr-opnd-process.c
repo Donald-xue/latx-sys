@@ -207,6 +207,7 @@ IR2_OPND convert_mem_opnd_with_bias(IR1_OPND *opnd1, int bias)
     else if (ir1_opnd_has_base(opnd1)) {
         IR2_OPND base_opnd = ra_alloc_gpr(ir1_opnd_base_reg_num(opnd1));
         IR2_OPND index_opnd = ra_alloc_gpr(ir1_opnd_index_reg_num(opnd1));
+        ir2_opnd_set_em(&index_opnd, UNKNOWN_EXTENSION, 32);
         mem_opnd = ra_alloc_itemp_internal();
 
         /* 2.1. prepare base + index*scale */
