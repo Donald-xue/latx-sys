@@ -2327,7 +2327,11 @@ void helper_fcos(CPUX86State *env)
         /* the above code is for |arg| < 2**63 only */
     }
 }
-
+#ifdef CONFIG_LATX
+/*
+ * QEMU 4.1 version
+ * LATX temporaly use QEMU 4.1 version
+ */
 void helper_fxam_ST0(CPUX86State *env)
 {
     CPU_LDoubleU temp;
@@ -2340,17 +2344,11 @@ void helper_fxam_ST0(CPUX86State *env)
         env->fpus |= 0x200; /* C1 <-- 1 */
     }
 
-    // if (env->fptags[env->fpstt]) {
-        // env->fpus |= 0x4100; [> Empty <]
-        // return;
-    // }
-
     expdif = EXPD(temp);
     if (expdif == MAXEXPD) {
         if (MANTD(temp) == 0x8000000000000000ULL) {
             env->fpus |= 0x500; /* Infinity */
-        // } else if (MANTD(temp) & 0x8000000000000000ULL) {
-        } else {
+       } else {
             env->fpus |= 0x100; /* NaN */
         }
     } else if (expdif == 0) {
@@ -2359,11 +2357,46 @@ void helper_fxam_ST0(CPUX86State *env)
         } else {
             env->fpus |= 0x4400; /* Denormal */
         }
-    // } else if (MANTD(temp) & 0x8000000000000000ULL) {
     } else {
         env->fpus |= 0x400;
     }
 }
+#else
+void helper_fxam_ST0(CPUX86State *env)
+{
+    CPU_LDoubleU temp;
+    int expdif;
+
+    temp.d = ST0;
+
+    env->fpus &= ~0x4700; /* (C3,C2,C1,C0) <-- 0000 */
+    if (SIGND(temp)) {
+        env->fpus |= 0x200; /* C1 <-- 1 */
+    }
+
+    if (env->fptags[env->fpstt]) {
+        env->fpus |= 0x4100; /* Empty */
+        return;
+    }
+
+    expdif = EXPD(temp);
+    if (expdif == MAXEXPD) {
+        if (MANTD(temp) == 0x8000000000000000ULL) {
+            env->fpus |= 0x500; /* Infinity */
+        } else if (MANTD(temp) & 0x8000000000000000ULL) {
+            env->fpus |= 0x100; /* NaN */
+        }
+    } else if (expdif == 0) {
+        if (MANTD(temp) == 0) {
+            env->fpus |=  0x4000; /* Zero */
+        } else {
+            env->fpus |= 0x4400; /* Denormal */
+        }
+    } else if (MANTD(temp) & 0x8000000000000000ULL) {
+        env->fpus |= 0x400;
+    }
+}
+#endif
 
 static void do_fstenv(CPUX86State *env, target_ulong ptr, int data32,
                       uintptr_t retaddr)
