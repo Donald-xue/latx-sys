@@ -5565,7 +5565,7 @@ if test "$latx" = "yes" ; then
   fi
 fi
 if test "$guest_base" = "no" ; then
-  echo "CONFIG_GUEST_BASE_ZERO" >> $config_host_mak
+  echo "CONFIG_GUEST_BASE_ZERO=y" >> $config_host_mak
 fi
 if test "$want_tools" = "yes" ; then
   echo "CONFIG_TOOLS=y" >> $config_host_mak
