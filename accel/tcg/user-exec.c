@@ -788,7 +788,6 @@ int cpu_signal_handler(int host_signum, void *pinfo,
 
     /* XXX: compute is_write */
     is_write = 0;
-#ifdef CONFIG_LATX
     //TODO use kernel to send write info
     //only st/stl/str handled, may cause bugs
     uint32_t insn = *(uint32_t *)pc;
@@ -797,7 +796,6 @@ int cpu_signal_handler(int host_signum, void *pinfo,
         ((insn >> 20) == 0x381) || ((insn >> 24) == 0x21)) {
         is_write = 1;
     }
-#endif
     return handle_cpu_signal(pc, info, is_write, &uc->uc_sigmask);
 }
 
