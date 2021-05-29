@@ -56,3 +56,20 @@ ETB *etb_find(ADDRX pc)
     fast_table[hash] = etb;
     return etb;
 }
+bool etb_remove(ADDRX pc)
+{
+    bool found = false;
+    uint32_t hash = pc & 0x3ff;
+
+    ETB *etb = (ETB*)qht_lookup_custom(etb_qht, &pc, hash, etb_lookup_custom);
+    if (etb) {
+        found = true;
+        qht_remove(etb_qht, etb, hash);
+        if(etb->_ir1_instructions)
+            mm_free(etb->_ir1_instructions);
+        mm_free(etb);
+    }
+    if (fast_table[hash] && fast_table[hash]->pc == pc)
+        fast_table[hash] = NULL;
+    return found;
+}
