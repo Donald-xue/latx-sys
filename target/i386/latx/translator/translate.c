@@ -2172,15 +2172,17 @@ bool tr_ir2_generate(void *tb, void *petb)
         ra_free_temp(exec_count_value_opnd);
     }
 
-    if (option_dump)
-        fprintf(stderr, "[LATX] translation : generate IR2 from IR1.\n");
-
     int i = 0;
 
     TRANSLATION_DATA *t = lsenv->tr_data;
 
     IR1_INST *ir1_list = t->ir1_inst_array;
     int ir1_nr = t->ir1_nr;
+
+    if (option_dump) {
+        fprintf(stderr, "[LATX] translation : generate IR2 from IR1.\n");
+        fprintf(stderr, "IR1 num = %d\n", ir1_nr);
+    }
 
     IR1_INST *pir1 = NULL;
 
@@ -2190,7 +2192,7 @@ bool tr_ir2_generate(void *tb, void *petb)
         tr_init_for_each_ir1_in_tb(ir1_list, ir1_nr, i);
 
         if (option_dump_ir1) {
-            fprintf(stderr, "ir1 translate >>> ");
+            fprintf(stderr, "IR1[%d] ", i);
             ir1_dump(pir1);
         }
 

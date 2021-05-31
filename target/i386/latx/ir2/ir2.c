@@ -3617,6 +3617,8 @@ int ir2_to_string(IR2_INST *ir2, char *str)
     return length;
 }
 
+static int ir1_id;
+
 int ir2_dump(IR2_INST *ir2)
 {
     char str[64];
@@ -3629,8 +3631,16 @@ int ir2_dump(IR2_INST *ir2)
     }
 
     size = ir2_to_string(ir2, str);
+    if (ir2->_id == 0) {
+        ir1_id = 0;
+        fprintf(stderr, "[%d, %d] %s\n", ir2->_id, ir1_id, str);
+    } else if (str[0] == '-') {
+        ir1_id ++;
+        fprintf(stderr, "[%d, %d] %s\n", ir2->_id, ir1_id, str);
+    } else {
+        fprintf(stderr, "[%d] %s\n", ir2->_id, str);
+    }
 
-    fprintf(stderr, "%s\n", str);
 
     return size;
 }
