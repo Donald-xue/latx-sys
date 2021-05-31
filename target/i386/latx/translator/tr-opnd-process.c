@@ -1843,8 +1843,6 @@ IR2_OPND convert_mem_opnd_with_bias_within_imm_bits(IR1_OPND *opnd1, int bias, i
         IR2_OPND base_opnd = ra_alloc_gpr(ir1_opnd_base_reg_num(opnd1));
         IR2_OPND index_opnd = ra_alloc_gpr(ir1_opnd_index_reg_num(opnd1));
         mem_opnd = ra_alloc_itemp_internal();
-	if (ir2_opnd_is_address(&mem_opnd))
-	    la_append_ir2_opnd3_em(LISA_AND, mem_opnd, mem_opnd, n1_ir2_opnd);
 
         /* 2.1. prepare base + index*scale */
         if (ir1_opnd_scale(opnd1) == 1) {
@@ -1879,8 +1877,6 @@ IR2_OPND convert_mem_opnd_with_bias_within_imm_bits(IR1_OPND *opnd1, int bias, i
     else {
         IR2_OPND index_opnd = ra_alloc_gpr(ir1_opnd_index_reg_num(opnd1));
         mem_opnd = ra_alloc_itemp_internal();
-	if (ir2_opnd_is_address(&mem_opnd))
-	    la_append_ir2_opnd3_em(LISA_AND, mem_opnd, mem_opnd, n1_ir2_opnd);
 
         /* 2.1. prepare index*scale */
         if (ir1_opnd_scale(opnd1) == 1) {
@@ -1932,6 +1928,11 @@ IR2_OPND convert_mem_opnd_with_bias_within_imm_bits(IR1_OPND *opnd1, int bias, i
                         ir2_opnd_base_reg_num(&seg_base_opnd),
                         ir2_opnd_imm(&mem_opnd));
     }
+
+	IR2_OPND mem_base_opnd = ir2_opnd_new(IR2_OPND_IREG, ir2_opnd_base_reg_num(&mem_opnd));
+	if (ir2_opnd_is_address(&mem_base_opnd))
+        la_append_ir2_opnd3_em(LISA_AND, mem_base_opnd, mem_base_opnd, n1_ir2_opnd);
+
     ra_free_temp(offset_reg_opnd);
     return mem_opnd;
 }
