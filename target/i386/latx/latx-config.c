@@ -156,6 +156,7 @@ int target_latx_epilogue(void *code_buf_addr)
     return code_nr;
 }
 
+#ifdef CONFIG_LATX_DEBUG
 void latx_before_exec_trace_tb(CPUArchState *env, struct TranslationBlock *tb)
 {
     if (option_trace_tb)
@@ -178,6 +179,7 @@ void latx_profile(void)
     if (option_profile)
         context_switch_time++;
 }
+#endif
 
 void latx_before_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb)
 {
