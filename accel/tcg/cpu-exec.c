@@ -870,7 +870,7 @@ int cpu_exec(CPUState *cpu)
             }
 
             tb = tb_find(cpu, last_tb, tb_exit, cflags);
-#ifdef CONFIG_LATX
+#ifdef CONFIG_LATX_DEBUG
             trace_tb_execution(tb);
 #endif
             cpu_loop_exec_tb(cpu, tb, &last_tb, &tb_exit);

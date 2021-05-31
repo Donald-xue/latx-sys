@@ -52,6 +52,7 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
     return tr_translate_tb(tb, etb);
 }
 
+#ifdef CONFIG_LATX_DEBUG
 void trace_tb_execution(struct TranslationBlock *tb)
 {
     lsassert(tb != NULL);
@@ -110,6 +111,7 @@ void trace_tb_execution(struct TranslationBlock *tb)
 
     fprintf(stderr, "[trace] ========================\n");
 }
+#endif
 
 /*
  * prologue <=> bt to native
