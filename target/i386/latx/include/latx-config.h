@@ -13,8 +13,11 @@ int target_latx_epilogue(void *code_buf_addr);
 int target_latx_fpu_rotate(void *code_buf_addr);
 void latx_tb_set_jmp_target(struct TranslationBlock *, int, struct TranslationBlock *);
 
-void latx_before_exec_tb(CPUArchState *env, struct TranslationBlock *tb);
-void latx_after_exec_tb(CPUArchState *env, struct TranslationBlock *tb);
+void latx_before_exec_trace_tb(CPUArchState *env, struct TranslationBlock *tb);
+void latx_after_exec_trace_tb(CPUArchState *env, struct TranslationBlock *tb);
+void latx_profile(void);
+void latx_before_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb);
+void latx_after_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb);
 struct TranslationBlock *latx_tb_find(void *cpu_state, ADDRX pc);
 void latx_exit(void);
 

@@ -156,14 +156,31 @@ int target_latx_epilogue(void *code_buf_addr)
     return code_nr;
 }
 
-void latx_before_exec_tb(CPUArchState *env, struct TranslationBlock *tb)
+void latx_before_exec_trace_tb(CPUArchState *env, struct TranslationBlock *tb)
 {
     if (option_trace_tb)
         fprintf(stderr,
                 "[LATX] before executing TB {PC = %p, code at %p}.\n",
                 (void *)(unsigned long)tb->pc, (void *)tb->tc.ptr);
     counter_tb_exec += 1;
+}
 
+void latx_after_exec_trace_tb(CPUArchState *env, struct TranslationBlock *tb)
+{
+    if (option_trace_tb)
+        fprintf(stderr,
+                "[LATX] after  executing TB {PC = %p, code at %p}.\n",
+                (void *)(unsigned long)tb->pc, (void *)tb->tc.ptr);
+}
+
+void latx_profile(void)
+{
+    if (option_profile)
+        context_switch_time++;
+}
+
+void latx_before_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb)
+{
     if (!option_lsfpu) {
         lsassert(lsenv_get_top_bias(lsenv) == 0);
         if (env->fpstt != etb_get_top_in(&tb->extra_tb)) {
@@ -172,15 +189,8 @@ void latx_before_exec_tb(CPUArchState *env, struct TranslationBlock *tb)
     }
 }
 
-void latx_after_exec_tb(CPUArchState *env, struct TranslationBlock *tb)
+void latx_after_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb)
 {
-    if (option_profile)
-        context_switch_time++;
-    if (option_trace_tb)
-        fprintf(stderr,
-                "[LATX] after  executing TB {PC = %p, code at %p}.\n",
-                (void *)(unsigned long)tb->pc, (void *)tb->tc.ptr);
-
     if (!option_lsfpu) {
         /* if tb linked to other tbs, last executed tb might not be current tb
          * if last_executed_tb is null, it is not linked indirect jmps
@@ -206,7 +216,6 @@ void latx_after_exec_tb(CPUArchState *env, struct TranslationBlock *tb)
         }
     }
 }
-
 /*
  * native rotate fpu by
  */
