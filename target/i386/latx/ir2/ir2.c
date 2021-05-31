@@ -3638,7 +3638,7 @@ int ir2_dump(IR2_INST *ir2)
         ir1_id ++;
         fprintf(stderr, "[%d, %d] %s\n", ir2->_id, ir1_id, str);
     } else {
-        fprintf(stderr, "[%d] %s\n", ir2->_id, str);
+        fprintf(stderr, "%s\n", str);
     }
 
 

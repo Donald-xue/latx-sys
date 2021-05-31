@@ -1216,7 +1216,7 @@ bool translate_xchg(IR1_INST *pir1)
          * operation, regardless of the presence or absence of the LOCK prefix
          * or of the value of the IOPL.
          */
-        IR1_OPND *reg_ir1 = NULL;
+        /* IR1_OPND *reg_ir1 = NULL; */
         IR2_OPND src_mem = ra_alloc_itemp();
         IR2_OPND sc_opnd = ra_alloc_itemp();
         IR2_OPND imm_opnd = ra_alloc_itemp();
@@ -1235,12 +1235,13 @@ bool translate_xchg(IR1_INST *pir1)
                           ir1_opnd_size(opnd0));
             }
 
-            if (ir1_opnd_size(ir1_get_opnd(pir1, 1)) == 32)
-                reg_ir1 = &eax_ir1_opnd;
-            else if (ir1_opnd_base_reg_bits_start(ir1_get_opnd(pir1, 1)))
-                reg_ir1 = &ah_ir1_opnd;
-            else
-                reg_ir1 = &al_ir1_opnd;
+            /* if (ir1_opnd_size(ir1_get_opnd(pir1, 1)) == 32)
+             *     reg_ir1 = &eax_ir1_opnd;
+             * else if (ir1_opnd_base_reg_bits_start(ir1_get_opnd(pir1, 1)))
+             *     reg_ir1 = &ah_ir1_opnd;
+             * else
+             *     reg_ir1 = &al_ir1_opnd;
+             */
 
             mem_opnd = mem_ir1_to_ir2_opnd(opnd0, false);
             src_gpr = load_ireg_from_ir1(opnd1,
@@ -1251,12 +1252,13 @@ bool translate_xchg(IR1_INST *pir1)
                           ir1_opnd_size(opnd0));
             }
 
-            if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
-                reg_ir1 = &eax_ir1_opnd;
-            else if (ir1_opnd_base_reg_bits_start(ir1_get_opnd(pir1, 0)))
-                reg_ir1 = &ah_ir1_opnd;
-            else
-                reg_ir1 = &al_ir1_opnd;
+            /* if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
+             *     reg_ir1 = &eax_ir1_opnd;
+             * else if (ir1_opnd_base_reg_bits_start(ir1_get_opnd(pir1, 0)))
+             *     reg_ir1 = &ah_ir1_opnd;
+             * else
+             *     reg_ir1 = &al_ir1_opnd;
+             */
 
             mem_opnd = mem_ir1_to_ir2_opnd(opnd1, false);
             src_gpr = load_ireg_from_ir1(opnd0,
