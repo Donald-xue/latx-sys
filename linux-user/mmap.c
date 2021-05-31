@@ -418,12 +418,17 @@ abi_ulong mmap_find_vma(abi_ulong start, abi_ulong size, abi_ulong align)
     }
 }
 
-/* NOTE: all the constants are the HOST ones */
+/*
+ * NOTE: all the constants are the HOST ones
+ * Expand offset type from abi_ulong to uint64 to make mmap2 happy.
+ * refer to syscall.c mmap2 syscall for detial information
+ */
 abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
-                     int flags, int fd, abi_ulong offset)
+                     int flags, int fd, uint64_t offset)
 {
-    abi_ulong ret, end, real_start, real_end, retaddr, host_offset, host_len;
+    abi_ulong ret, end, real_start, real_end, retaddr, host_len;
     int page_flags, host_prot;
+    uint64_t host_offset;
 
     mmap_lock();
     trace_target_mmap(start, len, target_prot, flags, fd, offset);
