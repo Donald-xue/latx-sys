@@ -7,6 +7,7 @@
 
 void print_stack_trace(void);
 
+#ifdef CONFIG_LATX_DEBU
 #define lsassert(cond)                                                  \
     do {                                                                \
         if (!(cond)) {                                                  \
@@ -29,5 +30,9 @@ void print_stack_trace(void);
         }                                                                     \
     } while (0)
 
+#else
+#define lsassert(cond)          ((void)0)
+#define lsassertm(cond, ...)    ((void)0)
+#endif
 
 #endif /* _ERROR_H_ */
