@@ -1216,23 +1216,48 @@ bool translate_xchg(IR1_INST *pir1)
          * operation, regardless of the presence or absence of the LOCK prefix
          * or of the value of the IOPL.
          */
+        IR1_OPND *reg_ir1 = NULL;
         IR2_OPND src_mem = ra_alloc_itemp();
         IR2_OPND sc_opnd = ra_alloc_itemp();
+        IR2_OPND imm_opnd = ra_alloc_itemp();
+        IR2_OPND mem_opnd_cpy = ra_alloc_itemp();
+        IR2_OPND src_mem_cpy = ra_alloc_itemp();
+        IR2_OPND sc_opnd_cpy = ra_alloc_itemp();
+        IR2_OPND tmp_opnd = ra_alloc_itemp();
+        IR2_OPND mask_opnd = ra_alloc_itemp();
         IR2_OPND src_gpr;
         IR2_OPND mem_opnd;
+
+        /* 1. load REG opnand and MEM opnand */
         if (ir1_opnd_is_mem(opnd0)) {
-            if (ir1_opnd_size(opnd0) != 32) {
+            if (ir1_opnd_size(opnd0) == 16) {
                 lsassertm(0, "Invalid operand size (%d) in translate_xchg.\n",
                           ir1_opnd_size(opnd0));
             }
+
+            if (ir1_opnd_size(ir1_get_opnd(pir1, 1)) == 32)
+                reg_ir1 = &eax_ir1_opnd;
+            else if (ir1_opnd_base_reg_bits_start(ir1_get_opnd(pir1, 1)))
+                reg_ir1 = &ah_ir1_opnd;
+            else
+                reg_ir1 = &al_ir1_opnd;
+
             mem_opnd = mem_ir1_to_ir2_opnd(opnd0, false);
             src_gpr = load_ireg_from_ir1(opnd1,
                                         UNKNOWN_EXTENSION, false);
         } else {
-            if (ir1_opnd_size(opnd1) != 32) {
+            if (ir1_opnd_size(opnd1) == 16) {
                 lsassertm(0, "Invalid operand size (%d) in translate_xchg.\n",
                           ir1_opnd_size(opnd0));
             }
+
+            if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
+                reg_ir1 = &eax_ir1_opnd;
+            else if (ir1_opnd_base_reg_bits_start(ir1_get_opnd(pir1, 0)))
+                reg_ir1 = &ah_ir1_opnd;
+            else
+                reg_ir1 = &al_ir1_opnd;
+
             mem_opnd = mem_ir1_to_ir2_opnd(opnd1, false);
             src_gpr = load_ireg_from_ir1(opnd0,
                                         UNKNOWN_EXTENSION, false);
@@ -1240,16 +1265,76 @@ bool translate_xchg(IR1_INST *pir1)
 
         int imm = ir2_opnd_imm(&mem_opnd);
         mem_opnd._type = IR2_OPND_IREG;
+
+        /* 2. add the offset to the base memory adderss */
+        la_append_ir2_opnd3_em(LISA_OR, mem_opnd_cpy, zero_ir2_opnd, mem_opnd);
+        load_ireg_from_imm32(imm_opnd, imm, SIGN_EXTENSION);
+        la_append_ir2_opnd3_em(LISA_ADD_D, mem_opnd_cpy, mem_opnd_cpy, imm_opnd);
+
         IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
         la_append_ir2_opnd1(LISA_LABEL, label_ll);
+
         la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, src_gpr);
-        la_append_ir2_opnd2i_em(LISA_LL_W, src_mem, mem_opnd, imm);
-        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
+
+        /* 3. (original-address % 4) => the target-byte's offset in the 4-bytes loaded*/
+        load_ireg_from_imm32(imm_opnd, 0x4, ZERO_EXTENSION);
+        la_append_ir2_opnd3(LISA_MOD_WU, tmp_opnd, mem_opnd_cpy, imm_opnd);
+        la_append_ir2_opnd3_em(LISA_SUB_D, mem_opnd_cpy, mem_opnd_cpy, tmp_opnd);
+
+        /* 4. now ll the total 4 bytes to reg and make a copy of src_mem*/
+        la_append_ir2_opnd2i_em(LISA_LL_W, src_mem, mem_opnd_cpy, 0);
+        la_append_ir2_opnd3_em(LISA_OR, src_mem_cpy, zero_ir2_opnd, src_mem);
+
+        /* 5. rebuild sc_opnd and src_mem */
+        if (ir1_opnd_size(opnd0) == 16) {
+            lsassertm(0, "Invalid operand size (%d) in translate_xchg.\n",
+                        ir1_opnd_size(opnd0));
+        } else if (ir1_opnd_size(opnd0) == 8) {
+            /* rebuild sc_opnd */
+            la_append_ir2_opnd3_em(LISA_OR, sc_opnd_cpy, zero_ir2_opnd, sc_opnd);
+            la_append_ir2_opnd2ii(LISA_BSTRINS_D, sc_opnd, zero_ir2_opnd, 31, 8);
+            la_append_ir2_opnd2i_em(LISA_SLLI_D, tmp_opnd, tmp_opnd, 3);
+            la_append_ir2_opnd3_em(LISA_SLL_D, sc_opnd, sc_opnd, tmp_opnd);
+
+            load_ireg_from_imm32(mask_opnd, 0xff, ZERO_EXTENSION);
+            la_append_ir2_opnd3_em(LISA_SLL_D, mask_opnd, mask_opnd, tmp_opnd);
+            la_append_ir2_opnd3_em(LISA_NOR, mask_opnd, zero_ir2_opnd, mask_opnd);
+            la_append_ir2_opnd3_em(LISA_AND, src_mem_cpy, src_mem_cpy, mask_opnd);
+
+            la_append_ir2_opnd3_em(LISA_OR, sc_opnd, sc_opnd, src_mem_cpy);
+
+            /* rebuild src_mem */
+            la_append_ir2_opnd3_em(LISA_SRL_D, src_mem, src_mem, tmp_opnd);
+            la_append_ir2_opnd2ii(LISA_BSTRINS_D, src_mem, zero_ir2_opnd, 31, 8);
+            la_append_ir2_opnd2ii(LISA_BSTRINS_D, sc_opnd_cpy, zero_ir2_opnd, 7, 0);
+            la_append_ir2_opnd3_em(LISA_OR, src_mem, src_mem, sc_opnd_cpy);
+        } else {
+            /* 32bit go through without any processing */
+        }
+
+        /* 6. do xchg operation */
+        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd_cpy, 0);
+        /* 6.1 if the first LL/SC failed, the we need to go back to restart,
+         * and remember to make mem_opnd_cpy back to the status of the begaining of the loop.
+         */
+        la_append_ir2_opnd2i_em(LISA_SRLI_D, tmp_opnd, tmp_opnd, 3);
+        la_append_ir2_opnd3_em(LISA_ADD_D, mem_opnd_cpy, mem_opnd_cpy, tmp_opnd);
         la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
+        /* FIXME: we should have used store_ireg_to_ir1 to store src_mem back to specified reg_ir1,
+         * BUT it causes core dump when running WPS. So I use LISA_OR instead, which is a wrong way,
+         * becaus it only recognises AL reg but not AH reg, I think the problem is in store_ireg_to_ir1.
+         */
+        //store_ireg_to_ir1(src_mem, reg_ir1, false);
         la_append_ir2_opnd3_em(LISA_OR, src_gpr, zero_ir2_opnd, src_mem);
 
         ra_free_temp(src_mem);
         ra_free_temp(sc_opnd);
+        ra_free_temp(imm_opnd);
+        ra_free_temp(mem_opnd_cpy);
+        ra_free_temp(src_mem_cpy);
+        ra_free_temp(sc_opnd_cpy);
+        ra_free_temp(mask_opnd);
+        ra_free_temp(tmp_opnd);
     }
 
     return true;

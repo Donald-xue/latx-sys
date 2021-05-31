@@ -4120,7 +4120,7 @@ IR2_INST *la_append_ir2_opnd3_em(IR2_OPCODE opcode, IR2_OPND op0,
         ir2_opnd_set_em_sub2(&op0, &op1, &op2);
         break;
     case LISA_ADD_W:
-        lsassert(ir2_opnd_is_sx(&op1, 32) && ir2_opnd_is_sx(&op2, 32));
+        //lsassert(ir2_opnd_is_sx(&op1, 32) && ir2_opnd_is_sx(&op2, 32));
         ir2_opnd_set_em_add2(&op0, &op1, &op2);
         if (!ir2_opnd_is_sx(&op0, 32)) {
             ir2_opnd_set_em(&op0, SIGN_EXTENSION, 32);
@@ -4401,7 +4401,7 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
             imm = -imm;
         }
         lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
-        lsassert(ir2_opnd_is_sx(&src, 32));
+        //lsassert(ir2_opnd_is_sx(&src, 32));
         lsassertm(!ir2_opnd_is_address(&src),
                   "should use addi_addr or addi_addrx\n");
         ir2_opnd_set_em_add(&dest, &src, int16_em(imm), int16_eb(imm));
