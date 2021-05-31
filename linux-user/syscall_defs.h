@@ -1413,7 +1413,7 @@ struct target_rtc_pll_info {
 #define TARGET_DRM_IOCTL_RADEON_SURF_FREE  TARGET_IOW ('d', 0x5B, unsigned int)
 /* KMS */
 #define TARGET_DRM_IOCTL_RADEON_GEM_INFO       TARGET_IOWR('d', 0x5C, struct drm_radeon_gem_info)
-#define TARGET_DRM_IOCTL_RADEON_GEM_CREATE     TARGET_IOWR('d', 0x5D, struct drm_radeon_gem_create)
+#define TARGET_DRM_IOCTL_RADEON_GEM_CREATE     TARGET_IOWRU('d', 0x5D)
 #define TARGET_DRM_IOCTL_RADEON_GEM_MMAP       TARGET_IOWR('d', 0x5E, struct drm_radeon_gem_mmap)
 #define TARGET_DRM_IOCTL_RADEON_GEM_PREAD      TARGET_IOWR('d', 0x61, struct drm_radeon_gem_pread)
 #define TARGET_DRM_IOCTL_RADEON_GEM_PWRITE     TARGET_IOWR('d', 0x62, struct drm_radeon_gem_pwrite)
@@ -2901,6 +2901,14 @@ struct target_drm_version {
     abi_ulong date;
     abi_ulong desc_len;
     abi_ulong desc;
+};
+
+struct target_drm_radeon_gem_create {
+	uint64_t	size;
+	uint64_t	alignment;
+	abi_long	handle;
+	abi_long	initial_domain;
+	abi_long	flags;
 };
 
 struct target_drm_i915_getparam {

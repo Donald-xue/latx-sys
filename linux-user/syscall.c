@@ -88,8 +88,6 @@
 #define tchars host_tchars /* same as target */
 #define ltchars host_ltchars /* same as target */
 
-#include <drm/drm.h>
-#include <drm/radeon_drm.h>
 #include <linux/termios.h>
 #include <linux/unistd.h>
 #include <linux/cdrom.h>
@@ -124,6 +122,7 @@
 #ifdef HAVE_DRM_H
 #include <libdrm/drm.h>
 #include <libdrm/i915_drm.h>
+#include <libdrm/radeon_drm.h>
 #endif
 #include "linux_loop.h"
 #include "uname.h"
@@ -5828,32 +5827,73 @@ static inline void host_to_target_drmversion(
     unlock_drm_version(host_ver, target_ver, true);
 }
 
+static inline abi_long target_to_host_gem_create(struct drm_radeon_gem_create *host_ver,
+                                          struct target_drm_radeon_gem_create *target_ver)
+{
+    memset(host_ver, 0, sizeof(*host_ver));
+    __get_user(host_ver->size, &target_ver->size);
+    __get_user(host_ver->alignment, &target_ver->alignment);
+    __get_user(host_ver->handle, &target_ver->handle);
+    __get_user(host_ver->initial_domain, &target_ver->initial_domain);
+    __get_user(host_ver->flags, &target_ver->flags);
+    return 0;
+}
+
+static inline void host_to_target_gem_create(
+                                          struct target_drm_radeon_gem_create *target_ver,
+                                          struct drm_radeon_gem_create *host_ver)
+{
+    __put_user(host_ver->size, &target_ver->size);
+    __put_user(host_ver->alignment, &target_ver->alignment);
+    __put_user(host_ver->handle, &target_ver->handle);
+    __put_user(host_ver->initial_domain, &target_ver->initial_domain);
+    __put_user(host_ver->flags, &target_ver->flags);
+}
+
 static abi_long do_ioctl_drm(const IOCTLEntry *ie, uint8_t *buf_temp,
                              int fd, int cmd, abi_long arg)
 {
+    abi_long ret;
     struct drm_version *ver;
     struct target_drm_version *target_ver;
-    abi_long ret;
-printf ("do_ioctl_drm==============>\n");
+    struct drm_radeon_gem_create *gem_create;
+    struct target_drm_radeon_gem_create *target_gem_create;
+
     switch (ie->host_cmd) {
-    case DRM_IOCTL_VERSION:
-        if (!lock_user_struct(VERIFY_WRITE, target_ver, arg, 0)) {
-            return -TARGET_EFAULT;
-        }
-        ver = (struct drm_version *)buf_temp;
-        ret = target_to_host_drmversion(ver, target_ver);
-        if (!is_error(ret)) {
-            ret = get_errno(safe_ioctl(fd, ie->host_cmd, ver));
-            if (is_error(ret)) {
-                unlock_drm_version(ver, target_ver, false);
-            } else {
-                host_to_target_drmversion(target_ver, ver);
-            }
-        }
-        unlock_user_struct(target_ver, arg, 0);
-        return ret;
+       case DRM_IOCTL_VERSION:
+            if (!lock_user_struct(VERIFY_WRITE, target_ver, arg, 0)) {
+                return -TARGET_EFAULT;
+               }
+            ver = (struct drm_version *)buf_temp;
+            ret = target_to_host_drmversion(ver, target_ver);
+            if (!is_error(ret)) {
+                ret = get_errno(safe_ioctl(fd, ie->host_cmd, ver));
+                if (is_error(ret)) {
+                    unlock_drm_version(ver, target_ver, false);
+                } else {
+                    host_to_target_drmversion(target_ver, ver);
+                    }
+               }
+            unlock_user_struct(target_ver, arg, 0);
+            return ret;
+       case DRM_IOCTL_RADEON_GEM_CREATE:
+            if (!lock_user_struct(VERIFY_WRITE, target_gem_create, arg, 0)) {
+                return -TARGET_EFAULT;
+               }
+            gem_create = (struct drm_radeon_gem_create *)buf_temp;
+            ret = target_to_host_gem_create(gem_create, target_gem_create);
+            if (!is_error(ret)) {
+                ret = get_errno(safe_ioctl(fd, ie->host_cmd, gem_create));
+                if (is_error(ret)) {
+                    assert(0);
+                } else {
+                    host_to_target_gem_create(target_gem_create, gem_create);
+                    }
+                }
+            unlock_user_struct(target_gem_create, arg, 0);
+            return ret;
     }
-    return -TARGET_ENOSYS;
+   return -TARGET_ENOSYS;
 }
 
 static abi_long do_ioctl_drm_i915_getparam(const IOCTLEntry *ie,
