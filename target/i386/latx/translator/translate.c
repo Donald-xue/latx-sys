@@ -2545,18 +2545,12 @@ void generate_context_switch_bt_to_native(void *code_buf)
 
 
     IR2_OPND eflags_opnd = ra_alloc_eflags();
-    if (option_lbt) {
-        la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, env_ir2_opnd,
-                          lsenv_offset_of_eflags(lsenv));
-        ir2_opnd_set_em(&eflags_opnd, SIGN_EXTENSION, 32);
-        la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
-        la_append_ir2_opnd2i(LISA_ANDI, eflags_opnd, eflags_opnd, 0x400);
-        //ir2_opnd_set_em_and(&dest, &src, ZERO_EXTENSION, uint16_eb(imm));
-    } else {
-        la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, env_ir2_opnd,
-                          lsenv_offset_of_eflags(lsenv));
-        ir2_opnd_set_em(&eflags_opnd, SIGN_EXTENSION, 32);
-    }
+    la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, env_ir2_opnd,
+                      lsenv_offset_of_eflags(lsenv));
+    ir2_opnd_set_em(&eflags_opnd, SIGN_EXTENSION, 32);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
+    la_append_ir2_opnd2i(LISA_ANDI, eflags_opnd, eflags_opnd, 0x400);
+    //ir2_opnd_set_em_and(&dest, &src, ZERO_EXTENSION, uint16_eb(imm));
 
     /*IR2_OPND ss_opnd = ra_alloc_ss();*/
     /*append_ir2_opnd2i(mips_load_addr, ss_opnd, env_ir2_opnd,
@@ -2589,12 +2583,10 @@ void generate_context_switch_native_to_bt(void)
     /*append_ir2_opnd2i(mips_sw, n1_ir2_opnd, env_ir2_opnd,
      * lsenv->offset_of_is_reg_latest());*/
     IR2_OPND eflags_opnd = ra_alloc_eflags();
-    if (option_lbt) {
-        IR2_OPND eflags_temp = ra_alloc_itemp();
-        la_append_ir2_opnd1i(LISA_X86MFFLAG, eflags_temp, 0x3f);
-        la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, eflags_temp);
-        ra_free_temp(eflags_temp);
-    }
+    IR2_OPND eflags_temp = ra_alloc_itemp();
+    la_append_ir2_opnd1i(LISA_X86MFFLAG, eflags_temp, 0x3f);
+    la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, eflags_temp);
+    ra_free_temp(eflags_temp);
     lsassert(lsenv_offset_of_eflags(lsenv) >= -2048 &&
             lsenv_offset_of_eflags(lsenv) <= 2047);
     la_append_ir2_opnd2i(LISA_ST_W, eflags_opnd, env_ir2_opnd,

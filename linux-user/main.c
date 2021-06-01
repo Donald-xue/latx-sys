@@ -290,11 +290,6 @@ static void handle_arg_latx_tb_link(const char *arg)
     option_tb_link = 1;
 }
 
-static void handle_arg_latx_lbt(const char *arg)
-{
-    option_lbt = 1;
-}
-
 static void handle_arg_latx_ss(const char *arg)
 {
    option_shadow_stack = 1;
@@ -532,8 +527,6 @@ static const struct qemu_argument arg_table[] = {
     "",                 "LATX-enable-check with original qemu and X86-qemu-Mips"},
     {"latx-tb-link",     "",                 false, handle_arg_latx_tb_link,
     "",                 "LATX-enable-tb-link-optimization"},
-    {"latx-lbt",         "",                 false, handle_arg_latx_lbt,
-    "",                 "LATX-enable-loongson-binary-translation-instructions"},
     {"latx-ss",          "",                 false, handle_arg_latx_ss,
     "",                 "LATX-enable-shadowstack-optimization"},
     {"latx-lsfpu",     "",                 false, handle_arg_latx_lsfpu,

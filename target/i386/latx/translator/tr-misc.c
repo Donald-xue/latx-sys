@@ -800,9 +800,7 @@ bool translate_iret(IR1_INST *pir1)
     ir1_opnd_build_reg(&seg_opnd, 16, X86_REG_CS);
     store_ireg_to_ir1_seg(cs_opnd, &seg_opnd);
 
-    if (option_lbt) {
-        la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
-    }
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
     /* 2. adjust esp */
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, 12);
 

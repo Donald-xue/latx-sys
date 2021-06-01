@@ -25,10 +25,8 @@ bool translate_popf(IR1_INST *pir1)
         la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, esp_opnd,
                 -lsenv->tr_data->curr_esp_need_decrease);
     }
-    if (option_lbt) {
-        la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
-        la_append_ir2_opnd2i(LISA_ANDI, eflags_opnd, eflags_opnd,  0x400);
-    }
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
+    la_append_ir2_opnd2i(LISA_ANDI, eflags_opnd, eflags_opnd,  0x400);
 
     la_append_ir2_opnd2i(LISA_ORI, eflags_opnd, eflags_opnd, 0x202);
 
@@ -52,12 +50,10 @@ bool translate_pushf(IR1_INST *pir1)
     IR2_OPND eflags_opnd = ra_alloc_eflags();
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
 
-    if (option_lbt) {
-        IR2_OPND temp   = ra_alloc_itemp();
-        la_append_ir2_opnd1i_em(LISA_X86MFFLAG, temp, 0x3f);
-        la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, temp);
-        ra_free_temp(temp);
-    }
+    IR2_OPND temp   = ra_alloc_itemp();
+    la_append_ir2_opnd1i_em(LISA_X86MFFLAG, temp, 0x3f);
+    la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, temp);
+    ra_free_temp(temp);
 
     if (cpu_get_guest_base() != 0) {
         IR2_OPND tmp = ra_alloc_itemp();
@@ -90,14 +86,7 @@ bool translate_pushf(IR1_INST *pir1)
 }
 
 bool translate_clc(IR1_INST *pir1) {
-    if (option_lbt) {
-        la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x1);
-    } else {
-        IR2_OPND eflags = ra_alloc_eflags();
-
-        la_append_ir2_opnd2ii(LISA_BSTRINS_W, eflags, zero_ir2_opnd, 0, 0);
-    }
-
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x1);
     return true;
 }
 
@@ -111,14 +100,7 @@ bool translate_cld(IR1_INST *pir1)
 }
 
 bool translate_stc(IR1_INST *pir1) {
-    if (option_lbt) {
-        la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
-    } else {
-        IR2_OPND eflags = ra_alloc_eflags();
-
-        la_append_ir2_opnd2i(LISA_ORI, eflags, eflags, 1);
-    }
-
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
     return true;
 }
 

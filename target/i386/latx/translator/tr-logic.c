@@ -285,7 +285,7 @@ bool translate_rol(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8){
             la_append_ir2_opnd2(LISA_X86ROTL_B, dest, original_count);
         }
@@ -345,7 +345,7 @@ bool translate_ror(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8){
             la_append_ir2_opnd2(LISA_X86ROTR_B, dest, original_count);
         }

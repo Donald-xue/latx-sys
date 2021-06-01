@@ -164,15 +164,8 @@ bool translate_fcomi(IR1_INST *pir1)
         /* calculate OF, SF and AF */
         IR2_OPND eflags, eflags_temp;
         if (is_osa_def || is_zpc_def) {
-            if (option_lbt) {
-                eflags_temp = ra_alloc_itemp();
-                la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x3f);
-            } else {
-               eflags = ra_alloc_eflags();
-               la_append_ir2_opnd2i_em(
-                   LISA_ANDI, eflags, eflags,
-                   ~(OF_BIT | SF_BIT | AF_BIT | ZF_BIT | PF_BIT | CF_BIT));
-            }
+            eflags_temp = ra_alloc_itemp();
+            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x3f);
         }
 
         /* calculate ZF, PF, CF */

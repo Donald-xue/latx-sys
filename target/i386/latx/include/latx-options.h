@@ -14,7 +14,6 @@ extern int option_trace_tb;
 extern int option_trace_ir1;
 extern int option_check;
 extern int option_tb_link;
-extern int option_lbt;
 extern int option_shadow_stack;
 extern int option_lsfpu;
 extern int option_profile;

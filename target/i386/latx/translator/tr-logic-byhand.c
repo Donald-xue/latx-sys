@@ -81,7 +81,7 @@ static bool translate_and_byhand_32(IR1_INST *pir1, bool is_and)
     /* 3. calculate result */
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest_opnd, src_opnd_0, src_opnd_1, pir1,
                                    is_opnd_sx);
     }
@@ -89,12 +89,7 @@ static bool translate_and_byhand_32(IR1_INST *pir1, bool is_and)
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
     /* 4. calculate eflags */
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest_opnd);
-    } else {
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1,
-                                   is_opnd_sx);
-    }
+    fp_save_dest_opnd(pir1, dest_opnd);
 
     /* 5. write the result back */
     if (is_and) {
@@ -133,7 +128,7 @@ static bool translate_and_byhand_8_16(IR1_INST *pir1, bool is_and)
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest_opnd, src_opnd_0, src_opnd_1, pir1,
                                    is_opnd_sx);
     }
@@ -141,12 +136,7 @@ static bool translate_and_byhand_8_16(IR1_INST *pir1, bool is_and)
     la_append_ir2_opnd3_em(LISA_AND, dest_opnd, src_opnd_0, src_opnd_1);
 
     /* 3. calculate eflags */
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest_opnd);
-    } else {
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1,
-                                   is_opnd_sx);
-    }
+    fp_save_dest_opnd(pir1, dest_opnd);
 
     /* 4. write the result back */
     if (is_and) {
@@ -200,7 +190,7 @@ bool translate_rol_byhand_imm(IR1_INST *pir1)
         return true;
     }
 
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8){
             la_append_ir2_opnd1i(LISA_X86ROTLI_B, dest, count);
         }
@@ -248,7 +238,7 @@ bool translate_rol_byhand_cl(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8){
             la_append_ir2_opnd2(LISA_X86ROTL_B, dest, original_count);
         }
@@ -321,7 +311,7 @@ bool translate_ror_byhand_imm(IR1_INST *pir1)
         return true;
     }
 
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8){
             la_append_ir2_opnd1i(LISA_X86ROTRI_B, dest, count);
         }
@@ -378,7 +368,7 @@ bool translate_ror_byhand_cl(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 8){
             la_append_ir2_opnd2(LISA_X86ROTR_B, dest, original_count);
         }
@@ -472,20 +462,14 @@ bool translate_shl_byhand_imm(IR1_INST *pir1)
     }
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(
             dest, src, ir2_opnd_new(IR2_OPND_IMM, ir1_opnd_simm(ir1_get_opnd(pir1, 1))),
             pir1, true);
     }
 
     la_append_ir2_opnd2i_em(LISA_SLLI_W, dest, src, count);
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest);
-    } else {
-        generate_eflag_calculation(
-            dest, src, ir2_opnd_new(IR2_OPND_IMM, ir1_opnd_simm(ir1_get_opnd(pir1, 1))),
-            pir1, true);
-    }
+    fp_save_dest_opnd(pir1, dest);
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
     if (dest_is_temp) {
@@ -530,16 +514,12 @@ bool translate_shl_byhand_cl(IR1_INST *pir1)
     }
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest, src, count, pir1, true);
     }
 
     la_append_ir2_opnd3_em(LISA_SLL_W, dest, src, count);
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest);
-    } else {
-        generate_eflag_calculation(dest, src, count, pir1, true);
-    }
+    fp_save_dest_opnd(pir1, dest);
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
@@ -595,19 +575,14 @@ bool translate_sar_byhand_imm(IR1_INST *pir1)
     }
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest, src, ir2_opnd_new(IR2_OPND_IMM, count),
                                    pir1, true);
     }
 
     la_append_ir2_opnd2i_em(LISA_SRAI_W, dest, src, count);
 
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest);
-    } else {
-        generate_eflag_calculation(dest, src, ir2_opnd_new(IR2_OPND_IMM, count),
-                                   pir1, true);
-    }
+    fp_save_dest_opnd(pir1, dest);
 
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
@@ -642,17 +617,13 @@ bool translate_sar_byhand_cl(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest, src, count, pir1, true);
     }
 
     la_append_ir2_opnd3_em(LISA_SRA_W, dest, src, count);
 
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest);
-    } else {
-        generate_eflag_calculation(dest, src, count, pir1, true);
-    }
+    fp_save_dest_opnd(pir1, dest);
 
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
@@ -714,18 +685,13 @@ bool translate_shr_byhand_imm(IR1_INST *pir1)
     /* 4. calculate */
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest, src, ir2_opnd_new(IR2_OPND_IMM, count),
                                    pir1, true);
     }
 
     la_append_ir2_opnd2i_em(LISA_SRLI_W, dest, src, count);
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest);
-    } else {
-        generate_eflag_calculation(dest, src, ir2_opnd_new(IR2_OPND_IMM, count),
-                                   pir1, true);
-    }
+    fp_save_dest_opnd(pir1, dest);
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
     if (dest_is_temp) {
@@ -774,16 +740,12 @@ bool translate_shr_byhand_cl(IR1_INST *pir1)
     /* 4. calculate */
 
     /* calculate eflags before calculate result if enabling lbt*/
-    if (option_lbt && ir1_need_calculate_any_flag(pir1)) {
+    if (ir1_need_calculate_any_flag(pir1)) {
         generate_eflag_by_lbt(dest, src, count, pir1, true);
     }
 
     la_append_ir2_opnd3_em(LISA_SRL_W, dest, src, count);
-    if (option_lbt) {
-        fp_save_dest_opnd(pir1, dest);
-    } else {
-        generate_eflag_calculation(dest, src, count, pir1, true);
-    }
+    fp_save_dest_opnd(pir1, dest);
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
     /* 5. exit */

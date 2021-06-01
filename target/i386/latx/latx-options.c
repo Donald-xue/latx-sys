@@ -13,7 +13,6 @@ int option_trace_tb;
 int option_trace_ir1;
 int option_check;
 int option_tb_link;
-int option_lbt;
 int option_shadow_stack;
 int option_lsfpu;
 int option_profile;
@@ -47,7 +46,6 @@ void options_init(void)
     option_tb_link = 1;
 #endif
     option_ibtc= 0;
-    option_lbt = 1;
     option_shadow_stack = 0;
     option_lsfpu = 0;
     option_xmm128map = 1;

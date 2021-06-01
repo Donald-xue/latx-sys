@@ -955,7 +955,7 @@ void generate_eflag_calculation(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1,
         return;
     fp_save_dest_opnd(pir1, dest);
     if (ir1_need_calculate_any_flag(pir1) == 0 ||
-        (option_lbt && generate_eflag_by_lbt(dest, src0, src1, pir1, is_sx)))
+        generate_eflag_by_lbt(dest, src0, src1, pir1, is_sx))
         return;
 
     /* extension mode does not affect pf, af and zf */
