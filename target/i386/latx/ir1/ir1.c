@@ -501,6 +501,7 @@ longx ir1_opnd_simm(IR1_OPND *opnd)
     } else {
         lsassertm(0, "REG opnd has no imm\n");
     }
+    abort();
 }
 
 ulongx ir1_opnd_uimm(IR1_OPND *opnd)
@@ -512,6 +513,7 @@ ulongx ir1_opnd_uimm(IR1_OPND *opnd)
     } else {
         lsassertm(0, "REG opnd has no imm\n");
     }
+    abort();
 }
 
 x86_reg ir1_opnd_seg_reg(IR1_OPND *opnd) { return opnd->mem.segment; }
@@ -596,8 +598,6 @@ int ir1_opnd_is_gpr_used(IR1_OPND *opnd, uint8_t gpr_index)
 }
 
 int ir1_opnd_is_mem(IR1_OPND *opnd) { return opnd->type == X86_OP_MEM; }
-
-int ir1_opnd_is_sib(IR1_OPND *opnd) { lsassert(0); }
 
 int ir1_opnd_is_fpr(IR1_OPND *opnd)
 {
@@ -697,8 +697,6 @@ int ir1_opnd_is_ymm(IR1_OPND *opnd)
     }
 }
 
-int ir1_opnd_is_gpr_defined(IR1_OPND *opnd, uint8 gpr_index) { lsassert(0); }
-
 int ir1_opnd_has_base(IR1_OPND *opnd)
 {
     // may unnecessary to judge mem opnd
@@ -736,10 +734,8 @@ int ir1_opnd_get_seg_index(IR1_OPND *opnd)
     }
     if (seg == X86_REG_GS) {
         return gs_index;
-    } else {
-        lsassert(0);
     }
-
+    abort();
     //     IR1_OPND_MEM_ES,
     //     IR1_OPND_MEM_CS,
     //     IR1_OPND_MEM_SS,
@@ -747,10 +743,6 @@ int ir1_opnd_get_seg_index(IR1_OPND *opnd)
     //     IR1_OPND_MEM_FS,
     //     IR1_OPND_MEM_GS,
 }
-
-uint8_t ir1_opnd_gpr_used(IR1_OPND *opnd) { lsassert(0); }
-
-void ir1_opnd_set_size(IR1_OPND *opnd, int opnd_size) { lsassert(0); }
 
 IR1_PREFIX ir1_prefix(IR1_INST *ir1)
 {
@@ -780,14 +772,6 @@ ADDRX ir1_target_addr(IR1_INST *ir1)
 // }
 
 IR1_OPCODE ir1_opcode(IR1_INST *ir1) { return ir1->info->id; }
-
-int ir1_src_opnd_start(IR1_INST *ir1) { lsassert(0); }
-
-int ir1_src_opnd_num(IR1_INST *ir1) { lsassert(0); }
-
-int ir1_dst_opnd_num(IR1_INST *ir1) { lsassert(0); }
-
-IR1_OPCODE_TYPE ir1_opcode_type(IR1_INST *ir1) { lsassert(0); }
 
 int ir1_is_branch(IR1_INST *ir1)
 {
@@ -1404,17 +1388,6 @@ const char * ir1_name(IR1_OPCODE op){
 const char * ir1_group_name(x86_insn_group grp){
     return cs_group_name(handle, grp);
 }
-
-void ir1_dump_eflag(IR1_INST *ir1) { lsassert(0); }
-
-int ir1_native_inst_num(IR1_INST *ir1) { lsassert(0); }
-void ir1_set_native_inst_num(IR1_INST *ir1, int i) { lsassert(0); }
-
-void ir1_check(IR1_INST *ir1) { lsassert(0); }
-
-bool ir1_top_may_vary(IR1_INST *ir1) { lsassert(0); }
-
-uint8_t ir1_opnd_gpr_defined(IR1_OPND *opnd) { lsassert(0); }
 
 uint8_t ir1_get_opnd_num(IR1_INST *ir1)
 {

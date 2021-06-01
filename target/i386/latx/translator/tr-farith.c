@@ -49,8 +49,7 @@ bool translate_faddp(IR1_INST *pir1)
 
 bool translate_fiadd(IR1_INST *pir1)
 {
-    int opnd_num = ir1_opnd_num(pir1);
-    lsassert(opnd_num == 1);
+    lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
@@ -87,8 +86,7 @@ bool translate_fsub(IR1_INST *pir1)
 
 bool translate_fisub(IR1_INST *pir1)
 {
-    int opnd_num = ir1_opnd_num(pir1);
-    lsassert(opnd_num == 1);
+    lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
@@ -107,8 +105,7 @@ bool translate_fisub(IR1_INST *pir1)
 
 bool translate_fisubr(IR1_INST *pir1)
 {
-    int opnd_num = ir1_opnd_num(pir1);
-    lsassert(opnd_num == 1);
+    lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
@@ -211,8 +208,7 @@ bool translate_fmul(IR1_INST *pir1)
 
 bool translate_fimul(IR1_INST *pir1)
 {
-    int opnd_num = ir1_opnd_num(pir1);
-    lsassert(opnd_num == 1);
+    lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
@@ -345,8 +341,7 @@ bool translate_fdivr(IR1_INST *pir1)
 
 bool translate_fidiv(IR1_INST *pir1)
 {
-    int opnd_num = ir1_opnd_num(pir1);
-    lsassert(opnd_num == 1);
+    lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
@@ -364,8 +359,7 @@ bool translate_fidiv(IR1_INST *pir1)
 }
 bool translate_fidivr(IR1_INST *pir1)
 {
-    int opnd_num = ir1_opnd_num(pir1);
-    lsassert(opnd_num == 1);
+    lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();

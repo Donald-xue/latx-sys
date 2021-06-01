@@ -140,8 +140,8 @@ bool translate_add_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_add_byhand_8_16(pir1);
-    } else
-        return translate_add(pir1);
+    }
+    return translate_add(pir1);
 }
 
 static int ir1_opnd_is_sub_12bit_imm(IR1_OPND *opnd)
@@ -291,8 +291,8 @@ bool translate_sub_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_sub_byhand_8_16(pir1, true);
-    } else
-        return translate_sub(pir1);
+    }
+    return translate_sub(pir1);
 }
 
 bool translate_cmp_byhand(IR1_INST *pir1)
@@ -305,8 +305,8 @@ bool translate_cmp_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_sub_byhand_8_16(pir1, false);
-    } else
-        return translate_cmp(pir1);
+    }
+    return translate_cmp(pir1);
 }
 
 static bool translate_adc_byhand_32(IR1_INST *pir1)
@@ -442,8 +442,8 @@ bool translate_adc_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_adc_byhand_8_16(pir1);
-    } else
-        return translate_adc(pir1);
+    }
+    return translate_adc(pir1);
 }
 
 static bool translate_or_byhand_8_16_32(IR1_INST *pir1)
@@ -502,8 +502,8 @@ bool translate_or_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_or_byhand_8_16_32(pir1);
-    } else
-        return translate_or(pir1);
+    }
+    return translate_or(pir1);
 }
 
 static bool translate_xor_byhand_8_16_32(IR1_INST *pir1)
@@ -558,8 +558,8 @@ bool translate_xor_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_xor_byhand_8_16_32(pir1);
-    } else
-        return translate_xor(pir1);
+    }
+    return translate_xor(pir1);
 }
 
 static bool translate_inc_byhand_32(IR1_INST *pir1)
@@ -648,8 +648,8 @@ bool translate_inc_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_inc_byhand_8_16(pir1);
-    } else
-        return translate_inc(pir1);
+    }
+    return translate_inc(pir1);
 }
 
 static bool translate_dec_byhand_32(IR1_INST *pir1)
@@ -736,8 +736,8 @@ bool translate_dec_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_dec_byhand_8_16(pir1);
-    } else
-        return translate_dec(pir1);
+    }
+    return translate_dec(pir1);
 }
 
 static bool translate_neg_byhand_32(IR1_INST *pir1)
@@ -823,8 +823,8 @@ bool translate_neg_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_neg_byhand_8_16(pir1);
-    } else
-        return translate_neg(pir1);
+    }
+    return translate_neg(pir1);
 }
 
 static bool translate_not_byhand_32(IR1_INST *pir1)
@@ -874,9 +874,8 @@ bool translate_not_byhand(IR1_INST *pir1)
                 return translate_not_byhand_8_16(pir1);
         } else
             return translate_not(pir1);
-    }else{
-            return translate_not(pir1);
     }
+    return translate_not(pir1);
 }
 
 static bool translate_mul_byhand_32(IR1_INST *pir1)
@@ -962,8 +961,8 @@ bool translate_mul_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_mul_byhand_8_16(pir1);
-    } else
-        return translate_mul(pir1);
+    }
+    return translate_mul(pir1);
 }
 
 static bool translate_div_byhand_32(IR1_INST *pir1)
@@ -990,8 +989,8 @@ bool translate_div_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_div_byhand_8_16(pir1);
-    } else
-        return translate_div(pir1);
+    }
+    return translate_div(pir1);
 }
 
 static bool translate_imul_byhand_32(IR1_INST *pir1)
@@ -1017,8 +1016,8 @@ bool translate_imul_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         else
             return translate_imul_byhand_8_16(pir1);
-    } else
-        return translate_imul(pir1);
+    }
+    return translate_imul(pir1);
 }
 
 bool translate_cmpxchg_byhand_8_16_32(IR1_INST *pir1)
@@ -1085,6 +1084,6 @@ bool translate_cmpxchg_byhand(IR1_INST *pir1)
                       __FUNCTION__);
         } else
             return translate_cmpxchg_byhand_8_16_32(pir1);
-    } else
-        return translate_cmpxchg(pir1);
+    }
+    return translate_cmpxchg(pir1);
 }

@@ -1489,6 +1489,7 @@ IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
     default:
         lsassert(0);
     }
+    abort();
 }
 
 void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi,
@@ -1981,5 +1982,5 @@ IR2_OPND load_freg128_from_ir1(IR1_OPND *opnd1){
     else {
         lsassert(0);
     }
-
+    abort();
 }

@@ -210,7 +210,8 @@ bool translate_fist(IR1_INST *pir1)
 
     /* first, we should make sure if dest_opnd is unordered? overflow? */
     /* underflow? */
-    uint64 low_bound, high_bound;
+    uint64 low_bound =0;
+    uint64 high_bound = 0;
     switch (ir1_opnd_size(ir1_get_opnd(pir1, 0))) {
     case 16:
         low_bound = 0xc0dfffe000000000ull;

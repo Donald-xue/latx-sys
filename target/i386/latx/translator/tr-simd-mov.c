@@ -53,6 +53,7 @@ bool translate_movmskpd(IR1_INST *pir1)
         return true;
     }
     lsassert(0);
+    return false;
 }
 
 bool translate_movmskps(IR1_INST *pir1)
@@ -68,6 +69,7 @@ bool translate_movmskps(IR1_INST *pir1)
         return true;
     }
     lsassert(0);
+    return false;
 }
 
 bool translate_movntdq(IR1_INST *pir1)

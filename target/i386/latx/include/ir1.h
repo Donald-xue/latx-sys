@@ -190,30 +190,21 @@ int ir1_opnd_is_uimm_within_16bit(IR1_OPND *opnd);
 int ir1_opnd_is_simm_within_16bit(IR1_OPND *opnd);
 int ir1_opnd_is_gpr_used(IR1_OPND *opnd, uint8 gpr_index);
 int ir1_opnd_is_mem(IR1_OPND *opnd);
-int ir1_opnd_is_sib(IR1_OPND *opnd);
 int ir1_opnd_is_fpr(IR1_OPND *opnd);
 int ir1_opnd_is_seg(IR1_OPND *opnd);
 int ir1_opnd_is_mmx(IR1_OPND *opnd);
 int ir1_opnd_is_xmm(IR1_OPND *opnd);
 int ir1_opnd_is_ymm(IR1_OPND *opnd);
-int ir1_opnd_is_gpr_defined(IR1_OPND *opnd, uint8 gpr_index);
 int ir1_opnd_has_base(IR1_OPND *opnd);
 int ir1_opnd_has_index(IR1_OPND *opnd);
 int ir1_opnd_has_seg(IR1_OPND *opnd);
 int ir1_opnd_get_seg_index(IR1_OPND *opnd);
-uint8 ir1_opnd_gpr_used(IR1_OPND *opnd);
-void ir1_opnd_set_size(IR1_OPND *opnd, int opnd_size);
 IR1_PREFIX ir1_prefix(IR1_INST *ir1);
 int ir1_opnd_num(IR1_INST *ir1);
 ADDRX ir1_addr(IR1_INST *ir1);
 ADDRX ir1_addr_next(IR1_INST *ir1);
 ADDRX ir1_target_addr(IR1_INST *ir1);
 IR1_OPCODE ir1_opcode(IR1_INST *ir1);
-int ir1_src_opnd_start(IR1_INST *ir1);
-int ir1_src_opnd_num(IR1_INST *ir1);
-int ir1_dst_opnd_num(IR1_INST *ir1);
-
-IR1_OPCODE_TYPE ir1_opcode_type(IR1_INST *ir1);
 
 int ir1_is_branch(IR1_INST *ir1);
 int ir1_is_jump(IR1_INST *ir1);
@@ -258,7 +249,6 @@ EXTENSION_MODE ir1_opnd_em(IR1_OPND *opnd);
 int ir1_opnd_eb(IR1_OPND *opnd);
 int ir1_dump(IR1_INST *ir1);
 int ir1_opcode_dump(IR1_INST *ir1);
-void ir1_dump_eflag(IR1_INST *ir1);
 const char * ir1_name(IR1_OPCODE op);
 const char * ir1_group_name(x86_insn_group grp);
 
@@ -269,11 +259,6 @@ int ir1_opnd_is_zx(IR1_OPND *opd, int bits);
 int ir1_opnd_is_bx(IR1_OPND *opnd, int bits);
 int ir1_opnd_is_ax(IR1_OPND *opnd, int bits);
 
-int ir1_native_inst_num(IR1_INST *ir1);
-void ir1_set_native_inst_num(IR1_INST *ir1, int i);
-void ir1_check(IR1_INST *ir1);
-bool ir1_top_may_vary(IR1_INST *ir1);
-
 bool ir1_need_calculate_of(IR1_INST *ir1);
 bool ir1_need_calculate_cf(IR1_INST *ir1);
 bool ir1_need_calculate_pf(IR1_INST *ir1);
@@ -282,7 +267,6 @@ bool ir1_need_calculate_zf(IR1_INST *ir1);
 bool ir1_need_calculate_sf(IR1_INST *ir1);
 bool ir1_need_calculate_any_flag(IR1_INST *ir1);
 
-uint8 ir1_opnd_gpr_defined(IR1_OPND *opnd);
 int ir1_opnd_is_address(IR1_OPND *opnd);
 void ir1_opnd_set_em(IR1_OPND *opnd, EXTENSION_MODE, int bits);
 

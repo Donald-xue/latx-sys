@@ -162,7 +162,7 @@ bool translate_fcomi(IR1_INST *pir1)
         ir1_is_of_def(pir1) || ir1_is_sf_def(pir1) || ir1_is_af_def(pir1);
     if (is_zpc_def || is_osa_def) {
         /* calculate OF, SF and AF */
-        IR2_OPND eflags, eflags_temp;
+        IR2_OPND eflags_temp;
         if (is_osa_def || is_zpc_def) {
             eflags_temp = ra_alloc_itemp();
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x3f);
