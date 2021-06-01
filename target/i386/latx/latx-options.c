@@ -34,17 +34,10 @@ void options_init(void)
     option_trace_tb = 0;
     option_trace_ir1 = 0;
     option_check = 0;
-#if defined(CONFIG_LATX_DEBUG)
     option_by_hand = 0;
     option_flag_pattern = 0;
     option_flag_reduction = 0;
-    option_tb_link = 0;
-#else
-    option_by_hand = 1;
-    option_flag_pattern = 1;
-    option_flag_reduction = 1;
     option_tb_link = 1;
-#endif
     option_ibtc= 0;
     option_shadow_stack = 0;
     option_lsfpu = 0;
