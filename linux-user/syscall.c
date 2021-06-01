@@ -9133,7 +9133,9 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
         return do_pipe(cpu_env, arg1,
                        target_to_host_bitmask(arg2, fcntl_flags_tbl), 1);
 #endif
-#ifdef TARGET_NR_ptrace
+#if 0
+/* QEMU should support ptrace, but now ptrace influence PS running.*/
+//#ifdef TARGET_NR_ptrace
     case TARGET_NR_ptrace:
         return get_errno(syscall(__NR_ptrace, arg1, arg2, arg3, arg4));
 #endif
