@@ -16,6 +16,10 @@ bool translate_xor(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     if (ir1_is_prefix_lock(pir1)) {
+        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
+            lsassertm(0, "Invalid operand size (%d) in %s.\n",
+                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
+        }
         IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
         /* mem addr */
         IR2_OPND sc_opnd = ra_alloc_itemp();
@@ -54,6 +58,10 @@ bool translate_and(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     if (ir1_is_prefix_lock(pir1)) {
+        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
+            lsassertm(0, "Invalid operand size (%d) in %s.\n",
+                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
+        }
         IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
         /* mem addr */
         IR2_OPND sc_opnd = ra_alloc_itemp();
@@ -108,6 +116,10 @@ bool translate_or(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     if (ir1_is_prefix_lock(pir1)) {
+        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
+            lsassertm(0, "Invalid operand size (%d) in %s.\n",
+                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
+        }
         IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
         /* mem addr */
         IR2_OPND sc_opnd = ra_alloc_itemp();
@@ -144,6 +156,10 @@ bool translate_not(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     if (ir1_is_prefix_lock(pir1)) {
+        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
+            lsassertm(0, "Invalid operand size (%d) in %s.\n",
+                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
+        }
         IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
         /* mem addr */
         IR2_OPND sc_opnd = ra_alloc_itemp();
