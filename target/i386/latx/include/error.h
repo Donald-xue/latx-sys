@@ -4,10 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "qemu/osdep.h"
 
 void print_stack_trace(void);
 
-#ifdef CONFIG_LATX_DEBU
+#ifdef CONFIG_LATX_DEBUG
 #define lsassert(cond)                                                  \
     do {                                                                \
         if (!(cond)) {                                                  \
