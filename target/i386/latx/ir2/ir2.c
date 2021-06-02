@@ -3995,7 +3995,11 @@ IR2_INST *la_append_ir2_opnd2i(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1, int 
     if (type == LISA_SC_W || type == LISA_LL_W) {
         lsassertm(((imm % 4) == 0), "ll/sc imm %d error.\n", imm);
         imm = imm >> 2;
+    } else if (type == LISA_SC_D || type == LISA_LL_D) {
+        lsassertm(((imm % 8) == 0), "ll/sc imm %d error.\n", imm);
+        imm = imm >> 2;
     }
+
 
     IR2_OPND opnd = create_ir2_opnd(IR2_OPND_IMMH, imm);
     return la_append_ir2_opnd3(type, op0, op1, opnd);
@@ -4366,6 +4370,11 @@ IR2_INST *la_append_ir2_opnd2i_em(IR2_OPCODE opcode, IR2_OPND dest, IR2_OPND src
         }
         break;
     case LISA_LL_D:
+        lsassertm(((imm % 4) == 0), "ll_d imm %d error.\n", imm);
+        imm = imm >> 2;
+        lsassert(ir2_opnd_is_ireg(&dest) && ir2_opnd_is_ireg(&src));
+        ir2_opnd_set_em(&dest, UNKNOWN_EXTENSION, 32);
+        break;
     case LISA_LD_D:
     case LISA_LDR_D:
     case LISA_LDL_D:

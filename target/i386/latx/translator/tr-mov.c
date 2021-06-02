@@ -1384,11 +1384,15 @@ bool translate_cmpxchg(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
 
         /* equal */
+        // set zf
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
         la_append_ir2_opnd1(LISA_B, label_exit);
 
         /* unequal */
         la_append_ir2_opnd1(LISA_LABEL, label_unequal);
         la_append_ir2_opnd0(LISA_DBAR);
+        // clear zf
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
         store_ireg_to_ir1(src_opnd_0, reg_ir1, false);
 
         /* exit */
@@ -1409,11 +1413,15 @@ bool translate_cmpxchg(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_BNE, src_opnd_0, eax_opnd, label_unequal);
 
         /* equal */
+        // set zf
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
         store_ireg_to_ir1(src_opnd_1, ir1_get_opnd(pir1, 0), false);
         la_append_ir2_opnd1(LISA_B, label_exit);
 
         /* unequal */
         la_append_ir2_opnd1(LISA_LABEL, label_unequal);
+        // clear zf
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
         store_ireg_to_ir1(src_opnd_0, reg_ir1, false);
         la_append_ir2_opnd1(LISA_LABEL, label_exit);
     }
@@ -1484,12 +1492,16 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_SC_D, sc_opnd, mem_opnd, imm);
     la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
     /* equal */
+    // set zf
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
     store_ireg_to_ir1(ecx_ebx_opnd, ir1_get_opnd(pir1, 0), false);
     la_append_ir2_opnd1(LISA_B, label_exit);
 
     /* unequal */
     la_append_ir2_opnd1(LISA_LABEL, label_unequal);
     la_append_ir2_opnd0(LISA_DBAR);
+    // clear zf
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
     store_ireg_to_ir1(src_opnd_0, reg_eax, false);
     la_append_ir2_opnd2i_em(LISA_SRLI_D, src_opnd_0, src_opnd_0, 32);
     store_ireg_to_ir1(src_opnd_0, reg_edx, false);
