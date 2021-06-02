@@ -1852,7 +1852,24 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
 
 #ifdef CONFIG_LATX
 #include "latx-config.h"
+
+void tb_exit_to_qemu (CPUArchState *env, uintptr_t pc)
+{
+    TranslationBlock *current_tb = NULL;
+
+    current_tb = tcg_tb_lookup(pc);
+    if (current_tb) {
+        /* init original jump addresses which have been set during tcg_gen_code() */
+        if (current_tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
+            tb_reset_jump(current_tb, 0);
+        }
+        if (current_tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
+            tb_reset_jump(current_tb, 1);
+        }
+    }
+}
 #endif
+
 /* Called with mmap_lock held for user mode emulation.  */
 TranslationBlock *tb_gen_code(CPUState *cpu,
                               target_ulong pc, target_ulong cs_base,

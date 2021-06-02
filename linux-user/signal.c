@@ -761,6 +761,9 @@ static void host_signal_handler(int host_signum, siginfo_t *info,
     sigdelset(&uc->uc_sigmask, SIGBUS);
 
     /* interrupt the virtual CPU as soon as possible */
+#ifdef CONFIG_LATX
+    tb_exit_to_qemu(env, (uintptr_t)uc->uc_mcontext.__pc);
+#endif
     cpu_exit(thread_cpu);
 }
 
