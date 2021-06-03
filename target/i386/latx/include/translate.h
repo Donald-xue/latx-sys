@@ -1078,6 +1078,11 @@ extern int FPR_USEDEF_TO_SAVE;
 extern int XMM_LO_USEDEF_TO_SAVE;
 extern int XMM_HI_USEDEF_TO_SAVE;
 
+struct lat_lock{
+	int lock;
+} __attribute__ ((aligned (64)));;
+extern struct lat_lock lat_lock[16];
+
 void tr_save_registers_to_env(uint8 gpr_to_save, uint8 fpr_to_save,
                               uint8 xmm_lo_to_save, uint8 xmm_hi_to_save,
                               uint8 vreg_to_save);
@@ -1158,6 +1163,9 @@ void rotate_fpu_to_bias(int bias);
 void tr_gen_call_to_helper1(ADDR func, int use_fp);
 void tr_load_top_from_env(void);
 void tr_gen_top_mode_init(void);
+
+IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm);
+void tr_lat_spin_unlock(IR2_OPND lat_lock_addr);
 
 #include "qemu-def.h"
 static inline ADDR cpu_get_guest_base(void)

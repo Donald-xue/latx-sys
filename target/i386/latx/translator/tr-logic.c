@@ -15,36 +15,23 @@ bool translate_xor(IR1_INST *pir1)
         load_ireg_from_ir1(ir1_get_opnd(pir1, 1), SIGN_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
+    IR2_OPND lat_lock_addr;
+
     if (ir1_is_prefix_lock(pir1)) {
-        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
-            lsassertm(0, "Invalid operand size (%d) in %s.\n",
-                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
-        }
-        IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
-        /* mem addr */
-        IR2_OPND sc_opnd = ra_alloc_itemp();
-        IR2_OPND src_opnd_0 = ra_alloc_itemp();
-        IR2_OPND mem_opnd =
-            mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        IR2_OPND mem_opnd = mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
         int imm = ir2_opnd_imm(&mem_opnd);
         mem_opnd._type = IR2_OPND_IREG;
+        lat_lock_addr = tr_lat_spin_lock(mem_opnd, imm);
+	}
 
-        la_append_ir2_opnd1(LISA_LABEL, label_ll);
-        la_append_ir2_opnd2i_em(LISA_LL_W, src_opnd_0, mem_opnd, imm);
-        la_append_ir2_opnd3_em(LISA_XOR, dest_opnd, src_opnd_0, src_opnd_1);
-        la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, dest_opnd);
-        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
-        la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
+    IR2_OPND src_opnd_0 =
+        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+    la_append_ir2_opnd3_em(LISA_XOR, dest_opnd, src_opnd_0, src_opnd_1);
+    generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-        ra_free_temp(sc_opnd);
-        ra_free_temp(src_opnd_0);
-    } else {
-        IR2_OPND src_opnd_0 =
-            load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-        la_append_ir2_opnd3_em(LISA_XOR, dest_opnd, src_opnd_0, src_opnd_1);
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-        store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    if (ir1_is_prefix_lock(pir1)) {
+        tr_lat_spin_unlock(lat_lock_addr);
     }
 
     ra_free_temp(dest_opnd);
@@ -57,36 +44,23 @@ bool translate_and(IR1_INST *pir1)
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
+    IR2_OPND lat_lock_addr;
+
     if (ir1_is_prefix_lock(pir1)) {
-        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
-            lsassertm(0, "Invalid operand size (%d) in %s.\n",
-                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
-        }
-        IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
-        /* mem addr */
-        IR2_OPND sc_opnd = ra_alloc_itemp();
-        IR2_OPND src_opnd_0 = ra_alloc_itemp();
-        IR2_OPND mem_opnd =
-            mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        IR2_OPND mem_opnd = mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
         int imm = ir2_opnd_imm(&mem_opnd);
         mem_opnd._type = IR2_OPND_IREG;
+        lat_lock_addr = tr_lat_spin_lock(mem_opnd, imm);
+	}
 
-        la_append_ir2_opnd1(LISA_LABEL, label_ll);
-        la_append_ir2_opnd2i_em(LISA_LL_W, src_opnd_0, mem_opnd, imm);
-        la_append_ir2_opnd3_em(LISA_AND, dest_opnd, src_opnd_0, src_opnd_1);
-        la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, dest_opnd);
-        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
-        la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
+    IR2_OPND src_opnd_0 =
+        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+    la_append_ir2_opnd3_em(LISA_AND, dest_opnd, src_opnd_0, src_opnd_1);
+    generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-        ra_free_temp(sc_opnd);
-        ra_free_temp(src_opnd_0);
-    } else {
-        IR2_OPND src_opnd_0 =
-            load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-        la_append_ir2_opnd3_em(LISA_AND, dest_opnd, src_opnd_0, src_opnd_1);
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-        store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    if (ir1_is_prefix_lock(pir1)) {
+        tr_lat_spin_unlock(lat_lock_addr);
     }
  
     ra_free_temp(dest_opnd);
@@ -115,36 +89,23 @@ bool translate_or(IR1_INST *pir1)
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
+    IR2_OPND lat_lock_addr;
+
     if (ir1_is_prefix_lock(pir1)) {
-        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
-            lsassertm(0, "Invalid operand size (%d) in %s.\n",
-                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
-        }
-        IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
-        /* mem addr */
-        IR2_OPND sc_opnd = ra_alloc_itemp();
-        IR2_OPND src_opnd_0 = ra_alloc_itemp();
-        IR2_OPND mem_opnd =
-            mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        IR2_OPND mem_opnd = mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
         int imm = ir2_opnd_imm(&mem_opnd);
         mem_opnd._type = IR2_OPND_IREG;
+        lat_lock_addr = tr_lat_spin_lock(mem_opnd, imm);
+	}
 
-        la_append_ir2_opnd1(LISA_LABEL, label_ll);
-        la_append_ir2_opnd2i_em(LISA_LL_W, src_opnd_0, mem_opnd, imm);
-        la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd_0, src_opnd_1);
-        la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, dest_opnd);
-        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
-        la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
+    IR2_OPND src_opnd_0 =
+        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+    la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd_0, src_opnd_1);
+    generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
+    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-        ra_free_temp(sc_opnd);
-        ra_free_temp(src_opnd_0);
-    } else {
-        IR2_OPND src_opnd_0 =
-            load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-        la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd_0, src_opnd_1);
-        generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-        store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    if (ir1_is_prefix_lock(pir1)) {
+        tr_lat_spin_unlock(lat_lock_addr);
     }
 
     ra_free_temp(dest_opnd);
@@ -155,34 +116,22 @@ bool translate_not(IR1_INST *pir1)
 {
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
+    IR2_OPND lat_lock_addr;
+
     if (ir1_is_prefix_lock(pir1)) {
-        if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
-            lsassertm(0, "Invalid operand size (%d) in %s.\n",
-                      ir1_opnd_size(ir1_get_opnd(pir1, 0)), __func__);
-        }
-        IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
-        /* mem addr */
-        IR2_OPND sc_opnd = ra_alloc_itemp();
-        IR2_OPND src_opnd_0 = ra_alloc_itemp();
-        IR2_OPND mem_opnd =
-            mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        IR2_OPND mem_opnd = mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
         int imm = ir2_opnd_imm(&mem_opnd);
         mem_opnd._type = IR2_OPND_IREG;
+        lat_lock_addr = tr_lat_spin_lock(mem_opnd, imm);
+	}
 
-        la_append_ir2_opnd1(LISA_LABEL, label_ll);
-        la_append_ir2_opnd2i_em(LISA_LL_W, src_opnd_0, mem_opnd, imm);
-        la_append_ir2_opnd3_em(LISA_NOR, dest_opnd, zero_ir2_opnd, src_opnd_0);
-        la_append_ir2_opnd3_em(LISA_OR, sc_opnd, zero_ir2_opnd, dest_opnd);
-        la_append_ir2_opnd2i(LISA_SC_W, sc_opnd, mem_opnd, imm);
-        la_append_ir2_opnd3(LISA_BEQ, sc_opnd, zero_ir2_opnd, label_ll);
+    IR2_OPND src_opnd_0 =
+        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+    la_append_ir2_opnd3_em(LISA_NOR, dest_opnd, zero_ir2_opnd, src_opnd_0);
+    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
-        ra_free_temp(sc_opnd);
-        ra_free_temp(src_opnd_0);
-    } else {
-        IR2_OPND src_opnd_0 =
-            load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-        la_append_ir2_opnd3_em(LISA_NOR, dest_opnd, zero_ir2_opnd, src_opnd_0);
-        store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
+    if (ir1_is_prefix_lock(pir1)) {
+        tr_lat_spin_unlock(lat_lock_addr);
     }
 
     ra_free_temp(dest_opnd);

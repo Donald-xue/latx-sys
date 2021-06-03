@@ -74,6 +74,8 @@ int FPR_USEDEF_TO_SAVE;
 int XMM_LO_USEDEF_TO_SAVE;
 int XMM_HI_USEDEF_TO_SAVE;
 
+struct lat_lock lat_lock[16];
+
 void tr_init(void *tb)
 {
     GPR_USEDEF_TO_SAVE = 0x7;
@@ -3604,4 +3606,37 @@ void tr_gen_call_to_helper1(ADDR func, int use_fp)
     la_append_ir2_opnd2i(LISA_JIRL, ir2_opnd_new(IR2_OPND_IREG, 1), func_addr_opnd, 0);
 
     tr_gen_call_to_helper_epilogue(use_fp);
+}
+
+IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
+{
+    IR2_OPND label_lat_lock = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND lat_lock_addr = ra_alloc_itemp();
+    IR2_OPND lat_lock_val= ra_alloc_itemp();
+    ir2_opnd_set_em(&lat_lock_addr, ZERO_EXTENSION, 64);
+	//compute lat_lock offset by add (mem_addr+imm)[9:6]
+    la_append_ir2_opnd2i(LISA_ADDI_W, lat_lock_addr, mem_addr, imm);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_D, lat_lock_val, lat_lock_addr, 9, 6);
+    la_append_ir2_opnd2i(LISA_SLLI_W, lat_lock_val, lat_lock_val, 6);
+    load_ireg_from_addr(lat_lock_addr, (ADDR)(lat_lock));
+    la_append_ir2_opnd3(LISA_ADD_D, lat_lock_addr, lat_lock_addr, lat_lock_val);
+
+    //spin lock
+    la_append_ir2_opnd1(LISA_LABEL, label_lat_lock);
+    la_append_ir2_opnd2i_em(LISA_LL_W, lat_lock_val, lat_lock_addr, 0);
+    la_append_ir2_opnd3(LISA_BNE, lat_lock_val, zero_ir2_opnd, label_lat_lock);
+    la_append_ir2_opnd2i_em(LISA_ORI, lat_lock_val, lat_lock_val, 1);
+    la_append_ir2_opnd2i(LISA_SC_W, lat_lock_val, lat_lock_addr, 0);
+    la_append_ir2_opnd3(LISA_BEQ, lat_lock_val, zero_ir2_opnd, label_lat_lock);
+
+    ra_free_temp(lat_lock_val);
+
+	return lat_lock_addr;
+}
+
+void tr_lat_spin_unlock(IR2_OPND lat_lock_addr)
+{
+    la_append_ir2_opnd0(LISA_DBAR);
+    la_append_ir2_opnd2i(LISA_ST_W, zero_ir2_opnd, lat_lock_addr, 0);
+    ra_free_temp(lat_lock_addr);
 }
