@@ -128,10 +128,45 @@ bool translate_mov(IR1_INST *pir1)
 
 bool translate_movzx(IR1_INST *pir1)
 {
-    IR2_OPND source_opnd =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, ZERO_EXTENSION, false);
+    IR1_OPND *source_ir1 = ir1_get_opnd(pir1, 1);
+    IR1_OPND *dest_ir1 = ir1_get_opnd(pir1, 0);
 
-    store_ireg_to_ir1(source_opnd, ir1_get_opnd(pir1, 0), false);
+    if((ir1_opnd_base_reg_num(source_ir1) == ir1_opnd_base_reg_num(dest_ir1))
+        && (ir1_opnd_type(source_ir1) == X86_OP_REG))
+    {
+        /*
+         * MOVZX in x86 have only three situation.
+         *  --> MOVZX r16, r/m8, MOVZX r32, r/m8, MOVZX r32, r/m16
+         * but if you want to support X64, you must add two case
+         *  --> MOVZX r64, r/m8*, MOVZX r64, r/m16
+         */
+        IR2_OPND dest_opnd = ra_alloc_gpr(ir1_opnd_base_reg_num(source_ir1));
+
+        if(ir1_opnd_is_8l(source_ir1)){
+            if(ir1_opnd_is_16l(dest_ir1))
+                la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 15, 8);
+            else
+                la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 31, 8);
+        } else if(ir1_opnd_is_8h(source_ir1)){
+            IR2_OPND tmp_opnd = ra_alloc_itemp();
+            if(ir1_opnd_is_16l(dest_ir1)){
+                la_append_ir2_opnd2ii(LISA_BSTRPICK_D, tmp_opnd, dest_opnd, 15, 8);
+                la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 15, 8);
+                la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, tmp_opnd, 7, 0);
+            } else {
+                la_append_ir2_opnd2ii(LISA_BSTRPICK_D, tmp_opnd, dest_opnd, 15, 8);
+                la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 31, 8);
+                la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, tmp_opnd, 7, 0);
+            }
+        } else {
+            la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 31, 16);
+        }
+        return true;
+    }
+    IR2_OPND source_opnd =
+        load_ireg_from_ir1(source_ir1, ZERO_EXTENSION, false);
+
+    store_ireg_to_ir1(source_opnd, dest_ir1, false);
     return true;
 }
 

@@ -185,6 +185,7 @@ x86_reg ir1_opnd_seg_reg(IR1_OPND *opnd);
 int ir1_opnd_is_imm(IR1_OPND *opnd);
 int ir1_opnd_is_8h(IR1_OPND *opnd);
 int ir1_opnd_is_8l(IR1_OPND *opnd);
+int ir1_opnd_is_16l(IR1_OPND *opnd);
 int ir1_opnd_is_gpr(IR1_OPND *opnd);
 int ir1_opnd_is_uimm_within_16bit(IR1_OPND *opnd);
 int ir1_opnd_is_simm_within_16bit(IR1_OPND *opnd);

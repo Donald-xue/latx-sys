@@ -534,6 +534,13 @@ int ir1_opnd_is_8l(IR1_OPND *opnd)
             opnd->reg == X86_REG_CL || opnd->reg == X86_REG_DL);
 }
 
+int ir1_opnd_is_16l(IR1_OPND *opnd)
+{
+    return opnd->type == X86_OP_REG && opnd->size == 2 &&
+           (opnd->reg == X86_REG_AX || opnd->reg == X86_REG_BX ||
+            opnd->reg == X86_REG_CX || opnd->reg == X86_REG_DX);
+}
+
 int ir1_opnd_is_gpr(IR1_OPND *opnd)
 {
     if (opnd->type != X86_OP_REG) {
