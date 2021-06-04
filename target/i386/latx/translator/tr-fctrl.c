@@ -462,7 +462,7 @@ bool translate_fldenv(IR1_INST *pir1)
     /* convert mem_opnd to ireg_opnd */
 
     IR1_OPND* opnd1 = ir1_get_opnd(pir1, 0);
-    IR2_OPND mem_opnd = convert_mem_opnd(opnd1);
+    IR2_OPND mem_opnd = convert_mem_opnd_with_no_offset(opnd1);
     int mem_imm = ir2_opnd_imm(&mem_opnd);
     mem_opnd._type = IR2_OPND_IREG;
 
@@ -545,7 +545,7 @@ bool translate_fnstenv(IR1_INST *pir1)
     /* mem_opnd is not supported in ir2 assemble */
     /* convert mem_opnd to ireg_opnd */
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 0);
-    IR2_OPND mem_opnd = convert_mem_opnd(opnd1);
+    IR2_OPND mem_opnd = convert_mem_opnd_with_no_offset(opnd1);
     int mem_imm = ir2_opnd_imm(&mem_opnd);
     mem_opnd._type = IR2_OPND_IREG;
 

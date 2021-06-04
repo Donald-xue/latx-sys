@@ -1099,6 +1099,7 @@ IR2_OPND convert_mem_opnd_with_bias_within_imm_bits(IR1_OPND *opnd1, int bias, i
 void load_ireg_from_ir1_addrx(IR1_OPND *, IR2_OPND);
 IR2_OPND mem_ir1_to_ir2_opnd(IR1_OPND *, bool is_xmm_hi);
 IR2_OPND convert_mem_opnd_with_bias(IR1_OPND *, int);
+IR2_OPND convert_mem_opnd_with_no_offset(IR1_OPND *);
 IR2_OPND convert_mem_addr(ADDR);
 IR2_OPND convert_gpr_opnd(IR1_OPND *, EXTENSION_MODE);
 IR2_OPND load_freg128_from_ir1(IR1_OPND *);

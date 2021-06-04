@@ -1217,7 +1217,7 @@ bool translate_fnsave(IR1_INST *pir1)
     /* convert mem_opnd to ireg_opnd */
 
     IR1_OPND* opnd1 = ir1_get_opnd(pir1, 0);
-    IR2_OPND mem_opnd = convert_mem_opnd(opnd1);
+    IR2_OPND mem_opnd = convert_mem_opnd_with_no_offset(opnd1);
     mem_opnd._type = IR2_OPND_IREG;
     int base_reg_num = mem_opnd._reg_num;
     int offset = mem_opnd._imm16;
@@ -1311,7 +1311,7 @@ bool translate_frstor(IR1_INST *pir1)
     /* convert mem_opnd to ireg_opnd */
 
     IR1_OPND* opnd1 = ir1_get_opnd(pir1, 0);
-    IR2_OPND mem_opnd = convert_mem_opnd(opnd1);
+    IR2_OPND mem_opnd = convert_mem_opnd_with_no_offset(opnd1);
     mem_opnd._type = IR2_OPND_IREG;
     int offset = mem_opnd._imm16;
 

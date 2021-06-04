@@ -140,6 +140,12 @@ IR2_OPND convert_mem_opnd(IR1_OPND *opnd1)
     return convert_mem_opnd_with_bias(opnd1, 0);
 }
 
+IR2_OPND convert_mem_opnd_with_no_offset(IR1_OPND *opnd1)
+{
+    return convert_mem_opnd_with_bias(opnd1, 0xffff);
+}
+
+
 /**
 @convert an ir1 memory operand to an ir2 memory operand. internal temp registers
 may be used.
@@ -150,12 +156,12 @@ IR2_OPND convert_mem_opnd_with_bias(IR1_OPND *opnd1, int bias)
 {
     IR2_OPND mem_opnd;
 
-    longx offset = ir1_opnd_simm(opnd1) + bias;
+    longx offset = ir1_opnd_simm(opnd1) + ((bias==0xffff)?0:bias);
     int16 offset_imm_part;
     longx offset_reg_part;
     IR2_OPND offset_reg_opnd = ra_alloc_itemp();
     if (offset >= -2048 &&
-        offset <= 2047 - 7) { /* minus 7 for the sake of mda process */
+        offset <= 2047 - 7 && (bias!=0xffff)) { /* minus 7 for the sake of mda process */
         offset_imm_part = offset;
         offset_reg_part = 0;
     } else {
