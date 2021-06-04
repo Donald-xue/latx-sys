@@ -151,6 +151,9 @@ static bool translate_and_byhand_8_16(IR1_INST *pir1, bool is_and)
 bool translate_and_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_and(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
             return translate_and_byhand_32(pir1, true);
         } else {

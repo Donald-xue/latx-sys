@@ -17,7 +17,7 @@ static bool translate_add_byhand_32(IR1_INST *pir1)
 
     /* 1. prepare source operands and opcode */
     if (ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0))) { /* dest is x86 address */
-        lsassert(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0) + 1));
+        lsassert(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 1)));
         src_opnd_0 = load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
         lsassert(ir2_opnd_is_x86_address(&src_opnd_0));
         if (ir1_opnd_is_simm_within_16bit(ir1_get_opnd(pir1, 0) + 1))
@@ -133,6 +133,9 @@ static bool translate_add_byhand_8_16(IR1_INST *pir1)
 bool translate_add_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_add(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
             return translate_add_byhand_32(pir1);
         else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -284,6 +287,9 @@ static bool translate_sub_byhand_8_16(IR1_INST *pir1, bool is_sub)
 bool translate_sub_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_sub(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
             return translate_sub_byhand_32(pir1, true);
         else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -435,6 +441,9 @@ static bool translate_adc_byhand_8_16(IR1_INST *pir1)
 bool translate_adc_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_adc(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
             return translate_adc_byhand_32(pir1);
         else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -553,6 +562,9 @@ static bool translate_xor_byhand_8_16_32(IR1_INST *pir1)
 bool translate_xor_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_xor(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
             lsassertm(0, "%s for 64bit is not implemented yet.\n",
                       __FUNCTION__);
@@ -641,6 +653,9 @@ static bool translate_inc_byhand_8_16(IR1_INST *pir1)
 bool translate_inc_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_inc(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
             return translate_inc_byhand_32(pir1);
         else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -729,6 +744,9 @@ static bool translate_dec_byhand_8_16(IR1_INST *pir1)
 bool translate_dec_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_dec(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
             return translate_dec_byhand_32(pir1);
         else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -816,6 +834,9 @@ static bool translate_neg_byhand_8_16(IR1_INST *pir1)
 bool translate_neg_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_neg(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
             return translate_neg_byhand_32(pir1);
         else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -865,6 +886,9 @@ bool translate_not_byhand(IR1_INST *pir1)
     if(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0))){
     //lsassert(!ir1_opnd_is_x86_address(ir1_get_opnd(pir1, 0)));
         if (option_by_hand) {
+            if (ir1_is_prefix_lock(pir1)) {
+                return translate_not(pir1);
+            }
             if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
                 return translate_not_byhand_32(pir1);
             else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
@@ -1079,6 +1103,9 @@ bool translate_cmpxchg_byhand_8_16_32(IR1_INST *pir1)
 bool translate_cmpxchg_byhand(IR1_INST *pir1)
 {
     if (option_by_hand) {
+        if (ir1_is_prefix_lock(pir1)) {
+            return translate_cmpxchg(pir1);
+        }
         if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
             lsassertm(0, "%s for 64bit is not implemented yet.\n",
                       __FUNCTION__);
