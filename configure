@@ -378,6 +378,7 @@ linux="no"
 solaris="no"
 profiler="no"
 latx="no"
+latx_flag_pattern="no"
 guest_base="yes"
 cocoa="auto"
 softmmu="yes"
@@ -1146,6 +1147,8 @@ for opt do
   --enable-profiler) profiler="yes"
   ;;
   --enable-latx) latx="yes"
+  ;;
+  --enable-latx-flag-pattern) latx_flag_pattern="yes"
   ;;
   --disable-guest-base) guest_base="no"
   ;;
@@ -5562,6 +5565,9 @@ if test "$latx" = "yes" ; then
   echo "CONFIG_LATX=y" >> $config_host_mak
   if test "$debug" = "yes" ; then
     echo "CONFIG_LATX_DEBUG=y" >> $config_host_mak
+  fi
+  if test "$latx_flag_pattern" = "yes" ; then
+    echo "CONFIG_LATX_FLAG_PATTERN=y" >> $config_host_mak
   fi
 fi
 if test "$guest_base" = "no" ; then

@@ -20,7 +20,9 @@ bool translate_add(IR1_INST *pir1)
     IR2_OPND src_opnd_0 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
     la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd_0, src_opnd_1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
     generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -137,7 +139,9 @@ bool translate_sub(IR1_INST *pir1)
 
     IR2_OPND src_opnd_0 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
     la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, src_opnd_0, src_opnd_1);
     generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
@@ -220,7 +224,9 @@ bool translate_cmp(IR1_INST *pir1)
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
 
     IR2_OPND dest_opnd = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
     la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, src_opnd_0, src_opnd_1);
 
     generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);

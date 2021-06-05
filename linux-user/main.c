@@ -260,10 +260,12 @@ static void handle_arg_latx_by_hand(const char *arg)
     option_by_hand = 1;
 }
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
 static void handle_arg_latx_flag_pattern(const char *arg)
 {
     option_flag_pattern = 1;
 }
+#endif
 
 static void handle_arg_latx_flag_reduction(const char *arg)
 {
@@ -515,8 +517,10 @@ static const struct qemu_argument arg_table[] = {
 #ifdef CONFIG_LATX
     {"latx-tr-bh",       "",                 false, handle_arg_latx_by_hand,
     "",                 "LATX-translate-by-hand"},
+#ifdef CONFIG_LATX_FLAG_PATTERN
     {"latx-flag-ptn",    "",                 false, handle_arg_latx_flag_pattern,
     "",                 "LATX-enable-flag-pattern-optimization"},
+#endif
     {"latx-flag-rdtn",   "",                 false, handle_arg_latx_flag_reduction,
     "",                 "LATX-enable-flag-reduction-optimization"},
     {"latx-dump",        "",                 true,  handle_arg_latx_print,

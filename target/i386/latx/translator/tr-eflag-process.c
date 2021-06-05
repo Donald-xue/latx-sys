@@ -953,7 +953,9 @@ void generate_eflag_calculation(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1,
 {
     if (ir1_get_eflag_def(pir1) == 0)
         return;
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
     if (ir1_need_calculate_any_flag(pir1) == 0 ||
         generate_eflag_by_lbt(dest, src0, src1, pir1, is_sx))
         return;

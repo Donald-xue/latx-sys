@@ -455,7 +455,9 @@ typedef struct ExtraBlock{
     int8   _tb_type;
     struct ExtraBlock* succ[2];  /* successors of this ETB */
     struct TranslationBlock* tb; /* which tb this etb belongs to */
+#if defined(CONFIG_LATX_FLAG_PATTERN) || defined(CONFIG_LATX_FLAG_REDUCTION)
     uint8 pending_use; /* indicate which eflags are used but hasn't defined yet */
+#endif
     /* flags is used to indicate the state of this ETB 
      * bit0: set if succ[2] are set
      * bit1: set if pending_use is set */

@@ -88,8 +88,10 @@ static bool translate_and_byhand_32(IR1_INST *pir1, bool is_and)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 4. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 5. write the result back */
     if (is_and) {
@@ -135,8 +137,10 @@ static bool translate_and_byhand_8_16(IR1_INST *pir1, bool is_and)
 
     la_append_ir2_opnd3_em(LISA_AND, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 3. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 4. write the result back */
     if (is_and) {
@@ -472,7 +476,9 @@ bool translate_shl_byhand_imm(IR1_INST *pir1)
     }
 
     la_append_ir2_opnd2i_em(LISA_SLLI_W, dest, src, count);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
     if (dest_is_temp) {
@@ -522,7 +528,9 @@ bool translate_shl_byhand_cl(IR1_INST *pir1)
     }
 
     la_append_ir2_opnd3_em(LISA_SLL_W, dest, src, count);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
@@ -585,7 +593,9 @@ bool translate_sar_byhand_imm(IR1_INST *pir1)
 
     la_append_ir2_opnd2i_em(LISA_SRAI_W, dest, src, count);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
 
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
@@ -626,7 +636,9 @@ bool translate_sar_byhand_cl(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(LISA_SRA_W, dest, src, count);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
 
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
@@ -694,7 +706,9 @@ bool translate_shr_byhand_imm(IR1_INST *pir1)
     }
 
     la_append_ir2_opnd2i_em(LISA_SRLI_W, dest, src, count);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
     if (dest_is_temp) {
@@ -748,7 +762,9 @@ bool translate_shr_byhand_cl(IR1_INST *pir1)
     }
 
     la_append_ir2_opnd3_em(LISA_SRL_W, dest, src, count);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest);
+#endif
     store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
 
     /* 5. exit */

@@ -7,12 +7,16 @@
 bool translate_jz(IR1_INST *pir1){
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL); 
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_E);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -24,12 +28,16 @@ bool translate_jnz(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_NE);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -42,12 +50,16 @@ bool translate_js(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_S);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -60,12 +72,16 @@ bool translate_jns(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_NS);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -78,12 +94,16 @@ bool translate_jb(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_B);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -96,12 +116,16 @@ bool translate_jae(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_AE);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -114,12 +138,16 @@ bool translate_jo(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_O);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -132,12 +160,16 @@ bool translate_jno(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_NO);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -150,12 +182,16 @@ bool translate_jbe(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_BE);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -168,12 +204,16 @@ bool translate_ja(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_A);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -186,12 +226,16 @@ bool translate_jp(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_PE);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -204,12 +248,16 @@ bool translate_jnp(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_PO);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -222,12 +270,16 @@ bool translate_jl(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_L);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -240,12 +292,16 @@ bool translate_jge(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_GE);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -258,12 +314,16 @@ bool translate_jle(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_LE);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);
@@ -276,12 +336,16 @@ bool translate_jg(IR1_INST *pir1)
 {
     IR2_OPND target_label_opnd = ir2_opnd_new_type(IR2_OPND_LABEL);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, target_label_opnd)) {
+#endif
         IR2_OPND cond_opnd = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_SETX86J, cond_opnd, COND_G);
         la_append_ir2_opnd3(LISA_BNE, cond_opnd, zero_ir2_opnd, target_label_opnd);
         ra_free_temp(cond_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     tr_generate_exit_tb(pir1, 0);
     la_append_ir2_opnd1(LISA_LABEL, target_label_opnd);

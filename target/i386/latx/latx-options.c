@@ -3,7 +3,9 @@
 #include "qemu/osdep.h"
 
 int option_by_hand;
-int option_flag_pattern;
+#ifdef CONFIG_LATX_FLAG_PATTERN
+int option_flag_pattern = 0;
+#endif
 int option_flag_reduction;
 int option_dump;
 int option_dump_host;
@@ -35,7 +37,6 @@ void options_init(void)
     option_trace_ir1 = 0;
     option_check = 0;
     option_by_hand = 0;
-    option_flag_pattern = 0;
     option_flag_reduction = 0;
     option_tb_link = 1;
     option_ibtc= 0;

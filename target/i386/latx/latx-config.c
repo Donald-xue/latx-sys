@@ -268,7 +268,9 @@ void latx_exit(void)
 
 static __thread ENV lsenv_real;
 static __thread TRANSLATION_DATA tr_data_real;
+#ifdef CONFIG_LATX_FLAG_PATTERN
 static __thread FLAG_PATTERN_DATA fp_data_real;
+#endif
 
 /* global lsenv defined here */
 __thread ENV *lsenv;
@@ -278,7 +280,9 @@ void latx_lsenv_init(CPUArchState *env)
     lsenv = &lsenv_real;
     lsenv->cpu_state = env;
     lsenv->tr_data = &tr_data_real;
+#ifdef CONFIG_LATX_FLAG_PATTERN
     lsenv->fp_data = &fp_data_real;
+#endif
 
     env->vregs[4] = (uint64_t)shadow_stack._ssi_current;
     if (option_dump) {

@@ -1,8 +1,9 @@
 #ifndef _FLAG_PATTERN_H_
 #define _FLAG_PATTERN_H_
-
+#include "qemu/osdep.h"
 #include "ir1.h"
 #include "ir2.h"
+#ifdef CONFIG_LATX_FLAG_PATTERN
 
 void fp_init(void);
 bool fp_is_save_dest_opnd(IR1_INST *pir1, IR2_OPND dest);
@@ -32,4 +33,5 @@ typedef struct FLAG_PATTERN_DATA {
     int pattern_items_num;
 } FLAG_PATTERN_DATA;
 
+#endif
 #endif

@@ -19,12 +19,16 @@ bool translate_setz(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND zf_opnd = ra_alloc_itemp();
         get_eflag_condition(&zf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SRLI_W, value_opnd, zf_opnd, ZF_BIT_INDEX);
         ra_free_temp(zf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -48,12 +52,16 @@ bool translate_setnz(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND zf_opnd = ra_alloc_itemp();
         get_eflag_condition(&zf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, zf_opnd, 1);
         ra_free_temp(zf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -76,13 +84,17 @@ bool translate_seto(IR1_INST *pir1)
         value_opnd_is_temp = true;
     }
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 2. set the value operand */
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND of_opnd = ra_alloc_itemp();
         get_eflag_condition(&of_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SRLI_W, value_opnd, of_opnd, OF_BIT_INDEX);
         ra_free_temp(of_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -105,13 +117,17 @@ bool translate_setno(IR1_INST *pir1)
         value_opnd_is_temp = true;
     }
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 2. set the value operand */
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND of_opnd = ra_alloc_itemp();
         get_eflag_condition(&of_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, of_opnd, 1);
         ra_free_temp(of_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -135,9 +151,13 @@ bool translate_setb(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         get_eflag_condition(&value_opnd, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -161,12 +181,16 @@ bool translate_setae(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND cf_opnd = ra_alloc_itemp();
         get_eflag_condition(&cf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, cf_opnd, 1);
         ra_free_temp(cf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -190,12 +214,16 @@ bool translate_setbe(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND cfzf_opnd = ra_alloc_itemp();
         get_eflag_condition(&cfzf_opnd, pir1);
         la_append_ir2_opnd3_em(LISA_SLTU, value_opnd, zero_ir2_opnd, cfzf_opnd);
         ra_free_temp(cfzf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -219,12 +247,16 @@ bool translate_seta(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND cfzf_opnd = ra_alloc_itemp();
         get_eflag_condition(&cfzf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, cfzf_opnd, 1);
         ra_free_temp(cfzf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -248,12 +280,16 @@ bool translate_sets(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND sf_opnd = ra_alloc_itemp();
         get_eflag_condition(&sf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SRLI_W, value_opnd, sf_opnd, SF_BIT_INDEX);
         ra_free_temp(sf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -277,12 +313,16 @@ bool translate_setns(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND sf_opnd = ra_alloc_itemp();
         get_eflag_condition(&sf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, sf_opnd, SF_BIT_INDEX);
         ra_free_temp(sf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -306,12 +346,16 @@ bool translate_setp(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND pf_opnd = ra_alloc_itemp();
         get_eflag_condition(&pf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SRLI_W, value_opnd, pf_opnd, PF_BIT_INDEX);
         ra_free_temp(pf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -335,12 +379,16 @@ bool translate_setnp(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         IR2_OPND pf_opnd = ra_alloc_itemp();
         get_eflag_condition(&pf_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, pf_opnd, 1);
         ra_free_temp(pf_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -364,9 +412,13 @@ bool translate_setl(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         get_eflag_condition(&value_opnd, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -390,10 +442,14 @@ bool translate_setge(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         get_eflag_condition(&value_opnd, pir1);
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, value_opnd, 1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -417,11 +473,15 @@ bool translate_setle(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         get_eflag_condition(&value_opnd, pir1);
 
         la_append_ir2_opnd3_em(LISA_SLTU, value_opnd, zero_ir2_opnd, value_opnd);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
@@ -445,11 +505,15 @@ bool translate_setg(IR1_INST *pir1)
     }
 
     /* 2. set the value operand */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, value_opnd)) {
+#endif
         get_eflag_condition(&value_opnd, pir1);
 
         la_append_ir2_opnd2i_em(LISA_SLTUI, value_opnd, value_opnd, 1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     /* 3. store to the dest operand */
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);

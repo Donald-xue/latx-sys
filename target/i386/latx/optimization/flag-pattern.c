@@ -7,6 +7,7 @@
 #include <string.h>
 #include "flag-pattern.h"
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
 typedef enum {
     CMP_JO = (X86_INS_CMP << 16) + X86_INS_JO,
     CMP_JNO = (X86_INS_CMP << 16) + X86_INS_JNO,
@@ -402,7 +403,6 @@ void fp_init(void)
            sizeof(FLAG_PATTERN_ITEM) * MAX_PATTERN_HEAD_NUM_PER_TB);
     lsenv->fp_data->pattern_items_num = 1;
 }
-
 static bool fpi_is_head_op(IR1_OPCODE op)
 {
     if (op == X86_INS_CMP || op == X86_INS_SUB || op == X86_INS_TEST || op == X86_INS_OR ||
@@ -1304,3 +1304,4 @@ void fp_init_skipped_flags(IR1_INST *pir1)
 
     lsenv->tr_data->curr_ir1_skipped_eflags = item->skipped_flags;
 }
+#endif

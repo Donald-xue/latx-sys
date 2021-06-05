@@ -54,7 +54,9 @@ static bool translate_add_byhand_32(IR1_INST *pir1)
         dest_opnd = ra_alloc_itemp();
 
     /* 3. calculate result */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
 
     /* calculate eflags before calculate result if enabling lbt*/
     if (ir1_need_calculate_any_flag(pir1)) {
@@ -64,8 +66,10 @@ static bool translate_add_byhand_32(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 4. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
     /* 5. write the result back */
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -108,7 +112,9 @@ static bool translate_add_byhand_8_16(IR1_INST *pir1)
         src_opnd_1 = load_ireg_from_ir1(opnd1, src_prefer_em, false);
 
     /* 2. calculate result */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     /* calculate eflags before calculate result if enabling lbt*/
@@ -119,8 +125,10 @@ static bool translate_add_byhand_8_16(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 3. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 4. write the result back */
     store_ireg_to_ir1(dest_opnd, opnd0, false);
@@ -208,7 +216,9 @@ static bool translate_sub_byhand_32(IR1_INST *pir1, bool is_sub)
     }
 
     /* 3. calculate result */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
 
     /* calculate eflags before calculate result if enabling lbt*/
     if (ir1_need_calculate_any_flag(pir1)) {
@@ -216,12 +226,17 @@ static bool translate_sub_byhand_32(IR1_INST *pir1, bool is_sub)
                                    is_opnd_sx);
     }
 
-    if (is_sub || fp_is_save_dest_opnd(pir1, dest_opnd) ||
-        ir1_need_calculate_any_flag(pir1))
+    if (is_sub || ir1_need_calculate_any_flag(pir1))
         la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
+    else if (fp_is_save_dest_opnd(pir1, dest_opnd))
+        la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
+#endif
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 4. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 5. write the result back */
     if (is_sub)
@@ -262,7 +277,9 @@ static bool translate_sub_byhand_8_16(IR1_INST *pir1, bool is_sub)
 
     /* 2. calculate result */
     IR2_OPND dest_opnd = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+#endif
 
     /* calculate eflags before calculate result if enabling lbt*/
     if (ir1_need_calculate_any_flag(pir1)) {
@@ -272,8 +289,10 @@ static bool translate_sub_byhand_8_16(IR1_INST *pir1, bool is_sub)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 3. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 4. write the result back */
     if (is_sub)
@@ -362,8 +381,10 @@ static bool translate_adc_byhand_32(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd_0, tmp_opnd);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 5. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 6. write the result back */
     store_ireg_to_ir1(dest_opnd, opnd0, false);
@@ -426,8 +447,10 @@ static bool translate_adc_byhand_8_16(IR1_INST *pir1)
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
     la_append_ir2_opnd3_em(LISA_ADD_D, dest_opnd, dest_opnd, cf_opnd);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 4. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 5. write the result back */
     store_ireg_to_ir1(dest_opnd, opnd0, false);
@@ -492,8 +515,10 @@ static bool translate_or_byhand_8_16_32(IR1_INST *pir1)
     }
 
     la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd_0, src_opnd_1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 4. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
     /* 5. write back */
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -549,7 +574,9 @@ static bool translate_xor_byhand_8_16_32(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_XOR, dest_opnd, src_opnd_0, src_opnd_1);
     /* only OK for this */
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), 0); /* TODO */
 
@@ -605,7 +632,9 @@ static bool translate_inc_byhand_32(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -642,7 +671,9 @@ static bool translate_inc_byhand_8_16(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -699,7 +730,9 @@ static bool translate_dec_byhand_32(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
     if (dest_opnd_is_temp)
         ra_free_temp(dest_opnd);
@@ -733,7 +766,9 @@ static bool translate_dec_byhand_8_16(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -784,8 +819,10 @@ static bool translate_neg_byhand_32(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, zero_ir2_opnd, src_opnd_0);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     /* 5. calculate eflags */
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     /* 6. write the result back */
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
@@ -823,7 +860,9 @@ static bool translate_neg_byhand_8_16(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(lisa_opcode, dest_opnd, src_opnd_0, src_opnd_1);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
 
@@ -1073,7 +1112,9 @@ bool translate_cmpxchg_byhand_8_16_32(IR1_INST *pir1)
 
     la_append_ir2_opnd3_em(LISA_SUB_W, dest_opnd, eax_opnd, src_opnd_0);
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_save_dest_opnd(pir1, dest_opnd);
+#endif
 
     IR2_OPND label_not_equal = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BNE, dest_opnd, zero_ir2_opnd, label_not_equal);

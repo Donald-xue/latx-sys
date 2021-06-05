@@ -4,7 +4,9 @@
 #include "latx-types.h"
 
 extern int option_by_hand;
+#ifdef CONFIG_LATX_FLAG_PATTERN
 extern int option_flag_pattern;
+#endif
 extern int option_flag_reduction;
 extern int option_dump;
 extern int option_dump_host;

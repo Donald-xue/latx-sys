@@ -493,9 +493,13 @@ bool translate_scas(IR1_INST *pir1)
 bool translate_cmovo(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -537,9 +541,13 @@ bool translate_cmovo(IR1_INST *pir1)
 bool translate_cmovno(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -581,9 +589,13 @@ bool translate_cmovno(IR1_INST *pir1)
 bool translate_cmovb(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -625,9 +637,13 @@ bool translate_cmovb(IR1_INST *pir1)
 bool translate_cmovae(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -669,9 +685,13 @@ bool translate_cmovae(IR1_INST *pir1)
 bool translate_cmovz(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -713,9 +733,13 @@ bool translate_cmovz(IR1_INST *pir1)
 bool translate_cmovnz(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -757,9 +781,13 @@ bool translate_cmovnz(IR1_INST *pir1)
 bool translate_cmovbe(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -801,9 +829,13 @@ bool translate_cmovbe(IR1_INST *pir1)
 bool translate_cmova(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -845,9 +877,13 @@ bool translate_cmova(IR1_INST *pir1)
 bool translate_cmovs(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -889,9 +925,13 @@ bool translate_cmovs(IR1_INST *pir1)
 bool translate_cmovns(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -933,9 +973,13 @@ bool translate_cmovns(IR1_INST *pir1)
 bool translate_cmovp(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -977,9 +1021,13 @@ bool translate_cmovp(IR1_INST *pir1)
 bool translate_cmovnp(IR1_INST *pir1)
 {
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -1021,9 +1069,13 @@ bool translate_cmovnp(IR1_INST *pir1)
 bool translate_cmovl(IR1_INST *pir1)
 { /* sf != of */
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -1065,9 +1117,13 @@ bool translate_cmovl(IR1_INST *pir1)
 bool translate_cmovge(IR1_INST *pir1)
 { /* sf == of */
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -1109,9 +1165,13 @@ bool translate_cmovge(IR1_INST *pir1)
 bool translate_cmovle(IR1_INST *pir1)
 { /* zf==1 || sf!=of */
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =
@@ -1153,9 +1213,13 @@ bool translate_cmovle(IR1_INST *pir1)
 bool translate_cmovg(IR1_INST *pir1)
 { /* zf==0 && sf==of */
     IR2_OPND neg_condition = ra_alloc_itemp();
+#ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
+#endif
         get_eflag_condition(&neg_condition, pir1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
     }
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         IR2_OPND src_opnd =

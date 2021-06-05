@@ -66,7 +66,9 @@ typedef struct TRANSLATION_DATA {
 typedef struct ENV {
     void *cpu_state;            /* from QEMU,CPUArchState */
     TRANSLATION_DATA *tr_data;  /* from LATX */
+#ifdef CONFIG_LATX_FLAG_PATTERN
     FLAG_PATTERN_DATA *fp_data; /* from LATX */
+#endif
 } ENV;
 
 /* eflags mask */

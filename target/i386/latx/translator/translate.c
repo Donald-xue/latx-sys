@@ -147,10 +147,12 @@ void tr_init(void *tb)
             t->curr_top = etb_get_top_in(qm_tb_get_extra_tb(tb));
             assert(t->curr_top != -1);
         }
+#ifdef CONFIG_LATX_FLAG_PATTERN
         if (option_flag_pattern) {
             fp_init();
             tb_find_flag_pattern(tb);
         }
+#endif
     } else
         t->curr_top = 0;
 
@@ -168,7 +170,9 @@ IR1_INST *tr_init_for_each_ir1_in_tb(IR1_INST *ir1_list, int ir1_nr, int index)
 
     la_append_ir2_opnda(LISA_X86_INST, ir1_addr(pir1));
 
+#ifdef CONFIG_LATX_FLAG_PATTERN
     fp_init_skipped_flags(pir1);
+#endif
     em_recognize_address(pir1);
     if (index == ir1_nr - 1)
         tr_adjust_em();
