@@ -1201,16 +1201,22 @@ bool translate_fxch(IR1_INST *pir1)
 }
 bool translate_ftst(IR1_INST *pir1)
 {
-    return false;
-#if 0
     IR2_OPND status_word = ra_alloc_itemp();
-    append_ir2_opnd2i(mips_lh, status_word, env_ir2_opnd,
-                      lsenv_offset_of_status_word(lsenv));
-    append_ir2_opnd2i(mips_andi, status_word, status_word, 0xbaff);
+    IR2_OPND tmp_opnd = ra_alloc_itemp();
+    /* load status_word */
+    int offset = lsenv_offset_of_status_word(lsenv);
+
+    lsassert(offset <= 0x7ff);
+    la_append_ir2_opnd2i_em(LISA_LD_HU, status_word, env_ir2_opnd, offset);
+
+    /* clear status_word c0 c2 c3 */
+    la_append_ir2_opnd1i_em(LISA_LU12I_W, tmp_opnd, 0xb);
+    la_append_ir2_opnd2i_em(LISA_ORI, tmp_opnd, tmp_opnd, 0xaff);
+    la_append_ir2_opnd3_em(LISA_AND, status_word, status_word, tmp_opnd);
 
     IR2_OPND f_zero = ra_alloc_ftemp();
-    append_ir2_opnd2(mips_mtc1, zero_ir2_opnd, f_zero);
-    append_ir2_opnd2(mips_cvt_d_w, f_zero, f_zero);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FR_W, f_zero, zero_ir2_opnd);
+    la_append_ir2_opnd2_em(LISA_FFINT_D_W, f_zero, f_zero);
 
     IR2_OPND st0_opnd = ra_alloc_st(0);
     IR2_OPND label_for_lt = ir2_opnd_new_type(IR2_OPND_LABEL);
@@ -1218,40 +1224,40 @@ bool translate_ftst(IR1_INST *pir1)
     IR2_OPND label_for_eq = ir2_opnd_new_type(IR2_OPND_LABEL);
     IR2_OPND label_for_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 
-    /* check for unordered */
-    append_ir2_opnd2(mips_c_un_d, st0_opnd, f_zero);
-    append_ir2_opnd1(mips_bc1t, label_for_un);
-
-    /* check for equal */
-    append_ir2_opnd2(mips_c_eq_d, st0_opnd, f_zero);
-    append_ir2_opnd1(mips_bc1t, label_for_eq);
-
-    /* check for less than */
-    append_ir2_opnd2(mips_c_lt_d, st0_opnd, f_zero);
-    append_ir2_opnd1(mips_bc1t, label_for_lt);
+    /* check is unordered */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, st0_opnd, f_zero, FCMP_COND_CUN);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_un);
+    /* check is equal */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, st0_opnd, f_zero, FCMP_COND_CEQ);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_eq);
+    /* check is less than */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, st0_opnd, f_zero, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_lt);
 
     /* greater than */
-    append_ir2_opnd1(mips_b, label_for_exit);
+    la_append_ir2_opnd1(LISA_B, label_for_exit);
     /* lt: */
-    append_ir2_opnd1(mips_label, label_for_lt);
-    append_ir2_opnd2i(mips_ori, status_word, status_word, 0x0100);
-    append_ir2_opnd1(mips_b, label_for_exit);
+    la_append_ir2_opnd1(LISA_LABEL, label_for_lt);
+    la_append_ir2_opnd2i_em(LISA_ORI, status_word, status_word, 0x100);
+    la_append_ir2_opnd1(LISA_B, label_for_exit);
     /* eq: */
-    append_ir2_opnd1(mips_label, label_for_eq);
-    append_ir2_opnd2i(mips_ori, status_word, status_word, 0x4000);
-    append_ir2_opnd1(mips_b, label_for_exit);
+    la_append_ir2_opnd1(LISA_LABEL, label_for_eq);
+    la_append_ir2_opnd1i(LISA_LU12I_W, tmp_opnd, 0x4);
+    la_append_ir2_opnd3_em(LISA_OR, status_word, status_word, tmp_opnd);
+    la_append_ir2_opnd1(LISA_B, label_for_exit);
     /* un: */
-    append_ir2_opnd1(mips_label, label_for_un);
-    append_ir2_opnd2i(mips_ori, status_word, status_word, 0x4500);
+    la_append_ir2_opnd1(LISA_LABEL, label_for_un);
+    la_append_ir2_opnd1i(LISA_LU12I_W, tmp_opnd, 0x4);
+    la_append_ir2_opnd2i_em(LISA_ORI, tmp_opnd, tmp_opnd, 0x500);
+    la_append_ir2_opnd3_em(LISA_OR, status_word, status_word, tmp_opnd);
     /* exit: */
-    append_ir2_opnd1(mips_label, label_for_exit);
+    la_append_ir2_opnd1(LISA_LABEL, label_for_exit);
 
-    append_ir2_opnd2i(mips_sh, status_word, env_ir2_opnd,
+    la_append_ir2_opnd2i(LISA_ST_H, status_word, env_ir2_opnd,
                       lsenv_offset_of_status_word(lsenv));
     ra_free_temp(status_word);
     ra_free_temp(f_zero);
     return true;
-#endif
 }
 
 bool translate_fptan(IR1_INST *pir1)
