@@ -3996,7 +3996,7 @@ IR2_INST *la_append_ir2_opnd2i(IR2_OPCODE type, IR2_OPND op0, IR2_OPND op1, int 
         lsassertm(((imm % 4) == 0), "ll/sc imm %d error.\n", imm);
         imm = imm >> 2;
     } else if (type == LISA_SC_D || type == LISA_LL_D) {
-        lsassertm(((imm % 8) == 0), "ll/sc imm %d error.\n", imm);
+        lsassertm(((imm % 4) == 0), "ll/sc imm %d error.\n", imm);
         imm = imm >> 2;
     }
 
