@@ -267,10 +267,12 @@ static void handle_arg_latx_flag_pattern(const char *arg)
 }
 #endif
 
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 static void handle_arg_latx_flag_reduction(const char *arg)
 {
     option_flag_reduction = 1;
 }
+#endif
 
 static void handle_arg_latx_print(const char *arg)
 {
@@ -521,8 +523,10 @@ static const struct qemu_argument arg_table[] = {
     {"latx-flag-ptn",    "",                 false, handle_arg_latx_flag_pattern,
     "",                 "LATX-enable-flag-pattern-optimization"},
 #endif
+#ifdef CONFIG_LATX_FLAG_REDUCTION
     {"latx-flag-rdtn",   "",                 false, handle_arg_latx_flag_reduction,
     "",                 "LATX-enable-flag-reduction-optimization"},
+#endif
     {"latx-dump",        "",                 true,  handle_arg_latx_print,
     "bitmap",           "LATX-dump-transalte-info: 4 bits each for func,ir1,ir2,host"},
     {"latx-trace",       "",                 true,  handle_arg_latx_trace,

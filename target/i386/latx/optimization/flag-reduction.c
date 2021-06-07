@@ -1587,6 +1587,7 @@ uint8 pending_use_of_succ(ETB* etb, int max_depth)
  * }
  */
 
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 void tb_flag_reduction(void *tb)
 {
     ETB *etb = qm_tb_get_extra_tb(tb);
@@ -1658,6 +1659,7 @@ void tb_flag_reduction(void *tb)
     //free_etb(etb->succ[0]);
     //free_etb(etb->succ[1]);
 }
+#endif
 
 void tb_flag(void *tb)
 {

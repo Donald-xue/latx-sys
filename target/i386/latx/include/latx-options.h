@@ -7,7 +7,9 @@ extern int option_by_hand;
 #ifdef CONFIG_LATX_FLAG_PATTERN
 extern int option_flag_pattern;
 #endif
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 extern int option_flag_reduction;
+#endif
 extern int option_dump;
 extern int option_dump_host;
 extern int option_dump_ir1;

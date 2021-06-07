@@ -382,10 +382,12 @@ void *tr_disasm(void *tb)
     lsenv->tr_data->ir1_inst_array = ir1_list;
     lsenv->tr_data->ir1_nr = ir1_num;
     lsenv->tr_data->curr_ir1_inst = NULL;
+#ifdef CONFIG_LATX_FLAG_REDUCTION
     if (option_flag_reduction) {
         etb_add_succ(etb, 2);
         etb->flags |= SUCC_IS_SET_MASK;
     }
+#endif
     memcpy(qm_etb, etb, sizeof(ETB));
 
     counter_ir1_tr += ir1_num;

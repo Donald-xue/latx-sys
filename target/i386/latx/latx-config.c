@@ -35,11 +35,12 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
      */
     void *etb = tr_disasm(tb);
 
-    if (option_flag_reduction) {
+#ifdef CONFIG_LATX_FLAG_REDUCTION
+    if (option_flag_reduction)
         tb_flag_reduction((void *)tb);
-    } else {
+    else
+#endif
         tb_flag((void *)tb);
-    }
 
     if (!option_lsfpu) {
         etb_check_top_in(tb, env->fpstt);
