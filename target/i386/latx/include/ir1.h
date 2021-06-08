@@ -254,7 +254,6 @@ const char * ir1_name(IR1_OPCODE op);
 const char * ir1_group_name(x86_insn_group grp);
 
 int ir1_opnd_is_x86_address(IR1_OPND *opnd);
-int ir1_opnd_is_mips_address(IR1_OPND *opnd);
 int ir1_opnd_is_sx(IR1_OPND *opnd, int bits);
 int ir1_opnd_is_zx(IR1_OPND *opd, int bits);
 int ir1_opnd_is_bx(IR1_OPND *opnd, int bits);
@@ -268,9 +267,6 @@ bool ir1_need_calculate_zf(IR1_INST *ir1);
 bool ir1_need_calculate_sf(IR1_INST *ir1);
 bool ir1_need_calculate_any_flag(IR1_INST *ir1);
 
-int ir1_opnd_is_address(IR1_OPND *opnd);
-void ir1_opnd_set_em(IR1_OPND *opnd, EXTENSION_MODE, int bits);
-
 bool ir1_translate(IR1_INST *ir1);
 
 uint8 ir1_get_eflag_inherent_use(IR1_INST *ir1);
@@ -283,8 +279,6 @@ IR1_OPND *ir1_get_opnd(IR1_INST *, int i);
 bool ir1_is_indirect_call(IR1_INST *);
 bool ir1_is_indirect_jmp(IR1_INST *);
 bool ir1_is_prefix_lock(IR1_INST *ir1);
-
-EXTENSION_MODE ir1_opnd_default_em(IR1_OPND *opnd);
 
 const char *ir1_reg_name(x86_reg reg);
 

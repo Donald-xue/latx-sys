@@ -23,43 +23,6 @@ int ir1_opnd_eb(IR1_OPND *opnd)
         return 32;
 }
 
-EXTENSION_MODE ir1_opnd_default_em(IR1_OPND *opnd)
-{
-    lsassert(ir1_opnd_is_gpr(opnd));
-
-#ifdef N64 /* validate address */
-    int x86_gpr_num = ir1_opnd_base_reg_num(opnd);
-
-    if (x86_gpr_num == esp_index)
-        return EM_X86_ADDRESS;
-    else if (x86_gpr_num == ebp_index)
-        return ZERO_EXTENSION;
-    else
-        return SIGN_EXTENSION;
-#else
-    return SIGN_EXTENSION;
-#endif
-}
-
-void ir1_opnd_set_em(IR1_OPND *opnd, EXTENSION_MODE e, int bits)
-{
-    lsassert(ir1_opnd_is_gpr(opnd));
-
-    if (bits >= 64 || e == UNKNOWN_EXTENSION) {
-        e = UNKNOWN_EXTENSION;
-        bits = 32;
-    } else if (bits < 0)
-        bits = 0;
-    else if (e == EM_X86_ADDRESS || e == EM_MIPS_ADDRESS)
-        lsassert(bits == 32);
-
-    IR2_OPND ir2_opnd = ra_alloc_gpr(ir1_opnd_base_reg_num(opnd));
-    int mips_ireg_num = ir2_opnd_base_reg_num(&ir2_opnd);
-
-    lsenv->tr_data->ireg_em[mips_ireg_num] = e;
-    lsenv->tr_data->ireg_eb[mips_ireg_num] = bits;
-}
-
 int ir1_opnd_is_sx(IR1_OPND *opnd, int bits)
 {
     EXTENSION_MODE em_value = ir1_opnd_em(opnd);
@@ -98,29 +61,10 @@ int ir1_opnd_is_ax(IR1_OPND *opnd, int bits)
     return !ir1_opnd_is_sx(opnd, bits) && !ir1_opnd_is_zx(opnd, bits);
 }
 
-int ir1_opnd_is_address(IR1_OPND *opnd)
-{
-#ifdef N64 /* validate address */
-    EXTENSION_MODE em_value = ir1_opnd_em(opnd);
-    return em_value == EM_X86_ADDRESS || em_value == EM_MIPS_ADDRESS;
-#else
-    return false;
-#endif
-}
-
 int ir1_opnd_is_x86_address(IR1_OPND *opnd)
 {
 #ifdef N64 /* validate address */
     return ir1_opnd_em(opnd) == EM_X86_ADDRESS;
-#else
-    return false;
-#endif
-}
-
-int ir1_opnd_is_mips_address(IR1_OPND *opnd)
-{
-#ifdef N64 /* validate address */
-    return ir1_opnd_em(opnd) == EM_MIPS_ADDRESS;
 #else
     return false;
 #endif
