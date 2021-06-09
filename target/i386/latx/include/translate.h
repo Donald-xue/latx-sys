@@ -1146,7 +1146,6 @@ void generate_eflag_calculation(IR2_OPND, IR2_OPND, IR2_OPND, IR1_INST *,
                                 bool has_address);
 
 void em_convert_gpr_to_addrx(IR1_OPND *);
-void em_recognize_address(IR1_INST *);
 int em_validate_address(int);
 
 /* extern ADDR tb_look_up_native; */

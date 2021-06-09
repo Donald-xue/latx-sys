@@ -173,7 +173,6 @@ IR1_INST *tr_init_for_each_ir1_in_tb(IR1_INST *ir1_list, int ir1_nr, int index)
 #ifdef CONFIG_LATX_FLAG_PATTERN
     fp_init_skipped_flags(pir1);
 #endif
-    em_recognize_address(pir1);
     if (index == ir1_nr - 1)
         tr_adjust_em();
 
