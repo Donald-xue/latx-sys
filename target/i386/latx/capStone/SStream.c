@@ -31,17 +31,20 @@ void SStream_Init(SStream *ss)
 void SStream_concat0(SStream *ss, const char *s)
 {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	unsigned int len = (unsigned int) strlen(s);
 
 	memcpy(ss->buffer + ss->index, s, len);
 	ss->index += len;
 	ss->buffer[ss->index] = '\0';
 #endif
+#endif
 }
 
 void SStream_concat(SStream *ss, const char *fmt, ...)
 {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	va_list ap;
 	int ret;
 
@@ -49,6 +52,7 @@ void SStream_concat(SStream *ss, const char *fmt, ...)
 	ret = cs_vsnprintf(ss->buffer + ss->index, sizeof(ss->buffer) - (ss->index + 1), fmt, ap);
 	va_end(ap);
 	ss->index += ret;
+#endif
 #endif
 }
 

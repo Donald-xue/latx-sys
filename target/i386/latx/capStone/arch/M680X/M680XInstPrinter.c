@@ -101,7 +101,9 @@ static name_map s_group_names[] = {
 static void printRegName(cs_struct *handle, SStream *OS, unsigned int reg)
 {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	SStream_concat(OS, handle->reg_name((csh)handle, reg));
+#endif
 #endif
 }
 
@@ -109,7 +111,9 @@ static void printInstructionName(cs_struct *handle, SStream *OS,
 	unsigned int insn)
 {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	SStream_concat(OS, handle->insn_name((csh)handle, insn));
+#endif
 #endif
 }
 

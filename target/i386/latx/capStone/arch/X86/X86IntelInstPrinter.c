@@ -356,7 +356,9 @@ static void printRoundingControl(MCInst *MI, unsigned Op, SStream *O)
 static const char *getRegisterName(unsigned RegNo);
 static void printRegName(SStream *OS, unsigned RegNo)
 {
+#ifdef CONFIG_LATX_DEBUG
 	SStream_concat0(OS, getRegisterName(RegNo));
+#endif
 }
 
 // for MASM syntax, 0x123 = 123h, 0xA123 = 0A123h
@@ -375,6 +377,7 @@ static bool need_zero_prefix(uint64_t imm)
 
 static void printImm(MCInst *MI, SStream *O, int64_t imm, bool positive)
 {
+#ifdef CONFIG_LATX_DEBUG
 	if (positive) {
 		// always print this number in positive form
 		if (MI->csh->syntax == CS_OPT_SYNTAX_MASM) {
@@ -474,6 +477,7 @@ static void printImm(MCInst *MI, SStream *O, int64_t imm, bool positive)
 			}
 		}
 	}
+#endif
 }
 
 // local printOperand, without updating public operands
@@ -658,7 +662,9 @@ static void printMemOffset(MCInst *MI, unsigned Op, SStream *O)
 
 	if (MI->csh->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		uint8_t access[6];
+#endif
 #endif
 
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_MEM;
@@ -670,8 +676,10 @@ static void printMemOffset(MCInst *MI, unsigned Op, SStream *O)
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].mem.disp = 0;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 	}
 
@@ -781,11 +789,13 @@ void X86_Intel_printInst(MCInst *MI, SStream *O, void *Info)
 	}
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	// Try to print any aliases first.
 	mnem = printAliasInstr(MI, O, Info);
 	if (mnem)
 		cs_mem_free(mnem);
 	else
+#endif
 #endif
 		printInstruction(MI, O, Info);
 
@@ -862,7 +872,9 @@ static void printPCRelImm(MCInst *MI, unsigned OpNo, SStream *O)
 
 		if (MI->csh->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 			uint8_t access[6];
+#endif
 #endif
 
 			MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_IMM;
@@ -876,8 +888,10 @@ static void printPCRelImm(MCInst *MI, unsigned OpNo, SStream *O)
 			MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].imm = imm;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 			get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 			MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 
 			MI->flat_insn->detail->x86.op_count++;
@@ -901,7 +915,9 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].mem.base = reg;
 			} else {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 				uint8_t access[6];
+#endif
 #endif
 
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_REG;
@@ -909,8 +925,10 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].size = MI->csh->regsize_map[reg];
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 				get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 
 				MI->flat_insn->detail->x86.op_count++;
@@ -985,7 +1003,9 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].mem.disp = imm;
 			} else {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 				uint8_t access[6];
+#endif
 #endif
 
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_IMM;
@@ -1003,8 +1023,10 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].imm = imm;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 				get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 				MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 
 				MI->flat_insn->detail->x86.op_count++;
@@ -1025,7 +1047,9 @@ static void printMemReference(MCInst *MI, unsigned Op, SStream *O)
 
 	if (MI->csh->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		uint8_t access[6];
+#endif
 #endif
 
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_MEM;
@@ -1037,8 +1061,10 @@ static void printMemReference(MCInst *MI, unsigned Op, SStream *O)
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].mem.disp = 0;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 	}
 
