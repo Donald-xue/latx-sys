@@ -2497,6 +2497,7 @@ void X86_get_insn_id(cs_struct *h, cs_insn *insn, unsigned int id)
 
 		if (h->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 			memcpy(insn->detail->regs_read, insns[i].regs_use, sizeof(insns[i].regs_use));
 			insn->detail->regs_read_count = (uint8_t)count_positive(insns[i].regs_use);
 
@@ -3610,4 +3611,5 @@ uint8_t X86_immediate_size(unsigned int id, uint8_t *enc_size)
 	return 0;
 }
 
+#endif
 #endif
