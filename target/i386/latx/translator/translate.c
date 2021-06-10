@@ -140,7 +140,7 @@ void tr_init(void *tb)
     /* top in translator */
     if (tb != NULL) {
         if (!option_lsfpu) {
-            t->curr_top = etb_get_top_in(qm_tb_get_extra_tb(tb));
+            t->curr_top = etb_get_top_in(tb);
             assert(t->curr_top != -1);
         }
 #ifdef CONFIG_LATX_FLAG_PATTERN
@@ -2212,7 +2212,7 @@ bool tr_ir2_generate(void *tb, void *petb)
     }
 
     if (!option_lsfpu) {
-        etb_check_top_out(qm_tb_get_extra_tb(tb), lsenv->tr_data->curr_top);
+        etb_check_top_out(tb, lsenv->tr_data->curr_top);
     }
 
     return true;
@@ -2783,13 +2783,11 @@ static int generate_native_jmp_glue(void *code_buf, int n)
 
     if (!option_lsfpu) {
         /* tb->extra_tb._top_out */
-        la_append_ir2_opnd2i_em(
-                LISA_LD_BU, tmp_opnd, tb,
-                offsetof(TranslationBlock, extra_tb) + offsetof(ETB, _top_out));
+        la_append_ir2_opnd2i_em(LISA_LD_BU, tmp_opnd, tb,
+                                offsetof(TranslationBlock, _top_out));
         /* next_tb->extra_tb._top_in */
-        la_append_ir2_opnd2i_em(
-                LISA_LD_BU, v0_opnd, ret_opnd,
-                offsetof(TranslationBlock, extra_tb) + offsetof(ETB, _top_in));
+        la_append_ir2_opnd2i_em(LISA_LD_BU, v0_opnd, ret_opnd,
+                                offsetof(TranslationBlock, _top_in));
 
         /* calculate top_bias, store rotate step in arg1 */
         la_append_ir2_opnd3_em(LISA_SUB_W, step_opnd, tmp_opnd, v0_opnd);
@@ -3195,7 +3193,7 @@ void tr_gen_top_mode_init(void)
 void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                                    TranslationBlock *next_tb)
 {
-    if (option_lsfpu || tb->extra_tb._top_out == next_tb->extra_tb._top_in) {
+    if (option_lsfpu || tb->_top_out == next_tb->_top_in) {
         tb_set_jmp_target(tb, n, (uintptr_t)next_tb->tc.ptr);
     } else {
         if (option_dump)

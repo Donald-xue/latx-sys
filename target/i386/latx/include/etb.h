@@ -47,41 +47,17 @@ static inline int etb_ir1_num(ETB *etb)
     return etb->_ir1_num;
 }
 
-static inline int8 etb_get_top_in(ETB *etb)
+static inline int8 etb_get_top_in(struct TranslationBlock *tb)
 {
-    return etb->_top_in;
-}
-
-static inline void etb_set_top_in(ETB *etb, int8 top_in)
-{
-    lsassert(top_in >= 0 && top_in <= 7);
-    etb->_top_in = top_in;
-}
-
-static inline int8 etb_get_top_out(ETB *etb)
-{
-    return etb->_top_out;
-}
-
-static inline void etb_set_top_out(ETB *etb, int8 top_out)
-{
-    lsassert(top_out >= 0 && top_out <= 7);
-    etb->_top_out = top_out;
-}
-
-static inline int8 etb_get_top_increment(ETB *etb)
-{
-    return etb->_top_increment;
+    return tb->_top_in;
 }
 
 static inline void etb_check_top_in(struct TranslationBlock *tb, int top_in)
 {
-    ETB *etb = &tb->extra_tb;
-
-    if (etb->_top_in == -1) {
-        lsassert(etb->_top_out == -1);
+    if (tb->_top_in == -1) {
+        lsassert(tb->_top_out == -1);
         lsassert(top_in >= 0 && top_in <= 7);
-        etb->_top_in = top_in;
+        tb->_top_in = top_in;
     /* } else {
      *     assertm(top_in() == top, "\n%s: TB<0x%x>: top_in<%d> does not equal
      *     top<%d>\n\
@@ -92,13 +68,13 @@ static inline void etb_check_top_in(struct TranslationBlock *tb, int top_in)
     }
 }
 
-static inline void etb_check_top_out(ETB *etb, int top_out)
+static inline void etb_check_top_out(struct TranslationBlock *tb, int top_out)
 {
-    lsassert(etb->_top_in != -1);
+    lsassert(tb->_top_in != -1);
 
-    if (etb->_top_out == -1) {
+    if (tb->_top_out == -1) {
         lsassert(top_out >= 0 && top_out <= 7);
-        etb->_top_out = top_out;
+        tb->_top_out = top_out;
     /* } else {
      *     assertm(top_out() == top, "\n%s: TB<0x%x>: top_out<%d> does not equal
      *     top<%d>\n\

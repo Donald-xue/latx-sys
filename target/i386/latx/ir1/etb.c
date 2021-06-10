@@ -33,8 +33,6 @@ void etb_qht_init(void)
 static void etb_init(ETB *etb)
 {
     memset(etb, 0, sizeof(ETB));
-    etb->_top_out = -1;
-    etb->_top_in = -1;
 }
 
 static ETB *fast_table[1 << 10];

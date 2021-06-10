@@ -467,9 +467,6 @@ typedef struct ExtraBlock{
     int64 _execution_times; /* execution time of this TB */
 
     /* historical field */
-    int8 _top_in;
-    int8 _top_out;
-    int8 _top_increment;
     void *next_tb[2];
     uint16_t size;
 } ETB;
@@ -543,6 +540,8 @@ struct TranslationBlock {
     uintptr_t jmp_list_next[2];
     uintptr_t jmp_dest[2];
 #ifdef CONFIG_LATX
+    int8 _top_in;
+    int8 _top_out;
     /* remember to free these memory when QEMU recycle one TB */
     ETB extra_tb;
 #endif

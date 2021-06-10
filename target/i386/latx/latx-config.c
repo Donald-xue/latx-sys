@@ -188,8 +188,8 @@ void latx_before_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb)
 {
     if (!option_lsfpu) {
         lsassert(lsenv_get_top_bias(lsenv) == 0);
-        if (env->fpstt != etb_get_top_in(&tb->extra_tb)) {
-            rotate_fpu_to_top(etb_get_top_in(&tb->extra_tb));
+        if (env->fpstt != etb_get_top_in(tb)) {
+            rotate_fpu_to_top(etb_get_top_in(tb));
         }
     }
 }
@@ -209,13 +209,11 @@ void latx_after_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb)
             //lsenv_set_last_executed_tb(lsenv,(ADDR)last_executed_tb);
         }
 #endif
-        ETB *etb;
         if (last_executed_tb) {
-            etb = &last_executed_tb->extra_tb;
+            env->fpstt = last_executed_tb->_top_out;
         } else {
-            etb = &tb->extra_tb;
+            env->fpstt = tb->_top_out;
         }
-        env->fpstt = etb->_top_out;
         if (lsenv_get_top_bias(lsenv) != 0) {
             rotate_fpu_to_bias(0);
         }

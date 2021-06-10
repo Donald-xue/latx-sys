@@ -1934,6 +1934,8 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->flags = flags;
     tb->cflags = cflags;
     tb->trace_vcpu_dstate = *cpu->trace_dstate;
+    tb->_top_out = -1;
+    tb->_top_in = -1;
 #ifndef CONFIG_LATX
     /* TODO: why? */
     tcg_ctx->tb_cflags = cflags;

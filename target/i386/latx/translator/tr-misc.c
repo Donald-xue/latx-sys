@@ -878,9 +878,9 @@ bool translate_ret_with_ss_opt(IR1_INST *pir1) {
     IR2_OPND rotate_ret_addr = ra_alloc_dbt_arg2();
     IR2_OPND label_no_rotate = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd2i_em(LISA_LD_BU, top_out, last_executed_tb, 
-        offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_out));
+        offsetof(TranslationBlock,_top_out));
     la_append_ir2_opnd2i_em(LISA_LD_BU, top_in, supposed_tb, 
-        offsetof(TranslationBlock, extra_tb) + offsetof(ETB,_top_in));
+        offsetof(TranslationBlock, _top_in));
     la_append_ir2_opnd3(LISA_BEQ, top_out, top_in, label_no_rotate);
     ra_free_temp(supposed_tb);
     //6.1 top_out != top_in, rotate fpu

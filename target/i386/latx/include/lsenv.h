@@ -267,11 +267,4 @@ static inline int lsenv_offset_of_tr_data(ENV *lsenv)
     return (ADDR)(&lsenv->tr_data) - (ADDR)lsenv;
 }
 
-static inline int lsenv_get_last_executed_tb_top_out(ENV *lsenv)
-{
-    ETB *etb =
-        &((TranslationBlock *)(lsenv_get_last_executed_tb(lsenv)))->extra_tb;
-    return etb->_top_out;
-}
-
 #endif
