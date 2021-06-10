@@ -2658,9 +2658,7 @@ static int generate_native_jmp_glue(void *code_buf, int n)
     if (n == 0 || n == 1) {
         /* load tb->extra_tb.next_tb[n] into v0. */
         la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, ret_opnd, tb,
-                          offsetof(TranslationBlock, extra_tb) +
-                              offsetof(struct ExtraBlock, next_tb) +
-                              n * sizeof(void *));
+                    offsetof(TranslationBlock, next_tb) + n * sizeof(void *));
     } else {
 
         IR2_OPND label_next_tb_exist = ir2_opnd_new_type(IR2_OPND_LABEL);
@@ -3201,7 +3199,7 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                     tb->pc, n ? "jmp" : "fallthrough", next_tb, next_tb->tc.ptr,
                     next_tb->pc);
         lsassert(next_tb != NULL);
-        tb->extra_tb.next_tb[n] = next_tb;
+        tb->next_tb[n] = next_tb;
         if (n == 0)
             tb_set_jmp_target(tb, 0, native_jmp_glue_0);
         else
