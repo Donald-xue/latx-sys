@@ -1342,6 +1342,9 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
                                                  IR2_OPND mem_opnd, int mem_imm)
 {
     /* load 80bit float from memory and convert it to 64bit float */
+    int itemp_index = lsenv->tr_data->itemp_num;
+    int ftemp_index = lsenv->tr_data->ftemp_num;
+
     IR2_OPND ir2_sign_exp = ra_alloc_ftemp();
     IR2_OPND ir2_fraction = ra_alloc_ftemp();
 
@@ -1372,6 +1375,9 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
 
     ra_free_temp(ir2_sign_exp);
     ra_free_temp(ir2_fraction);
+    lsenv->tr_data->itemp_num = itemp_index;
+    lsenv->tr_data->ftemp_num = ftemp_index;
+
 }
 
 /**
@@ -1603,6 +1609,8 @@ void store_singles_to_ir2_pack(IR2_OPND single0, IR2_OPND single1,
 
 void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
+    int ftemp_index = lsenv->tr_data->ftemp_num;
     IR2_OPND ir2_sign_exp = ra_alloc_ftemp();
     IR2_OPND ir2_fraction = ra_alloc_ftemp();
     IR2_OPND itemp = ra_alloc_itemp();
@@ -1633,6 +1641,8 @@ void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd)
     ra_free_temp(ir2_fraction);
     ra_free_temp(itemp);
     ra_free_temp(itemp1);
+    lsenv->tr_data->itemp_num = itemp_index;
+    lsenv->tr_data->ftemp_num = ftemp_index;
 }
 
 static void store_freg_to_ir1_mem(IR2_OPND opnd2, IR1_OPND *opnd1,

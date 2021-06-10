@@ -4,17 +4,45 @@
 #include "flag-pattern.h"
 
 typedef struct {
-    int16 virtual_id;
-    int8 physical_id;
+    bool is_used;/* don't use now, may use for free in the future*/
+    int16 physical_id;
 } TEMP_REG_STATUS;
 
+/* itemp */
+#define ITEMP0_NUM      4
+#define ITEMP1_NUM      5
+#define ITEMP2_NUM      6
+#define ITEMP3_NUM      7
+#define ITEMP4_NUM      8
+#define ITEMP5_NUM      9
+#define ITEMP6_NUM      10
+#define ITEMP7_NUM      11
+#define ITEMP8_NUM      12
+#define ITEMP9_NUM      13
+/* ftemp */
+#define FTEMP0_NUM      9
+#define FTEMP1_NUM      10
+#define FTEMP2_NUM      11
+#define FTEMP3_NUM      12
+#define FTEMP4_NUM      13
+#define FTEMP5_NUM      14
+#define FTEMP6_NUM      15
+
 static const TEMP_REG_STATUS itemp_status_default[] = {
-    {0, 4}, {0, 5},  {0, 6},  {0, 7},  {0, 8},
-    {0, 9}, {0, 10}, {0, 11}, {0, 12}, {0, 13}};
+    {false, ITEMP0_NUM}, {false, ITEMP1_NUM},
+    {false, ITEMP2_NUM}, {false, ITEMP3_NUM},
+    {false, ITEMP4_NUM}, {false, ITEMP5_NUM},
+    {false, ITEMP6_NUM}, {false, ITEMP7_NUM},
+    {false, ITEMP8_NUM}, {false, ITEMP9_NUM}
+};
 
 static const TEMP_REG_STATUS ftemp_status_default[] = {
-    {0, 9}, {0, 10}, {0, 11}, {0, 12}, {0, 13}, {0, 14}, {0, 15},
+    {false, FTEMP0_NUM}, {false, FTEMP1_NUM},
+    {false, FTEMP2_NUM}, {false, FTEMP3_NUM},
+    {false, FTEMP4_NUM}, {false, FTEMP5_NUM},
+    {false, FTEMP6_NUM}
 };
+
 
 #define itemp_status_num \
     (sizeof(itemp_status_default) / sizeof(TEMP_REG_STATUS))

@@ -138,8 +138,8 @@ void tr_init(void *tb)
 
     /* label number */
     t->label_num = 0;
-    t->itemp_num = 32;
-    t->ftemp_num = 32;
+    t->itemp_num = 0;
+    t->ftemp_num = 0;
 
     /* top in translator */
     if (tb != NULL) {
@@ -219,8 +219,8 @@ void tr_fini(bool check_the_extension)
 
     /* label number */
     t->label_num = 0;
-    t->itemp_num = 32;
-    t->ftemp_num = 32;
+    t->itemp_num = 0;
+    t->ftemp_num = 0;
 
     /* top in translator */
     t->curr_top = 0;
@@ -3617,6 +3617,7 @@ IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
 {
     IR2_OPND label_lat_lock = ir2_opnd_new_type(IR2_OPND_LABEL);
     IR2_OPND lat_lock_addr = ra_alloc_itemp();
+    int itemp_num = lsenv->tr_data->itemp_num;
     IR2_OPND lat_lock_val= ra_alloc_itemp();
     ir2_opnd_set_em(&lat_lock_addr, ZERO_EXTENSION, 64);
 	//compute lat_lock offset by add (mem_addr+imm)[9:6]
@@ -3635,6 +3636,7 @@ IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
     la_append_ir2_opnd3(LISA_BEQ, lat_lock_val, zero_ir2_opnd, label_lat_lock);
 
     ra_free_temp(lat_lock_val);
+    lsenv->tr_data->itemp_num = itemp_num;
 
 	return lat_lock_addr;
 }

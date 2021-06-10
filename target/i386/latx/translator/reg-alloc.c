@@ -127,10 +127,13 @@ IR2_OPND ra_alloc_xmm(int num) {
 
 IR2_OPND ra_alloc_itemp(void)
 {
-    int itemp_num = ++(lsenv->tr_data->itemp_num);
+    int itemp_index = (lsenv->tr_data->itemp_num)++;
     IR2_OPND ir2_opnd;
 
-    lsassert(itemp_num < IR2_ITEMP_MAX);
+    lsassert(itemp_index < 10);
+
+    int itemp_num = itemp_status_default[itemp_index%10].physical_id;
+
     lsenv->tr_data->ireg_em[itemp_num] = UNKNOWN_EXTENSION;
     lsenv->tr_data->ireg_eb[itemp_num] = 32;
 
@@ -140,7 +143,11 @@ IR2_OPND ra_alloc_itemp(void)
 
 IR2_OPND ra_alloc_ftemp(void)
 {
-    int ftemp_num = ++(lsenv->tr_data->ftemp_num);
+    int ftemp_index = (lsenv->tr_data->ftemp_num)++;
+
+    lsassert(ftemp_index < 7);
+
+    int ftemp_num = ftemp_status_default[ftemp_index%7].physical_id;
     return ir2_opnd_new(IR2_OPND_FREG, ftemp_num);
 }
 
@@ -149,7 +156,13 @@ IR2_OPND ra_alloc_itemp_internal(void) { return ra_alloc_itemp(); }
 IR2_OPND ra_alloc_ftemp_internal(void) { return ra_alloc_ftemp(); }
 
 void ra_free_temp(IR2_OPND opnd) {}
-void ra_free_all_internal_temp(void) {}
+void ra_free_all_internal_temp(void) {
+    /* reset itemp_num*/
+    TRANSLATION_DATA *tr_data = lsenv->tr_data;
+
+    tr_data->itemp_num = 0;
+    tr_data->ftemp_num = 0;
+}
 void ra_free_itemp(int i) {}
 void ra_free_ftemp(int i) {}
 

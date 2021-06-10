@@ -4,7 +4,7 @@
 #include "common.h"
 #include "la-ir2.h"
 
-#define IR2_ITEMP_MAX 4096
+#define IR2_ITEMP_MAX 32
 
 void ir2_opnd_build(IR2_OPND *, IR2_OPND_TYPE, int value);
 void ir2_opnd_build2(IR2_OPND *, IR2_OPND_TYPE, int base, int16 offset);

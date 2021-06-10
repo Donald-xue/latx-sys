@@ -3342,17 +3342,23 @@ int32 ir2_opnd_label_id(IR2_OPND *opnd) { return opnd->_label_id; }
 
 int ir2_opnd_is_itemp(IR2_OPND *opnd)
 {
-    return ir2_opnd_is_ireg(opnd) && ir2_opnd_base_reg_num(opnd) > 31;
+    return ir2_opnd_is_ireg(opnd) &&
+           (ir2_opnd_base_reg_num(opnd) >= ITEMP0_NUM) &&
+           (ir2_opnd_base_reg_num(opnd) <= ITEMP9_NUM);
 }
 
 int ir2_opnd_is_ftemp(IR2_OPND *opnd)
 {
-    return ir2_opnd_is_freg(opnd) && ir2_opnd_base_reg_num(opnd) > 31;
+    return ir2_opnd_is_freg(opnd) &&
+           (ir2_opnd_base_reg_num(opnd) >= FTEMP0_NUM) &&
+           (ir2_opnd_base_reg_num(opnd) <= FTEMP6_NUM);
 }
 
 int ir2_opnd_is_mem_base_itemp(IR2_OPND *opnd)
 {
-    return ir2_opnd_is_mem(opnd) && ir2_opnd_base_reg_num(opnd) > 31;
+    return ir2_opnd_is_mem(opnd) &&
+           (ir2_opnd_base_reg_num(opnd) > 3) &&
+           (ir2_opnd_base_reg_num(opnd) < 14);
 }
 
 int ir2_opnd_is_mem(IR2_OPND *opnd) { return opnd->_type == IR2_OPND_MEM; }

@@ -276,6 +276,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 
 static void generate_pf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
     static char pf_table[256] = {
         4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 0, 4, 4, 0, 4, 0,
         0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4,
@@ -303,10 +304,12 @@ static void generate_pf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, pf_opnd, 0x2);
     ra_free_temp(pf_opnd);
     ra_free_temp(low_byte);
+    lsenv->tr_data->itemp_num = itemp_index;
 }
 
 static void generate_af(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
     IR2_OPND af_opnd = ra_alloc_itemp();
     if (ir2_opnd_is_imm(&src1)) {
         la_append_ir2_opnd2i_em(LISA_XORI, af_opnd, src0, src1._imm16);
@@ -317,10 +320,14 @@ static void generate_af(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd2i_em(LISA_ANDI, af_opnd, af_opnd, 0x10);
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, af_opnd, 0x4);
     ra_free_temp(af_opnd);
+    lsenv->tr_data->itemp_num = itemp_index;
+
 }
 
 static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
+
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
 
     int operation_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
@@ -364,12 +371,16 @@ static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, temp_eflags, 0x8);
     if (!extended_dest_opnd_freed)
-        ra_free_temp(extended_dest_opnd);
+    ra_free_temp(extended_dest_opnd);
     ra_free_temp(temp_eflags);
+    lsenv->tr_data->itemp_num = itemp_index;
+
 }
 
 static void generate_sf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
+
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
     int operation_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
     IR2_OPND sf_opnd = ra_alloc_itemp();
@@ -381,10 +392,14 @@ static void generate_sf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, sf_opnd, 0x10);
     ra_free_temp(sf_opnd);
+    lsenv->tr_data->itemp_num = itemp_index;
+
 }
 
 static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
+
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
     /* IR2_OPND eflags_opnd = ra_alloc_eflags(); */
     switch (ir1_opcode(pir1)) {
@@ -838,6 +853,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     default:
         break;
     }
+    lsenv->tr_data->itemp_num = itemp_index;
 
     /* lsenv->tr_data->curr_tb->dump(); */
     lsassertm(0, "%s for %s is not implemented\n", __FUNCTION__,
