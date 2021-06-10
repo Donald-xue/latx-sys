@@ -181,6 +181,7 @@ bool translate_movsx(IR1_INST *pir1)
 
 static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
 {
+    int itemp_index = lsenv->tr_data->itemp_num;
     IR2_OPND df_opnd = ra_alloc_itemp();
     IR2_OPND eflags_opnd = ra_alloc_eflags();
     la_append_ir2_opnd2i_em(LISA_ANDI, df_opnd, eflags_opnd, 0x400);
@@ -202,6 +203,7 @@ static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
     IR2_OPND tmp_step = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_SRAI_W, tmp_step, df_opnd, bits);
     la_append_ir2_opnd2i_em(LISA_ADDI_W, *p_step_opnd, tmp_step, 0 - bytes);
+    lsenv->tr_data->itemp_num = itemp_index;
 
     ra_free_temp(df_opnd);
     ra_free_temp(tmp_step);
@@ -380,6 +382,7 @@ bool translate_cmps(IR1_INST *pir1)
 
     /* 4. loop ends? */
     if (ir1_prefix(pir1) != 0) {
+        int itemp_index = lsenv->tr_data->itemp_num;
         la_append_ir2_opnd2i_em(LISA_ADDI_W, ecx_opnd, ecx_opnd, -1);
 
         /* 4.1. loop ends when ecx==0 */
@@ -401,6 +404,9 @@ bool translate_cmps(IR1_INST *pir1)
          */
         la_append_ir2_opnd3_em(LISA_OR, condition, condition, condition2);
         la_append_ir2_opnd3(LISA_BEQ, condition, zero_ir2_opnd, label_loop_begin);
+
+        lsenv->tr_data->itemp_num = itemp_index;
+
         ra_free_temp(condition);
         ra_free_temp(condition2);
     }
