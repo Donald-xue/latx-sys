@@ -15,10 +15,6 @@ typedef enum {
     TB_TYPE_JUMPIN,
 } TB_TYPE;
 
-#define ETB_ARRAY_SIZE (1<<19)
-extern ETB *etb_array[ETB_ARRAY_SIZE];
-extern int etb_num;
-
 /* func to access EXTRA TB */
 static inline ETB *qm_tb_get_extra_tb(void *tb)
 {

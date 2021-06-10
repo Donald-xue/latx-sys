@@ -464,7 +464,6 @@ typedef struct ExtraBlock{
     uint8 flags;
 #define SUCC_IS_SET_MASK 0x01
 #define PENDING_USE_IS_SET_MASK 0x02
-    int64 _execution_times; /* execution time of this TB */
 
     /* historical field */
     uint16_t size;

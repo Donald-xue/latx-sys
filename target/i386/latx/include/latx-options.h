@@ -20,7 +20,6 @@ extern int option_check;
 extern int option_tb_link;
 extern int option_shadow_stack;
 extern int option_lsfpu;
-extern int option_profile;
 extern int option_xmm128map;
 extern int option_ibtc;
 

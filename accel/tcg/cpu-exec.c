@@ -210,7 +210,6 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
 #endif
 #ifdef CONFIG_LATX_DEBUG
     latx_after_exec_trace_tb(env, itb);
-    latx_profile();
 #endif
     cpu->can_do_io = 1;
     /*
@@ -495,7 +494,7 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
 #ifdef CONFIG_LATX
         /* set tb field in etb */
         ETB *etb;
-        if (option_shadow_stack || option_profile) {
+        if (option_shadow_stack) {
             etb = etb_find(pc);
             etb->tb = tb;
         }

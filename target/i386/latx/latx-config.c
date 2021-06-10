@@ -177,11 +177,6 @@ void latx_after_exec_trace_tb(CPUArchState *env, struct TranslationBlock *tb)
                 (void *)(unsigned long)tb->pc, (void *)tb->tc.ptr);
 }
 
-void latx_profile(void)
-{
-    if (option_profile)
-        context_switch_time++;
-}
 #endif
 
 void latx_before_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb)
@@ -255,14 +250,6 @@ static void __attribute__((__constructor__)) latx_init(void)
     etb_qht = &etb_qht_real;
     etb_qht_init();
     ss_init(&shadow_stack);
-}
-
-void latx_exit(void)
-{
-    if (option_profile) {
-        profile_generate();
-        profile_dump(10);
-    }
 }
 
 static __thread ENV lsenv_real;

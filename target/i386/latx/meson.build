@@ -47,7 +47,6 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: files(
   'mem.c',
   'latx-config.c',
   'latx-options.c',
-  'latx-profile.c'
 ))
 
 i386_ss.add(when: 'CONFIG_LATX', if_true: capStone)

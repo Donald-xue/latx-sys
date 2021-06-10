@@ -622,7 +622,6 @@ static void siglongjmp_cpu_jmp_env(void)
         (TranslationBlock *)lsenv_get_last_executed_tb(lsenv);
 #ifdef CONFIG_LATX_DEBUG
     latx_after_exec_trace_tb(cpu, last_tb);
-    latx_profile();
 #endif
     latx_after_exec_rotate_fpu(cpu, last_tb);
 

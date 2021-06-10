@@ -358,9 +358,6 @@ void *tr_disasm(void *tb)
     ADDRX pc = qm_tb_get_pc(tb);
     ETB *qm_etb = qm_tb_get_extra_tb(tb);
     ETB *etb = etb_find(pc);
-    /* update profile info */
-    etb_array[etb_num++] = etb;
-    lsassert(etb_num < ETB_ARRAY_SIZE);
     /* get ir1 instructions */
     IR1_INST *ir1_list = etb->_ir1_instructions;
     int ir1_num = etb->_ir1_num;
@@ -2162,19 +2159,6 @@ void tr_dump_current_ir2(void)
 
 bool tr_ir2_generate(void *tb, void *petb)
 {
-    if (option_profile) {
-        ETB *etb = (ETB *)petb;
-        void *p_execution_times = &etb->_execution_times;
-        IR2_OPND exec_count_addr_opnd = ra_alloc_itemp();
-        load_ireg_from_addr(exec_count_addr_opnd, (ADDR)p_execution_times);
-        IR2_OPND exec_count_value_opnd = ra_alloc_itemp();
-        la_append_ir2_opnd2i_em(LISA_LD_D, exec_count_value_opnd, exec_count_addr_opnd, 0);
-        la_append_ir2_opnd2i_em(LISA_ADDI_D, exec_count_value_opnd, exec_count_value_opnd, 1);
-        la_append_ir2_opnd2i_em(LISA_ST_D, exec_count_value_opnd, exec_count_addr_opnd, 0);
-        ra_free_temp(exec_count_addr_opnd);
-        ra_free_temp(exec_count_value_opnd);
-    }
-
     int i = 0;
 
     TRANSLATION_DATA *t = lsenv->tr_data;
@@ -2695,18 +2679,6 @@ static int generate_native_jmp_glue(void *code_buf, int n)
             la_append_ir2_opnd3(LISA_BEQ, ret_opnd, zero_ir2_opnd, label_miss);
             la_append_ir2_opnd2i(LISA_LD_D, addr_opnd, ret_opnd, 0); //PC
             la_append_ir2_opnd3(LISA_BEQ, addr_opnd, tmp_opnd, label_hit);
-        }
-
-        if (option_profile) {
-            void *p_execution_times = &ibtc_hit_cnt;
-            IR2_OPND exec_count_addr_opnd = ra_alloc_itemp();
-            load_ireg_from_addr(exec_count_addr_opnd, (ADDR)p_execution_times);
-            IR2_OPND exec_count_value_opnd = ra_alloc_itemp();
-            la_append_ir2_opnd2i_em(LISA_LD_D, exec_count_value_opnd, exec_count_addr_opnd, 0);
-            la_append_ir2_opnd2i_em(LISA_ADDI_D, exec_count_value_opnd, exec_count_value_opnd, 1);
-            la_append_ir2_opnd2i_em(LISA_ST_D, exec_count_value_opnd, exec_count_addr_opnd, 0);
-            ra_free_temp(exec_count_addr_opnd);
-            ra_free_temp(exec_count_value_opnd);
         }
 
         if(option_ibtc) {

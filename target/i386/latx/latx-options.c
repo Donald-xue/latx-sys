@@ -19,7 +19,6 @@ int option_check;
 int option_tb_link;
 int option_shadow_stack;
 int option_lsfpu;
-int option_profile;
 int option_xmm128map;
 int option_ibtc;
 

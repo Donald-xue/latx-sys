@@ -304,11 +304,6 @@ static void handle_arg_latx_lsfpu(const char *arg)
     option_lsfpu = 1;
 }
 
-static void handle_arg_latx_profile(const char* arg)
-{
-    option_profile = 1;
-}
-
 static void handle_arg_latx_xmm128map(const char* arg)
 {
     option_xmm128map = 1;
@@ -539,8 +534,6 @@ static const struct qemu_argument arg_table[] = {
     "",                 "LATX-enable-shadowstack-optimization"},
     {"latx-lsfpu",     "",                 false, handle_arg_latx_lsfpu,
     "",                 "LATX-enable-loongson-fpu-optimization"},
-    {"latx-profile",     "",                 false, handle_arg_latx_profile,
-    "",                 "LATX-get-profile"},
     {"latx-xmm128map",     "",                 false, handle_arg_latx_xmm128map,
     "",                 "LATX-map-xmm-to-128bit-reg"},
     {"latx-ibtc",     "",                 false, handle_arg_latx_ibtc,

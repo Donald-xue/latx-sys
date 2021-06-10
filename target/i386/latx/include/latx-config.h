@@ -22,8 +22,6 @@ void trace_tb_execution(struct TranslationBlock *tb);
 void latx_before_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb);
 void latx_after_exec_rotate_fpu(CPUArchState *env, struct TranslationBlock *tb);
 struct TranslationBlock *latx_tb_find(void *cpu_state, ADDRX pc);
-void latx_exit(void);
-
 
 void latx_lsenv_init(CPUArchState *env);
 void latx_set_tls_ibtc_table(CPUArchState *env);

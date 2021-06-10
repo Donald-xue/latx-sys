@@ -4,10 +4,6 @@
 
 /* global etb_qht defined here */
 QHT *etb_qht;
-/* global etb_array defined here */
-ETB *etb_array[ETB_ARRAY_SIZE];
-/* global etb_num defined here */
-int etb_num;
 
 static bool etb_lookup_custom(const void *ap, const void *bp)
 {
