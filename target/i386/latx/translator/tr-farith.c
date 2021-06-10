@@ -572,18 +572,21 @@ bool translate_fsin(IR1_INST *pir1)
 #ifdef USE_FSIN_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fsin);
 #else
-    /* save regs before call helper func */
-    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
-                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
-
      /*
      * For LA $fa 0 is defined as argument and return value reg.
      * To avoid reg destroied, move argument setting after storing
      * regs to env.
       */
     IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
+    IR2_OPND param_8 = ra_alloc_ftemp();
     IR2_OPND st0_opnd = ra_alloc_st(0);
-    la_append_ir2_opnd2(LISA_FMOV_D, param_0, st0_opnd);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
+
+    /* save regs before call helper func */
+    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
+
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
 
     /* Call the function */
     tr_gen_call_to_helper((ADDR)sin);
@@ -620,18 +623,20 @@ bool translate_fcos(IR1_INST *pir1)
 #ifdef USE_FCOS_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fcos);
 #else
-    /* save regs before call helper func */
-    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
-                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
-
      /*
      * For LA $fa 0 is defined as argument and return value reg.
      * To avoid reg destoried, move argument setting after storing
      * regs to env.
       */
     IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
+    IR2_OPND param_8 = ra_alloc_ftemp();
     IR2_OPND st0_opnd = ra_alloc_st(0);
-    la_append_ir2_opnd2(LISA_FMOV_D, param_0, st0_opnd);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
+
+    /* save regs before call helper func */
+    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
 
     /* Call the function */
     tr_gen_call_to_helper((ADDR)cos);
@@ -668,15 +673,11 @@ double pi = +3.141592653589793239;
 bool translate_fpatan(IR1_INST *pir1)
 {
 #ifdef USE_FPATAN_HELPER
-    tr_gen_call_to_helper1((ADDR)helper_fpatan);
+    tr_gen_call_to_helper1((ADDR)helper_fpatan, 1);
 
     if (!option_lsfpu)
         tr_fpu_pop();
 #else
-    /* save regs before call helper func */
-    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
-                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
-
      /*
      * For LA $fa 0 is defined as argument and return value reg.
      * To avoid reg destoried, move argument setting after storing
@@ -686,7 +687,13 @@ bool translate_fpatan(IR1_INST *pir1)
     IR2_OPND st0_opnd = ra_alloc_st(0);
     IR2_OPND st1_opnd = ra_alloc_st(1);
     IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
-    la_append_ir2_opnd3(LISA_FDIV_D, param_0, st1_opnd, st0_opnd);
+    IR2_OPND param_8 = ra_alloc_ftemp();
+    la_append_ir2_opnd3(LISA_FDIV_D, param_8, st1_opnd, st0_opnd);
+
+    /* save regs before call helper func */
+    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
 
     /* Call the function */
     tr_gen_call_to_helper((ADDR)atan);
@@ -901,16 +908,13 @@ bool translate_fxtract(IR1_INST *pir1)
     IR2_OPND f_inf = ra_alloc_ftemp();
     load_ireg_from_imm64(fp_inf, 0x7ff0000000000000ull);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, f_inf, fp_inf);
-    ra_free_temp(fp_inf);
     la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, st0_opnd, f_inf, FCMP_COND_CEQ);
-    ra_free_temp(f_zero);
     la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_inf);
 	//-inf
     load_ireg_from_imm64(fp_inf, 0xfff0000000000000ull);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, f_inf, fp_inf);
     ra_free_temp(fp_inf);
     la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, st0_opnd, f_inf, FCMP_COND_CEQ);
-    ra_free_temp(f_zero);
     la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_inf);
 
 
@@ -920,13 +924,16 @@ bool translate_fxtract(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDR, native_sp, native_sp, -8);
     la_append_ir2_opnd2i(LISA_FST_D, st0_opnd, native_sp, 0);
 
+    IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
+    IR2_OPND param_1 = ir2_opnd_new(IR2_OPND_FREG, 1);
+    IR2_OPND param_8 = ra_alloc_ftemp();
+    la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
+
     /* save regs before call helper func */
     tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
                              XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
 
-    IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
-    la_append_ir2_opnd2(LISA_FMOV_D, param_0, st0_opnd);
-
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
     /* Call the function */
     /* explicitly specify function prototype to select from overloaded
      * prototypes */
@@ -934,21 +941,23 @@ bool translate_fxtract(IR1_INST *pir1)
     tr_gen_call_to_helper((ADDR)logb_p);
 
     IR2_OPND ret_value = ir2_opnd_new(IR2_OPND_FREG, 0);
-    la_append_ir2_opnd2(LISA_FMOV_D, st0_opnd, ret_value);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_1, ret_value); //ret val -> pow(2.0,y)
     /* store the new st0 value to env->st0 */
-    int fpr_index = (0 + lsenv->tr_data->curr_top) & 7;
-    la_append_ir2_opnd2i(LISA_FST_D, st0_opnd, env_ir2_opnd,
-                        lsenv_offset_of_fpr(lsenv, fpr_index));
+    //int fpr_index = (0 + lsenv->tr_data->curr_top) & 7;
+    //la_append_ir2_opnd2i(LISA_FST_D, ret_value, env_ir2_opnd,
+    //                    lsenv_offset_of_fpr(lsenv, fpr_index));
+	IR2_OPND env_st0_addr_opnd = ra_alloc_itemp();
+    la_append_ir2_opnd2i_em(LISA_LD_W, env_st0_addr_opnd, env_ir2_opnd, lsenv_offset_of_top(lsenv));
+    la_append_ir2_opnd2i_em(LISA_SLLI_W, env_st0_addr_opnd, env_st0_addr_opnd, 4);
+    la_append_ir2_opnd3_em(LISA_ADD_ADDR, env_st0_addr_opnd, env_st0_addr_opnd, env_ir2_opnd);
+    //la_append_ir2_opnd2i_em(LISA_ADDI_ADDR, env_st0_addr_opnd, env_st0_addr_opnd, lsenv_offset_of_fpr(lsenv, 0));
+    la_append_ir2_opnd2i(LISA_FST_D, ret_value, env_st0_addr_opnd, lsenv_offset_of_fpr(lsenv, 0));
 
     IR2_OPND imm2_opnd = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_ADDI_D, imm2_opnd, zero_ir2_opnd, 2);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_W, param_0, imm2_opnd);
     la_append_ir2_opnd2(LISA_FFINT_D_W, param_0, param_0);
     ra_free_temp(imm2_opnd);
-
-    IR2_OPND param_1 =
-        ir2_opnd_new(IR2_OPND_FREG, 1); /* this is only right for n32 */
-    la_append_ir2_opnd2(LISA_FMOV_D, param_1, st0_opnd);
 
     /* Call the function */
     /* explicitly specify function prototype to select from overloaded
@@ -1018,9 +1027,6 @@ bool translate_fyl2x(IR1_INST *pir1)
     if (!option_lsfpu)
         tr_fpu_pop();
 #else
-    /* save regs before call helper func */
-    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
-                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
      /*
      * For LA $fa 0 is defined as argument and return value reg.
      * To avoid reg destoried, move argument setting after storing
@@ -1029,8 +1035,13 @@ bool translate_fyl2x(IR1_INST *pir1)
     IR2_OPND st0_opnd = ra_alloc_st(0);
     /* dispose the arguments */
     IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
-    la_append_ir2_opnd2(LISA_FMOV_D, param_0, st0_opnd);
+    IR2_OPND param_8 = ra_alloc_ftemp();
+    la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
 
+    /* save regs before call helper func */
+    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
     /* Call the function  */
     tr_gen_call_to_helper((ADDR)log2);
 
@@ -1066,10 +1077,6 @@ bool translate_fyl2xp1(IR1_INST *pir1)
 #else
     IR2_OPND st0_opnd = ra_alloc_st(0);
 
-    /* save regs before call helper func */
-    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
-                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save());
-
      /*
      * For LA $fa 0 is defined as argument and return value reg.
      * To avoid reg destoried, move argument setting after storing
@@ -1077,13 +1084,19 @@ bool translate_fyl2xp1(IR1_INST *pir1)
       */
     /* dispose the arguments */
     IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
+    IR2_OPND param_8 = ra_alloc_ftemp();
     IR2_OPND itemp_1 = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_ORI, itemp_1, zero_ir2_opnd, 1);
-    la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, param_0, itemp_1);
-    la_append_ir2_opnd2(LISA_FFINT_D_L, param_0,param_0);
-    la_append_ir2_opnd3(LISA_FADD_D, param_0, st0_opnd, param_0);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, param_8, itemp_1);
+    la_append_ir2_opnd2(LISA_FFINT_D_L, param_8,param_8);
+    la_append_ir2_opnd3(LISA_FADD_D, param_8, st0_opnd, param_8);
     ra_free_temp(itemp_1);
 
+    /* save regs before call helper func */
+    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save());
+
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
     /* Call the function  */
     tr_gen_call_to_helper((ADDR)log2);
 
@@ -1126,10 +1139,6 @@ bool translate_fsincos(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_ST_H, status_word, env_ir2_opnd,
                       lsenv_offset_of_status_word(lsenv));
 
-    /* save regs before call helper func */
-    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
-                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
-
      /*
      * For LA $fa 0 is defined as argument and return value reg.
      * To avoid reg destoried, move argument setting after storing
@@ -1137,8 +1146,15 @@ bool translate_fsincos(IR1_INST *pir1)
       */
     /* dispose the arguments */
     IR2_OPND param_1 = ir2_opnd_new(IR2_OPND_FREG, 0);
+    IR2_OPND param_8 = ra_alloc_ftemp();
     IR2_OPND st0_opnd = ra_alloc_st(0);
-    la_append_ir2_opnd2(LISA_FMOV_D, param_1, st0_opnd);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
+
+    /* save regs before call helper func */
+    tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                             XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
+    la_append_ir2_opnd2(LISA_FMOV_D, param_1, param_8);
+
 
      /*
      * How to transfer float parameter to func.

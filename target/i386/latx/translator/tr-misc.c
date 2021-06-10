@@ -1082,7 +1082,7 @@ bool translate_sahf(IR1_INST *pir1)
 {
     IR2_OPND ah = ra_alloc_itemp();
     load_ireg_from_ir1_2(ah, &ah_ir1_opnd, ZERO_EXTENSION, false);
-    la_append_ir2_opnd2i_em(LISA_ORI, ah, ah, 0x2);
+    //la_append_ir2_opnd2i_em(LISA_ORI, ah, ah, 0x2);
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, ah, 0x1f);
     ra_free_temp(ah);
     return true;

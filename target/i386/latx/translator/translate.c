@@ -3179,8 +3179,8 @@ void tr_load_top_from_env(void)
 
     for (i = 0; i < 8; i++) {
         la_append_ir2_opndi(LISA_X86MTTOP, i);
-        la_append_ir2_opnd2i_em(LISA_ADDI_W, top_opnd, top_opnd, -1);
         la_append_ir2_opnd3(LISA_BEQ, top_opnd, zero_ir2_opnd, label_exit);
+        la_append_ir2_opnd2i_em(LISA_ADDI_W, top_opnd, top_opnd, -1);
     }
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
@@ -3189,7 +3189,7 @@ void tr_load_top_from_env(void)
 void tr_gen_top_mode_init(void)
 {
     if (option_lsfpu) {
-        la_append_ir2_opnd1(LISA_X86MTTOP, zero_ir2_opnd);
+        la_append_ir2_opndi(LISA_X86MTTOP, 0);
         la_append_ir2_opnd0(LISA_X86SETTM);
     }
 }
