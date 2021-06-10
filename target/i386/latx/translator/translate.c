@@ -100,10 +100,6 @@ void tr_init(void *tb)
         t->ireg_em[i] = SIGN_EXTENSION;
         t->ireg_eb[i] = 32;
     }
-    for (i = 32; i < IR2_ITEMP_MAX; ++i) {
-        t->ireg_em[i] = UNKNOWN_EXTENSION;
-        t->ireg_eb[i] = 32;
-    }
     ir2_opnd_set_em(&n1_ir2_opnd, ZERO_EXTENSION, 32);
     ir2_opnd_set_em(&zero_ir2_opnd, ZERO_EXTENSION, 0);
 #ifdef N64 /* validate address */
@@ -485,7 +481,7 @@ int tr_ir2_assemble(const void *code_start_addr)
     }
 
     /* 1. assign temp register to physical register */
-    ra_temp_register_allocation();
+    /* now, temp register is physical register */
 
     /* 2. label dispose */
     label_dispose();
