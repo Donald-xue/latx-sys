@@ -526,7 +526,9 @@ static void printSrcIdx(MCInst *MI, unsigned Op, SStream *O)
 
 	if (MI->csh->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		uint8_t access[6];
+#endif
 #endif
 
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_MEM;
@@ -538,8 +540,10 @@ static void printSrcIdx(MCInst *MI, unsigned Op, SStream *O)
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].mem.disp = 0;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 	}
 
@@ -566,7 +570,9 @@ static void printDstIdx(MCInst *MI, unsigned Op, SStream *O)
 {
 	if (MI->csh->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		uint8_t access[6];
+#endif
 #endif
 
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_MEM;
@@ -578,8 +584,10 @@ static void printDstIdx(MCInst *MI, unsigned Op, SStream *O)
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].mem.disp = 0;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 	}
 
@@ -724,7 +732,9 @@ static void printU8Imm(MCInst *MI, unsigned Op, SStream *O)
 
 	if (MI->csh->detail) {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		uint8_t access[6];
+#endif
 #endif
 
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].type = X86_OP_IMM;
@@ -732,8 +742,10 @@ static void printU8Imm(MCInst *MI, unsigned Op, SStream *O)
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].size = 1;
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 		get_op_access(MI->csh, MCInst_getOpcode(MI), access, &MI->flat_insn->detail->x86.eflags);
 		MI->flat_insn->detail->x86.operands[MI->flat_insn->detail->x86.op_count].access = access[MI->flat_insn->detail->x86.op_count];
+#endif
 #endif
 
 		MI->flat_insn->detail->x86.op_count++;
