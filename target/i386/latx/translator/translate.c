@@ -245,6 +245,7 @@ void tr_adjust_em(void)
     }
 }
 
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 void etb_add_succ(void* petb,int depth) 
 {    
     ETB* etb = (ETB*)petb;
@@ -281,6 +282,7 @@ void etb_add_succ(void* petb,int depth)
     }
     return;
 }
+#endif
     
 /* func to access QEMU's data */
 static inline uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
@@ -327,6 +329,7 @@ IR1_INST *get_ir1_list(void *etb, ADDRX pc, int *p_ir1_num)
 
 }
 
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 int8 get_etb_type(IR1_INST *pir1)
 {
     if (ir1_is_branch(pir1))
@@ -345,6 +348,7 @@ int8 get_etb_type(IR1_INST *pir1)
         return (int8)TB_TYPE_NONE;
 
 }
+#endif
 
 /* func to access QEMU's TB */
 static inline ADDRX qm_tb_get_pc(void *tb)
@@ -367,7 +371,9 @@ void *tr_disasm(void *tb)
        
         etb->_ir1_instructions = ir1_list;
         etb->_ir1_num = ir1_num;
+#ifdef CONFIG_LATX_FLAG_REDUCTION
         etb->_tb_type = get_etb_type(ir1_list + ir1_num - 1);
+#endif
     }
     ((struct TranslationBlock *)tb)->size = etb->size;
 

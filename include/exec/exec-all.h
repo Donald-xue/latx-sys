@@ -452,19 +452,20 @@ typedef struct ExtraBlock{
     uint64_t pc; /* for hash compare, it's ID of a ETB */
     struct IR1_INST *_ir1_instructions;
     int16  _ir1_num;
-    int8   _tb_type;
-    struct ExtraBlock* succ[2];  /* successors of this ETB */
     struct TranslationBlock* tb; /* which tb this etb belongs to */
 #if defined(CONFIG_LATX_FLAG_PATTERN) || defined(CONFIG_LATX_FLAG_REDUCTION)
     uint8 pending_use; /* indicate which eflags are used but hasn't defined yet */
 #endif
+#ifdef CONFIG_LATX_FLAG_REDUCTION
+    int8   _tb_type;
+    struct ExtraBlock* succ[2];  /* successors of this ETB */
     /* flags is used to indicate the state of this ETB 
      * bit0: set if succ[2] are set
      * bit1: set if pending_use is set */
     uint8 flags;
 #define SUCC_IS_SET_MASK 0x01
 #define PENDING_USE_IS_SET_MASK 0x02
-
+#endif
     /* historical field */
     uint16_t size;
 } ETB;

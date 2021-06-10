@@ -23,6 +23,8 @@ typedef struct {
 
 void tb_flag_reduction(void *tb);
 void tb_flag(void *tb);
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 uint8 pending_use_of_succ(ETB* etb, int max_depth);
+#endif
 
 #endif

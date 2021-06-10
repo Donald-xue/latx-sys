@@ -1533,7 +1533,7 @@ static const IR1_EFLAG_USEDEF *ir1_opcode_to_eflag_usedef(IR1_INST *ir1)
     return ir1_opcode_eflag_usedef + (ir1_opcode(ir1) - X86_INS_INVALID);
 }
 
-
+#ifdef CONFIG_LATX_FLAG_REDUCTION
 uint8 pending_use_of_succ(ETB* etb, int max_depth)
 {
     if((!etb->succ[0] && !etb->succ[1]) || max_depth==0)
@@ -1575,6 +1575,7 @@ uint8 pending_use_of_succ(ETB* etb, int max_depth)
     }
     return pending_use;
 }
+#endif
 
 /* static void free_etb(ETB* etb) {
  *     if(etb == NULL) return;
