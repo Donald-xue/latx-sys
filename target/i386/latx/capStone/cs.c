@@ -558,13 +558,17 @@ static void fill_insn(struct cs_struct *handle, cs_insn *insn, char *buffer, MCI
 		PostPrinter_t postprinter, const uint8_t *code)
 {
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	char *sp, *mnem;
+#endif
 #endif
 	uint16_t copy_size = MIN(sizeof(insn->bytes), insn->size);
 
+#ifdef CONFIG_LATX_DEBUG
 	// fill the instruction bytes.
 	// we might skip some redundant bytes in front in the case of X86
 	memcpy(insn->bytes, code + insn->size - copy_size, copy_size);
+#endif
 	insn->size = copy_size;
 
 	// alias instruction might have ID saved in OpcodePub
@@ -576,6 +580,7 @@ static void fill_insn(struct cs_struct *handle, cs_insn *insn, char *buffer, MCI
 		postprinter((csh)handle, insn, buffer, mci);
 
 #ifndef CAPSTONE_DIET
+#ifdef CONFIG_LATX_DEBUG
 	// fill in mnemonic & operands
 	// find first space or tab
 	mnem = insn->mnemonic;
@@ -614,6 +619,7 @@ static void fill_insn(struct cs_struct *handle, cs_insn *insn, char *buffer, MCI
 		insn->op_str[sizeof(insn->op_str) - 1] = '\0';
 	} else
 		insn->op_str[0] = '\0';
+#endif
 #endif
 }
 
