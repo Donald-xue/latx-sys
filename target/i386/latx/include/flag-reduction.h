@@ -22,7 +22,7 @@ typedef struct {
 #define __ALL_EFLAGS (__OF | __SF | __ZF | __AF | __PF | __CF)
 
 void tb_flag_reduction(void *tb);
-void tb_flag(void *tb);
+void tb_flag(struct TranslationBlock *tb);
 #ifdef CONFIG_LATX_FLAG_REDUCTION
 uint8 pending_use_of_succ(ETB* etb, int max_depth);
 #endif

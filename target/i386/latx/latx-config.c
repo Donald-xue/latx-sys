@@ -33,14 +33,14 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
     /* target => IR1
      * IR1 stored in lsenv->tr_data
      */
-    void *etb = tr_disasm(tb);
+    tr_disasm(tb);
 
 #ifdef CONFIG_LATX_FLAG_REDUCTION
     if (option_flag_reduction)
         tb_flag_reduction((void *)tb);
     else
 #endif
-        tb_flag((void *)tb);
+        tb_flag(tb);
 
     if (!option_lsfpu) {
         etb_check_top_in(tb, env->fpstt);
@@ -50,7 +50,7 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
      * IR2 stored in lsenv->tr_data
      * host write into TB
      */
-    return tr_translate_tb(tb, etb);
+    return tr_translate_tb(tb);
 }
 
 #ifdef CONFIG_LATX_DEBUG
@@ -90,11 +90,10 @@ void trace_tb_execution(struct TranslationBlock *tb)
                 (unsigned long)tb->tc.size / 4);
     }
 
-    ETB *etb = &tb->extra_tb;
 
-    IR1_INST *ir1_list = etb->_ir1_instructions;
+    IR1_INST *ir1_list = tb->_ir1_instructions;
     IR1_INST *pir1 = NULL;
-    int ir1_nr = etb->_ir1_num;
+    int ir1_nr = tb->_ir1_num;
 
     int i = 0;
 

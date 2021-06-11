@@ -290,7 +290,7 @@ static inline uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
     return cpu_ldub_code((CPUX86State *)cpu, (target_ulong)pc);
 }
 
-IR1_INST *get_ir1_list(void *etb, ADDRX pc, int *p_ir1_num)
+IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
 {
     static uint8_t inst_cache[64];
     uint8_t  *pins = inst_cache;
@@ -321,7 +321,7 @@ IR1_INST *get_ir1_list(void *etb, ADDRX pc, int *p_ir1_num)
         }
 
     } while (!ir1_is_tb_ending(pir1));
-    ((struct ExtraBlock *)etb)->size = pc - start_pc;
+    tb->size = pc - start_pc;
 
     ir1_list = (IR1_INST *)mm_realloc(ir1_list, ir1_num * sizeof(IR1_INST));
     *p_ir1_num = ir1_num;
@@ -350,46 +350,31 @@ int8 get_etb_type(IR1_INST *pir1)
 }
 #endif
 
-/* func to access QEMU's TB */
-static inline ADDRX qm_tb_get_pc(void *tb)
+void tr_disasm(struct TranslationBlock *ptb)
 {
-    struct TranslationBlock *ptb = (struct TranslationBlock *)tb;
-    return (ADDRX)ptb->pc;
-}
-
-void *tr_disasm(void *tb)
-{
-    ADDRX pc = qm_tb_get_pc(tb);
-    ETB *qm_etb = qm_tb_get_extra_tb(tb);
-    ETB *etb = etb_find(pc);
+    ADDRX pc = ptb->pc;
     /* get ir1 instructions */
-    IR1_INST *ir1_list = etb->_ir1_instructions;
-    int ir1_num = etb->_ir1_num;
-    /* ir1 hasn't been disasmbled, get it */
-    if (etb->_ir1_instructions == NULL) {
-        ir1_list = get_ir1_list(etb, pc, &ir1_num);
+    IR1_INST *ir1_list = ptb->_ir1_instructions;
+    int ir1_num = ptb->_ir1_num;
+    ir1_list = get_ir1_list(ptb, pc, &ir1_num);
        
-        etb->_ir1_instructions = ir1_list;
-        etb->_ir1_num = ir1_num;
-#ifdef CONFIG_LATX_FLAG_REDUCTION
-        etb->_tb_type = get_etb_type(ir1_list + ir1_num - 1);
-#endif
-    }
-    ((struct TranslationBlock *)tb)->size = etb->size;
-
+    ptb->_ir1_instructions = ir1_list;
+    ptb->_ir1_num = ir1_num;
     lsenv->tr_data->ir1_inst_array = ir1_list;
     lsenv->tr_data->ir1_nr = ir1_num;
     lsenv->tr_data->curr_ir1_inst = NULL;
+#ifdef CONFIG_LATX_FLAG_REDUCTION
+        etb->_tb_type = get_etb_type(ir1_list + ir1_num - 1);
+#endif
 #ifdef CONFIG_LATX_FLAG_REDUCTION
     if (option_flag_reduction) {
         etb_add_succ(etb, 2);
         etb->flags |= SUCC_IS_SET_MASK;
     }
 #endif
-    memcpy(qm_etb, etb, sizeof(ETB));
-
+#ifdef CONFIG_LATX_DEBUG
     counter_ir1_tr += ir1_num;
-    return etb;
+#endif
 }
 
 static void label_dispose(void)
@@ -2163,7 +2148,7 @@ void tr_dump_current_ir2(void)
     }
 }
 
-bool tr_ir2_generate(void *tb, void *petb)
+bool tr_ir2_generate(struct TranslationBlock *tb)
 {
     int i = 0;
 
@@ -2214,7 +2199,7 @@ static inline const void *qm_tb_get_code_cache(void *tb)
     return ptb->tc.ptr;
 }
 
-int tr_translate_tb(void *tb, void* etb)
+int tr_translate_tb(struct TranslationBlock *tb)
 {
     if (option_dump)
         fprintf(stderr, "[LATX] start translation.\n");
@@ -2225,7 +2210,7 @@ int tr_translate_tb(void *tb, void* etb)
         fprintf(stderr, "tr_init OK. ready to translation.\n");
 
     /* generate ir2 from ir1 */
-    bool translation_done = tr_ir2_generate(tb, etb);
+    bool translation_done = tr_ir2_generate(tb);
 
     int code_nr = 0;
 

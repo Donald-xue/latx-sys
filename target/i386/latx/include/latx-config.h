@@ -30,5 +30,4 @@ void latx_set_tls_ibtc_table(CPUArchState *env);
  * to avoid strange compile warning
  */
 ETB *etb_find(ADDRX pc);
-bool etb_remove(ADDRX pc);
 #endif /* _LATX_CONFIG_H_ */

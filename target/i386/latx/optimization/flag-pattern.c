@@ -506,7 +506,7 @@ static bool fpi_is_helper_op(IR1_OPCODE op)
 static int fpi_get_pattern_item_index(IR1_INST *pir1)
 {
     int pir1_index =
-        pir1 - etb_ir1_inst_first(qm_tb_get_extra_tb(lsenv->tr_data->curr_tb));
+        pir1 - tb_ir1_inst_first(lsenv->tr_data->curr_tb);
 
     int pattern_item_index = lsenv->fp_data->is_head_or_tail[pir1_index];
     return pattern_item_index;
@@ -552,8 +552,8 @@ static bool fpi_record_pattern_item(IR1_INST *head, IR1_INST *tail)
     FLAG_PATTERN_ITEM *pattern_item =
         fp_data->pattern_items + pattern_item_index;
 
-    ETB *petb = qm_tb_get_extra_tb(lsenv->tr_data->curr_tb);
-    lsassert(petb != NULL);
+    struct TranslationBlock *tb = lsenv->tr_data->curr_tb;
+    lsassert(tb != NULL);
 
     /* 1. if head info does not exist, build a new one */
     if (pattern_item_index == 0) {
@@ -563,8 +563,8 @@ static bool fpi_record_pattern_item(IR1_INST *head, IR1_INST *tail)
 
         /* record head info */
         pattern_item->head = head;
-        int head_index = head - etb_ir1_inst_first(petb);
-        lsassert(head_index >= 0 && head_index < etb_ir1_num(petb));
+        int head_index = head - tb_ir1_inst_first(tb);
+        lsassert(head_index >= 0 && head_index < etb_ir1_num(tb));
         fp_data->is_head_or_tail[head_index] = pattern_item_index;
     }
 
@@ -574,8 +574,8 @@ static bool fpi_record_pattern_item(IR1_INST *head, IR1_INST *tail)
         if (pattern_item->tails[i] == NULL) {
             /* record tail info */
             pattern_item->tails[i] = tail;
-            int tail_index = tail - etb_ir1_inst_first(petb);
-            lsassert(tail_index >= 0 && tail_index < etb_ir1_num(petb));
+            int tail_index = tail - tb_ir1_inst_first(tb);
+            lsassert(tail_index >= 0 && tail_index < etb_ir1_num(tb));
             fp_data->is_head_or_tail[tail_index] = pattern_item_index;
 
             record_finish = true;
@@ -586,7 +586,7 @@ static bool fpi_record_pattern_item(IR1_INST *head, IR1_INST *tail)
     return record_finish;
 }
 
-static void fpi_adjust_pattern_head_skipped_eflags(void *petb,
+static void fpi_adjust_pattern_head_skipped_eflags(void *tb,
                                                    const int pattern_item_index)
 {
     FLAG_PATTERN_ITEM *item =
@@ -625,8 +625,8 @@ static void fpi_adjust_pattern_head_skipped_eflags(void *petb,
     }
 
     /* 3. flag reduction again, but ignore the pattern tails */
-    uint8 pending_use = pending_use_of_succ(petb, MAX_DEPTH); 
-    for (IR1_INST *pir1 = etb_ir1_inst_last(petb); pir1 != item->head; --pir1) {
+    uint8 pending_use = pending_use_of_succ(tb, MAX_DEPTH);
+    for (IR1_INST *pir1 = tb_ir1_inst_last(tb); pir1 != item->head; --pir1) {
         /* 3.1 pending use may be satisfied by this instruction */
         pending_use &= (~(ir1_get_eflag_def(pir1)));
         if (ir1_prefix(pir1) != 0 &&
@@ -805,14 +805,13 @@ static bool fpi_mode_is_implemented(FP_MODE mode)
 
 void tb_find_flag_pattern(void *tb)
 {
-    ETB *etb = qm_tb_get_extra_tb(tb);
     if (!option_flag_pattern)
         return;
 
-    IR1_INST *pir1_first = etb_ir1_inst_first(etb);
+    IR1_INST *pir1_first = tb_ir1_inst_first(tb);
 
-    IR1_INST *prehead = etb_ir1_inst_last(etb) + 1;
-    for (IR1_INST *tail = etb_ir1_inst_last(etb); tail != pir1_first; --tail) {
+    IR1_INST *prehead = tb_ir1_inst_last(tb) + 1;
+    for (IR1_INST *tail = tb_ir1_inst_last(tb); tail != pir1_first; --tail) {
         if (ir1_get_eflag_use(tail) == 0)
             continue;
 
@@ -829,7 +828,7 @@ void tb_find_flag_pattern(void *tb)
     }
 
     for (int i = 1; i < lsenv->fp_data->pattern_items_num; ++i) {
-        fpi_adjust_pattern_head_skipped_eflags(etb, i);
+        fpi_adjust_pattern_head_skipped_eflags(tb, i);
     }
     /* fprintf(stderr, "0x%x fp: fp_skipped_flags=0x%x\n",this->addr(), */
     /* this->fp_skipped_flags() ); */

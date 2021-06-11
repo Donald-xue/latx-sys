@@ -1032,15 +1032,15 @@ void tr_fini(bool check_the_extension); /* default TRUE */
 void tr_adjust_em(void);
 
 void tr_dump_current_ir2(void);
-void *tr_disasm(void *tb);
+void tr_disasm(struct TranslationBlock *tb);
 void etb_add_succ(void* etb,int depth);
-int tr_translate_tb(void *tb, void *etb);
-bool tr_ir2_generate(void *tb, void *etb);
+int tr_translate_tb(struct TranslationBlock *tb);
+bool tr_ir2_generate(struct TranslationBlock *tb);
 int tr_ir2_assemble(const void *code_start_addr);
 #ifdef CONFIG_LATX_FLAG_REDUCTION
 int8 get_etb_type(IR1_INST *pir1);
 #endif
-IR1_INST *get_ir1_list(void *tb, ADDRX pc, int *p_ir1_num);
+IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num);
 
 
 extern ADDR context_switch_native_to_bt_ret_0;

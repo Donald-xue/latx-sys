@@ -450,8 +450,6 @@ struct IR1_INST;
 /* extra attributes we need in TB */
 typedef struct ExtraBlock{
     uint64_t pc; /* for hash compare, it's ID of a ETB */
-    struct IR1_INST *_ir1_instructions;
-    int16  _ir1_num;
     struct TranslationBlock* tb; /* which tb this etb belongs to */
 #if defined(CONFIG_LATX_FLAG_PATTERN) || defined(CONFIG_LATX_FLAG_REDUCTION)
     uint8 pending_use; /* indicate which eflags are used but hasn't defined yet */
@@ -539,6 +537,8 @@ struct TranslationBlock {
     uintptr_t jmp_list_next[2];
     uintptr_t jmp_dest[2];
 #ifdef CONFIG_LATX
+    struct IR1_INST *_ir1_instructions;
+    int16  _ir1_num;
     int8 _top_in;
     int8 _top_out;
     void *next_tb[2];

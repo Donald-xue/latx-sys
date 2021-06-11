@@ -23,24 +23,24 @@ static inline ETB *qm_tb_get_extra_tb(void *tb)
 }
 
 /* functions to access ETB items */
-static inline IR1_INST *etb_ir1_inst_first(ETB *etb)
+static inline IR1_INST *tb_ir1_inst_first(struct TranslationBlock *tb)
 {
-    return etb->_ir1_instructions;
+    return tb->_ir1_instructions;
 }
 
-static inline IR1_INST *etb_ir1_inst_last(ETB *etb)
+static inline IR1_INST *tb_ir1_inst_last(TranslationBlock *tb)
 {
-    return etb->_ir1_instructions + etb->_ir1_num - 1;
+    return tb->_ir1_instructions + tb->_ir1_num - 1;
 }
 
-static inline IR1_INST *etb_ir1_inst(ETB *etb, const int i)
+static inline IR1_INST *tb_ir1_inst(TranslationBlock *tb, const int i)
 {
-    return etb->_ir1_instructions + i;
+    return tb->_ir1_instructions + i;
 }
 
-static inline int etb_ir1_num(ETB *etb)
+static inline int tb_ir1_num(TranslationBlock *tb)
 {
-    return etb->_ir1_num;
+    return tb->_ir1_num;
 }
 
 static inline int8 etb_get_top_in(struct TranslationBlock *tb)

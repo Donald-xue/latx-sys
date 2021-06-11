@@ -1662,22 +1662,17 @@ void tb_flag_reduction(void *tb)
 }
 #endif
 
-void tb_flag(void *tb)
+void tb_flag(struct TranslationBlock *tb)
 {
-    ETB *etb = qm_tb_get_extra_tb(tb);
-
-    for (int i = 0; i < etb_ir1_num(etb); ++i) {
-        IR1_INST *pir1 = etb_ir1_inst(etb, i);
+    for (int i = 0; i < tb_ir1_num(tb); ++i) {
+        IR1_INST *pir1 = tb_ir1_inst(tb, i);
 
         IR1_EFLAG_USEDEF curr_usedef =
             *ir1_opcode_to_eflag_usedef(pir1);
 
-        ir1_set_eflag_use(&(etb->_ir1_instructions[i]), curr_usedef.use);
-        ir1_set_eflag_def(&(etb->_ir1_instructions[i]),
+        ir1_set_eflag_use(&(tb->_ir1_instructions[i]), curr_usedef.use);
+        ir1_set_eflag_def(&(tb->_ir1_instructions[i]),
                           curr_usedef.def & (~curr_usedef.undef));
 
-        // ir1_set_eflag_use(&(etb->_ir1_instructions[i]), ir1_get_eflag_inherent_use(pir1));
-        // ir1_set_eflag_def(&(etb->_ir1_instructions[i]), ir1_get_eflag_inherent_def(pir1));
-        //                   //needn't undef 
     }
 }
