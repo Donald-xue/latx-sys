@@ -205,6 +205,13 @@ void tr_fini(bool check_the_extension)
     t->curr_tb = NULL;
     t->curr_ir1_inst = NULL;
 
+    IR1_INST *ir1_list = t->ir1_inst_array;
+    IR1_INST *pir1 = NULL;
+    for (int i = 0; i < t->ir1_nr; ++i) {
+        pir1 = ir1_list + i;
+        free(pir1->info->detail);
+        free(pir1->info);
+    }
     /* reset ir2 array */
     t->ir2_inst_num_current = 0;
     t->real_ir2_inst_num = 0;
