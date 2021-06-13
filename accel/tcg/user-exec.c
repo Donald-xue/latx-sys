@@ -29,6 +29,10 @@
 #include "trace/trace-root.h"
 #include "trace/mem.h"
 
+#ifdef CONFIG_LATX
+#include "qemu.h"
+#endif
+
 #undef EAX
 #undef ECX
 #undef EDX
@@ -784,16 +788,20 @@ int cpu_signal_handler(int host_signum, void *pinfo,
     siginfo_t *info = pinfo;
     ucontext_t *uc = puc;
     greg_t pc = uc->uc_mcontext.__pc;
-    int is_write;
+    CPUArchState *env = thread_cpu->env_ptr;
+    int is_write = 0;
 
-    /* XXX: compute is_write */
-    is_write = 0;
+    /* 
+     * store ucontext_t to env for context switch.
+     */
+    env->puc = uc;
     //TODO use kernel to send write info
     //only st/stl/str handled, may cause bugs
     uint32_t insn = *(uint32_t *)pc;
     if (((insn >> 24) == 0x29) || ((insn >> 24) == 0x2f) ||
         ((insn >> 24) == 0x25) || ((insn >> 24) == 0x27) ||
-        ((insn >> 20) == 0x381) || ((insn >> 24) == 0x21)) {
+        ((insn >> 20) == 0x381) || ((insn >> 24) == 0x21)||
+        ((insn >> 22) == 0xB1) || ((insn >> 22) == 0xAF)) {
         is_write = 1;
     }
     return handle_cpu_signal(pc, info, is_write, &uc->uc_sigmask);

@@ -1665,6 +1665,9 @@ typedef struct CPUX86State {
     TPRAccess tpr_access_type;
 
     unsigned nr_dies;
+#ifdef CONFIG_LATX
+    ucontext_t *puc;
+#endif
 } CPUX86State;
 
 struct kvm_msrs;

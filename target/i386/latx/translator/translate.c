@@ -2156,11 +2156,13 @@ void tr_dump_current_ir2(void)
 bool tr_ir2_generate(struct TranslationBlock *tb)
 {
     int i = 0;
-
+    int ir1_nr = 0;
+    TranslationBlock *ptb = tb;
+ 
     TRANSLATION_DATA *t = lsenv->tr_data;
 
     IR1_INST *ir1_list = t->ir1_inst_array;
-    int ir1_nr = t->ir1_nr;
+    ptb->icount = ir1_nr = t->ir1_nr;
 
     if (option_dump) {
         fprintf(stderr, "[LATX] translation : generate IR2 from IR1.\n");
@@ -2178,9 +2180,19 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
             fprintf(stderr, "IR1[%d] ", i);
             ir1_dump(pir1);
         }
+        /*
+         * handle segv scenario, store host pc to gen_insn_data and encode to a BYTE
+         * at the end of TB translate cache.
+         */
+        tcg_ctx->gen_insn_data[i][0] = pir1->info->address;
+        tcg_ctx->gen_insn_data[i][1] = 0;
 
         bool translation_success = ir1_translate(pir1);
         assert(translation_success && "ir1_translate fail");
+        /*
+         * gen_insn_end_off is used for store ir2 insn number.
+         */
+        tcg_ctx->gen_insn_end_off[i] = (lsenv->tr_data->real_ir2_inst_num)<<2;
     }
 
     if (option_dump_ir2) {
