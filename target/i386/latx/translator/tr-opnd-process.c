@@ -1172,7 +1172,7 @@ static void store_ireg_to_ir1_mem(IR2_OPND value_opnd, IR1_OPND *opnd1,
 void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 {
     lsassert(ir2_opnd_is_ireg(&seg_value_opnd));
-
+    int itemp_index = lsenv->tr_data->itemp_num;
 #ifdef N64
 
     /* 1. set selector */
@@ -1201,7 +1201,7 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
     la_append_ir2_opnd3_em(LISA_AND, dt_opnd, dt_opnd, n1_ir2_opnd);
 
     /* 2.2 get entry offset of gdt and add it on gdt-base */
-    IR2_OPND offset_in_gdt_opnd = ra_alloc_itemp_internal();
+    IR2_OPND offset_in_gdt_opnd = is_ldt;
     IR2_OPND offset_imm16 = ra_alloc_itemp_internal();
     /*
      * We cannot generate imm16 directly.
@@ -1224,9 +1224,11 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 
     /* 2.4 read segment entry */
     IR2_OPND gdt_entry = ra_alloc_itemp_internal();
+
     la_append_ir2_opnd2i_em(LISA_LD_D, gdt_entry, dt_opnd, 0);
 
-    IR2_OPND seg_limit = ra_alloc_itemp_internal(); /* [51:48] [15: 0] limit */
+
+    IR2_OPND seg_limit = offset_in_gdt_opnd; /* [51:48] [15: 0] limit */
     IR2_OPND seg_base = ra_alloc_itemp_internal();  /* [63:56] [39:16] base */
     IR2_OPND seg_flags = ra_alloc_itemp_internal(); /* [55:40] flags */
 
@@ -1286,6 +1288,7 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 #else
     lsassertm(0, "not implement for MIPS o32/n32.\n");
 #endif
+    lsenv->tr_data->itemp_num = itemp_index;
 }
 
 void store_ireg_to_ir1(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi)
