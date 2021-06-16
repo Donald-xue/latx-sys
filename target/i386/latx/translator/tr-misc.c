@@ -747,9 +747,18 @@ bool translate_callin(IR1_INST *pir1)
                          false);
     ra_free_temp(succ_x86_addr_opnd);
 
-    /* 2. adjust esp */
+    /* 
+     * 2. adjust esp
+     * NOTE: There is a corner case during wine kernel32 virtual unit test.
+     * If esp updated at the begin of the insn, once stw trigger the segv,
+     * The esp will be conflict and gcc stack check will be failed.
+     * Solutuion is same as TCG did, update esp to temp reg, once store
+'    * insn is successful, esp will be updated.
+     */
     IR2_OPND esp_opnd = ra_alloc_gpr(4);
-    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, -4);
+    IR2_OPND temp_esp = ra_alloc_itemp();
+
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, temp_esp, esp_opnd, -4);
 
     /* 3. save return address onto stack */
     IR2_OPND return_addr_opnd = ra_alloc_itemp();
@@ -759,17 +768,18 @@ bool translate_callin(IR1_INST *pir1)
         IR2_OPND tmp = ra_alloc_itemp();
         IR2_OPND gbase = ra_alloc_guest_base();
         if (!ir2_opnd_is_address(&esp_opnd)) {
-            la_append_ir2_opnd2_em(LISA_MOV_ADDRX, esp_opnd, esp_opnd);
+            la_append_ir2_opnd2_em(LISA_MOV_ADDRX, temp_esp, esp_opnd);
         }
-        la_append_ir2_opnd3_em(LISA_ADD_ADDR, tmp, esp_opnd, gbase);
+        la_append_ir2_opnd3_em(LISA_ADD_ADDR, tmp, temp_esp, gbase);
         ir2_opnd_set_em(&tmp, EM_MIPS_ADDRESS, 32);
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, tmp, 0);
     } else {
-        la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, esp_opnd, 0);
+        la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, temp_esp, 0);
     }
 
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, -4);
     ra_free_temp(return_addr_opnd);
-
+    ra_free_temp(temp_esp);
     /* 4. push esp, callee_addr, ret_tb onto shadow statck */
     if(option_shadow_stack) 
          ss_gen_push(pir1); 
