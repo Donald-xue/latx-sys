@@ -69,19 +69,15 @@ ADDR fpu_set_top;
 ADDR fpu_inc_top;
 ADDR fpu_dec_top;
 
-int GPR_USEDEF_TO_SAVE;
-int FPR_USEDEF_TO_SAVE;
-int XMM_LO_USEDEF_TO_SAVE;
-int XMM_HI_USEDEF_TO_SAVE;
+int GPR_USEDEF_TO_SAVE = 0x7;
+int FPR_USEDEF_TO_SAVE = 0xff;
+int XMM_LO_USEDEF_TO_SAVE = 0xff;
+int XMM_HI_USEDEF_TO_SAVE = 0xff;
 
 struct lat_lock lat_lock[16];
 
 void tr_init(void *tb)
 {
-    GPR_USEDEF_TO_SAVE = 0x7;
-    FPR_USEDEF_TO_SAVE = 0xff;
-    XMM_LO_USEDEF_TO_SAVE = 0xff;
-    XMM_HI_USEDEF_TO_SAVE = 0xff;
     TRANSLATION_DATA *t = lsenv->tr_data;
     int i = 0;
 
