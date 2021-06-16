@@ -113,8 +113,6 @@ void tr_init(void *tb)
         ir2_opnd_set_em(&gpr_opnd, ir2_opnd_default_em(&gpr_opnd), 32);
     }
 #endif
-    t->hi_em = UNKNOWN_EXTENSION;
-    t->lo_em = UNKNOWN_EXTENSION;
 
     /* reset ir2 array */
     if (t->ir2_inst_array == NULL) {

@@ -53,8 +53,6 @@ typedef struct TRANSLATION_DATA {
     EXTENSION_MODE
     ireg_em[IR2_ITEMP_MAX]; /* extension mode of the 32 integer registers */
     int8 ireg_eb[IR2_ITEMP_MAX]; /* bits number where the extension starts */
-    EXTENSION_MODE hi_em;
-    EXTENSION_MODE lo_em;
 
     void *curr_tb; /* from QEMU */
 
