@@ -156,25 +156,6 @@ void tr_init(void *tb)
     t->curr_esp_need_decrease = 0;
 }
 
-IR1_INST *tr_init_for_each_ir1_in_tb(IR1_INST *ir1_list, int ir1_nr, int index)
-{
-    /* initialize global data */
-    lsassert(index >= 0 && ir1_nr >= 0 && index < ir1_nr);
-
-    IR1_INST *pir1 = ir1_list + index;
-    lsenv->tr_data->curr_ir1_inst = pir1;
-
-    la_append_ir2_opnda(LISA_X86_INST, ir1_addr(pir1));
-
-#ifdef CONFIG_LATX_FLAG_PATTERN
-    fp_init_skipped_flags(pir1);
-#endif
-    if (index == ir1_nr - 1)
-        tr_adjust_em();
-
-    return pir1;
-}
-
 void tr_fini(bool check_the_extension)
 {
     TRANSLATION_DATA *t = lsenv->tr_data;
@@ -2148,33 +2129,31 @@ void tr_dump_current_ir2(void)
     }
 }
 
+static inline void tr_init_for_each_ir1_in_tb(IR1_INST *pir1, int nr, int index)
+ {
+    lsenv->tr_data->curr_ir1_inst = pir1;
+#ifdef CONFIG_LATX_FLAG_PATTERN
+    fp_init_skipped_flags(pir1);
+#endif
+    if (index == nr - 1)
+        tr_adjust_em();
+}
+
 bool tr_ir2_generate(struct TranslationBlock *tb)
 {
-    int i = 0;
-    int ir1_nr = 0;
-    TranslationBlock *ptb = tb;
- 
+    int i;
     TRANSLATION_DATA *t = lsenv->tr_data;
-
-    IR1_INST *ir1_list = t->ir1_inst_array;
-    ir1_nr = t->ir1_nr;
+    int ir1_nr = tb->icount;
 
     if (option_dump) {
         fprintf(stderr, "[LATX] translation : generate IR2 from IR1.\n");
         fprintf(stderr, "IR1 num = %d\n", ir1_nr);
     }
 
-    IR1_INST *pir1 = NULL;
-
+    IR1_INST *pir1 = tb->_ir1_instructions;
     for (i = 0; i < ir1_nr; ++i) {
-        pir1 = ir1_list + i;
+        tr_init_for_each_ir1_in_tb(pir1, ir1_nr, i);
 
-        tr_init_for_each_ir1_in_tb(ir1_list, ir1_nr, i);
-
-        if (option_dump_ir1) {
-            fprintf(stderr, "IR1[%d] ", i);
-            ir1_dump(pir1);
-        }
         /*
          * handle segv scenario, store host pc to gen_insn_data and encode to a BYTE
          * at the end of TB translate cache.
@@ -2184,10 +2163,22 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
 
         bool translation_success = ir1_translate(pir1);
         assert(translation_success && "ir1_translate fail");
+
         /*
          * gen_insn_end_off is used for store ir2 insn number.
          */
         tcg_ctx->gen_insn_end_off[i] = (lsenv->tr_data->real_ir2_inst_num)<<2;
+
+        pir1++;
+    }
+
+    if (option_dump_ir1) {
+        pir1 = tb->_ir1_instructions;
+        for (i = 0; i < ir1_nr; ++i) {
+             fprintf(stderr, "IR1[%d] ", i);
+             ir1_dump(pir1);
+            pir1++;
+         }
     }
 
     if (option_dump_ir2) {

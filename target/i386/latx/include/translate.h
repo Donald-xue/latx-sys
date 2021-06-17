@@ -1025,8 +1025,6 @@ bool translate_div_byhand(IR1_INST *pir1);
 bool translate_imul_byhand(IR1_INST *pir1);
 bool translate_cmpxchg_byhand(IR1_INST *pir1);
 
-IR1_INST *tr_init_for_each_ir1_in_tb(IR1_INST *ir1_list, int ir1_nr, int index);
-
 void tr_init(void *tb);
 void tr_fini(bool check_the_extension); /* default TRUE */
 void tr_adjust_em(void);
