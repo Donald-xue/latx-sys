@@ -2570,7 +2570,7 @@ void generate_context_switch_native_to_bt(void)
     IR2_OPND eip_opnd = ra_alloc_dbt_arg2();
     lsassert(lsenv_offset_of_eip(lsenv) >= -2048 &&
             lsenv_offset_of_eip(lsenv) <= 2047);
-    la_append_ir2_opnd2i(LISA_ST_D, eip_opnd, env_ir2_opnd,
+    la_append_ir2_opnd2i(LISA_ST_W, eip_opnd, env_ir2_opnd,
                             lsenv_offset_of_eip(lsenv));
 
     /* 3. store x86 MMX and XMM registers to env */
@@ -2628,6 +2628,26 @@ static int generate_native_jmp_glue(void *code_buf, int n)
     int start = (lsenv->tr_data->real_ir2_inst_num << 2);
     int offset = 0;
     tr_init(NULL);
+
+    if (option_tb_link) {
+        /*
+         * NOTE: if tb link option enabled, direct/indirect jump optimizations
+         * will be enabled at the same time. In this scenario, there is no chance
+         * to update eflags to ENV in prologue/epilogue. That will lead to unknown
+         * behavior in wine program. So add eflags update operation in all jump
+         * scenarios to keep eflags in ENV is the latest value.
+         */
+        IR2_OPND eflags_opnd = ra_alloc_eflags();
+        IR2_OPND eflags_temp = ir2_opnd_new(IR2_OPND_IREG, 4);
+        la_append_ir2_opnd1i(LISA_X86MFFLAG, eflags_temp, 0x3f);
+        la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, eflags_temp);
+        ra_free_temp(eflags_temp);
+        lsassert(lsenv_offset_of_eflags(lsenv) >= -2048 &&
+                lsenv_offset_of_eflags(lsenv) <= 2047);
+        la_append_ir2_opnd2i(LISA_ST_W, eflags_opnd, env_ir2_opnd,
+                              lsenv_offset_of_eflags(lsenv));
+        la_append_ir2_opnd2i(LISA_ANDI, eflags_opnd, eflags_opnd, 0x400);
+    }
 
     IR2_OPND tb = ra_alloc_dbt_arg1();
     if (cpu_get_guest_base() == 0) {
