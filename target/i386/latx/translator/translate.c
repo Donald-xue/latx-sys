@@ -300,7 +300,6 @@ static inline uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
 IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
 {
     static uint8_t inst_cache[64];
-    uint8_t  *pins = inst_cache;
 
     IR1_INST *ir1_list = (IR1_INST *)mm_calloc(MAX_IR1_NUM_PER_TB, sizeof(IR1_INST));
     IR1_INST *pir1 = ir1_list;
@@ -310,11 +309,10 @@ IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
     do {
         /* read 32 instructioin bytes */
         lsassert(lsenv->cpu_state != NULL);
-        pins = inst_cache;
-        for (int i = 0; i < 32; ++i) {
-            *pins = cpu_read_code_via_qemu(lsenv->cpu_state, pc + i);
-            pins++;
-        }
+
+        /* copy target insns to inst_cache, for now 16 bytes once*/
+        memcpy(inst_cache, (void *)((uintptr_t)pc), 16);
+
         /* disasemble this instruction */
         pir1 = &ir1_list[ir1_num];
         pc = ir1_disasm(pir1, inst_cache, pc); /* get next pc */

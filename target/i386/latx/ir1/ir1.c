@@ -214,6 +214,10 @@ ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc)
         addr = (uint8_t *)&nop;
     }
 
+    /* FIXME:the count parameter in cs_disasm is 1, it means we translte 1 insn at a time,
+     * there should be a performance improvement if we increase the number, but
+     * for now there are some problems if we change it. It will be settled later.
+     */
     int count = cs_disasm(handle, addr, 15, (uint64_t)t_pc, 1, &info);
 
     ir1->info = info;
