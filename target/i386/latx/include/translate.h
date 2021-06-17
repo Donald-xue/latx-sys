@@ -1038,8 +1038,8 @@ int tr_ir2_assemble(const void *code_start_addr);
 #ifdef CONFIG_LATX_FLAG_REDUCTION
 int8 get_etb_type(IR1_INST *pir1);
 #endif
-IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num);
 
+IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc);
 
 extern ADDR context_switch_native_to_bt_ret_0;
 extern ADDR context_switch_native_to_bt;

@@ -57,8 +57,6 @@ typedef struct TRANSLATION_DATA {
     void *curr_tb; /* from QEMU */
 
     /* ir1 */
-    IR1_INST *ir1_inst_array;
-    int ir1_nr;
     IR1_INST *curr_ir1_inst;
     /* uint8       ir1_dump_threshold[MAX_IR1_NUM_PER_TB]; */
 

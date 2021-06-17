@@ -180,13 +180,6 @@ void tr_fini(bool check_the_extension)
     t->curr_tb = NULL;
     t->curr_ir1_inst = NULL;
 
-    IR1_INST *ir1_list = t->ir1_inst_array;
-    IR1_INST *pir1 = NULL;
-    for (int i = 0; i < t->ir1_nr; ++i) {
-        pir1 = ir1_list + i;
-        free(pir1->info->detail);
-        free(pir1->info);
-    }
     /* reset ir2 array */
     t->ir2_inst_num_current = 0;
     t->real_ir2_inst_num = 0;
@@ -272,7 +265,7 @@ static inline uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
     return cpu_ldub_code((CPUX86State *)cpu, (target_ulong)pc);
 }
 
-IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
+IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc)
 {
     IR1_INST *ir1_list = (IR1_INST *)mm_calloc(MAX_IR1_NUM_PER_TB, sizeof(IR1_INST));
     IR1_INST *pir1 = ir1_list;
@@ -299,7 +292,7 @@ IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
     tb->size = pc - start_pc;
 
     ir1_list = (IR1_INST *)mm_realloc(ir1_list, ir1_num * sizeof(IR1_INST));
-    *p_ir1_num = ir1_num;
+    tb->icount = ir1_num;
     return ir1_list;
 
 }
@@ -329,14 +322,7 @@ void tr_disasm(struct TranslationBlock *ptb)
 {
     ADDRX pc = ptb->pc;
     /* get ir1 instructions */
-    IR1_INST *ir1_list = ptb->_ir1_instructions;
-    int ir1_num = ptb->icount;
-    ir1_list = get_ir1_list(ptb, pc, &ir1_num);
-       
-    ptb->_ir1_instructions = ir1_list;
-    ptb->icount = ir1_num;
-    lsenv->tr_data->ir1_inst_array = ir1_list;
-    lsenv->tr_data->ir1_nr = ir1_num;
+    ptb->_ir1_instructions = get_ir1_list(ptb, pc);
     lsenv->tr_data->curr_ir1_inst = NULL;
 #ifdef CONFIG_LATX_FLAG_REDUCTION
         etb->_tb_type = get_etb_type(ir1_list + ir1_num - 1);
@@ -2229,6 +2215,13 @@ int tr_translate_tb(struct TranslationBlock *tb)
     tr_fini(translation_done);
     if (option_dump)
         fprintf(stderr, "tr_fini OK. translation done.\n");
+
+    IR1_INST *pir1 = tb->_ir1_instructions;
+    for (int i = 0; i < tb->_ir1_num; ++i) {
+        free(pir1->info->detail);
+        free(pir1->info);
+        pir1++;
+    }
 
     return code_size;
 }
