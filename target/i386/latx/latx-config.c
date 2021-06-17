@@ -93,7 +93,7 @@ void trace_tb_execution(struct TranslationBlock *tb)
 
     IR1_INST *ir1_list = tb->_ir1_instructions;
     IR1_INST *pir1 = NULL;
-    int ir1_nr = tb->_ir1_num;
+    int ir1_nr = tb->icount;
 
     int i = 0;
 

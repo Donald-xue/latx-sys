@@ -355,11 +355,11 @@ void tr_disasm(struct TranslationBlock *ptb)
     ADDRX pc = ptb->pc;
     /* get ir1 instructions */
     IR1_INST *ir1_list = ptb->_ir1_instructions;
-    int ir1_num = ptb->_ir1_num;
+    int ir1_num = ptb->icount;
     ir1_list = get_ir1_list(ptb, pc, &ir1_num);
        
     ptb->_ir1_instructions = ir1_list;
-    ptb->_ir1_num = ir1_num;
+    ptb->icount = ir1_num;
     lsenv->tr_data->ir1_inst_array = ir1_list;
     lsenv->tr_data->ir1_nr = ir1_num;
     lsenv->tr_data->curr_ir1_inst = NULL;
@@ -2157,7 +2157,7 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
     TRANSLATION_DATA *t = lsenv->tr_data;
 
     IR1_INST *ir1_list = t->ir1_inst_array;
-    ptb->icount = ir1_nr = t->ir1_nr;
+    ir1_nr = t->ir1_nr;
 
     if (option_dump) {
         fprintf(stderr, "[LATX] translation : generate IR2 from IR1.\n");

@@ -30,7 +30,7 @@ static inline IR1_INST *tb_ir1_inst_first(struct TranslationBlock *tb)
 
 static inline IR1_INST *tb_ir1_inst_last(TranslationBlock *tb)
 {
-    return tb->_ir1_instructions + tb->_ir1_num - 1;
+    return tb->_ir1_instructions + tb->icount - 1;
 }
 
 static inline IR1_INST *tb_ir1_inst(TranslationBlock *tb, const int i)
@@ -40,7 +40,7 @@ static inline IR1_INST *tb_ir1_inst(TranslationBlock *tb, const int i)
 
 static inline int tb_ir1_num(TranslationBlock *tb)
 {
-    return tb->_ir1_num;
+    return tb->icount;
 }
 
 static inline int8 etb_get_top_in(struct TranslationBlock *tb)

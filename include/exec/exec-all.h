@@ -538,7 +538,6 @@ struct TranslationBlock {
     uintptr_t jmp_dest[2];
 #ifdef CONFIG_LATX
     struct IR1_INST *_ir1_instructions;
-    int16  _ir1_num;
     int8 _top_in;
     int8 _top_out;
     void *next_tb[2];
