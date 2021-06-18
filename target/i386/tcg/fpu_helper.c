@@ -2343,6 +2343,14 @@ void helper_fxam_ST0(CPUX86State *env)
     if (SIGND(temp)) {
         env->fpus |= 0x200; /* C1 <-- 1 */
     }
+    /*
+     * if ST0 high and low is 0, fpus need to be set 0x4100.
+     * Add the condition check as QEMU 6.0 did.
+     */
+    if (env->fptags[env->fpstt]) {
+        env->fpus |= 0x4100; /* Empty */
+        return;
+    }
 
     expdif = EXPD(temp);
     if (expdif == MAXEXPD) {
