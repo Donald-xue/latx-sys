@@ -245,10 +245,22 @@ bool translate_hsubps(IR1_INST *pir1) { return false; }
 bool translate_vhsubpd(IR1_INST *pir1) { return false; }
 bool translate_vhsubps(IR1_INST *pir1) { return false; }
 bool translate_xave(IR1_INST *pir1) { return false; }
-bool translate_lfence(IR1_INST *pir1) { return true; }
+bool translate_lfence(IR1_INST *pir1)
+{
+    la_append_ir2_opnd0(LISA_DBAR);
+    return true;
+}
 bool translate_xrstor(IR1_INST *pir1) { return false; }
-bool translate_mfence(IR1_INST *pir1) { return true; }
-bool translate_sfence(IR1_INST *pir1) { return true; }
+bool translate_mfence(IR1_INST *pir1)
+{
+    la_append_ir2_opnd0(LISA_DBAR);
+    return true;
+}
+bool translate_sfence(IR1_INST *pir1)
+{
+    la_append_ir2_opnd0(LISA_DBAR);
+    return true;
+}
 bool translate_clflush(IR1_INST *pir1) { return false; }
 bool translate_popcnt(IR1_INST *pir1) { return false; }
 bool translate_lzcnt(IR1_INST *pir1) { return false; }
