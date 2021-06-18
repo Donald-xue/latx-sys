@@ -334,7 +334,7 @@ void tr_disasm(struct TranslationBlock *ptb)
     }
 #endif
 #ifdef CONFIG_LATX_DEBUG
-    counter_ir1_tr += ir1_num;
+    counter_ir1_tr += ptb->icount;
 #endif
 }
 
@@ -2217,7 +2217,7 @@ int tr_translate_tb(struct TranslationBlock *tb)
         fprintf(stderr, "tr_fini OK. translation done.\n");
 
     IR1_INST *pir1 = tb->_ir1_instructions;
-    for (int i = 0; i < tb->_ir1_num; ++i) {
+    for (int i = 0; i < tb->icount; ++i) {
         free(pir1->info->detail);
         free(pir1->info);
         pir1++;
