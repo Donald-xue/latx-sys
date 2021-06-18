@@ -620,11 +620,6 @@ bool translate_btx(IR1_INST *pir1)
     int t_imm = 0x1f;
     IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
 
-    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 32) {
-        lsassertm(0, "Invalid operand size (%d) in translate_btx.\n",
-                  ir1_opnd_size(ir1_get_opnd(pir1, 0)));
-    }
-
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, ZERO_EXTENSION, false);
     la_append_ir2_opnd2i_em(LISA_ANDI, bit_offset, src_opnd_1, t_imm);
