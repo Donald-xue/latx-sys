@@ -137,7 +137,40 @@ bool translate_das(IR1_INST *pir1)
     return true;
 }
 
-bool translate_aaa(IR1_INST *pir1) { return false; }
+bool translate_aaa(IR1_INST *pir1)
+{
+    IR1_OPND *reg_ax = &ax_ir1_opnd;
+    IR1_OPND *reg_al = &al_ir1_opnd;
+    IR2_OPND temp_opnd = ra_alloc_itemp();
+    IR2_OPND imm_opnd = ra_alloc_itemp();
+    IR2_OPND set_af_cf = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND ax = load_ireg_from_ir1(reg_ax, ZERO_EXTENSION, false);
+
+    /* af */
+    la_append_ir2_opnd1i_em(LISA_X86MFFLAG, temp_opnd, 0x4);
+    /* af == 1 ? */
+    la_append_ir2_opnd2i_em(LISA_ANDI, temp_opnd, temp_opnd, 0x10);
+    la_append_ir2_opnd3(LISA_BNE, temp_opnd, zero_ir2_opnd, set_af_cf);
+    /* (AL AND 0FH) > 9 ? */
+    la_append_ir2_opnd2i_em(LISA_ANDI, temp_opnd, ax, 0xf);
+    la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0xa);
+    la_append_ir2_opnd3(LISA_BGE, temp_opnd, imm_opnd, set_af_cf);
+    /* clear af and cf*/
+    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x5);
+    la_append_ir2_opnd1(LISA_B, label_exit);
+    /* set clear af and cf*/
+    la_append_ir2_opnd1(LISA_LABEL, set_af_cf);
+    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x5);
+    la_append_ir2_opnd2i_em(LISA_ADDI_D, ax, ax, 0x106);
+    /* exit */
+    la_append_ir2_opnd1(LISA_LABEL, label_exit);
+    la_append_ir2_opnd2i_em(LISA_ANDI, temp_opnd, ax, 0xf);
+    store_ireg_to_ir1(ax, reg_ax, false);
+    store_ireg_to_ir1(temp_opnd, reg_al, false);
+
+    return true;
+}
 bool translate_aas(IR1_INST *pir1) { return false; }
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
