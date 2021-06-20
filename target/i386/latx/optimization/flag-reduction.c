@@ -137,7 +137,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                          /* cwd, */          //X86_INS_CWD,
     {0, 0, 0},                                          /* cwde, */         //X86_INS_CWDE,
     {0, __SF | __PF, __OF},            /* daa, */          //X86_INS_DAA,
-    {0, 0, 0},                                          /* das, */          //X86_INS_DAS,
+    {0, __SF | __PF, __OF},                          /* das, */          //X86_INS_DAS,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_DATA16,
     {0, __OF | __SF | __ZF | __AF | __PF, 0}, /* dec, */                    //X86_INS_DEC,
     {0, __ALL_EFLAGS, __ALL_EFLAGS}, /* div, *///X86_INS_DIV,
