@@ -90,6 +90,7 @@ bool generate_eflag_by_lbt(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1, IR1_INST
 	case X86_INS_ROL: {
 	    break;
 	}
+	case X86_INS_DAA:
 	case X86_INS_SHLD:
 	case X86_INS_SHRD: {
 	    return false;
