@@ -161,9 +161,9 @@ bool translate_movq2dq(IR1_INST *pir1)
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
-    la_append_ir2_opnd2i(LISA_VCLRSTRI_V,
+    la_append_ir2_opnd2i(LISA_XVPICKVE_D,
                       ra_alloc_xmm(ir1_opnd_base_reg_num(dest)),
-                      ra_alloc_mmx(ir1_opnd_base_reg_num(src)), 7);
+                      ra_alloc_mmx(ir1_opnd_base_reg_num(src)), 0);
     //TODO:zero fpu top and tag word
     return true;
 }
@@ -293,9 +293,9 @@ bool translate_movsd(IR1_INST *pir1)
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
         IR2_OPND temp = load_freg_from_ir1_1(src, false, false);
-        la_append_ir2_opnd2i(LISA_VCLRSTRI_V,
+        la_append_ir2_opnd2i(LISA_XVPICKVE_D,
                           ra_alloc_xmm(ir1_opnd_base_reg_num(dest)), temp,
-                          7);
+                          0);
     } else if (ir1_opnd_is_mem(dest) && ir1_opnd_is_xmm(src)) {
         store_freg_to_ir1(ra_alloc_xmm(ir1_opnd_base_reg_num(src)), dest,
                           false, false);
@@ -313,9 +313,9 @@ bool translate_movss(IR1_INST *pir1)
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
         IR2_OPND temp = load_freg_from_ir1_1(src, false, false);
-        la_append_ir2_opnd2i(LISA_VCLRSTRI_V,
+        la_append_ir2_opnd2i(LISA_XVPICKVE_W,
                           ra_alloc_xmm(ir1_opnd_base_reg_num(dest)), temp,
-                          3);
+                          0);
         return true;
     } else if (ir1_opnd_is_mem(dest) && ir1_opnd_is_xmm(src)) {
         store_freg_to_ir1(ra_alloc_xmm(ir1_opnd_base_reg_num(src)), dest,

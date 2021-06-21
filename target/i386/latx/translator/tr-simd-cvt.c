@@ -116,7 +116,7 @@ bool translate_cvtpd2dq(IR1_INST *pir1)
 
     //la_append_ir2_opnd3(LISA_VILVL_W, dest_lo, ftemp_src_lo, ftemp_src_hi);
     la_append_ir2_opnd3(LISA_VILVL_W, dest_lo, ftemp_src_hi, ftemp_src_lo);
-    la_append_ir2_opnd2i(LISA_VCLRSTRI_V,dest_lo, dest_lo, 7);
+    la_append_ir2_opnd2i(LISA_XVPICKVE_D,dest_lo, dest_lo, 0);
     ra_free_temp(ftemp_src_lo);
     ra_free_temp(ftemp_src_hi);
     ra_free_temp(ftemp_over_flow);
@@ -191,7 +191,7 @@ bool translate_cvttpd2dq(IR1_INST *pir1)
 
     //la_append_ir2_opnd3(LISA_VILVL_W, dest_lo, ftemp_src_lo, ftemp_src_hi);
     la_append_ir2_opnd3(LISA_VILVL_W, dest_lo, ftemp_src_hi, ftemp_src_lo);
-    la_append_ir2_opnd2i(LISA_VCLRSTRI_V,dest_lo, dest_lo, 7);
+    la_append_ir2_opnd2i(LISA_XVPICKVE_D,dest_lo, dest_lo, 0);
     ra_free_temp(ftemp_src_lo);
     ra_free_temp(ftemp_src_hi);
     ra_free_temp(ftemp_over_flow);
@@ -303,7 +303,7 @@ bool translate_cvtpd2ps(IR1_INST *pir1)
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     la_append_ir2_opnd3(LISA_VFCVT_S_D, dest, dest, src);
-    la_append_ir2_opnd2i(LISA_VCLRSTRI_V, dest, dest, 7);
+    la_append_ir2_opnd2i(LISA_XVPICKVE_D, dest, dest, 0);
     return true;
 }
 
