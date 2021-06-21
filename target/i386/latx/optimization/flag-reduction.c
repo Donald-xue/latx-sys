@@ -9,7 +9,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
 
     {__AF, __ALL_EFLAGS, __OF | __SF | __ZF | __PF},                     /* aaa, *///X86_INS_AAA,
     {0, __ALL_EFLAGS, __OF | __AF | __CF}, /* aad, *///X86_INS_AAD,
-    {0, __ALL_EFLAGS, __OF | __AF | __CF}, /* aam, *///X86_INS_AAM,
+    {0, __SF | __ZF | __PF, __OF | __AF | __CF}, /* aam, *///X86_INS_AAM,
     {__AF, __ALL_EFLAGS, __OF | __SF | __ZF | __PF},              /* aas, *///X86_INS_AAS,
     {0, 0, 0},                                       /* fabs, */            //X86_INS_FABS,
     {__CF, __ALL_EFLAGS, 0}, /* adc, */          //X86_INS_ADC,

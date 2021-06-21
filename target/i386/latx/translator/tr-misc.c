@@ -187,7 +187,26 @@ bool translate_enter(IR1_INST *pir1) { return false; }
 bool translate_retf(IR1_INST *pir1) { return false; }
 bool translate_int_3(IR1_INST *pir1) { return false; }
 bool translate_into(IR1_INST *pir1) { return false; }
-bool translate_aam(IR1_INST *pir1) { return false; }
+bool translate_aam(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *reg_ah = &ah_ir1_opnd;
+    IR1_OPND *reg_al = &al_ir1_opnd;
+    IR2_OPND imm_opnd = load_ireg_from_ir1(opnd0, ZERO_EXTENSION, false);
+    IR2_OPND al = load_ireg_from_ir1(reg_al, ZERO_EXTENSION, false);
+    IR2_OPND old_al = ra_alloc_itemp();
+    IR2_OPND ah = ra_alloc_itemp();
+
+    la_append_ir2_opnd3_em(LISA_OR, old_al, zero_ir2_opnd, al);
+    la_append_ir2_opnd3(LISA_DIV_D, ah, al, imm_opnd);
+    la_append_ir2_opnd3(LISA_MOD_D, al, al, imm_opnd);
+
+    store_ireg_to_ir1(ah, reg_ah, false);
+    store_ireg_to_ir1(al, reg_al, false);
+    generate_eflag_calculation(al, old_al, imm_opnd, pir1, true);
+
+    return true;
+}
 bool translate_aad(IR1_INST *pir1) { return false; }
 bool translate_salc(IR1_INST *pir1) { return false; }
 bool translate_xlat(IR1_INST *pir1) { return false; }
