@@ -472,6 +472,7 @@ bool translate_psrad(IR1_INST *pir1)
             IR2_OPND temp1 = ra_alloc_ftemp();
             la_append_ir2_opnd2i(LISA_VREPLVEI_D, temp1, src, 0);
             IR2_OPND temp2 = ra_alloc_ftemp();
+
             la_append_ir2_opnd1i(LISA_VLDI, temp2, VLDI_IMM_TYPE0(2, 32));
             IR2_OPND temp3 = ra_alloc_ftemp();
             la_append_ir2_opnd3(LISA_VSLT_WU, temp3, temp1, temp2);
@@ -522,3 +523,19 @@ bool translate_psrldq(IR1_INST *pir1)
     return true;
 }
 
+
+bool translate_addsubpd(IR1_INST *pir1)
+{
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)) ||
+             ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)));
+    IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
+    IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
+    IR2_OPND temp_sub = ra_alloc_ftemp();
+
+    la_append_ir2_opnd3(LISA_VFSUB_D, temp_sub, dest, src);
+    la_append_ir2_opnd3(LISA_VFADD_D, dest, dest, src);
+    la_append_ir2_opnd2i(LISA_XVINSVE0_D, dest, temp_sub, 0);
+
+    return true;
+}

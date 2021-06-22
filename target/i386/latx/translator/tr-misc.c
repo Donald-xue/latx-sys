@@ -480,7 +480,7 @@ bool translate_vshufps(IR1_INST *pir1) { return false; }
 bool translate_vshufpd(IR1_INST *pir1) { return false; }
 bool translate_cmpxchg16b(IR1_INST *pir1) { return false; }
 bool translate_vmptrst(IR1_INST *pir1) { return false; }
-bool translate_addsubpd(IR1_INST *pir1) { return false; }
+//bool translate_addsubpd(IR1_INST *pir1) { return false; }
 bool translate_addsubps(IR1_INST *pir1) { return false; }
 bool translate_vaddsubpd(IR1_INST *pir1) { return false; }
 bool translate_vaddsubps(IR1_INST *pir1) { return false; }
