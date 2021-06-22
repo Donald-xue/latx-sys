@@ -58,9 +58,9 @@ make_cmd() {
 
     if [ $make_configure -eq 1 ] ; then
         if [ $enable_debug -eq 1 ] ; then
-            ../configure --target-list=i386-linux-user --enable-latx --enable-debug --disable-werror
+            ../configure --target-list=i386-linux-user --enable-latx --disable-guest-base --enable-debug --disable-werror
         else
-            ../configure --target-list=i386-linux-user --enable-latx --disable-debug-info --disable-werror
+            ../configure --target-list=i386-linux-user --enable-latx --disable-guest-base --disable-debug-info --disable-werror
         fi
     fi
 
