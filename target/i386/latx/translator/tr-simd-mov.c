@@ -277,6 +277,17 @@ bool translate_movhlps(IR1_INST *pir1)
     return true;
 }
 
+bool translate_movshdup(IR1_INST *pir1)
+{
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)) ||
+             ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)));
+    IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
+    IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
+    la_append_ir2_opnd3(LISA_XVPACKOD_W, dest, src, src);
+    return true;
+}
+
 bool translate_movlhps(IR1_INST *pir1)
 {
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));

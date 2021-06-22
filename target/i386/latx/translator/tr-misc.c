@@ -306,7 +306,7 @@ bool translate_vunpcklps(IR1_INST *pir1) { return false; }
 bool translate_vunpcklpd(IR1_INST *pir1) { return false; }
 bool translate_vunpckhps(IR1_INST *pir1) { return false; }
 bool translate_vunpckhpd(IR1_INST *pir1) { return false; }
-bool translate_movshdup(IR1_INST *pir1) { return false; }
+//bool translate_movshdup(IR1_INST *pir1) { return false; }
 bool translate_vmovlhps(IR1_INST *pir1) { return false; }
 bool translate_vmovhps(IR1_INST *pir1) { return false; }
 bool translate_vmovhpd(IR1_INST *pir1) { return false; }
