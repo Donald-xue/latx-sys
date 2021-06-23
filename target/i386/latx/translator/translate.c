@@ -2112,6 +2112,9 @@ void tr_dump_current_ir2(void)
 static inline void tr_init_for_each_ir1_in_tb(IR1_INST *pir1, int nr, int index)
  {
     lsenv->tr_data->curr_ir1_inst = pir1;
+#ifdef CONFIG_LATX_DEBUG
+    la_append_ir2_opnda(LISA_X86_INST, ir1_addr(pir1));
+#endif
 #ifdef CONFIG_LATX_FLAG_PATTERN
     fp_init_skipped_flags(pir1);
 #endif
