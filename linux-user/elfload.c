@@ -2597,7 +2597,7 @@ static void load_elf_image(const char *image_name, int image_fd,
 {
     struct elfhdr *ehdr = (struct elfhdr *)bprm_buf;
     struct elf_phdr *phdr;
-    abi_ulong load_addr, load_bias, loaddr, hiaddr, error;
+    abi_ulong load_addr, load_bias, loaddr, hiaddr, error, len;
     int i, retval, prot_exec;
     Error *err = NULL;
 
@@ -2633,7 +2633,7 @@ static void load_elf_image(const char *image_name, int image_fd,
      * Find the maximum size of the image and allocate an appropriate
      * amount of memory to handle that.  Locate the interpreter, if any.
      */
-    loaddr = -1, hiaddr = 0;
+    loaddr = -1, hiaddr = 0, len = 0;
     info->alignment = 0;
     for (i = 0; i < ehdr->e_phnum; ++i) {
         struct elf_phdr *eppnt = phdr + i;
@@ -2642,10 +2642,11 @@ static void load_elf_image(const char *image_name, int image_fd,
             if (a < loaddr) {
                 loaddr = a;
             }
-            a = eppnt->p_vaddr + eppnt->p_memsz;
-            if (a > hiaddr) {
-                hiaddr = a;
+            abi_ulong b = eppnt->p_vaddr + eppnt->p_memsz;
+            if (b > hiaddr) {
+                hiaddr = b;
             }
+            len += b - a;
             ++info->nsegs;
             info->alignment |= eppnt->p_align;
         } else if (eppnt->p_type == PT_INTERP && pinterp_name) {
@@ -2725,7 +2726,7 @@ static void load_elf_image(const char *image_name, int image_fd,
      * In both cases, we will overwrite pages in this range with mappings
      * from the executable.
      */
-    load_addr = target_mmap(loaddr, hiaddr - loaddr, PROT_NONE,
+    load_addr = target_mmap(loaddr, len, PROT_NONE,
                             MAP_PRIVATE | MAP_ANON | MAP_NORESERVE |
                             (ehdr->e_type == ET_EXEC ? MAP_FIXED : 0),
                             -1, 0);
