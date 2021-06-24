@@ -6,10 +6,12 @@
 
 /* bool translate_cvtpd2pi(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtpd2dq(IR1_INST * pir1) { return false; } */
+/* bool translate_cvttpd2dq(IR1_INST *pir1) { return false; } */
 /* bool translate_cvtdq2ps(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtdq2pd(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtps2pi(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtps2dq(IR1_INST * pir1) { return false; } */
+/* bool translate_cvttps2dq(IR1_INST *pir1) { return false; } */
 /* bool translate_cvtpi2pd(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtpi2ps(IR1_INST * pir1) { return false; } // use mxcsr */
 /* bool translate_cvtpd2ps(IR1_INST * pir1) { return false; } */
@@ -19,7 +21,6 @@
 /* bool translate_cvtsd2ss(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtsd2si(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtss2si(IR1_INST * pir1) { return false; } */
-/* bool translate_cvttss2si(IR1_INST * pir1) { return false; } */
 /* bool translate_cvttss2si(IR1_INST * pir1) { return false; } */
 /* bool translate_cvtps2pd(IR1_INST * pir1) { return false; } */
 /* bool translate_cvttsd2si(IR1_INST * pir1) { return false; } */
@@ -119,6 +120,158 @@ bool translate_cvtpd2dq(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_XVPICKVE_D,dest_lo, dest_lo, 0);
     ra_free_temp(ftemp_src_lo);
     ra_free_temp(ftemp_src_hi);
+    ra_free_temp(ftemp_over_flow);
+    ra_free_temp(ftemp_under_flow);
+    ra_free_temp(temp_int);
+    return true;
+}
+
+bool translate_cvttps2dq(IR1_INST *pir1)
+{
+    /* the low 64 bits of src */
+    IR2_OPND dest_lo;
+    /* the high 64 bits of src */
+    IR2_OPND dest_hi;
+
+    IR2_OPND real_dest;
+    IR2_OPND real_src;
+
+    real_dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
+    real_src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
+    dest_lo = ra_alloc_ftemp();
+    dest_hi = ra_alloc_ftemp();
+
+    IR2_OPND temp_int = ra_alloc_itemp();
+    IR2_OPND ftemp_over_flow = ra_alloc_ftemp();
+    IR2_OPND ftemp_under_flow = ra_alloc_ftemp();
+    IR2_OPND label_for_flow1 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_for_flow2 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_over = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_high = ir2_opnd_new_type(IR2_OPND_LABEL);
+    load_ireg_from_imm64(
+        temp_int, 0x41dfffffffdffffcULL); /* double for 0x7fffffff.499999 */
+    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ftemp_over_flow, temp_int);
+    load_ireg_from_imm64(
+        temp_int, 0xc1dfffffffdffffcULL); /* double for 0x80000000.499999 */
+    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ftemp_under_flow, temp_int);
+    /* the first single scalar operand */
+    /* is unorder or overflow or under flow? */
+    IR2_OPND ftemp_src1 = ra_alloc_ftemp();
+    la_append_ir2_opnd2(LISA_FCVT_D_S, ftemp_src1, real_src);
+    /* is unorder? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src1, ftemp_src1, FCMP_COND_CUN);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow1);
+    /* is overflow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_over_flow, ftemp_src1, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow1);
+    /* is under flow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src1, ftemp_under_flow, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow1);
+    /* is normal */
+    la_append_ir2_opnd2(LISA_FTINTRZ_W_D, ftemp_src1,
+                     ftemp_src1);
+    la_append_ir2_opnd1(LISA_B, label_high);
+
+    la_append_ir2_opnd1(LISA_LABEL, label_for_flow1);
+    load_ireg_from_imm32(temp_int, 0x80000000, UNKNOWN_EXTENSION);
+    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ftemp_src1, temp_int);
+    la_append_ir2_opnd1(LISA_LABEL, label_high);
+    /* the second single scalar operand */
+    /* is unorder or overflow or under flow? */
+    IR2_OPND ftemp_src2 = ra_alloc_ftemp();
+    la_append_ir2_opnd2i(LISA_VEXTRINS_W, ftemp_src2, real_src, 
+                        VEXTRINS_IMM_4_0(0, 1));
+    la_append_ir2_opnd2(LISA_FCVT_D_S, ftemp_src2, ftemp_src2);
+    /* is unorder? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src2, ftemp_src2, FCMP_COND_CUN);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow2);
+    /* is overflow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_over_flow, ftemp_src2, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow2);
+    /* is under flow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src2, ftemp_under_flow, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow2);
+    /* is normal */
+    la_append_ir2_opnd2(LISA_FTINTRZ_W_D, ftemp_src2,
+                     ftemp_src2);
+    la_append_ir2_opnd1(LISA_B, label_over);
+
+    la_append_ir2_opnd1(LISA_LABEL, label_for_flow2);
+    load_ireg_from_imm32(temp_int, 0x80000000, UNKNOWN_EXTENSION);
+    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ftemp_src2, temp_int);
+    la_append_ir2_opnd1(LISA_LABEL, label_over);
+    /* merge */
+    la_append_ir2_opnd3(LISA_VILVL_W, dest_lo, ftemp_src2, ftemp_src1);
+
+
+    IR2_OPND label_for_flow3 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_for_flow4 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_over2 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_high2 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    /* the first single scalar operand */
+    /* is unorder or overflow or under flow? */
+    la_append_ir2_opnd2i(LISA_VEXTRINS_W, ftemp_src1, real_src, 
+                        VEXTRINS_IMM_4_0(0, 2));
+    la_append_ir2_opnd2(LISA_FCVT_D_S, ftemp_src1, ftemp_src1);
+    /* is unorder? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src1, ftemp_src1, FCMP_COND_CUN);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow3);
+    /* is overflow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_over_flow, ftemp_src1, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow3);
+    /* is under flow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src1, ftemp_under_flow, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow3);
+    /* is normal */
+    la_append_ir2_opnd2(LISA_FTINTRZ_W_D, ftemp_src1,
+                     ftemp_src1);
+    la_append_ir2_opnd1(LISA_B, label_high2);
+
+    la_append_ir2_opnd1(LISA_LABEL, label_for_flow3);
+    load_ireg_from_imm32(temp_int, 0x80000000, UNKNOWN_EXTENSION);
+    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ftemp_src1, temp_int);
+    la_append_ir2_opnd1(LISA_LABEL, label_high2);
+    /* the second single scalar operand */
+    /* is unorder or overflow or under flow? */
+    la_append_ir2_opnd2i(LISA_VEXTRINS_W, ftemp_src2, real_src, 
+                        VEXTRINS_IMM_4_0(0, 3));
+    la_append_ir2_opnd2(LISA_FCVT_D_S, ftemp_src2, ftemp_src2);
+    /* is unorder? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src2, ftemp_src2, FCMP_COND_CUN);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow4);
+    /* is overflow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_over_flow, ftemp_src2, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow4);
+    /* is under flow? */
+    la_append_ir2_opnd3i(LISA_FCMP_COND_D, 
+        fcc0_ir2_opnd, ftemp_src2, ftemp_under_flow, FCMP_COND_CLT);
+    la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_flow4);
+    /* is normal */
+    la_append_ir2_opnd2(LISA_FTINTRZ_W_D, ftemp_src2,
+                     ftemp_src2);
+    la_append_ir2_opnd1(LISA_B, label_over2);
+
+    la_append_ir2_opnd1(LISA_LABEL, label_for_flow4);
+    load_ireg_from_imm32(temp_int, 0x80000000, UNKNOWN_EXTENSION);
+    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ftemp_src2, temp_int);
+    la_append_ir2_opnd1(LISA_LABEL, label_over2);
+    /* merge */
+    la_append_ir2_opnd3(LISA_VILVL_W, dest_hi, ftemp_src2, ftemp_src1);
+    la_append_ir2_opnd2i(LISA_VEXTRINS_D, real_dest, dest_lo, VEXTRINS_IMM_4_0(0, 0));
+    la_append_ir2_opnd2i(LISA_VEXTRINS_D, real_dest, dest_hi, VEXTRINS_IMM_4_0(1, 0));
+    ra_free_temp(ftemp_src1);
+    ra_free_temp(ftemp_src2);
     ra_free_temp(ftemp_over_flow);
     ra_free_temp(ftemp_under_flow);
     ra_free_temp(temp_int);

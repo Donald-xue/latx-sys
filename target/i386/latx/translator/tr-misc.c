@@ -363,7 +363,6 @@ bool translate_vcvtss2sd(IR1_INST *pir1) { return false; }
 bool translate_vcvtsd2ss(IR1_INST *pir1) { return false; }
 bool translate_vcvtps2pd(IR1_INST *pir1) { return false; }
 bool translate_vcvtpd2ps(IR1_INST *pir1) { return false; }
-bool translate_cvttps2dq(IR1_INST *pir1) { return false; }
 bool translate_vcvtdq2ps(IR1_INST *pir1) { return false; }
 bool translate_vcvtps2dq(IR1_INST *pir1) { return false; }
 bool translate_vcvttps2dq(IR1_INST *pir1) { return false; }
