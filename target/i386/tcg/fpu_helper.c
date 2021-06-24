@@ -2344,19 +2344,22 @@ void helper_fxam_ST0(CPUX86State *env)
         env->fpus |= 0x200; /* C1 <-- 1 */
     }
     /*
-     * if ST0 high and low is 0, fpus need to be set 0x4100.
-     * Add the condition check as QEMU 6.0 did.
+     *LATX don't support fptags. fptags is one forever.
+     * FXAM should set 4100, when st0 is empty.
+     * but when st0 is zero, FXAM st0 is also empty.
+     * Therefore we think st0 is empty, when st0 is reg0
+     * and st0 is 0
      */
-    if (env->fptags[env->fpstt]) {
-        env->fpus |= 0x4100; /* Empty */
-        return;
-    }
+    if ((env->fpstt == 0) && env->fptags[env->fpstt]) {
+         env->fpus |= 0x4100; /* Empty */
+         return;
+     }
 
     expdif = EXPD(temp);
     if (expdif == MAXEXPD) {
         if (MANTD(temp) == 0x8000000000000000ULL) {
             env->fpus |= 0x500; /* Infinity */
-       } else {
+        } else if (MANTD(temp) & 0x8000000000000000ULL) {
             env->fpus |= 0x100; /* NaN */
         }
     } else if (expdif == 0) {
@@ -2365,7 +2368,7 @@ void helper_fxam_ST0(CPUX86State *env)
         } else {
             env->fpus |= 0x4400; /* Denormal */
         }
-    } else {
+    } else if (MANTD(temp) & 0x8000000000000000ULL) {
         env->fpus |= 0x400;
     }
 }
