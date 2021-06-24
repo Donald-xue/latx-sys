@@ -647,7 +647,7 @@ bool translate_fninit(IR1_INST *pir1) {
 
     /* clear top */
     if (option_lsfpu) {
-        la_append_ir2_opnd1(LISA_X86MTTOP, zero_ir2_opnd);
+        la_append_ir2_opndi(LISA_X86MTTOP, 0);
         la_append_ir2_opnd0(LISA_X86SETTM);
     } else {
         offset = lsenv_offset_of_top(lsenv);
