@@ -1322,13 +1322,25 @@ bool translate_fbstp(IR1_INST *pir1)
     fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
     return false;
 }
+/*
+ * NOTE:invoke helper is much easier than native insns, there is 512 bytes need to
+ * be safed or restored.
+ * On the other hand, fxsave/fxrestore is not under hot path so that is acceptable
+ * from performance perspective.
+ */
 bool translate_fxsave(IR1_INST *pir1)
 {
-    fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
-    return false;
+    IR2_OPND dest_opnd =
+        mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+
+    tr_gen_call_to_helper2((ADDR)helper_fxsave, dest_opnd, 0);
+    return true;
 }
 bool translate_fxrstor(IR1_INST *pir1)
 {
-    fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
-    return false;
+    IR2_OPND dest_opnd =
+          mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+
+    tr_gen_call_to_helper2((ADDR)helper_fxrstor, dest_opnd, 0);
+    return true;
 }

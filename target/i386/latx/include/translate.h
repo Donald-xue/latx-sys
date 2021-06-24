@@ -1161,6 +1161,7 @@ void rotate_fpu_by(int step);
 void rotate_fpu_to_bias(int bias);
 
 void tr_gen_call_to_helper1(ADDR func, int use_fp);
+void tr_gen_call_to_helper2(ADDR func, IR2_OPND arg_opnd, int use_fp);
 void tr_load_top_from_env(void);
 void tr_gen_top_mode_init(void);
 

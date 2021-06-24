@@ -3581,6 +3581,23 @@ void tr_gen_call_to_helper1(ADDR func, int use_fp)
     tr_gen_call_to_helper_epilogue(use_fp);
 }
 
+void tr_gen_call_to_helper2(ADDR func, IR2_OPND arg_opnd, int use_fp)
+{
+    IR2_OPND func_addr_opnd = ra_alloc_dbt_arg2();
+    IR2_OPND a0_opnd = ir2_opnd_new(IR2_OPND_IREG, 4);
+    IR2_OPND a1_opnd = ir2_opnd_new(IR2_OPND_IREG, 5);
+
+    tr_gen_call_to_helper_prologue(use_fp);
+
+    load_ireg_from_addr(func_addr_opnd, (ADDR)func);
+
+    la_append_ir2_opnd2_em(LISA_MOV64, a0_opnd, env_ir2_opnd);
+    la_append_ir2_opnd3(LISA_OR, a1_opnd, zero_ir2_opnd, arg_opnd);
+    la_append_ir2_opnd2i(LISA_JIRL, ir2_opnd_new(IR2_OPND_IREG, 1), func_addr_opnd, 0);
+
+    tr_gen_call_to_helper_epilogue(use_fp);
+}
+
 IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
 {
     IR2_OPND label_lat_lock = ir2_opnd_new_type(IR2_OPND_LABEL);
