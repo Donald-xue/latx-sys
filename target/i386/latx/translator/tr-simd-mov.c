@@ -14,6 +14,7 @@
 /* bool translate_movntq(IR1_INST * pir1) { return false; } */
 /* bool translate_pmovmskb(IR1_INST * pir1) { return false; } */
 /* bool translate_maskmovdqu(IR1_INST * pir1) { return false; } */
+/* bool translate_maskmovq(IR1_INST *pir1) { return false; } */
 /* bool translate_movupd(IR1_INST *pir1)  */
 /* bool translate_movdqa(IR1_INST *pir1)  */
 /* bool translate_movdqu(IR1_INST *pir1)  */
@@ -188,6 +189,34 @@ bool translate_pmovmskb(IR1_INST *pir1)
         ra_free_temp(itemp);
         ra_free_temp(ftemp);
     }
+    return true;
+}
+
+bool translate_maskmovq(IR1_INST *pir1)
+{
+    IR2_OPND src = ra_alloc_ftemp();
+    IR2_OPND mask = ra_alloc_ftemp();
+	load_freg_from_ir1_2(src, ir1_get_opnd(pir1, 0), false, false);
+	load_freg_from_ir1_2(mask, ir1_get_opnd(pir1, 1), false, false);
+    IR2_OPND zero = ra_alloc_ftemp();
+    la_append_ir2_opnd3(LISA_VXOR_V, zero, zero, zero);
+    /*
+     * Mapping to LA 23 -> 30
+     */
+    IR2_OPND base_opnd = ir2_opnd_new(IR2_OPND_IREG, 30);
+    lsassert(cpu_get_guest_base() == 0);
+    IR2_OPND temp_mask = ra_alloc_ftemp();
+    la_append_ir2_opnd2i(LISA_VANDI_B, temp_mask, mask, 0x80);
+    IR2_OPND mem_mask = ra_alloc_ftemp();
+    la_append_ir2_opnd3(LISA_VSEQ_B, mem_mask, temp_mask, zero);
+    la_append_ir2_opnd3(LISA_VNOR_V, temp_mask, mem_mask, zero);
+    IR2_OPND mem_data = ra_alloc_ftemp();
+    IR2_OPND xmm_data = ra_alloc_ftemp();
+    la_append_ir2_opnd2i(LISA_FLD_D, mem_data, base_opnd, 0);
+    la_append_ir2_opnd3(LISA_VAND_V, xmm_data, src, temp_mask);
+    la_append_ir2_opnd3(LISA_VAND_V, mem_data, mem_data, mem_mask);
+    la_append_ir2_opnd3(LISA_VOR_V, mem_data, mem_data, xmm_data);
+    la_append_ir2_opnd2i(LISA_FST_D, mem_data, base_opnd, 0);
     return true;
 }
 

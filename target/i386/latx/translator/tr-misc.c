@@ -523,7 +523,6 @@ bool translate_vpsllq(IR1_INST *pir1) { return false; }
 bool translate_vpmuludq(IR1_INST *pir1) { return false; }
 bool translate_vpmaddwd(IR1_INST *pir1) { return false; }
 bool translate_vpsadbw(IR1_INST *pir1) { return false; }
-bool translate_maskmovq(IR1_INST *pir1) { return false; }
 bool translate_vmaskmovdqu(IR1_INST *pir1) { return false; }
 bool translate_vpsubb(IR1_INST *pir1) { return false; }
 bool translate_vpsubw(IR1_INST *pir1) { return false; }

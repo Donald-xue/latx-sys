@@ -2079,8 +2079,8 @@ bool ir1_translate(IR1_INST *ir1)
         }
     } else {
         if (translate_functions[tr_func_idx] == NULL) {
-            fprintf(stderr, "%s %s %d error : this ins not implemented\n",
-                    __FILE__, __func__, __LINE__);
+            fprintf(stderr, "%s %s %d error : this ins %d not implemented\n",
+                    __FILE__, __func__, __LINE__, tr_func_idx);
             ir1_opcode_dump(ir1);
             exit(-1);
         }
