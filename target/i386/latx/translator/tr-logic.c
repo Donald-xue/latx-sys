@@ -646,6 +646,14 @@ bool translate_shld(IR1_INST *pir1)
 
 bool translate_bswap(IR1_INST *pir1)
 {
+    if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16){
+        IR1_OPND *op0 = &(pir1->info->detail->x86.operands[0]);
+        op0->size = (32 >> 3);
+        if(op0->reg == X86_REG_AX) op0->reg = X86_REG_EAX;
+        if(op0->reg == X86_REG_BX) op0->reg = X86_REG_EBX;
+        if(op0->reg == X86_REG_CX) op0->reg = X86_REG_ECX;
+        if(op0->reg == X86_REG_DX) op0->reg = X86_REG_EDX;
+    };
     lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32);
 
     IR2_OPND bswap_opnd =
