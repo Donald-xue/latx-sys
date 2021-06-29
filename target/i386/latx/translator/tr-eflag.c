@@ -18,25 +18,24 @@ bool translate_popf(IR1_INST *pir1)
         }
         la_append_ir2_opnd3_em(LISA_ADD_ADDR, tmp, esp_opnd, gbase);
         ir2_opnd_set_em(&tmp, EM_MIPS_ADDRESS, 32);
-        la_append_ir2_opnd2i(LISA_LD_W, eflags_temp_opnd, tmp,
+        la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, tmp,
                 -lsenv->tr_data->curr_esp_need_decrease);
         ra_free_temp(tmp);
         ra_free_temp(gbase);
     } else {
-        la_append_ir2_opnd2i(LISA_LD_W, eflags_temp_opnd, esp_opnd,
+        la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, esp_opnd,
                 -lsenv->tr_data->curr_esp_need_decrease);
     }
     la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
-    la_append_ir2_opnd2i(LISA_ANDI, eflags_opnd, eflags_opnd,  0x400);
-    la_append_ir2_opnd2i(LISA_ORI, eflags_opnd, eflags_opnd, 0x202);
     /*
      * Some apps test eflags [22:12] bits for CPU feature detection.
      * Wine detect bit 21 to detemine whether CPU support SSE.
      * To make this kind of apps happy, we not only store the bit 0 to 12
      * but also store bit 12 to 22.
      */
-    la_append_ir2_opnd2ii(LISA_BSTRINS_D, eflags_temp_opnd, zero_ir2_opnd, 11, 0);
-    la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, eflags_temp_opnd);
+    load_ireg_from_imm32(eflags_temp_opnd, 0xfffff400, ZERO_EXTENSION);
+    la_append_ir2_opnd3(LISA_AND, eflags_opnd, eflags_opnd, eflags_temp_opnd);
+    la_append_ir2_opnd2i(LISA_ORI, eflags_opnd, eflags_opnd, 0x202);
     ra_free_temp(eflags_temp_opnd);
 
     // IR1_OPCODE next_opcode = ((IR1_INST *)(pir1 + 1))->_opcode;
