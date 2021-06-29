@@ -646,20 +646,46 @@ bool translate_shld(IR1_INST *pir1)
 
 bool translate_bswap(IR1_INST *pir1)
 {
-    if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16){
-        IR1_OPND *op0 = &(pir1->info->detail->x86.operands[0]);
-        op0->size = (32 >> 3);
-        if(op0->reg == X86_REG_AX) op0->reg = X86_REG_EAX;
-        if(op0->reg == X86_REG_BX) op0->reg = X86_REG_EBX;
-        if(op0->reg == X86_REG_CX) op0->reg = X86_REG_ECX;
-        if(op0->reg == X86_REG_DX) op0->reg = X86_REG_EDX;
-    };
-    lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32);
+    IR2_OPND bswap_opnd;
+    IR1_OPND *ir1_opnd = ir1_get_opnd(pir1, 0);
+    int opnd_size = ir1_opnd_size(ir1_opnd);
 
-    IR2_OPND bswap_opnd =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
+    if(opnd_size == 16){
+        ir1_opnd->size = (32 >> 3);
+        switch (ir1_opnd->reg) {
+            case X86_REG_AX:
+                ir1_opnd->reg = X86_REG_EAX;
+                break;
+            case X86_REG_BX:
+                ir1_opnd->reg = X86_REG_EBX;
+                break;
+            case X86_REG_CX:
+                ir1_opnd->reg = X86_REG_ECX;
+                break;
+            case X86_REG_DX:
+                ir1_opnd->reg = X86_REG_EDX;
+                break;
+            case X86_REG_SI:
+                ir1_opnd->reg = X86_REG_ESI;
+                break;
+            case X86_REG_DI:
+                ir1_opnd->reg = X86_REG_EDI;
+                break;
+            default:
+                lsassert(0);
+                break;
+        }
+        bswap_opnd =
+            load_ireg_from_ir1(ir1_opnd, UNKNOWN_EXTENSION, false);
+        la_append_ir2_opnd2ii(LISA_BSTRINS_W, bswap_opnd, zero_ir2_opnd, 15, 0);
+    } else {
+        lsassert(opnd_size == 32);
 
-    la_append_ir2_opnd2(LISA_REVB_2W, bswap_opnd, bswap_opnd);
+        bswap_opnd =
+            load_ireg_from_ir1(ir1_opnd, UNKNOWN_EXTENSION, false);
+
+        la_append_ir2_opnd2(LISA_REVB_2W, bswap_opnd, bswap_opnd);
+    }
     #warning high 32bit sign extension may corrupt, add.w 0 to resolve
     //lsassert(ir2_opnd_is_sx(&bswap_opnd, 32));
     ir2_opnd_set_em(&bswap_opnd, SIGN_EXTENSION, 32);
