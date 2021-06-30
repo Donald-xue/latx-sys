@@ -55,6 +55,8 @@ extern "C" {
 // This version number will be bumped up whenever we have a new major change.
 #define CS_NEXT_VERSION 5
 
+#define IR1_INST_SIZE (sizeof(cs_insn) + sizeof(cs_detail))
+
 // Capstone package version
 #define CS_VERSION_MAJOR CS_API_MAJOR
 #define CS_VERSION_MINOR CS_API_MINOR
@@ -525,7 +527,9 @@ size_t CAPSTONE_API cs_disasm(csh handle,
 		const uint8_t *code, size_t code_size,
 		uint64_t address,
 		size_t count,
-		cs_insn **insn);
+		cs_insn **insn,
+                int ir1_num,
+                void *pir1_base);
 
 /**
   Deprecated function - to be retired in the next version!

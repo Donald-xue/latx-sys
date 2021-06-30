@@ -258,17 +258,21 @@ void etb_add_succ(void* petb,int depth)
     return;
 }
 #endif
-    
+
 /* func to access QEMU's data */
 static inline uint8_t cpu_read_code_via_qemu(void *cpu, ADDRX pc)
 {
     return cpu_ldub_code((CPUX86State *)cpu, (target_ulong)pc);
 }
 
+/* we creat an array to fill all 255 ir1's info. */
+static char insn_info[MAX_IR1_NUM_PER_TB * IR1_INST_SIZE] = {0};
+
 IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc)
 {
     IR1_INST *ir1_list = (IR1_INST *)mm_calloc(MAX_IR1_NUM_PER_TB, sizeof(IR1_INST));
-    IR1_INST *pir1 = ir1_list;
+    IR1_INST *pir1 = NULL;
+    void *pir1_base = insn_info;
     ADDRX start_pc = pc;
 
     int ir1_num = 0;
@@ -278,8 +282,10 @@ IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc)
 
         /* disasemble this instruction */
         pir1 = &ir1_list[ir1_num];
-        pc = ir1_disasm(pir1, (uint8_t *)((uintptr_t)pc), pc); /* get next pc */
+        /* get next pc */
+        pc = ir1_disasm(pir1, (uint8_t *)((uintptr_t)pc), pc, ir1_num, pir1_base);
         ir1_num++;
+        lsassert(ir1_num <= 255);
 
         /* check if TB is too large */
         if (ir1_num == MAX_IR1_NUM_PER_TB && !ir1_is_tb_ending(pir1)) {
@@ -2218,13 +2224,6 @@ int tr_translate_tb(struct TranslationBlock *tb)
     tr_fini(translation_done);
     if (option_dump)
         fprintf(stderr, "tr_fini OK. translation done.\n");
-
-    IR1_INST *pir1 = tb->_ir1_instructions;
-    for (int i = 0; i < tb->icount; ++i) {
-        free(pir1->info->detail);
-        free(pir1->info);
-        pir1++;
-    }
 
     return code_size;
 }

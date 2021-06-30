@@ -205,7 +205,7 @@ static void __attribute__((__constructor__)) x86tomisp_ir1_init(void)
         ir1_opnd_new_static_mem(X86_OP_MEM, 32, X86_REG_EDI, 0);
 };
 
-ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc)
+ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc, int ir1_num, void *pir1_base)
 {
     cs_insn *info;
     uint32_t nop = 0x401f0f;
@@ -218,7 +218,7 @@ ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc)
      * there should be a performance improvement if we increase the number, but
      * for now there are some problems if we change it. It will be settled later.
      */
-    int count = cs_disasm(handle, addr, 15, (uint64_t)t_pc, 1, &info);
+    int count = cs_disasm(handle, addr, 15, (uint64_t)t_pc, 1, &info, ir1_num, pir1_base);
 
     ir1->info = info;
 

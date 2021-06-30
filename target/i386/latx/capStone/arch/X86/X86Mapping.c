@@ -3283,6 +3283,7 @@ static bool valid_repe(cs_struct *h, unsigned int opcode)
 // add *CX register to regs_read[] & regs_write[]
 static void add_cx(MCInst *MI)
 {
+#if 0
 	if (MI->csh->detail) {
 		x86_reg cx;
 
@@ -3299,6 +3300,7 @@ static void add_cx(MCInst *MI)
 		MI->flat_insn->detail->regs_write[MI->flat_insn->detail->regs_write_count] = cx;
 		MI->flat_insn->detail->regs_write_count++;
 	}
+#endif
 }
 #endif
 

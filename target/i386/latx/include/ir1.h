@@ -161,7 +161,8 @@ extern IR1_OPND ebp_mem32_ir1_opnd;
 extern IR1_OPND esi_mem32_ir1_opnd;
 extern IR1_OPND edi_mem32_ir1_opnd;
 
-ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc);
+ADDRX ir1_disasm(IR1_INST *ir1, uint8_t *addr, ADDRX t_pc,
+                    int ir1_num, void *pir1_base);
 
 // TODO : avx_bcast
 void ir1_opnd_build_reg(IR1_OPND *opnd, int size, x86_reg reg);

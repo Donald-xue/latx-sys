@@ -825,7 +825,7 @@ static void skipdata_opstr(char *opstr, const uint8_t *buffer, size_t size)
 // dynamicly allocate memory to contain disasm insn
 // NOTE: caller must free() the allocated memory itself to avoid memory leaking
 CAPSTONE_EXPORT
-size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, size_t count, cs_insn **insn)
+size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, size_t count, cs_insn **insn, int ir1_num, void *pir1_base)
 {
 	struct cs_struct *handle;
 	MCInst mci;
@@ -843,6 +843,9 @@ size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64
 	const uint8_t *buffer_org;
 	unsigned int cache_size = INSN_CACHE_SIZE;
 	size_t next_offset;
+
+        uint64_t total_base = (uint64_t)pir1_base;
+        uint64_t current_address = total_base + (ir1_num * IR1_INST_SIZE);
 
 	handle = (struct cs_struct *)(uintptr_t)ud;
 	if (!handle) {
@@ -868,13 +871,7 @@ size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64
 	size_org = size;
 
 	total_size = sizeof(cs_insn) * cache_size;
-	total = cs_mem_malloc(total_size);
-	if (total == NULL) {
-		// insufficient memory
-		handle->errnum = CS_ERR_MEM;
-		return 0;
-	}
-
+        total = (void *)current_address;
 	insn_cache = total;
 
 	while (size > 0) {
@@ -883,10 +880,9 @@ size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64
 
 		// relative branches need to know the address & size of current insn
 		mci.address = offset;
-
 		if (handle->detail) {
 			// allocate memory for @detail pointer
-			insn_cache->detail = cs_mem_malloc(sizeof(cs_detail));
+			insn_cache->detail = (void *)(current_address + sizeof(cs_insn));
 		} else {
 			insn_cache->detail = NULL;
 		}
@@ -1038,7 +1034,7 @@ CAPSTONE_EXPORT
 CAPSTONE_DEPRECATED
 size_t CAPSTONE_API cs_disasm_ex(csh ud, const uint8_t *buffer, size_t size, uint64_t offset, size_t count, cs_insn **insn)
 {
-	return cs_disasm(ud, buffer, size, offset, count, insn);
+	return cs_disasm(ud, buffer, size, offset, count, insn, 0, NULL);
 }
 
 CAPSTONE_EXPORT
