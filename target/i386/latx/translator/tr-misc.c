@@ -515,7 +515,6 @@ bool translate_vpaddsb(IR1_INST *pir1) { return false; }
 bool translate_vpaddsw(IR1_INST *pir1) { return false; }
 bool translate_vpmaxsw(IR1_INST *pir1) { return false; }
 bool translate_vpxor(IR1_INST *pir1) { return false; }
-bool translate_lddqu(IR1_INST *pir1) { return false; }
 bool translate_vlddqu(IR1_INST *pir1) { return false; }
 bool translate_vpsllw(IR1_INST *pir1) { return false; }
 bool translate_vpslld(IR1_INST *pir1) { return false; }

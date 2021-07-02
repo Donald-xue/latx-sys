@@ -275,7 +275,11 @@ bool translate_movapd(IR1_INST *pir1)
     translate_movaps(pir1);
     return true;
 }
-
+bool translate_lddqu(IR1_INST *pir1)
+{
+    translate_movaps(pir1);
+    return true;
+}
 bool translate_movaps(IR1_INST *pir1)
 {
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
