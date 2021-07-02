@@ -49,6 +49,13 @@ static inline int lsenv_offset_of_top(ENV *lsenv)
     return (int)((ADDR)(&cpu->fpstt) - (ADDR)lsenv->cpu_state);
 }
 
+static inline int lsenv_offset_of_cpu_index(ENV *lsenv)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    CPUState *cpu_state = env_cpu(cpu);
+    return (int)((ADDR)(&cpu_state->cpu_index) - (ADDR)lsenv->cpu_state);
+}
+
 /* FPU top */
 static inline int lsenv_get_top(ENV *lsenv)
 {

@@ -3601,9 +3601,11 @@ void tr_gen_call_to_helper2(ADDR func, IR2_OPND arg_opnd, int use_fp)
 IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
 {
     IR2_OPND label_lat_lock = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_locked= ir2_opnd_new_type(IR2_OPND_LABEL);
     IR2_OPND lat_lock_addr = ra_alloc_itemp();
     int itemp_num = lsenv->tr_data->itemp_num;
     IR2_OPND lat_lock_val= ra_alloc_itemp();
+    IR2_OPND cpu_index = ra_alloc_itemp();
     ir2_opnd_set_em(&lat_lock_addr, ZERO_EXTENSION, 64);
 	//compute lat_lock offset by add (mem_addr+imm)[9:6]
     la_append_ir2_opnd2i(LISA_ADDI_W, lat_lock_addr, mem_addr, imm);
@@ -3612,14 +3614,20 @@ IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
     load_ireg_from_addr(lat_lock_addr, (ADDR)(lat_lock));
     la_append_ir2_opnd3(LISA_ADD_D, lat_lock_addr, lat_lock_addr, lat_lock_val);
 
+    la_append_ir2_opnd2i(LISA_LD_W, cpu_index, env_ir2_opnd,
+                      lsenv_offset_of_cpu_index(lsenv));
+    la_append_ir2_opnd2i(LISA_ADDI_W, cpu_index, cpu_index, 1);
     //spin lock
     la_append_ir2_opnd1(LISA_LABEL, label_lat_lock);
     la_append_ir2_opnd2i_em(LISA_LL_W, lat_lock_val, lat_lock_addr, 0);
-    la_append_ir2_opnd3(LISA_BNE, lat_lock_val, zero_ir2_opnd, label_lat_lock);
-    la_append_ir2_opnd2i_em(LISA_ORI, lat_lock_val, lat_lock_val, 1);
+    la_append_ir2_opnd3(LISA_BNE, lat_lock_val, zero_ir2_opnd, label_locked);
+    la_append_ir2_opnd3(LISA_OR, lat_lock_val, lat_lock_val, cpu_index);
+    la_append_ir2_opnd1(LISA_LABEL, label_locked);
+    la_append_ir2_opnd3(LISA_BNE, lat_lock_val, cpu_index, label_lat_lock);
     la_append_ir2_opnd2i(LISA_SC_W, lat_lock_val, lat_lock_addr, 0);
     la_append_ir2_opnd3(LISA_BEQ, lat_lock_val, zero_ir2_opnd, label_lat_lock);
 
+    ra_free_temp(cpu_index);
     ra_free_temp(lat_lock_val);
     lsenv->tr_data->itemp_num = itemp_num;
 
