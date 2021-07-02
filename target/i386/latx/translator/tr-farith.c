@@ -868,7 +868,93 @@ bool translate_fscale(IR1_INST *pir1)
 
 bool translate_fxam(IR1_INST *pir1)
 {
-    tr_gen_call_to_helper1((ADDR)helper_fxam_ST0, 1);
+    if (!option_lsfpu) {
+        tr_gen_call_to_helper1((ADDR)helper_fxam_ST0, 1);
+    } else {
+        IR2_OPND st0_opnd = ra_alloc_st(0);
+        IR2_OPND gpr_st0_opnd = ra_alloc_itemp();
+        IR2_OPND top_opnd = ra_alloc_itemp();
+        IR2_OPND fpus = ra_alloc_itemp();
+        IR2_OPND temp1 = ra_alloc_itemp();
+        IR2_OPND temp2 = ra_alloc_itemp();
+        int status_offset = lsenv_offset_of_status_word(lsenv);
+        int tag_offset = lsenv_offset_of_tag_word(lsenv);
+        IR2_OPND not_set_c1 = ir2_opnd_new_type(IR2_OPND_LABEL);
+        IR2_OPND label_next = ir2_opnd_new_type(IR2_OPND_LABEL);
+        IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
+        IR2_OPND label_infinity_nan = ir2_opnd_new_type(IR2_OPND_LABEL);
+        IR2_OPND label_zero_denormal = ir2_opnd_new_type(IR2_OPND_LABEL);
+        IR2_OPND label_infinity = ir2_opnd_new_type(IR2_OPND_LABEL);
+        IR2_OPND label_zero = ir2_opnd_new_type(IR2_OPND_LABEL);
+
+
+        /*
+         * C3, C2, C1, C0 ← 0000
+         */
+        load_ireg_from_imm32(temp1, 0xb8ff, ZERO_EXTENSION);
+        la_append_ir2_opnd2i_em(LISA_LD_H, fpus, env_ir2_opnd, status_offset);
+        la_append_ir2_opnd3_em(LISA_AND, fpus, fpus, temp1);
+
+        /*
+         * C1 ← sign bit of ST
+         */
+        la_append_ir2_opnd2(LISA_MOVFR2GR_D, gpr_st0_opnd, st0_opnd);
+        load_ireg_from_imm64(temp1, 0x8000000000000000ULL);
+        la_append_ir2_opnd3_em(LISA_AND, temp2, gpr_st0_opnd, temp1);
+        la_append_ir2_opnd3(LISA_BNE, temp2, temp1, not_set_c1);
+        la_append_ir2_opnd2i_em(LISA_ORI, fpus, fpus, 0x200);
+        la_append_ir2_opnd1(LISA_LABEL, not_set_c1);
+
+        /*
+         * fast path
+         */
+        la_append_ir2_opnd1(LISA_X86MFTOP, top_opnd);
+        la_append_ir2_opnd3(LISA_BNE, top_opnd, zero_ir2_opnd, label_next);
+        load_ireg_from_imm32(temp1, 0x4100UL, ZERO_EXTENSION);
+        la_append_ir2_opnd3(LISA_OR, fpus, fpus, temp1);
+        la_append_ir2_opnd1(LISA_B, label_exit);
+
+        /*
+         * slow path
+         */
+        la_append_ir2_opnd1(LISA_LABEL, label_next);
+        load_ireg_from_imm64(temp1, (uint64)(0x7ff0000000000000ULL));
+        la_append_ir2_opnd3_em(LISA_AND, temp2, gpr_st0_opnd, temp1);
+        la_append_ir2_opnd3(LISA_BEQ, temp2, temp1, label_infinity_nan);
+        la_append_ir2_opnd3(LISA_BEQ, temp2, zero_ir2_opnd, label_zero_denormal);
+        /* Normal finite number */
+        la_append_ir2_opnd2i_em(LISA_ORI, fpus, fpus, 0x400);
+        la_append_ir2_opnd1(LISA_B, label_exit);
+        la_append_ir2_opnd1(LISA_LABEL, label_infinity_nan);
+        load_ireg_from_imm64(temp1, 0x7ffffffffffffULL);
+        la_append_ir2_opnd3_em(LISA_AND, temp2, gpr_st0_opnd, temp1);
+        la_append_ir2_opnd3(LISA_BEQ, temp2, zero_ir2_opnd, label_infinity);
+        /* NaN */
+        la_append_ir2_opnd2i_em(LISA_ORI, fpus, fpus, 0x100);
+        la_append_ir2_opnd1(LISA_B, label_exit);
+        /* Infinity */
+        la_append_ir2_opnd1(LISA_LABEL, label_infinity);
+        la_append_ir2_opnd2i_em(LISA_ORI, fpus, fpus, 0x500);
+        la_append_ir2_opnd1(LISA_B, label_exit);
+        la_append_ir2_opnd1(LISA_LABEL, label_zero_denormal);
+        load_ireg_from_imm64(temp1, 0x7ffffffffffffULL);
+        la_append_ir2_opnd3_em(LISA_AND, temp2, gpr_st0_opnd, temp1);
+        la_append_ir2_opnd3(LISA_BEQ, temp2, zero_ir2_opnd, label_zero);
+        /* Denormal */
+        load_ireg_from_imm32(temp1, 0x4400UL, ZERO_EXTENSION);
+        la_append_ir2_opnd3_em(LISA_OR, fpus, fpus, temp1);
+        la_append_ir2_opnd1(LISA_B, label_exit);
+        /* Zero */
+        la_append_ir2_opnd1(LISA_LABEL, label_zero);
+        load_ireg_from_imm32(temp1, 0x4000UL, ZERO_EXTENSION);
+        la_append_ir2_opnd3_em(LISA_OR, fpus, fpus, temp1);
+        la_append_ir2_opnd1(LISA_B, label_exit);
+        /*
+         * exit
+         */
+        la_append_ir2_opnd1(LISA_LABEL, label_exit);
+        la_append_ir2_opnd2i(LISA_ST_H, fpus, env_ir2_opnd, status_offset);
+    }
 
     return true;
 }
