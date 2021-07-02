@@ -484,7 +484,7 @@ bool translate_shrd_cl(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
-    IR2_OPND size = count_opnd;
+    IR2_OPND size = ra_alloc_itemp();
     load_ireg_from_imm32(size, ir1_opnd_size(ir1_get_opnd(pir1, 0)), SIGN_EXTENSION);
     IR2_OPND left_count = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_SUB_W, left_count, size, count);
@@ -569,7 +569,7 @@ bool translate_shld_cl(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BEQ, count, zero_ir2_opnd, label_exit);
 
-    IR2_OPND size = count_opnd;
+    IR2_OPND size = ra_alloc_itemp();
     load_ireg_from_imm32(size, ir1_opnd_size(ir1_get_opnd(pir1, 0)), SIGN_EXTENSION);
     IR2_OPND left_count = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_SUB_W, left_count, size, count);
