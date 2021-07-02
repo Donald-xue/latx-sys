@@ -41,7 +41,7 @@ void options_init(void)
     option_tb_link = 1;
     option_ibtc= 0;
     option_shadow_stack = 0;
-    option_lsfpu = 0;
+    option_lsfpu = 1;
     option_xmm128map = 1;
 
     counter_tb_exec = 0;
