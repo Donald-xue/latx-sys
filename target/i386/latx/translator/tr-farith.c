@@ -937,7 +937,7 @@ bool translate_fxam(IR1_INST *pir1)
         la_append_ir2_opnd2i_em(LISA_ORI, fpus, fpus, 0x500);
         la_append_ir2_opnd1(LISA_B, label_exit);
         la_append_ir2_opnd1(LISA_LABEL, label_zero_denormal);
-        load_ireg_from_imm64(temp1, 0x7ffffffffffffULL);
+        load_ireg_from_imm64(temp1, 0xfffffffffffffULL);
         la_append_ir2_opnd3_em(LISA_AND, temp2, gpr_st0_opnd, temp1);
         la_append_ir2_opnd3(LISA_BEQ, temp2, zero_ir2_opnd, label_zero);
         /* Denormal */
