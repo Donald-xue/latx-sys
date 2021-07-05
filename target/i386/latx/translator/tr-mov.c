@@ -163,6 +163,13 @@ bool translate_movzx(IR1_INST *pir1)
         }
         return true;
     }
+    /* default segment is DS*/
+    if(ir1_opnd_type(source_ir1) == X86_OP_MEM &&
+        source_ir1->mem.segment == X86_REG_INVALID &&
+        source_ir1->mem.base == X86_REG_INVALID){
+        source_ir1->mem.segment = X86_REG_DS;
+    }
+
     IR2_OPND source_opnd =
         load_ireg_from_ir1(source_ir1, ZERO_EXTENSION, false);
 
