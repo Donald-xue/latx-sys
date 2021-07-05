@@ -1437,8 +1437,7 @@ bool translate_fnsave(IR1_INST *pir1)
 
     lsassert(offset + 108 <= 2047);
 
-    la_append_ir2_opnd2i_em(LISA_LD_H, value, env_ir2_opnd,
-                      lsenv_offset_of_status_word(lsenv)); /* status_word */
+    update_sw_by_fcsr(value);
     la_append_ir2_opnd3_em(LISA_OR, value, temp, value);
     la_append_ir2_opnd2i(LISA_ST_W, value, mem_opnd, offset + 4);
 

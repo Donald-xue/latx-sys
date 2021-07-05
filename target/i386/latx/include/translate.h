@@ -1135,6 +1135,8 @@ void store_singles_to_ir2_pack(IR2_OPND single0, IR2_OPND single1,
                                       IR2_OPND pack);
 
 /* fcsr */
+void update_sw_by_fcsr(IR2_OPND sw_opnd);
+void update_fcsr_by_cw(IR2_OPND cw);
 IR2_OPND set_fpu_fcsr_rounding_field_by_x86(void);
 void set_fpu_fcsr(IR2_OPND);
 

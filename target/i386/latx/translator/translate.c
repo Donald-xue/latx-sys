@@ -2465,28 +2465,32 @@ void generate_context_switch_bt_to_native(void *code_buf)
     IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
     la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
     la_append_ir2_opnd2i(LISA_ST_D, fcsr_value_opnd, sp_ir2_opnd, extra_space + 88);
+	//retore fcsr for native
+    la_append_ir2_opnd2i(LISA_LD_W, fcsr_value_opnd, env_ir2_opnd,
+                          lsenv_offset_of_fcsr(lsenv));
+    la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
 
-    /* 5. set native code FCSR (#31) */
-    IR2_OPND temp_opnd = ra_alloc_itemp();
-    /* TODO:r */
-    /* if(!OPTIONS::check()){ */
-    if (1) {
-        /* If the bit is set, the processor will directly set the result to
-         * zero */
-        /* if the result is underflow, so as not to raise exception. But this
-         */
-        /* will cause false positive error report when using rollback checker.
-         */
-        /* So, we don't use this optimization in rollback checker. */
-        /* set FS flag */
-        la_append_ir2_opnd2i(LISA_ADDU16I_D, temp_opnd, zero_ir2_opnd, 0);
-        la_append_ir2_opnd3(LISA_OR, fcsr_value_opnd, fcsr_value_opnd, temp_opnd);
-        la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
-    }
+    ///* 5. set native code FCSR (#31) */
+    //IR2_OPND temp_opnd = ra_alloc_itemp();
+    ///* TODO:r */
+    ///* if(!OPTIONS::check()){ */
+    //if (1) {
+    //    /* If the bit is set, the processor will directly set the result to
+    //     * zero */
+    //    /* if the result is underflow, so as not to raise exception. But this
+    //     */
+    //    /* will cause false positive error report when using rollback checker.
+    //     */
+    //    /* So, we don't use this optimization in rollback checker. */
+    //    /* set FS flag */
+    //    la_append_ir2_opnd2i(LISA_ADDU16I_D, temp_opnd, zero_ir2_opnd, 0);
+    //    la_append_ir2_opnd3(LISA_OR, fcsr_value_opnd, fcsr_value_opnd, temp_opnd);
+    //    la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
+    //}
 
     /* 6. set s0 to 0xffffffff and set f3 = 32 */
-    load_ireg_from_imm32(temp_opnd, 32, SIGN_EXTENSION);
-    la_append_ir2_opnd2(LISA_MOVGR2FR_D, f32_ir2_opnd, temp_opnd);
+    //load_ireg_from_imm32(temp_opnd, 32, SIGN_EXTENSION);
+    //la_append_ir2_opnd2(LISA_MOVGR2FR_D, f32_ir2_opnd, temp_opnd);
 
     load_ireg_from_imm32(n1_ir2_opnd, -1, ZERO_EXTENSION);
     /* load env into s2 */
@@ -2564,11 +2568,16 @@ void generate_context_switch_native_to_bt(void)
     const int extra_space = 40; 
 
     /* 4. restore dbt FCSR (#31) */
-    /* See the note in generate_context_switch_bt_to_native */
+    IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
+	//save fcsr for native
+    la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
+    la_append_ir2_opnd2i(LISA_ST_W, fcsr_value_opnd, env_ir2_opnd,
+                          lsenv_offset_of_fcsr(lsenv));
 
-    IR2_OPND fcsr_value_opnd = ir2_opnd_new(IR2_OPND_IREG, extra_space + 12);
+    /* See the note in generate_context_switch_bt_to_native */
     la_append_ir2_opnd2i(LISA_LD_D, fcsr_value_opnd, sp_ir2_opnd, extra_space + 88);
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
+    ra_free_temp(fcsr_value_opnd);
 
     /* 5. restore ra */
     la_append_ir2_opnd2i(LISA_LD_D, ir2_opnd_new(IR2_OPND_IREG, 1), sp_ir2_opnd,
@@ -3425,8 +3434,8 @@ void tr_load_registers_from_env(uint8 gpr_to_load, uint8 fpr_to_load,
 
     /* set f3 = 32 */
     IR2_OPND temp_opnd = ra_alloc_dbt_arg1();
-    load_ireg_from_imm32(temp_opnd, 32, SIGN_EXTENSION);
-    la_append_ir2_opnd2(LISA_MOVGR2FR_D, f32_ir2_opnd, temp_opnd);
+    //load_ireg_from_imm32(temp_opnd, 32, SIGN_EXTENSION);
+    //la_append_ir2_opnd2(LISA_MOVGR2FR_D, f32_ir2_opnd, temp_opnd);
 
     /* 4. virtual registers */
     for (i = 0; i < 8; ++i) {

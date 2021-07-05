@@ -25,6 +25,12 @@ static inline int lsenv_offset_of_eflags(ENV *lsenv)
     return (int)((ADDR)(&cpu->eflags) - (ADDR)lsenv->cpu_state);
 }
 
+static inline int lsenv_offset_of_fcsr(ENV *lsenv)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&cpu->fcsr) - (ADDR)lsenv->cpu_state);
+}
+
 static inline int lsenv_offset_of_ibtc_table(ENV *lsenv)
 {
     CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;

@@ -309,25 +309,13 @@ bool translate_fnstsw(IR1_INST *pir1)
 
     IR2_OPND sw_value = ra_alloc_itemp();
 
-    /* get status word and load in sw_value */
-    int offset = lsenv_offset_of_status_word(lsenv);
-    assert(offset < 0x7ff);
-    la_append_ir2_opnd2i_em(LISA_LD_HU, sw_value, env_ir2_opnd, offset);
-    
-    /* status_word in memory won't get timely update */
-    /*   write back to help a bit */
-    //if (option_lsfpu) {
-    //    assert(lsenv_offset_of_status_word(lsenv) < 0x7ff);
-    //    la_append_ir2_opnd2i(LISA_ST_H, sw_value, env_ir2_opnd,
-    //                        lsenv_offset_of_status_word(lsenv));
-    //}
+    update_sw_by_fcsr(sw_value);
 
     /* 2. store the current value of status_word to dest_opnd */
     store_ireg_to_ir1(sw_value, ir1_get_opnd(pir1, 0), false);
 
     /* 3. free tmp */
     ra_free_temp(sw_value);
-    /* ra_free_temp(top); */
 
     return true;
 }

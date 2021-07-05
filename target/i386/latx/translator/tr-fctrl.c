@@ -14,31 +14,31 @@ static void update_fcsr_enable(IR2_OPND control_word, IR2_OPND fcsr)
     /* IM */
     la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp, control_word,
                             X87_CR_OFF_IM, X87_CR_OFF_IM);
-    la_append_ir2_opnd2i_em(LISA_XORI, temp, control_word, 1);
+    la_append_ir2_opnd2i_em(LISA_XORI, temp, temp, 1);
     la_append_ir2_opnd2ii(LISA_BSTRINS_W, fcsr, temp,
                             FCSR_OFF_EN_V, FCSR_OFF_EN_V);
     /* DM */
     la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp, control_word,
                             X87_CR_OFF_DM, X87_CR_OFF_DM);
-    la_append_ir2_opnd2i_em(LISA_XORI, temp, control_word, 1);
+    la_append_ir2_opnd2i_em(LISA_XORI, temp, temp, 1);
     la_append_ir2_opnd2ii(LISA_BSTRINS_W, fcsr, temp,
                             FCSR_OFF_EN_I, FCSR_OFF_EN_I);
     /* ZM */
     la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp, control_word,
                             X87_CR_OFF_ZM, X87_CR_OFF_ZM);
-    la_append_ir2_opnd2i_em(LISA_XORI, temp, control_word, 1);
+    la_append_ir2_opnd2i_em(LISA_XORI, temp, temp, 1);
     la_append_ir2_opnd2ii(LISA_BSTRINS_W, fcsr, temp,
                             FCSR_OFF_EN_Z, FCSR_OFF_EN_Z);
     /* OM */
     la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp, control_word,
                             X87_CR_OFF_OM, X87_CR_OFF_OM);
-    la_append_ir2_opnd2i_em(LISA_XORI, temp, control_word, 1);
+    la_append_ir2_opnd2i_em(LISA_XORI, temp, temp, 1);
     la_append_ir2_opnd2ii(LISA_BSTRINS_W, fcsr, temp,
                             FCSR_OFF_EN_O, FCSR_OFF_EN_O);
     /* UM */
     la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp, control_word,
                             X87_CR_OFF_UM, X87_CR_OFF_UM);
-    la_append_ir2_opnd2i_em(LISA_XORI, temp, control_word, 1);
+    la_append_ir2_opnd2i_em(LISA_XORI, temp, temp, 1);
     la_append_ir2_opnd2ii(LISA_BSTRINS_W, fcsr, temp,
                             FCSR_OFF_EN_U, FCSR_OFF_EN_U);
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr);
@@ -78,12 +78,78 @@ static void update_fcsr_rm(IR2_OPND control_word, IR2_OPND fcsr)
     ra_free_temp(temp_cw);
 }
 
-static void update_fcsr_by_cw(IR2_OPND cw)
+void update_fcsr_by_cw(IR2_OPND cw)
 {
     IR2_OPND old_fcsr = ra_alloc_itemp();
     la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, old_fcsr, fcsr_ir2_opnd);
     update_fcsr_enable(cw, old_fcsr);
     update_fcsr_rm(cw, old_fcsr);
+}
+
+void update_sw_by_fcsr(IR2_OPND sw_opnd)
+{
+    int status_offset = lsenv_offset_of_status_word(lsenv);
+    lsassert(status_offset <= 0x7ff);
+    la_append_ir2_opnd2i_em(LISA_LD_H, sw_opnd, env_ir2_opnd, status_offset);
+
+    IR2_OPND fcsr = ra_alloc_itemp();
+    IR2_OPND temp1 = ra_alloc_itemp();
+    la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, fcsr, fcsr_ir2_opnd);
+
+    /* update float exceptions from fcsr */
+    /*  invalid-arithmetic-operand exception */
+    IR2_OPND label_I = ir2_opnd_new_type(IR2_OPND_LABEL);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp1, fcsr, FCSR_OFF_FLAGS_V, FCSR_OFF_FLAGS_V);
+    la_append_ir2_opnd3(LISA_BEQ, temp1, zero_ir2_opnd, label_I);
+    la_append_ir2_opnd2i_em(LISA_ORI, sw_opnd, sw_opnd, 0x1 << X87_SR_OFF_IE);
+    la_append_ir2_opnd1(LISA_LABEL, label_I);
+    /* Divide-By-Zero Exception */
+    IR2_OPND label_Z = ir2_opnd_new_type(IR2_OPND_LABEL);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp1, fcsr, FCSR_OFF_FLAGS_Z, FCSR_OFF_FLAGS_Z);
+    la_append_ir2_opnd3(LISA_BEQ, temp1, zero_ir2_opnd, label_Z);
+    la_append_ir2_opnd2i_em(LISA_ORI, sw_opnd, sw_opnd, 0x1 << X87_SR_OFF_ZE);
+    la_append_ir2_opnd1(LISA_LABEL, label_Z);
+    /* Numeric Overflow Exception */
+    IR2_OPND label_O = ir2_opnd_new_type(IR2_OPND_LABEL);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp1, fcsr, FCSR_OFF_FLAGS_O, FCSR_OFF_FLAGS_O);
+    la_append_ir2_opnd3(LISA_BEQ, temp1, zero_ir2_opnd, label_O);
+    la_append_ir2_opnd2i_em(LISA_ORI, sw_opnd, sw_opnd, 0x1 << X87_SR_OFF_OE);
+    la_append_ir2_opnd1(LISA_LABEL, label_O);
+    /* Numeric Underflow Exception */
+    IR2_OPND label_U = ir2_opnd_new_type(IR2_OPND_LABEL);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp1, fcsr, FCSR_OFF_FLAGS_U, FCSR_OFF_FLAGS_U);
+    la_append_ir2_opnd3(LISA_BEQ, temp1, zero_ir2_opnd, label_U);
+    la_append_ir2_opnd2i_em(LISA_ORI, sw_opnd, sw_opnd, 0x1 << X87_SR_OFF_UE);
+    la_append_ir2_opnd1(LISA_LABEL, label_U);
+    /* Inexact-Result (Precision) Exception */
+    IR2_OPND label_P = ir2_opnd_new_type(IR2_OPND_LABEL);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_W, temp1, fcsr, FCSR_OFF_FLAGS_I, FCSR_OFF_FLAGS_I);
+    la_append_ir2_opnd3(LISA_BEQ, temp1, zero_ir2_opnd, label_P);
+    la_append_ir2_opnd2i_em(LISA_ORI, sw_opnd, sw_opnd, 0x1 << X87_SR_OFF_PE);
+    la_append_ir2_opnd1(LISA_LABEL, label_P);
+
+    /* update top */
+    if (option_lsfpu) {
+        la_append_ir2_opnd1(LISA_X86MFTOP, temp1);
+        ir2_opnd_set_em(&temp1, ZERO_EXTENSION, 32);
+
+        la_append_ir2_opnd2i_em(LISA_SLLI_W, temp1, temp1, 11);
+
+
+        IR2_OPND tmp_opnd = ra_alloc_itemp();
+        la_append_ir2_opnd1i_em(LISA_LU12I_W, tmp_opnd, 0xc);
+        la_append_ir2_opnd2i_em(LISA_ORI, tmp_opnd, tmp_opnd, 0x7ff);
+        la_append_ir2_opnd3_em(LISA_AND, sw_opnd, sw_opnd, tmp_opnd);
+
+        la_append_ir2_opnd3_em(LISA_OR, sw_opnd, sw_opnd, temp1);
+
+    }
+
+    /* clean exception flags in fcsr */
+    la_append_ir2_opnd2ii(LISA_BSTRINS_W, fcsr, zero_ir2_opnd, FCSR_OFF_FLAGS_V, FCSR_OFF_FLAGS_I);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr);
+
+    la_append_ir2_opnd2i(LISA_ST_H, sw_opnd, env_ir2_opnd, status_offset);
 }
 
 bool translate_fnstcw(IR1_INST *pir1)
@@ -590,32 +656,9 @@ bool translate_fnstenv(IR1_INST *pir1)
 
     assert(mem_opnd._imm16 + 24 <= 2047);
 
-    int status_offset = lsenv_offset_of_status_word(lsenv);
-    lsassert(status_offset <= 0x7ff);
-    la_append_ir2_opnd2i_em(LISA_LD_H, value, env_ir2_opnd, status_offset);
-
-    /* update status world */
-    if (option_lsfpu) {
-        la_append_ir2_opnd1(LISA_X86MFTOP, temp1);
-	ir2_opnd_set_em(&temp1, ZERO_EXTENSION, 32);
-
-        la_append_ir2_opnd2i_em(LISA_SLLI_W, temp1, temp1, 11);
-
-
-        IR2_OPND tmp_opnd = ra_alloc_itemp();
-	la_append_ir2_opnd1i_em(LISA_LU12I_W, tmp_opnd, 0xc);
-        la_append_ir2_opnd2i_em(LISA_ORI, tmp_opnd, tmp_opnd, 0x7ff);
-        la_append_ir2_opnd3_em(LISA_AND, value, value, tmp_opnd);
-
-        la_append_ir2_opnd3_em(LISA_OR, value, value, temp1);
-
-        la_append_ir2_opnd2i(LISA_ST_H, value, env_ir2_opnd, status_offset);
-    }
-
+    update_sw_by_fcsr(value);
     la_append_ir2_opnd3_em(LISA_OR, value, temp, value);
-    la_append_ir2_opnd2i(
-        LISA_ST_W, value,
-	mem_opnd,mem_imm + 4);
+    la_append_ir2_opnd2i( LISA_ST_W, value, mem_opnd,mem_imm + 4);
 
     int tag_offset = lsenv_offset_of_tag_word(lsenv);
     lsassert(tag_offset <= 0x7ff);

@@ -1404,6 +1404,7 @@ typedef struct CPUX86State {
     uint64_t vregs[5];
     /* for debug,can be removed later */
     uint64_t mips_regs[32];
+    int fcsr;
     /* TODO: why? in new qemu has no next_eip member */
     target_ulong exception_next_eip;
     struct TranslationBlock **tb_jmp_cache_ptr;

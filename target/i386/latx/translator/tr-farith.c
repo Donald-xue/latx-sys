@@ -769,7 +769,6 @@ bool translate_fxam(IR1_INST *pir1)
         IR2_OPND temp1 = ra_alloc_itemp();
         IR2_OPND temp2 = ra_alloc_itemp();
         int status_offset = lsenv_offset_of_status_word(lsenv);
-        int tag_offset = lsenv_offset_of_tag_word(lsenv);
         IR2_OPND not_set_c1 = ir2_opnd_new_type(IR2_OPND_LABEL);
         IR2_OPND label_next = ir2_opnd_new_type(IR2_OPND_LABEL);
         IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
