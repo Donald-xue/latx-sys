@@ -154,7 +154,7 @@ bool translate_ldmxcsr(IR1_INST *pir1)
 /* FIXME: for now JUST use 3 (bcnez + b) to implement this inst,
  * maybe it will be optimized later.
  */
-bool translate_fcomi(IR1_INST *pir1)
+static bool translate_fcomi_internal(IR1_INST *pir1, bool unordered)
 {
     bool is_zpc_def =
         ir1_is_zf_def(pir1) || ir1_is_pf_def(pir1) || ir1_is_cf_def(pir1);
@@ -181,7 +181,10 @@ bool translate_fcomi(IR1_INST *pir1)
             IR2_OPND label_for_sti_ceq_st0 = ir2_opnd_new_type(IR2_OPND_LABEL);
 
             /* First: if unordered, set ZF/PF/CF and exit, else jmp to label_for_not_unordered */
-            la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, sti, st0, FCMP_COND_CUN);
+            if(unordered)
+                la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, sti, st0, FCMP_COND_CUN);
+            else
+                la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, sti, st0, FCMP_COND_SUN);
             la_append_ir2_opnd2(LISA_BCEQZ, fcc0_ir2_opnd, label_for_not_unordered);
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, eflags_temp, 0xb);
             la_append_ir2_opnd1(LISA_B, label_for_exit);
@@ -216,26 +219,32 @@ bool translate_fcomi(IR1_INST *pir1)
 
 bool translate_fucomi(IR1_INST *pir1)
 {
-    translate_fcomi(pir1);
+    translate_fcomi_internal(pir1, true);
     return true;
 }
 
 bool translate_fucomip(IR1_INST *pir1)
 {
-    translate_fcomi(pir1);
+    translate_fcomi_internal(pir1, true);
     tr_fpu_pop();
+    return true;
+}
+
+bool translate_fcomi(IR1_INST *pir1)
+{
+    translate_fcomi_internal(pir1, false);
     return true;
 }
 
 bool translate_fcomip(IR1_INST *pir1)
 {
-    translate_fcomi(pir1);
+    translate_fcomi_internal(pir1, false);
     tr_fpu_pop();
 
     return true;
 }
 
-bool translate_fcom(IR1_INST *pir1)
+static bool translate_fcom_internal(IR1_INST *pir1, bool unordered)
 {
 #define C0_BIT (8)
 #define C1_BIT (9)
@@ -269,7 +278,10 @@ bool translate_fcom(IR1_INST *pir1)
     IR2_OPND label_for_src_ceq_st0 = ir2_opnd_new_type(IR2_OPND_LABEL);
 
     /* First: if unordered, set C0/C2/C3 and exit, else jmp to label_for_not_unordered */
-    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, src, st0, FCMP_COND_CUN);
+    if(unordered)
+        la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, src, st0, FCMP_COND_CUN);
+    else
+        la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, src, st0, FCMP_COND_SUN);
     la_append_ir2_opnd2(LISA_BCEQZ, fcc0_ir2_opnd, label_for_not_unordered);
     la_append_ir2_opnd2ii(LISA_BSTRINS_D, sw_opnd, n1_ir2_opnd, C0_BIT, C0_BIT);
     la_append_ir2_opnd2ii(LISA_BSTRINS_D, sw_opnd, n1_ir2_opnd, C2_BIT, C2_BIT);
@@ -305,9 +317,16 @@ bool translate_fcom(IR1_INST *pir1)
     return true;
 }
 
+bool translate_fcom(IR1_INST *pir1)
+{
+    translate_fcom_internal(pir1, false);
+
+    return true;
+}
+
 bool translate_fcomp(IR1_INST *pir1)
 {
-    translate_fcom(pir1);
+    translate_fcom_internal(pir1, false);
     tr_fpu_pop();
 
     return true;
@@ -315,13 +334,13 @@ bool translate_fcomp(IR1_INST *pir1)
 
 bool translate_fucom(IR1_INST *pir1)
 {
-    translate_fcom(pir1);
+    translate_fcom_internal(pir1, true);
     return true;
 }
 
 bool translate_fucomp(IR1_INST *pir1)
 {
-    translate_fcom(pir1);
+    translate_fcom_internal(pir1, true);
     tr_fpu_pop();
 
     return true;
@@ -329,7 +348,7 @@ bool translate_fucomp(IR1_INST *pir1)
 
 bool translate_fcompp(IR1_INST *pir1)
 {
-    translate_fcom(pir1);
+    translate_fcom_internal(pir1, false);
     tr_fpu_pop();
     tr_fpu_pop();
 
@@ -338,7 +357,7 @@ bool translate_fcompp(IR1_INST *pir1)
 
 bool translate_fucompp(IR1_INST *pir1)
 {
-    translate_fcom(pir1);
+    translate_fcom_internal(pir1, true);
     tr_fpu_pop();
     tr_fpu_pop();
 
