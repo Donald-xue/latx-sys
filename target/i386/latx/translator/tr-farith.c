@@ -783,73 +783,7 @@ bool translate_frndint(IR1_INST *pir1)
 #else
 
     IR2_OPND st0_opnd = ra_alloc_st(0);
-    IR2_OPND ret_value = ra_alloc_ftemp();
-    IR2_OPND temp_param_opnd = ra_alloc_itemp();
-
-    IR2_OPND rint_label_opnd   = ir2_opnd_new_type(IR2_OPND_LABEL); 
-    IR2_OPND trunc_label_opnd  = ir2_opnd_new_type(IR2_OPND_LABEL); 
-    IR2_OPND floor_label_opnd  = ir2_opnd_new_type(IR2_OPND_LABEL); 
-    IR2_OPND ceil_label_opnd   = ir2_opnd_new_type(IR2_OPND_LABEL); 
-    IR2_OPND exit_label_opnd   = ir2_opnd_new_type(IR2_OPND_LABEL); 
-    IR2_OPND invalid_label_opnd  = ir2_opnd_new_type(IR2_OPND_LABEL); 
-
-    /* estimate parameter, not process infinite value */
-    IR2_OPND temp_opnd = ra_alloc_itemp();
-    IR2_OPND temp_opnd_1 = ra_alloc_itemp();
-
-    load_ireg_from_imm64(temp_opnd_1, (uint64)(0x7ff0000000000000ULL));
-
-    la_append_ir2_opnd2(LISA_MOVFR2GR_D, temp_param_opnd, st0_opnd);
-    la_append_ir2_opnd3(LISA_AND, temp_opnd, temp_param_opnd, temp_opnd_1);
-
-    la_append_ir2_opnd2(LISA_FMOV_D, ret_value, st0_opnd);
-    la_append_ir2_opnd3(LISA_BEQ, temp_opnd, temp_opnd_1, invalid_label_opnd);
-
-    /* get rc */
-    IR2_OPND rc_opnd = ra_alloc_itemp();
-    la_append_ir2_opnd2i(LISA_LD_H, rc_opnd, env_ir2_opnd, lsenv_offset_of_control_word(lsenv));
-    la_append_ir2_opnd2i(LISA_SRLI_W, rc_opnd, rc_opnd, 10);
-    la_append_ir2_opnd2i(LISA_ANDI, rc_opnd, rc_opnd, 3);
-
-    la_append_ir2_opnd3(LISA_BEQ, rc_opnd, zero_ir2_opnd, rint_label_opnd);
-    la_append_ir2_opnd2i(LISA_ADDI_W, rc_opnd, rc_opnd, -1);
-    la_append_ir2_opnd3(LISA_BEQ, rc_opnd, zero_ir2_opnd, floor_label_opnd);
-    la_append_ir2_opnd2i(LISA_ADDI_W, rc_opnd, rc_opnd, -1);
-    la_append_ir2_opnd3(LISA_BEQ, rc_opnd, zero_ir2_opnd, ceil_label_opnd);
-    la_append_ir2_opnd2i(LISA_ADDI_W, rc_opnd, rc_opnd, -1);
-    la_append_ir2_opnd3(LISA_BEQ, rc_opnd, zero_ir2_opnd, trunc_label_opnd);
-
-    /* do rint() */
-    la_append_ir2_opnd1(LISA_LABEL, rint_label_opnd);
-    la_append_ir2_opnd2(LISA_FTINTRNE_L_D, ret_value, ret_value);
-    la_append_ir2_opnd1(LISA_B, exit_label_opnd);
-
-    /* do floor() */
-    la_append_ir2_opnd1(LISA_LABEL, floor_label_opnd);
-    la_append_ir2_opnd2(LISA_FTINTRM_L_D, ret_value, ret_value);
-    la_append_ir2_opnd1(LISA_B, exit_label_opnd);
-
-    /* do ceil() */
-    la_append_ir2_opnd1(LISA_LABEL, ceil_label_opnd);
-    la_append_ir2_opnd2(LISA_FTINTRP_L_D, ret_value, ret_value);
-    la_append_ir2_opnd1(LISA_B, exit_label_opnd);
-
-    /* do trunc() */
-    la_append_ir2_opnd1(LISA_LABEL, trunc_label_opnd);
-    la_append_ir2_opnd2(LISA_FTINTRZ_L_D, ret_value, ret_value);
-    la_append_ir2_opnd1(LISA_B, exit_label_opnd);
-
-    /* exit */
-    la_append_ir2_opnd1(LISA_LABEL, exit_label_opnd);
-    la_append_ir2_opnd2(LISA_FFINT_D_L, ret_value, ret_value);
-    la_append_ir2_opnd2(LISA_FMOV_D, st0_opnd, ret_value);
-
-    la_append_ir2_opnd1(LISA_LABEL, invalid_label_opnd);
-
-    ra_free_temp(rc_opnd);
-    ra_free_temp(temp_opnd);
-    ra_free_temp(temp_opnd_1);
-    ra_free_temp(temp_param_opnd);
+    la_append_ir2_opnd2(LISA_FRINT_D, st0_opnd, st0_opnd);
 #endif
 
     return true;
