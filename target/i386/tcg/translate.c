@@ -8653,19 +8653,18 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
         env->cc_op = cc_op;
     }
 #ifdef CONFIG_LATX
-   if (tb->pc != env->eip){
-        /*
-       * Update gpr to env 15, 18, 19, 26, 27, 28, 29, 30
-         */
-        assert(uc);
-        env->regs[R_EAX] = uc->uc_mcontext.__gregs[15];
-        env->regs[R_EBX] = uc->uc_mcontext.__gregs[26];
-        env->regs[R_ECX] = uc->uc_mcontext.__gregs[18];
-        env->regs[R_EDX] = uc->uc_mcontext.__gregs[19];
-        env->regs[R_ESP] = uc->uc_mcontext.__gregs[27];
-        env->regs[R_EBP] = uc->uc_mcontext.__gregs[28];
-        env->regs[R_ESI] = uc->uc_mcontext.__gregs[29];
-        env->regs[R_EDI] = uc->uc_mcontext.__gregs[30];
-    }
+    /*
+     * Update gpr to env 15, 18, 19, 26, 27, 28, 29, 30
+     * TODO: update fp if any
+     */
+    assert(uc);
+    env->regs[R_EAX] = uc->uc_mcontext.__gregs[15];
+    env->regs[R_EBX] = uc->uc_mcontext.__gregs[26];
+    env->regs[R_ECX] = uc->uc_mcontext.__gregs[18];
+    env->regs[R_EDX] = uc->uc_mcontext.__gregs[19];
+    env->regs[R_ESP] = uc->uc_mcontext.__gregs[27];
+    env->regs[R_EBP] = uc->uc_mcontext.__gregs[28];
+    env->regs[R_ESI] = uc->uc_mcontext.__gregs[29];
+    env->regs[R_EDI] = uc->uc_mcontext.__gregs[30];
 #endif
 }
