@@ -150,6 +150,7 @@ typedef struct ENV {
 #define X87_SR_OFF_C1           9
 #define X87_SR_OFF_C2           10
 #define X87_SR_OFF_C3           14
+#define X87_SR_OFF_B            15
 
 /* x87 FPU Control Register */
 #define X87_CR_OFF_IM           0

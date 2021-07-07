@@ -687,7 +687,21 @@ bool translate_fnstenv(IR1_INST *pir1)
     return true;
 }
 
-bool translate_fnclex(IR1_INST *pir1) { return true; }
+bool translate_fnclex(IR1_INST *pir1) {
+    /* get status word and load in sw_value */
+    IR2_OPND sw_value = ra_alloc_itemp();
+    IR2_OPND fcsr0 = ra_alloc_itemp();
+    int offset = lsenv_offset_of_status_word(lsenv);
+    la_append_ir2_opnd2i_em(LISA_LD_HU, sw_value, env_ir2_opnd, offset);
+    la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, fcsr0, fcsr_ir2_opnd);
+    la_append_ir2_opnd2ii(LISA_BSTRINS_D, sw_value, zero_ir2_opnd, X87_SR_OFF_ES, X87_SR_OFF_IE);
+    la_append_ir2_opnd2ii(LISA_BSTRINS_D, sw_value, zero_ir2_opnd, X87_SR_OFF_B, X87_SR_OFF_B);
+    la_append_ir2_opnd2ii(LISA_BSTRINS_D, fcsr0, zero_ir2_opnd, FCSR_OFF_FLAGS_V, FCSR_OFF_FLAGS_I);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr0);
+    la_append_ir2_opnd2i(LISA_ST_H, sw_value, env_ir2_opnd,
+                        lsenv_offset_of_status_word(lsenv));
+    return true;
+}
 
 bool translate_finit(IR1_INST *pir1)
 {
