@@ -197,7 +197,7 @@ static int mmap_frag(abi_ulong real_start,
 
     /* get the protection of the target pages outside the mapping */
     prot1 = 0;
-    for(addr = real_start; addr < real_end; addr++) {
+    for (addr = real_start; addr < real_end; addr += TARGET_PAGE_SIZE) {
         if (addr < start || addr >= end)
             prot1 |= page_get_flags(addr);
     }
