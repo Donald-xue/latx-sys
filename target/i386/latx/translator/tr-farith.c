@@ -687,16 +687,19 @@ bool translate_fpatan(IR1_INST *pir1)
     IR2_OPND st0_opnd = ra_alloc_st(0);
     IR2_OPND st1_opnd = ra_alloc_st(1);
     IR2_OPND param_0 = ir2_opnd_new(IR2_OPND_FREG, 0);
+    IR2_OPND param_1 = ir2_opnd_new(IR2_OPND_FREG, 1);
     IR2_OPND param_8 = ra_alloc_ftemp();
-    la_append_ir2_opnd3(LISA_FDIV_D, param_8, st1_opnd, st0_opnd);
-
+    IR2_OPND param_9 = ra_alloc_ftemp();
+    la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_9, st1_opnd);
     /* save regs before call helper func */
     tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
                              XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
-    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_8);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_1, param_8);
+    la_append_ir2_opnd2(LISA_FMOV_D, param_0, param_9);
 
     /* Call the function */
-    tr_gen_call_to_helper((ADDR)atan);
+    tr_gen_call_to_helper((ADDR)atan2);
 
     IR2_OPND ret_opnd, ret_value;
     ret_opnd = ir2_opnd_new(IR2_OPND_FREG, 0);
@@ -708,56 +711,10 @@ bool translate_fpatan(IR1_INST *pir1)
                                XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE,
                                0x1|options_to_save());
 
-    IR2_OPND pi_base = ra_alloc_itemp();
-    load_ireg_from_addr(pi_base, (uint64)(&pi));
-    IR2_OPND pi_value = ra_alloc_ftemp();
-    la_append_ir2_opnd2i(LISA_FLD_D, pi_value, pi_base, 0);
-    ra_free_temp(pi_base);
-
-    IR2_OPND f_zero = ra_alloc_ftemp();
-    la_append_ir2_opnd2(LISA_MOVGR2FR_D, f_zero, zero_ir2_opnd);
-    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, st1_opnd,
-                        f_zero, FCMP_COND_CEQ);
-    IR2_OPND label_st0_lt0 = ir2_opnd_new_type(IR2_OPND_LABEL);
-    la_append_ir2_opnd2(LISA_BCEQZ,fcc0_ir2_opnd , label_st0_lt0);
-    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, f_zero,
-                        st0_opnd, FCMP_COND_CLE);
-    IR2_OPND label_result_pi = ir2_opnd_new_type(IR2_OPND_LABEL);
-    la_append_ir2_opnd2(LISA_BCEQZ,fcc0_ir2_opnd , label_result_pi);
-    la_append_ir2_opnd2(LISA_MOVGR2FR_D, ret_value, zero_ir2_opnd);
-    IR2_OPND label_end = ir2_opnd_new_type(IR2_OPND_LABEL);
-    la_append_ir2_opnd1(LISA_B, label_end);
-
-    la_append_ir2_opnd1(LISA_LABEL, label_result_pi);
-    la_append_ir2_opnd2(LISA_FMOV_D, ret_value, pi_value);
-    la_append_ir2_opnd1(LISA_B, label_end);
-
-    la_append_ir2_opnd1(LISA_LABEL, label_st0_lt0);
-    la_append_ir2_opnd3i(LISA_FCMP_COND_D,fcc0_ir2_opnd,
-                        st0_opnd, f_zero, FCMP_COND_CLT);
-    la_append_ir2_opnd2(LISA_BCEQZ,fcc0_ir2_opnd , label_end);
-    la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd,
-                        f_zero, st1_opnd, FCMP_COND_CLT);
-    IR2_OPND label_st1_ltN0 = ir2_opnd_new_type(IR2_OPND_LABEL);
-    la_append_ir2_opnd2(LISA_BCEQZ,fcc0_ir2_opnd , label_st1_ltN0);
-    la_append_ir2_opnd3(LISA_FADD_D, ret_value, pi_value, ret_value);
-    la_append_ir2_opnd1(LISA_B, label_end);
-
-    la_append_ir2_opnd1(LISA_LABEL, label_st1_ltN0);
-    la_append_ir2_opnd3i(LISA_FCMP_COND_D,fcc0_ir2_opnd,
-                        st1_opnd, f_zero, FCMP_COND_CLT);
-    la_append_ir2_opnd2(LISA_BCEQZ,fcc0_ir2_opnd , label_end);
-    la_append_ir2_opnd3(LISA_FSUB_D, ret_value, ret_value, pi_value);
-
-    la_append_ir2_opnd1(LISA_LABEL, label_end);
-
     tr_fpu_pop();
     IR2_OPND new_st0_opnd = ra_alloc_st(0);
     la_append_ir2_opnd2(LISA_FMOV_D, new_st0_opnd, ret_value);
 
-    ra_free_temp(ret_value);
-    ra_free_temp(pi_value);
-    ra_free_temp(f_zero);
 #endif
     return true;
 }
