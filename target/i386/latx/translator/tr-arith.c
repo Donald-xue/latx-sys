@@ -445,6 +445,7 @@ bool translate_idiv(IR1_INST *pir1)
 	la_append_ir2_opndi(LISA_BREAK, 0x7);
 	la_append_ir2_opnd1(LISA_LABEL, label_z);
         la_append_ir2_opnd3(LISA_DIV_D, src_opnd_1, src_opnd_1, src_opnd_0);
+        store_ireg_to_ir1(src_opnd_1, &al_ir1_opnd, false);
         store_ireg_to_ir1(dest_opnd, &ah_ir1_opnd, false);
     } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
         IR2_OPND src_opnd_1 =
