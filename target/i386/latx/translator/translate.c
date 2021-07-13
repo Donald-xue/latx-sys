@@ -521,6 +521,7 @@ bool ir1_need_calculate_any_flag(IR1_INST *ir1)
             ~(lsenv->tr_data->curr_ir1_skipped_eflags)) != 0;
 }
 
+int idx_start = __LINE__ + 5;
 static bool (*translate_functions[])(IR1_INST *) = {
     //implemented , but not in X86_INS_...        
     //lods,pusha,finit,popa,fstenv,xlat,fclex,movs,jmp_far,fsave,call_far,fstcw,
@@ -2099,7 +2100,7 @@ bool ir1_translate(IR1_INST *ir1)
      * change it if the line number is changed.
      */
     lsassertm(translation_success, "tr_func_idx %d translate failed, the failed ins is at line %d",
-                tr_func_idx, (tr_func_idx+476));
+                tr_func_idx, (tr_func_idx + idx_start));
     return translation_success;
 }
 
