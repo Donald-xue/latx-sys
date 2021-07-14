@@ -309,6 +309,19 @@ bool translate_fnstsw(IR1_INST *pir1)
 
     IR2_OPND sw_value = ra_alloc_itemp();
 
+   /*
+    * NOTE: Refer to X86 Docs, there is m2bytes
+    * condition ONLY, TCG hardcode write 16bit as well.
+    * So change the opnd size to 16 bit to avoid data
+    * overwtite.
+    */
+    IR1_OPND *ir1_opnd = ir1_get_opnd(pir1, 0);
+    int opnd_size = ir1_opnd_size(ir1_opnd);
+
+    if (opnd_size == 32) {
+        ir1_opnd->size = (16 >> 3);
+     }
+
     update_sw_by_fcsr(sw_value);
 
     /* 2. store the current value of status_word to dest_opnd */
