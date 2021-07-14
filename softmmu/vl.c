@@ -125,6 +125,10 @@
 #include "sysemu/iothread.h"
 #include "qemu/guest-random.h"
 
+#ifdef CONFIG_LATX
+void latx_sys_parse_options(QemuOpts *opts);
+#endif
+
 #define MAX_VIRTIO_CONSOLES 1
 
 typedef struct BlockdevOptionsQueueEntry {
@@ -2657,6 +2661,9 @@ void qemu_init(int argc, char **argv, char **envp)
     qemu_add_opts(&qemu_semihosting_config_opts);
     qemu_add_opts(&qemu_fw_cfg_opts);
     qemu_add_opts(&qemu_action_opts);
+#ifdef CONFIG_LATX
+    qemu_add_opts(&qemu_latx_opts);
+#endif
     module_call_init(MODULE_INIT_OPTS);
 
     error_init(argv[0]);
@@ -2703,6 +2710,14 @@ void qemu_init(int argc, char **argv, char **envp)
                 exit(1);
             }
             switch(popt->index) {
+#ifdef CONFIG_LATX
+            case QEMU_OPTION_latx:
+                opts = qemu_opts_parse_noisily(
+                        qemu_find_opts("latx"),
+                        optarg, true);
+                latx_sys_parse_options(opts);
+                break;
+#endif
             case QEMU_OPTION_cpu:
                 /* hw initialization will check this */
                 cpu_option = optarg;

@@ -5234,5 +5234,22 @@ SRST
             (qemu) qom-set /objects/iothread1 poll-max-ns 100000
 ERST
 
+DEF("latx", HAS_ARG, QEMU_OPTION_latx,
+    "\n"
+    "-latx [optm=none|select|all]\n"
+    "      [,tblink=on|off][,trbh=on|off][,staticcs=on|off]\n"
+    "      [,njc=on|off][,lsfpu=on|off]\n"
+    "      [,dump=flags][,trace=flags]\n"
+    "      [,traces=on|off][,tracestnr=num][,tracesttb=num]\n"
+    "      [,breakpoint=address][,bpnum=num]\n"
+    "      [,traceir1id=num]\n"
+    "      [,smmu=on|off]\n"
+    "      [,monitor=flags]\n"
+    "      [,verbose=on|off]\n",
+    QEMU_ARCH_I386)
+SRST
+``-latx [optm=none|select|all]``
+    Enable specific features of LATX.
+ERST
 
 HXCOMM This is the last statement. Insert new options before this line!

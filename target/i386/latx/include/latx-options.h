@@ -34,4 +34,38 @@ void options_parse_dump(const char *bits);
 void options_parse_trace(const char *bits);
 uint8 options_to_save(void);
 
+#ifdef CONFIG_SOFTMMU
+
+/* For debug in softmmu */
+extern int option_smmu_slow;
+extern int option_break_point;
+extern unsigned long long option_break_point_addrx;
+extern unsigned long long option_break_point_count;
+
+/* For generate TB execution trace */
+extern int option_trace_simple;
+extern unsigned long long option_trace_start_nr;
+extern unsigned long long option_trace_start_tb;
+extern int option_trace_start_tb_set;
+
+/* Optimization in softmmu */
+extern int option_staticcs;
+extern int option_njc;
+extern int option_cross_page_check;
+
+/* For QEMU monitor in softmmu */
+extern int option_monitor_sc; /* Simple Counter */
+extern int option_monitor_tc; /* Timer  Counter */
+extern int option_monitor_rs; /* Register    Stat */
+extern int option_monitor_ts; /* Translation Stat */
+
+extern int option_monitor_cs; /* Complex Stat */
+extern int option_monitor_jc; /* Jmp Cache Stat */
+extern int option_monitor_tbht; /* TB Hash Table Stat */
+extern int option_monitor_ps; /* Prilivage Switch */
+
+extern int option_monitor_tbf; /* TB.flags */
+
+#endif /* SOFTMMU */
+
 #endif
