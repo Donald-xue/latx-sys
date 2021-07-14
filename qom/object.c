@@ -1748,7 +1748,7 @@ object_property_try_add_child(Object *obj, const char *name,
         return NULL;
     }
     op->resolve = object_resolve_child_property;
-    object_ref(obj);
+    object_ref(child);
     child->parent = obj;
     return op;
 }
