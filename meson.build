@@ -2168,6 +2168,9 @@ foreach target : target_dirs
 
     arch_srcs += config_devices_h[target]
     link_args += ['@block.syms', '@qemu.syms']
+    if 'CONFIG_LATX' in config_host
+      target_inc += include_directories('target/i386/latx/include')
+    endif
   else
     abi = config_target['TARGET_ABI_DIR']
     target_type='user'

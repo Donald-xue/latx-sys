@@ -1840,6 +1840,7 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
 }
 
 #ifdef CONFIG_LATX
+#ifndef CONFIG_SOFTMMU
 #include "latx-config.h"
 
 void tb_exit_to_qemu (CPUArchState *env, uintptr_t pc)
@@ -1857,6 +1858,7 @@ void tb_exit_to_qemu (CPUArchState *env, uintptr_t pc)
         }
     }
 }
+#endif
 #endif
 
 /* Called with mmap_lock held for user mode emulation.  */

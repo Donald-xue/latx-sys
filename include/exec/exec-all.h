@@ -20,6 +20,31 @@
 #ifndef EXEC_ALL_H
 #define EXEC_ALL_H
 
+#ifdef CONFIG_LATX
+#include "latx-types.h"
+struct IR1_INST;
+/* extra attributes we need in TB */
+typedef struct ExtraBlock{
+    uint64_t pc; /* for hash compare, it's ID of a ETB */
+    struct TranslationBlock* tb; /* which tb this etb belongs to */
+#if defined(CONFIG_LATX_FLAG_PATTERN) || defined(CONFIG_LATX_FLAG_REDUCTION)
+    uint8 pending_use; /* indicate which eflags are used but hasn't defined yet */
+#endif
+#ifdef CONFIG_LATX_FLAG_REDUCTION
+    int8   _tb_type;
+    struct ExtraBlock* succ[2];  /* successors of this ETB */
+    /* flags is used to indicate the state of this ETB 
+     * bit0: set if succ[2] are set
+     * bit1: set if pending_use is set */
+    uint8 flags;
+#define SUCC_IS_SET_MASK 0x01
+#define PENDING_USE_IS_SET_MASK 0x02
+#endif
+    /* historical field */
+    uint16_t size;
+} ETB;
+#endif
+
 #include "cpu.h"
 #include "exec/tb-context.h"
 #ifdef CONFIG_TCG
@@ -443,31 +468,6 @@ struct tb_tc {
     const void *ptr;    /* pointer to the translated code */
     size_t size;
 };
-
-#ifdef CONFIG_LATX
-#include "latx-types.h"
-struct IR1_INST;
-/* extra attributes we need in TB */
-typedef struct ExtraBlock{
-    uint64_t pc; /* for hash compare, it's ID of a ETB */
-    struct TranslationBlock* tb; /* which tb this etb belongs to */
-#if defined(CONFIG_LATX_FLAG_PATTERN) || defined(CONFIG_LATX_FLAG_REDUCTION)
-    uint8 pending_use; /* indicate which eflags are used but hasn't defined yet */
-#endif
-#ifdef CONFIG_LATX_FLAG_REDUCTION
-    int8   _tb_type;
-    struct ExtraBlock* succ[2];  /* successors of this ETB */
-    /* flags is used to indicate the state of this ETB 
-     * bit0: set if succ[2] are set
-     * bit1: set if pending_use is set */
-    uint8 flags;
-#define SUCC_IS_SET_MASK 0x01
-#define PENDING_USE_IS_SET_MASK 0x02
-#endif
-    /* historical field */
-    uint16_t size;
-} ETB;
-#endif
 
 struct TranslationBlock {
     target_ulong pc;   /* simulated PC corresponding to this block (EIP + CS base) */

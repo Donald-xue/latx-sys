@@ -1176,7 +1176,12 @@ void tr_lat_spin_unlock(IR2_OPND lat_lock_addr);
 #include "qemu-def.h"
 static inline ADDR cpu_get_guest_base(void)
 {
+#ifndef CONFIG_SOFTMMU
     return guest_base;
+#else
+    lsassertm(0, "should never use guest base in softmmu\n");
+    return -1;
+#endif
 }
 
 #define NONE            0

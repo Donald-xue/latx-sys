@@ -26,8 +26,10 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
         fprintf(stderr, "=====================================\n");
         fprintf(stderr, "|| TB translation : %14p ||\n", tb);
         fprintf(stderr, "=====================================\n");
+#ifndef CONFIG_SOFTMMU
         fprintf(stderr, "Guest Base = 0x%lx\n", (unsigned long)guest_base);
         fprintf(stderr, "=====================================\n");
+#endif
     }
 
     /* target => IR1

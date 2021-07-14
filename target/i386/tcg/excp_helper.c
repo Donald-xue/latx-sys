@@ -687,11 +687,11 @@ bool x86_cpu_tlb_fill(CPUState *cs, vaddr addr, int size,
                       MMUAccessType access_type, int mmu_idx,
                       bool probe, uintptr_t retaddr, void *info)
 {
-    siginfo_t *info_test = info;
     X86CPU *cpu = X86_CPU(cs);
     CPUX86State *env = &cpu->env;
 
 #ifdef CONFIG_USER_ONLY
+    siginfo_t *info_test = info;
     /* user mode only emulation */
     env->cr[2] = addr;
     env->error_code = (access_type == MMU_DATA_STORE) << PG_ERROR_W_BIT;
