@@ -696,10 +696,13 @@ bool x86_cpu_tlb_fill(CPUState *cs, vaddr addr, int size,
     env->cr[2] = addr;
     env->error_code = (access_type == MMU_DATA_STORE) << PG_ERROR_W_BIT;
     env->error_code |= PG_ERROR_U_MASK;
-    if (info_test->si_signo == SIGBUS)
+    if (info_test->si_signo == SIGBUS) {
         cs->exception_index = EXCP0B_NOSEG;
-    else
+    } else if (info_test->si_signo == SIGFPE) {
+        cs->exception_index = EXCP00_DIVZ;
+    } else {
         cs->exception_index = EXCP0E_PAGE;
+    }
     env->exception_is_int = 0;
     env->exception_next_eip = -1;
     cpu_loop_exit_restore(cs, retaddr);

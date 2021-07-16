@@ -2466,7 +2466,7 @@ void generate_context_switch_bt_to_native(void *code_buf)
     IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
     la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
     la_append_ir2_opnd2i(LISA_ST_D, fcsr_value_opnd, sp_ir2_opnd, extra_space + 88);
-	//retore fcsr for native
+
     la_append_ir2_opnd2i(LISA_LD_W, fcsr_value_opnd, env_ir2_opnd,
                           lsenv_offset_of_fcsr(lsenv));
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
@@ -3369,6 +3369,22 @@ void tr_fpu_disable_top_mode(void)
     }
 }
 
+void tr_save_fcsr_to_env()
+{
+    IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
+    la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
+    la_append_ir2_opnd2i(LISA_ST_W, fcsr_value_opnd, env_ir2_opnd,
+                          lsenv_offset_of_fcsr(lsenv));
+}
+
+void tr_load_fcsr_from_env()
+{
+    IR2_OPND saved_fcsr_value_opnd = ra_alloc_itemp();
+    la_append_ir2_opnd2i(LISA_LD_W, saved_fcsr_value_opnd, env_ir2_opnd,
+                          lsenv_offset_of_fcsr(lsenv));
+    la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, saved_fcsr_value_opnd);
+}
+
 void tr_save_registers_to_env(uint8 gpr_to_save, uint8 fpr_to_save,
                               uint8 xmm_lo_to_save, uint8 xmm_hi_to_save,
                               uint8 vreg_to_save)
@@ -3504,7 +3520,6 @@ void tr_load_registers_from_env(uint8 gpr_to_load, uint8 fpr_to_load,
                               lsenv_offset_of_gpr(lsenv, i));
         }
     }
-
 }
 
 void tr_gen_call_to_helper(ADDR func_addr)

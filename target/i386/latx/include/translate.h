@@ -1089,6 +1089,9 @@ void tr_save_registers_to_env(uint8 gpr_to_save, uint8 fpr_to_save,
 void tr_load_registers_from_env(uint8 gpr_to_load, uint8 fpr_to_load,
                                 uint8 xmm_lo_to_load, uint8 xmm_hi_to_load,
                                 uint8 vreg_to_load);
+void tr_save_fcsr_to_env();
+void tr_load_fcsr_from_env();
+
 void tr_load_guest_base(void);
 
 void tr_gen_call_to_helper(ADDR);

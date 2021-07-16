@@ -24,6 +24,7 @@
 #include "qemu.h"
 #include "trace.h"
 #include "signal-common.h"
+#include "hw/core/tcg-cpu-ops.h"
 
 static struct target_sigaction sigact_table[TARGET_NSIG];
 
@@ -710,6 +711,12 @@ static void host_signal_handler(int host_signum, siginfo_t *info,
     ucontext_t *uc = puc;
     struct emulated_sigtable *k;
 
+#ifdef CONFIG_LATX
+    /*
+     * store ucontext_t to env for context switch.
+     */
+    env->puc = uc;
+#endif
     /* the CPU emulator uses some host signals to detect exceptions,
        we forward to it some signals */
     if ((host_signum == SIGSEGV || host_signum == SIGBUS)
@@ -723,13 +730,18 @@ static void host_signal_handler(int host_signum, siginfo_t *info,
     if (sig < 1 || sig > TARGET_NSIG)
         return;
 
-    /* FIXME: When get siganl SIGFPE, the program should be killed,
-     * or it will be endless-looping. For now we just exit simply,
-     * maybe there is a better way.
+    /*
+     * When got siganl SIGFPE, we should exit loop and restore
+     * state at the exception pc (Just like SIGSEGV does)
      */
-    if (sig == SIGFPE) {
-       printf("ERROR!!! get signal SIGFPE\n");
-       exit(0);
+    if (host_signum == SIGFPE) {
+        unsigned long address = (unsigned long)info->si_addr;
+        greg_t pc = uc->uc_mcontext.__pc + GETPC_ADJ;
+        CPUClass *cc;
+        cc = CPU_GET_CLASS(cpu);
+        cc->tcg_ops->tlb_fill(cpu, address, 0, MMU_DATA_LOAD,
+                              MMU_USER_IDX, false, pc, info);
+        g_assert_not_reached();
     }
 
     trace_user_host_signal(env, host_signum, sig);

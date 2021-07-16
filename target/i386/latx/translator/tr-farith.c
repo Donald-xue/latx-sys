@@ -910,6 +910,7 @@ bool translate_fxtract(IR1_INST *pir1)
     la_append_ir2_opnd2(LISA_FMOV_D, param_8, st0_opnd);
 
     /* save regs before call helper func */
+    tr_save_fcsr_to_env();
     tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
                              XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x1|options_to_save()); 
 
@@ -952,6 +953,11 @@ bool translate_fxtract(IR1_INST *pir1)
     tr_load_registers_from_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
                                XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE,
                                0x1|options_to_save());
+    /*
+     * TODO: restore fcsr saved before helper to pass glibc logb tests,
+     * helper fucntion may set fcsr incorrectly, should inspect later.
+     */
+    tr_load_fcsr_from_env();
 
     IR2_OPND origin_st0_value = ra_alloc_ftemp();
     la_append_ir2_opnd2i(LISA_FLD_D, origin_st0_value, native_sp, 0);

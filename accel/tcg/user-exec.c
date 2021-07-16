@@ -792,12 +792,6 @@ int cpu_signal_handler(int host_signum, void *pinfo,
     CPUArchState *env = thread_cpu->env_ptr;
 #endif
     int is_write = 0;
-#ifdef CONFIG_LATX
-    /* 
-     * store ucontext_t to env for context switch.
-     */
-    env->puc = uc;
-#endif
     //TODO use kernel to send write info
     //only st/stl/str handled, may cause bugs
     uint32_t insn = *(uint32_t *)pc;

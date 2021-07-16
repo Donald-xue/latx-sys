@@ -4154,6 +4154,7 @@ IR2_INST *la_append_ir2_opnd3_em(IR2_OPCODE opcode, IR2_OPND op0,
         }
         break;
     case LISA_AND:
+    case LISA_ANDN:
         if (ir2_opnd_is_x86_address(&op1) ||
             ir2_opnd_is_x86_address(&op2)) {
             ir2_opnd_set_em(&op0, EM_X86_ADDRESS, 32);

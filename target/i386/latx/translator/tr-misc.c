@@ -997,8 +997,14 @@ bool translate_leave(IR1_INST *pir1)
 
 bool translate_int(IR1_INST *pir1)
 {
+    /* save fcsr for native */
+    IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
+    la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
+    la_append_ir2_opnd2i(LISA_ST_W, fcsr_value_opnd, env_ir2_opnd,
+                          lsenv_offset_of_fcsr(lsenv));
+
     /* * store registers to env, or if context_switch_native_to_bt is better? */
-   tr_save_registers_to_env(0xff, 0xff, 0xff, 0xff, 0x1|options_to_save());
+    tr_save_registers_to_env(0xff, 0xff, 0xff, 0xff, 0x1 | options_to_save());
 
     /* * store intno to CPUState */
     IR2_OPND intno = ra_alloc_itemp();
@@ -1026,6 +1032,11 @@ bool translate_int(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_JIRL, ir2_opnd_new(IR2_OPND_IREG, 1), helper_addr_opnd, 0);
     /* * load registers from env */
     tr_load_registers_from_env(0xff, 0xff, 0xff, 0xff, 0x1|options_to_save());
+
+    /* retore fcsr for native */
+    la_append_ir2_opnd2i(LISA_LD_W, fcsr_value_opnd, env_ir2_opnd,
+                          lsenv_offset_of_fcsr(lsenv));
+    la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
 
     return true;
 }
@@ -1364,8 +1375,6 @@ bool translate_frstor(IR1_INST *pir1)
     }
     return true;
 }
-
-bool translate_wait(IR1_INST *pir1) { return true; }
 
 bool translate_prefetcht0(IR1_INST *pir1)
 {
