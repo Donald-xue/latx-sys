@@ -171,7 +171,7 @@ bool translate_aaa(IR1_INST *pir1)
 
     return true;
 }
-bool translate_aas(IR1_INST *pir1) { return false; }
+
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
 bool translate_outs(IR1_INST *pir1) { return false; }
@@ -207,7 +207,7 @@ bool translate_aam(IR1_INST *pir1)
 
     return true;
 }
-bool translate_aad(IR1_INST *pir1) { return false; }
+
 bool translate_salc(IR1_INST *pir1) { return false; }
 bool translate_xlat(IR1_INST *pir1) { return false; }
 

@@ -331,8 +331,9 @@ static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
 
     int operation_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
-    lsassert(operation_size == 8 || operation_size == 16 ||
-             operation_size == 32);
+    /* note: AAM and AAD lack opnd, so operation_size == 0 is reasonable */
+    lsassert(operation_size == 0 || operation_size == 8 ||
+             operation_size == 16 || operation_size == 32);
 
     IR2_OPND extended_dest_opnd = ra_alloc_itemp_internal();
     bool extended_dest_opnd_freed = false;

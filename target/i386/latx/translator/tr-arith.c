@@ -3,6 +3,79 @@
 #include "reg-alloc.h"
 #include "translate.h"
 
+bool translate_aas(IR1_INST *pir1)
+{
+    IR1_OPND *reg_ax = &ax_ir1_opnd;
+    IR1_OPND *reg_al = &al_ir1_opnd;
+    IR1_OPND *reg_ah = &ah_ir1_opnd;
+    IR2_OPND imm_opnd = ra_alloc_itemp();
+    IR2_OPND temp_opnd = ra_alloc_itemp();
+    IR2_OPND label_set_af_cf = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_sub_carry = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND ax_ir2 = load_ireg_from_ir1(reg_ax, ZERO_EXTENSION, false);
+    IR2_OPND ah_ir2 = load_ireg_from_ir1(reg_ah, ZERO_EXTENSION, false);
+    IR2_OPND al_ir2 = load_ireg_from_ir1(reg_al, ZERO_EXTENSION, false);
+
+    la_append_ir2_opnd1i_em(LISA_X86MFFLAG, temp_opnd, 0x4);
+    /* af == 1 ? */
+    la_append_ir2_opnd2i_em(LISA_ANDI, temp_opnd, temp_opnd, 0x10);
+    la_append_ir2_opnd3(LISA_BNE, temp_opnd, zero_ir2_opnd, label_set_af_cf);
+    /* (AL AND 0FH) > 9 ? */
+    la_append_ir2_opnd2i_em(LISA_ANDI, temp_opnd, ax_ir2, 0xf);
+    la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0xa);
+    la_append_ir2_opnd3(LISA_BGE, temp_opnd, imm_opnd, label_set_af_cf);
+    /* check eflags */
+    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x5);
+    la_append_ir2_opnd1(LISA_B, label_exit);
+    /* check if need sub carry */
+    la_append_ir2_opnd1(LISA_LABEL, label_set_af_cf);
+    la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0x6);
+    la_append_ir2_opnd3(LISA_BGE, al_ir2, imm_opnd, label_sub_carry);
+    /* sub carry */
+    la_append_ir2_opnd2i_em(LISA_ADDI_W, ah_ir2, ah_ir2, -1);
+    /* without sub carry */
+    la_append_ir2_opnd1(LISA_LABEL, label_sub_carry);
+    la_append_ir2_opnd2i_em(LISA_ADDI_W, ax_ir2, ax_ir2, -6);
+    la_append_ir2_opnd2i_em(LISA_ADDI_W, ah_ir2, ah_ir2, -1);
+    /* set EFLAGS AF and CF flags */
+    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x5);
+    la_append_ir2_opnd1(LISA_LABEL, label_exit);
+    la_append_ir2_opnd2i_em(LISA_ANDI, al_ir2, ax_ir2, 0xf);
+    store_ireg_to_ir1(al_ir2, reg_al, false);
+    store_ireg_to_ir1(ah_ir2, reg_ah, false);
+    return true;
+}
+
+bool translate_aad(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *reg_ah = &ah_ir1_opnd;
+    IR1_OPND *reg_al = &al_ir1_opnd;
+    IR2_OPND imm_opnd;
+    IR2_OPND al = load_ireg_from_ir1(reg_al, ZERO_EXTENSION, false);
+    IR2_OPND old_al = load_ireg_from_ir1(reg_al, ZERO_EXTENSION, false);
+    IR2_OPND ah = load_ireg_from_ir1(reg_ah, ZERO_EXTENSION, false);
+    IR2_OPND temp_opnd = ra_alloc_itemp();
+
+    if (ir1_opnd_type(opnd0) == X86_OP_IMM && ir1_opnd_size(opnd0) != 0) {
+        imm_opnd = load_ireg_from_ir1(opnd0, ZERO_EXTENSION, false);
+    } else {
+        imm_opnd = ra_alloc_itemp();
+        la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0x0A);
+    }
+
+    la_append_ir2_opnd3(LISA_MUL_D, temp_opnd, ah, imm_opnd);
+    la_append_ir2_opnd3(LISA_ADD_D, temp_opnd, temp_opnd, old_al);
+    la_append_ir2_opnd2i_em(LISA_ANDI, al, temp_opnd, 0xFF);
+    la_append_ir2_opnd2i_em(LISA_ANDI, ah, ah, 0x00);
+    store_ireg_to_ir1(ah, reg_ah, false);
+    store_ireg_to_ir1(al, reg_al, false);
+
+    generate_eflag_calculation(al, old_al, imm_opnd, pir1, true);
+    return true;
+}
+
 bool translate_add(IR1_INST *pir1)
 {
     IR2_OPND src_opnd_1 =
