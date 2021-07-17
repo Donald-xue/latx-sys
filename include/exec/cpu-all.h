@@ -271,6 +271,7 @@ extern intptr_t qemu_host_page_mask;
 /* Target-specific bits that will be used via page_get_flags().  */
 #define PAGE_TARGET_1  0x0200
 #define PAGE_TARGET_2  0x0400
+#define PAGE_OVERFLOW  0x0800
 
 #if defined(CONFIG_USER_ONLY)
 void page_dump(FILE *f);

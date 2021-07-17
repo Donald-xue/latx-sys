@@ -190,7 +190,7 @@ static int mmap_frag(abi_ulong real_start,
 {
     abi_ulong real_end, addr;
     void *host_start;
-    int prot1, prot_new;
+    int prot1, prot2, prot_new;
 
     real_end = real_start + qemu_host_page_size;
     host_start = g2h_untagged(real_start);
@@ -202,6 +202,11 @@ static int mmap_frag(abi_ulong real_start,
             prot1 |= page_get_flags(addr);
     }
 
+    prot2 = 0;
+    for (addr = start; addr < end; addr += TARGET_PAGE_SIZE) {
+        prot2 |= page_get_flags(addr);
+    }
+
     if (prot1 == 0) {
         /* no page was there, so we allocate one */
         void *p = mmap(host_start, qemu_host_page_size, prot,
@@ -209,6 +214,19 @@ static int mmap_frag(abi_ulong real_start,
         if (p == MAP_FAILED)
             return -1;
         prot1 = prot;
+    } else if ((prot2 & PAGE_OVERFLOW)) {
+        void *p = mmap(host_start, qemu_host_page_size, prot1,
+                       flags | MAP_ANONYMOUS, -1, 0);
+        if (p == MAP_FAILED) {
+            return -1;
+        }
+        for (addr = real_start; addr < real_end; addr += TARGET_PAGE_SIZE) {
+            prot2 = page_get_flags(addr);
+            if (prot2 & PAGE_OVERFLOW) {
+                page_set_flags(addr, addr + TARGET_PAGE_SIZE,
+                                prot2 & ~PAGE_OVERFLOW);
+            }
+        }
     }
     prot1 &= PAGE_BITS;
 
@@ -621,6 +639,29 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
     }
     page_flags |= PAGE_RESET;
     page_set_flags(start, start + len, page_flags);
+
+    /*
+     * When mapping files into a memory area larger than the file, accesses
+     * to pages beyond the file size will cause a SIGBUS.
+     *
+     * When emulating a target with a smaller page-size than the hosts, we
+     * need to add a PAGE_OVERFLOW prot to the extra pages which is beyond
+     * the file size.
+     */
+    if ((qemu_host_page_size > TARGET_PAGE_SIZE) &&
+        !(flags & MAP_ANONYMOUS)) {
+        struct stat sb;
+
+        if (fstat(fd, &sb) == -1) {
+            goto fail;
+        }
+
+        if (HOST_PAGE_ALIGN(start + sb.st_size) < start + len) {
+            page_set_flags(HOST_PAGE_ALIGN(start + sb.st_size), start + len,
+                            page_flags | PAGE_OVERFLOW);
+        }
+    }
+
  the_end:
     trace_target_mmap_complete(start);
     if (qemu_loglevel_mask(CPU_LOG_PAGE)) {
