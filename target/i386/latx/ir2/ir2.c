@@ -5184,6 +5184,64 @@ void latxs_ir2_opnd_convert_label_to_imm(IR2_OPND *opnd, int imm)
     opnd->val = imm;
 }
 
+/* Functions to manage IR2 extension mode */
+static
+int latxs_ir2_opnd_is_mapping(IR2_OPND *opnd2, int *x86_gpr_num)
+{
+    lsassert(latxs_ir2_opnd_is_gpr(opnd2));
+    int reg = latxs_ir2_opnd_reg(opnd2);
+    if (24 <= reg && reg <= 31) {
+        *x86_gpr_num = reg - 24;
+        return true;
+    }
+    return false;
+}
+
+void latxs_ir2_opnd_set_emb(IR2_OPND *opnd2, EXMode em, EXBits eb)
+{
+    opnd2->em = em; opnd2->eb = eb;
+    int gpr_num = 0;
+    if (latxs_ir2_opnd_is_mapping(opnd2, &gpr_num)) {
+        latxs_td_set_reg_extmb(gpr_num, em, eb);
+    }
+}
+
+void latxs_ir2_opnd_set_em(IR2_OPND *opnd2, EXMode em)
+{
+    opnd2->em = em;
+    int gpr_num = 0;
+    if (latxs_ir2_opnd_is_mapping(opnd2, &gpr_num)) {
+        latxs_td_set_reg_extm(gpr_num, em);
+    }
+}
+
+void latxs_ir2_opnd_set_eb(IR2_OPND *opnd2, EXBits eb)
+{
+    opnd2->eb = eb;
+    int gpr_num = 0;
+    if (latxs_ir2_opnd_is_mapping(opnd2, &gpr_num)) {
+        latxs_td_set_reg_extb(gpr_num, eb);
+    }
+}
+
+EXMode latxs_ir2_opnd_get_em(IR2_OPND *opnd2)
+{
+    int gpr_num = 0;
+    if (latxs_ir2_opnd_is_mapping(opnd2, &gpr_num)) {
+        return latxs_td_get_reg_extm(gpr_num);
+    }
+    return opnd2->em;
+}
+
+EXBits latxs_ir2_opnd_get_eb(IR2_OPND *opnd2)
+{
+    int gpr_num = 0;
+    if (latxs_ir2_opnd_is_mapping(opnd2, &gpr_num)) {
+        return latxs_td_get_reg_extb(gpr_num);
+    }
+    return opnd2->eb;
+}
+
 /* ------------------ IR2_INST ------------------ */
 
 /* Fucntion to build IR2_INST */

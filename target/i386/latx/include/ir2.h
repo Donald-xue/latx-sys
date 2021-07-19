@@ -258,6 +258,13 @@ const char *latxs_ir2_name(int value);
 /* Function used during label disposing */
 void latxs_ir2_opnd_convert_label_to_imm(IR2_OPND *, int imm);
 
+/* Functions to manage IR2 extension mode */
+void latxs_ir2_opnd_set_emb(IR2_OPND *, EXMode, EXBits);
+void latxs_ir2_opnd_set_em(IR2_OPND *, EXMode);
+void latxs_ir2_opnd_set_eb(IR2_OPND *, EXBits);
+EXMode latxs_ir2_opnd_get_em(IR2_OPND *);
+EXBits latxs_ir2_opnd_get_eb(IR2_OPND *);
+
 /* ------------------ IR2_INST ------------------ */
 
 /* Fucntion to build IR2_INST */

@@ -63,9 +63,9 @@ enum {
 typedef int8 EXTENSION_MODE;
 
 enum {
-    EXTM_N = 96,
-    EXTM_S,
-    EXTM_Z,
+    EXMode_N = 96,
+    EXMode_S,
+    EXMode_Z,
 };
 typedef int8_t EXMode;
 typedef int8_t EXBits;

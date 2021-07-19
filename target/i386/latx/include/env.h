@@ -2,6 +2,7 @@
 #define _ENV_H_
 
 #include "flag-pattern.h"
+#include "cpu.h"
 
 typedef struct {
     bool is_used;/* don't use now, may use for free in the future*/
@@ -85,7 +86,21 @@ typedef struct TRANSLATION_DATA {
     /* TODO : support static translation */
     uint8 curr_ir1_skipped_eflags; /* these eflag calculation can be skipped */
                                    /* (because of flag pattern, etc) */
+
+#ifdef CONFIG_SOFTMMU
+    EXMode reg_exmode[CPU_NB_REGS];
+    EXBits reg_exbits[CPU_NB_REGS];
+#endif
+
 } TRANSLATION_DATA;
+
+#ifdef CONFIG_SOFTMMU
+EXMode latxs_td_get_reg_extm(int gpr);
+EXBits latxs_td_get_reg_extb(int gpr);
+void latxs_td_set_reg_extm(int gpr, EXMode em);
+void latxs_td_set_reg_extb(int gpr, EXBits eb);
+void latxs_td_set_reg_extmb(int gpr, EXMode em, EXBits eb);
+#endif
 
 typedef struct ENV {
     void *cpu_state;            /* from QEMU,CPUArchState */

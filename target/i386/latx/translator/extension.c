@@ -565,3 +565,40 @@ int em_validate_address(int base_ireg_num) {
     return base_ireg_num;
 #endif
 }
+
+#ifdef CONFIG_SOFTMMU
+
+EXMode latxs_td_get_reg_extm(int gpr)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    return lsenv->tr_data->reg_exmode[gpr];
+}
+
+EXBits latxs_td_get_reg_extb(int gpr)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    return lsenv->tr_data->reg_exbits[gpr];
+}
+
+void latxs_td_set_reg_extm(int gpr, EXMode em)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    lsenv->tr_data->reg_exmode[gpr] = em;
+}
+
+void latxs_td_set_reg_extb(int gpr, EXBits eb)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    lsassert(eb <= 32);
+    lsenv->tr_data->reg_exbits[gpr] = eb;
+}
+
+void latxs_td_set_reg_extmb(int gpr, EXMode em, EXBits eb)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    lsassert(eb <= 32);
+    lsenv->tr_data->reg_exmode[gpr] = em;
+    lsenv->tr_data->reg_exbits[gpr] = eb;
+}
+
+#endif
