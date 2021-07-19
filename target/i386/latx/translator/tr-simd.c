@@ -1081,8 +1081,7 @@ bool translate_pmuludq(IR1_INST *pir1)
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
         IR2_OPND temp = ra_alloc_ftemp();
-        la_append_ir2_opnd3(LISA_VPACKEV_W, temp, src, src);
-        la_append_ir2_opnd3(LISA_VMULXW_D_WU, dest, temp, dest);
+        la_append_ir2_opnd3(LISA_VMULWEV_D_WU, dest, dest, src);
         return true;
     }
     IR2_OPND dest_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false,
