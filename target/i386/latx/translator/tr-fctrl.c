@@ -699,6 +699,16 @@ bool translate_fnstenv(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_OR, value, temp, value);
     la_append_ir2_opnd2i(LISA_ST_W, value, mem_opnd, mem_imm);
 
+    /* Mask all floating-point exceptions */
+    la_append_ir2_opnd2i_em(LISA_ORI, value, value, X87_CR_EXCP_MASK);
+    la_append_ir2_opnd2i(LISA_ST_H, value, env_ir2_opnd, control_offset);
+    /* Disable FCSR VZOUI accordingly */
+    la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, value , fcsr_ir2_opnd);
+    la_append_ir2_opnd2ii(LISA_BSTRINS_W, value, zero_ir2_opnd,
+                            FCSR_OFF_EN_V, FCSR_OFF_EN_I);
+    la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, value);
+
+
     assert(mem_opnd._imm16 + 24 <= 2047);
 
     update_sw_by_fcsr(value);

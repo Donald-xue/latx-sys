@@ -167,4 +167,6 @@ typedef struct ENV {
 #define X87_CR_RC_RD            0x1
 #define X87_CR_RC_RU            0x2
 #define X87_CR_RC_RZ            0x3
+/* Exception Masks */
+#define X87_CR_EXCP_MASK        0x3f
 #endif
