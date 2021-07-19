@@ -3232,6 +3232,25 @@ typedef enum {
     LISA_XVFCMP_COND_H,
     LISA_XVFCMP_COND_Q,
 
+#ifdef CONFIG_SOFTMMU
+    /* fake LISA for common cases to simply programing */
+    lisa_mov,    /* opnd2 : OR dest, src, zero */
+    lisa_mov32z, /* opnd2 : BSTRPICK_D dest, src, 31, 0 */
+    lisa_mov24z, /* opnd2 : BSTRPICK_D dest, src, 23, 0 */
+    lisa_mov16z, /* opnd2 : BSTRPICK_D dest, src, 15, 0 */
+    lisa_mov8z,  /* opnd2 : BSTRPICK_D dest, src,  7, 0 */
+    lisa_mov32s, /* opnd2 : BSTRPICK_W dest, src, 31, 0 */
+    lisa_mov16s, /* opnd2 : EXT_W_H    dest, src */
+    lisa_mov8s,  /* opnd2 : EXT_W_B    dest, src */
+
+    lisa_call,   /* opnd1 : JIRL ra,   GPR,  0 */
+    lisa_jr,     /* opnd1 : JIRL zero, GPR,  0 */
+    lisa_return, /* opnd0 : JIRL zero, ra,   0 */
+    lisa_nop,    /* opnd0 : ADD zero zero zero */
+
+    lisa_not,    /* opnd2 : NOR RD, RJ, zero   */
+#endif
+
     LISA_ENDING,
 } IR2_OPCODE;
 
@@ -3246,6 +3265,9 @@ typedef enum {
     IR2_OPND_IMMD,  /* decimal immediate */
     IR2_OPND_IMMH,  /* hexadecimal immediate */
     IR2_OPND_LABEL,
+#ifdef CONFIG_SOFTMMU
+    IR2_OPND_MEMY,
+#endif
 
     /*
      * FIXME: to make GCC happy.
@@ -3266,7 +3288,11 @@ typedef enum {
 typedef struct {
     IR2_OPND_TYPE _type;
     int val;
-
+#ifdef CONFIG_SOFTMMU
+    int imm;
+    EXMode em;
+    EXBits eb;
+#endif
     /*
      * FIXME: below member is to make GCC happy.
      * We will remove this if LA backend ready.

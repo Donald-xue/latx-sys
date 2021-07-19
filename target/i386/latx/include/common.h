@@ -62,6 +62,43 @@ enum {
 };
 typedef int8 EXTENSION_MODE;
 
+enum {
+    EXTM_N = 96,
+    EXTM_S,
+    EXTM_Z,
+};
+typedef int8_t EXMode;
+typedef int8_t EXBits;
+
+/* @n should be in [1, 31] */
+#define int32_in_intn(x, n) (!(((x) + (1 << ((n) - 1))) & (~((1 << n) - 1))))
+
+#define int32_in_int4(x)   (!(((x) + 0x8) & (~(0xf))))
+#define int32_in_int5(x)   int32_in_intn(x, 5)
+#define int32_in_int8(x)   (!(((x) + 0x80) & (~(0xff))))
+#define int32_in_int9(x)   int32_in_intn(x, 9)
+#define int32_in_int10(x)  int32_in_intn(x, 10)
+#define int32_in_int11(x)  int32_in_intn(x, 11)
+#define int32_in_int12(x)  int32_in_intn(x, 12)
+#define int32_in_int14(x)  int32_in_intn(x, 14)
+#define int32_in_int16(x)  (!(((x) + 0x8000) & (~(0xffff))))
+#define int32_in_int20(x)  int32_in_intn(x, 20)
+#define int32_in_int21(x)  int32_in_intn(x, 21)
+#define int32_in_int26(x)  int32_in_intn(x, 26)
+
+/* @n should be in [1, 31] */
+#define uint32_in_uintn(x, n)   (!((uint32_t)(x) >> (n)))
+
+#define uint32_in_uint1(x)      uint32_in_uintn(x, 1)
+#define uint32_in_uint2(x)      uint32_in_uintn(x, 2)
+#define uint32_in_uint3(x)      uint32_in_uintn(x, 3)
+#define uint32_in_uint4(x)      uint32_in_uintn(x, 4)
+#define uint32_in_uint5(x)      uint32_in_uintn(x, 5)
+#define uint32_in_uint6(x)      uint32_in_uintn(x, 6)
+#define uint32_in_uint7(x)      uint32_in_uintn(x, 7)
+#define uint32_in_uint8(x)      uint32_in_uintn(x, 8)
+#define uint32_in_uint12(x)     uint32_in_uintn(x, 12)
+
 #ifndef N64
 #define N64
 #endif
