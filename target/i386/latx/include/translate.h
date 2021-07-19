@@ -1188,4 +1188,24 @@ static inline ADDR cpu_get_guest_base(void)
 #define IS_CONVERT      1
 #define IS_XMM_HI       (1 << 2)
 #define IS_DEST_MMX     (1 << 3)
+
+#ifdef CONFIG_SOFTMMU
+
+/* main translation procees */
+void tr_em_init(void);
+
+/* opnd process */
+void latxs_load_imm64(IR2_OPND *, int64_t);
+void latxs_load_imm32_to_ir2(IR2_OPND *, uint32_t, EXMode);
+void latxs_load_imm64_to_ir2(IR2_OPND *, uint64_t);
+void latxs_load_addrx_to_ir2(IR2_OPND *, ADDRX);
+void latxs_load_addr_to_ir2(IR2_OPND *, ADDR);
+
+/* extension mode optimization */
+IR2_OPND latxs_convert_gpr_opnd(IR1_OPND *, EXMode);
+void latxs_store_ir2_to_ir1_gpr_em(IR2_OPND *, IR1_OPND *);
+void latxs_load_ir1_imm_to_ir2_em(IR2_OPND *, IR1_OPND *, EXMode);
+
+#endif
+
 #endif
