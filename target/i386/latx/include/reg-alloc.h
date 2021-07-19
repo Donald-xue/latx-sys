@@ -46,4 +46,28 @@ void ra_free_ftemp(int);
 /* assign temp register to physical register */
 bool ra_temp_register_allocation(void);
 
+#ifdef CONFIG_SOFTMMU
+
+void latxs_ra_init(void);
+
+/* allocate x86 register */
+IR2_OPND latxs_ra_alloc_gpr(int);
+IR2_OPND latxs_ra_alloc_vreg(int);
+IR2_OPND latxs_ra_alloc_mmx(int);
+IR2_OPND latxs_ra_alloc_st(int);
+IR2_OPND latxs_ra_alloc_xmm(int num);
+
+/* allocate dbt register */
+IR2_OPND latxs_ra_alloc_dbt_arg1(void);
+IR2_OPND latxs_ra_alloc_dbt_arg2(void);
+
+/* allocate temp register */
+IR2_OPND latxs_ra_alloc_itemp(void);
+IR2_OPND latxs_ra_alloc_ftemp(void);
+
+/* free temp register */
+void latxs_ra_free_temp(IR2_OPND *);
+
+#endif
+
 #endif

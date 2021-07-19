@@ -37,6 +37,19 @@ static const TEMP_REG_STATUS itemp_status_default[] = {
     {false, ITEMP8_NUM}, {false, ITEMP9_NUM}
 };
 
+#ifdef CONFIG_SOFTMMU
+
+/* temp registers in system mode : T0 - T7 */
+static const TEMP_REG_STATUS latxs_itemp_status_default[] = {
+    {false, 12}, {false, 13}, {false, 14}, {false, 15},
+    {false, 16}, {false, 17}, {false, 18}, {false, 19}
+};
+
+#define latxs_itemp_status_num \
+    (sizeof(latxs_itemp_status_default) / sizeof(TEMP_REG_STATUS))
+
+#endif
+
 static const TEMP_REG_STATUS ftemp_status_default[] = {
     {false, FTEMP0_NUM}, {false, FTEMP1_NUM},
     {false, FTEMP2_NUM}, {false, FTEMP3_NUM},
@@ -90,6 +103,9 @@ typedef struct TRANSLATION_DATA {
 #ifdef CONFIG_SOFTMMU
     EXMode reg_exmode[CPU_NB_REGS];
     EXBits reg_exbits[CPU_NB_REGS];
+
+    uint32_t itemp_mask;
+    uint32_t ftemp_mask;
 #endif
 
 } TRANSLATION_DATA;
@@ -100,6 +116,9 @@ EXBits latxs_td_get_reg_extb(int gpr);
 void latxs_td_set_reg_extm(int gpr, EXMode em);
 void latxs_td_set_reg_extb(int gpr, EXBits eb);
 void latxs_td_set_reg_extmb(int gpr, EXMode em, EXBits eb);
+
+void latxs_td_fpu_set_top(int ctop);
+int  latxs_td_fpu_get_top(void);
 #endif
 
 typedef struct ENV {

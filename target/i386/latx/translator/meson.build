@@ -24,3 +24,7 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: files(
   'tr-simd-shift.c',
   'translate.c'
 ))
+
+i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
+  'sys-fpu.c'
+))
