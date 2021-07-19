@@ -1360,11 +1360,28 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
     la_append_ir2_opnd2i(LISA_FLD_D, ir2_fraction, mem_opnd, mem_imm);
 
     IR2_OPND itemp_reg = ra_alloc_itemp();
+    IR2_OPND itemp1_reg = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_no_excp1 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_no_excp2 = ir2_opnd_new_type(IR2_OPND_LABEL);
+
+    /* Temporarily mask V to make the conversion don't trigger SIGFPE */
+    la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, itemp_reg, fcsr_ir2_opnd);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_D, itemp1_reg, itemp_reg, 4, 4);
+    la_append_ir2_opnd3(LISA_BEQ, itemp1_reg, zero_ir2_opnd, label_no_excp1);
+    la_append_ir2_opnd2i(LISA_XORI, itemp_reg, itemp_reg, 0x10);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FCSR, fcsr_ir2_opnd, itemp_reg);
+    la_append_ir2_opnd1(LISA_LABEL, label_no_excp1);
 
     la_append_ir2_opnd3(LISA_FCVT_D_LD, opnd2, ir2_fraction, ir2_sign_exp);
 
     la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, itemp_reg, fcsr_ir2_opnd);
+    /* unmask V if necessary */
+    la_append_ir2_opnd3(LISA_BEQ, itemp1_reg, zero_ir2_opnd, label_no_excp2);
+    la_append_ir2_opnd2i(LISA_XORI, itemp_reg, itemp_reg, 0x10);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FCSR, fcsr_ir2_opnd, itemp_reg);
+    la_append_ir2_opnd1(LISA_LABEL, label_no_excp2);
+
     la_append_ir2_opnd2ii(LISA_BSTRPICK_D, itemp_reg, itemp_reg, 28, 28);
     la_append_ir2_opnd3(LISA_BEQ, itemp_reg, zero_ir2_opnd, label_exit);
 	//Identify SNAN and change opnd2 to SNAN
@@ -1619,15 +1636,31 @@ void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd)
     IR2_OPND itemp = ra_alloc_itemp();
     IR2_OPND itemp1 = ra_alloc_itemp();
     IR2_OPND label_ok = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_no_excp1 = ir2_opnd_new_type(IR2_OPND_LABEL);
+    IR2_OPND label_no_excp2 = ir2_opnd_new_type(IR2_OPND_LABEL);
     int mem_imm = ir2_opnd_imm(&mem_opnd);
     mem_opnd._type = IR2_OPND_IREG; //decouple IR2_OPND_MEM to ireg and imm
     if (ir2_opnd_is_address(&mem_opnd))
         la_append_ir2_opnd3_em(LISA_AND, mem_opnd, mem_opnd, n1_ir2_opnd);
 
+    /* Temporarily mask V to make the conversion don't trigger SIGFPE */
+    la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, itemp, fcsr_ir2_opnd);
+    la_append_ir2_opnd2ii(LISA_BSTRPICK_D, itemp1, itemp, 4, 4);
+    la_append_ir2_opnd3(LISA_BEQ, itemp1, zero_ir2_opnd, label_no_excp1);
+    la_append_ir2_opnd2i(LISA_XORI, itemp, itemp, 0x10);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FCSR, fcsr_ir2_opnd, itemp);
+    la_append_ir2_opnd1(LISA_LABEL, label_no_excp1);
+
     lsassert(mem_imm + 8 <= 2047);
     la_append_ir2_opnd2(LISA_FCVT_LD_D, ir2_fraction, opnd2);
     la_append_ir2_opnd2(LISA_FCVT_UD_D, ir2_sign_exp, opnd2);
     la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, itemp, fcsr_ir2_opnd);
+    /* unmask V if necessary */
+    la_append_ir2_opnd3(LISA_BEQ, itemp1, zero_ir2_opnd, label_no_excp2);
+    la_append_ir2_opnd2i(LISA_XORI, itemp, itemp, 0x10);
+    la_append_ir2_opnd2_em(LISA_MOVGR2FCSR, fcsr_ir2_opnd, itemp);
+    la_append_ir2_opnd1(LISA_LABEL, label_no_excp2);
+
     la_append_ir2_opnd2ii(LISA_BSTRPICK_D, itemp, itemp, 28, 28);
     la_append_ir2_opnd2_em(LISA_MOVFR2GR_S, itemp1, ir2_sign_exp);
     la_append_ir2_opnd2i(LISA_ST_H, itemp1, mem_opnd, mem_imm + 8);
