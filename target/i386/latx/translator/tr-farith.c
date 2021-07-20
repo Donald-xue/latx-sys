@@ -54,7 +54,7 @@ bool translate_fiadd(IR1_INST *pir1)
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(t_freg, opnd0, false, false);
+    load_freg_from_ir1_2(t_freg, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L , t_freg, t_freg);
     } else {
@@ -91,7 +91,7 @@ bool translate_fisub(IR1_INST *pir1)
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(t_freg, opnd0, false, false);
+    load_freg_from_ir1_2(t_freg, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L , t_freg, t_freg);
     } else {
@@ -110,7 +110,7 @@ bool translate_fisubr(IR1_INST *pir1)
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(t_freg, opnd0, false, false);
+    load_freg_from_ir1_2(t_freg, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L , t_freg, t_freg);
     } else {
@@ -213,7 +213,7 @@ bool translate_fimul(IR1_INST *pir1)
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(t_freg, opnd0, false, false);
+    load_freg_from_ir1_2(t_freg, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L, t_freg, t_freg);
     } else {
@@ -346,7 +346,7 @@ bool translate_fidiv(IR1_INST *pir1)
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(t_freg, opnd0, false, false);
+    load_freg_from_ir1_2(t_freg, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L, t_freg, t_freg);
     } else {
@@ -364,7 +364,7 @@ bool translate_fidivr(IR1_INST *pir1)
     IR2_OPND st0 = ra_alloc_st(0);
     IR2_OPND t_freg = ra_alloc_ftemp();
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(t_freg, opnd0, false, false);
+    load_freg_from_ir1_2(t_freg, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L, t_freg, t_freg);
     } else {

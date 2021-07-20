@@ -1407,9 +1407,11 @@ registers may be used.
 @return the ir2 register operand
 */
 static void load_freg_from_ir1_mem(IR2_OPND opnd2, IR1_OPND *opnd1,
-                                   bool is_xmm_hi, bool is_convert)
+                                   bool is_xmm_hi, uint32 options)
 {
     IR2_OPND mem_opnd;
+    bool is_convert = (options & IS_CONVERT) >> 2;
+    bool is_dest_mmx = (options & IS_DEST_MMX) >> 3;
     if (is_xmm_hi)
         mem_opnd = convert_mem_opnd_with_bias(opnd1, 8);
     else
@@ -1429,9 +1431,11 @@ static void load_freg_from_ir1_mem(IR2_OPND opnd2, IR1_OPND *opnd1,
         IR2_OPND ftemp = ra_alloc_ftemp_internal();
         la_append_ir2_opnd2i(LISA_FLD_D, opnd2, mem_opnd, mem_imm);
         //64->80->64 to handle the implicit SNAN->QNAN of fld
-        la_append_ir2_opnd2(LISA_FCVT_LD_D, ftemp, opnd2);
-        la_append_ir2_opnd2(LISA_FCVT_UD_D, opnd2, opnd2);
-        la_append_ir2_opnd3(LISA_FCVT_D_LD, opnd2, ftemp, opnd2);
+        if (!is_dest_mmx) {
+            la_append_ir2_opnd2(LISA_FCVT_LD_D, ftemp, opnd2);
+            la_append_ir2_opnd2(LISA_FCVT_UD_D, opnd2, opnd2);
+            la_append_ir2_opnd3(LISA_FCVT_D_LD, opnd2, ftemp, opnd2);
+        }
         ra_free_temp(ftemp);
     } else if (ir1_opnd_size(opnd1) == 16) {
         IR2_OPND itemp = ra_alloc_itemp_internal();
@@ -1491,6 +1495,7 @@ static void load_freg_from_ir1_xmm(IR2_OPND opnd2, IR1_OPND *opnd1,
 
 IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
 {
+    is_convert = is_convert ? (IS_CONVERT) : is_convert;
     switch (ir1_opnd_type(opnd1)) {
     case X86_OP_REG: {
         if (ir1_opnd_is_fpr(opnd1)){
@@ -1524,10 +1529,11 @@ IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
     abort();
 }
 
-void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi,
-                          bool is_convert)
+void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, uint32_t options)
 {
     lsassert(ir2_opnd_is_freg(&opnd2));
+    bool is_xmm_hi = (options & IS_XMM_HI);
+    assert(is_xmm_hi == 0);
 
     switch (ir1_opnd_type(opnd1)) {
     case X86_OP_REG: {
@@ -1551,7 +1557,8 @@ void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi,
     }
 
     case X86_OP_MEM: {
-        load_freg_from_ir1_mem(opnd2, opnd1, is_xmm_hi, is_convert);
+        load_freg_from_ir1_mem(opnd2, opnd1, is_xmm_hi,
+                               options & (IS_CONVERT | IS_DEST_MMX));
         break;
     }
     default:
@@ -2027,7 +2034,7 @@ IR2_OPND load_freg128_from_ir1(IR1_OPND *opnd1){
             load_freg128_from_ir1_mem(ret_opnd, opnd1);
         }
         else {
-            load_freg_from_ir1_mem(ret_opnd, opnd1, false, false);
+            load_freg_from_ir1_mem(ret_opnd, opnd1, 0, IS_DEST_MMX);
         }
         return ret_opnd;
     }

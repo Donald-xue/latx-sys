@@ -1516,11 +1516,11 @@ bool translate_movq(IR1_INST *pir1)
     }
     if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))) { /* dest xmm */
         IR2_OPND dest_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false, false);
-        load_freg_from_ir1_2(dest_lo, ir1_get_opnd(pir1, 0) + 1, false, false);
+        load_freg_from_ir1_2(dest_lo, ir1_get_opnd(pir1, 0) + 1, 0);
         store_ireg_to_ir1(zero_ir2_opnd, ir1_get_opnd(pir1, 0), true);
     } else if (ir1_opnd_is_mmx(ir1_get_opnd(pir1, 0))) { /* dest mmx */
         IR2_OPND dest_opnd = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false, false);
-        load_freg_from_ir1_2(dest_opnd, ir1_get_opnd(pir1, 0) + 1, false, false);
+        load_freg_from_ir1_2(dest_opnd, ir1_get_opnd(pir1, 0) + 1, IS_DEST_MMX);
     } else { /* dest mem */
         IR2_OPND source_opnd =
             load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, false, false);

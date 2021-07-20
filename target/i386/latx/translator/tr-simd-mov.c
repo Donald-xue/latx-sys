@@ -196,8 +196,8 @@ bool translate_maskmovq(IR1_INST *pir1)
 {
     IR2_OPND src = ra_alloc_ftemp();
     IR2_OPND mask = ra_alloc_ftemp();
-	load_freg_from_ir1_2(src, ir1_get_opnd(pir1, 0), false, false);
-	load_freg_from_ir1_2(mask, ir1_get_opnd(pir1, 1), false, false);
+    load_freg_from_ir1_2(src, ir1_get_opnd(pir1, 0), IS_DEST_MMX);
+    load_freg_from_ir1_2(mask, ir1_get_opnd(pir1, 1), IS_DEST_MMX);
     IR2_OPND zero = ra_alloc_ftemp();
     la_append_ir2_opnd3(LISA_VXOR_V, zero, zero, zero);
     /*

@@ -26,7 +26,7 @@ bool translate_fld(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_st(7);
 
     /* 2. load the value */
-    load_freg_from_ir1_2(dest_opnd, ir1_get_opnd(pir1, 0), false, true);
+    load_freg_from_ir1_2(dest_opnd, ir1_get_opnd(pir1, 0), IS_CONVERT);
 
     /* 3. adjust top */
     tr_fpu_push();
@@ -186,7 +186,7 @@ bool translate_fild(IR1_INST *pir1)
     IR2_OPND dest_opnd = ra_alloc_st(0);
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    load_freg_from_ir1_2(dest_opnd, opnd0, false, false);
+    load_freg_from_ir1_2(dest_opnd, opnd0, 0);
     if (ir1_opnd_size(opnd0) > 32) {
         la_append_ir2_opnd2(LISA_FFINT_D_L, dest_opnd, dest_opnd);
     } else {
