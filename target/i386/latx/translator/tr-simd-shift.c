@@ -493,14 +493,10 @@ bool translate_pslldq(IR1_INST *pir1)
     uint8_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 1));
     if(imm8 > 15){
         la_append_ir2_opnd3(LISA_VXOR_V, dest, dest, dest);
-    }
-    else if(imm8 == 0){
+    } else if (imm8 == 0) {
         return true;
-    }
-    else {
-        IR2_OPND zero = ra_alloc_ftemp();
-        la_append_ir2_opnd3(LISA_VXOR_V, zero, zero, zero);
-        la_append_ir2_opnd2i(LISA_VEXTRCOLI_B, dest, zero, 16 - imm8);
+    } else {
+        la_append_ir2_opnd2i(LISA_VBSLL_V, dest, dest, imm8);
     }
     return true;
 }
@@ -512,13 +508,10 @@ bool translate_psrldq(IR1_INST *pir1)
     uint8_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 1));
     if(imm8 > 15){
         la_append_ir2_opnd3(LISA_VXOR_V, dest, dest, dest);
-    }
-    else if(imm8 == 0){
+    } else if (imm8 == 0) {
         return true;
-    }
-    else {
-        la_append_ir2_opnd2i(LISA_VEXTRCOLI_B, dest, dest, imm8);
-        la_append_ir2_opnd2i(LISA_VCLRSTRI_V, dest, dest, 16 - imm8);
+    } else {
+        la_append_ir2_opnd2i(LISA_VBSRL_V, dest, dest, imm8);
     }
     return true;
 }
