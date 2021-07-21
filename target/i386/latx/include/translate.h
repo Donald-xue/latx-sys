@@ -1206,6 +1206,17 @@ void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb);
 
 void latxs_label_dispose(void *code_buffer);
 
+/* FPU TOP related functions */
+void latxs_tr_fpu_push(void);
+void latxs_tr_fpu_pop(void);
+void latxs_tr_fpu_inc(void);
+void latxs_tr_fpu_dec(void);
+void latxs_tr_gen_save_curr_top(void);
+
+void latxs_fpu_fix_before_exec_tb(CPUX86State *env, TranslationBlock *tb);
+void latxs_fpu_fix_after_exec_tb(CPUX86State *env, TranslationBlock *tb);
+void latxs_fpu_fix_cpu_loop_exit(void);
+
 /* opnd process */
 void latxs_load_imm64(IR2_OPND *, int64_t);
 void latxs_load_imm32_to_ir2(IR2_OPND *, uint32_t, EXMode);

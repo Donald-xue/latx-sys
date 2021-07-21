@@ -134,6 +134,26 @@ typedef enum X86Seg {
 #define VIP_MASK                0x00100000
 #define ID_MASK                 0x00200000
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+
+#define LATXS_FPU_RESET_VALUE     0
+
+#define LATXS_FPU_TOP_BIT         0
+#define LATXS_FPU_RESET_ST_BIT    6
+#define LATXS_FPU_LOAD_ST_BIT     7
+
+#define LATXS_FPU_TOP_MASK        (7 << LATXS_FPU_TOP_BIT)
+#define LATXS_FPU_RESET_ST_MASK   (1 << LATXS_FPU_RESET_ST_BIT)
+#define LATXS_FPU_LOAD_ST_MASK    (1 << LATXS_FPU_LOAD_ST_BIT)
+
+#define LATXS_FPU_NEED_FIX_MASK \
+    (LATXS_FPU_RESET_ST_MASK | LATXS_FPU_LOAD_ST_MASK)
+
+#define latxs_fpu_get_top(x)      ((x) & LATXS_FPU_TOP_MASK)
+#define latxs_fpu_need_fix(x)     ((x) & LATXS_FPU_NEED_FIX_MASK)
+
+#endif
+
 /* hidden flags - used internally by qemu to represent additional cpu
    states. Only the INHIBIT_IRQ, SMM and SVMI are not redundant. We
    avoid using the IOPL_MASK, TF_MASK, VM_MASK and AC_MASK bit
@@ -1408,6 +1428,9 @@ typedef struct CPUX86State {
     /* TODO: why? in new qemu has no next_eip member */
     target_ulong exception_next_eip;
     struct TranslationBlock **tb_jmp_cache_ptr;
+#ifdef CONFIG_SOFTMMU
+    uint32_t latxs_fpu;
+#endif
 #endif
     /* standard registers */
     target_ulong regs[CPU_NB_REGS];
