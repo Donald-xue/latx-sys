@@ -370,16 +370,23 @@ bool translate_pandn(IR1_INST *pir1)
 
 bool translate_pmaddwd(IR1_INST *pir1)
 {
+    IR2_OPND temp = ra_alloc_ftemp();
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
-        la_append_ir2_opnd3(LISA_VDP2_W_H, dest, dest, src);
+        la_append_ir2_opnd3(LISA_VXOR_V, temp, temp, temp);
+        la_append_ir2_opnd3(LISA_VMADDWEV_W_H, temp, dest, src);
+        la_append_ir2_opnd3(LISA_VMADDWOD_W_H, temp, dest, src);
+        la_append_ir2_opnd2i(LISA_VBSLL_V, dest, temp, 0);
     } else { //mmx
         IR2_OPND dest_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false,
                                                 true); /* fill default parameter */
         IR2_OPND src_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, false,
                                                true); /* fill default parameter */
-        la_append_ir2_opnd3(LISA_VDP2_W_H, dest_lo, dest_lo, src_lo);
+        la_append_ir2_opnd3(LISA_VXOR_V, temp, temp, temp);
+        la_append_ir2_opnd3(LISA_VMADDWEV_W_H, temp, dest_lo, src_lo);
+        la_append_ir2_opnd3(LISA_VMADDWOD_W_H, temp, dest_lo, src_lo);
+        la_append_ir2_opnd2i(LISA_VBSLL_V, dest_lo, temp, 0);
     }
     return true;
 }
@@ -1080,7 +1087,6 @@ bool translate_pmuludq(IR1_INST *pir1)
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
-        IR2_OPND temp = ra_alloc_ftemp();
         la_append_ir2_opnd3(LISA_VMULWEV_D_WU, dest, dest, src);
         return true;
     }
