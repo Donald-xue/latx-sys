@@ -568,6 +568,15 @@ int em_validate_address(int base_ireg_num) {
 
 #ifdef CONFIG_SOFTMMU
 
+void latxs_tr_em_init(TRANSLATION_DATA *td)
+{
+    int i = 0;
+    for (i = 0; i < CPU_NB_REGS; ++i) {
+        td->reg_exmode[i] = EXMode_S;
+        td->reg_exbits[i] = 32;
+    }
+}
+
 EXMode latxs_td_get_reg_extm(int gpr)
 {
     lsassert(gpr < CPU_NB_REGS);

@@ -185,10 +185,6 @@ EXTENSION_MODE ir2_opnd_default_em(IR2_OPND *opnd)
 
 void ra_init(void)
 {
-#ifdef CONFIG_SOFTMMU
-    latxs_ra_init();
-    return;
-#endif
     memcpy(lsenv->tr_data->itemp_status, itemp_status_default,
            sizeof(itemp_status_default));
     memcpy(lsenv->tr_data->ftemp_status, ftemp_status_default,
@@ -197,11 +193,8 @@ void ra_init(void)
 
 #ifdef CONFIG_SOFTMMU
 
-void latxs_ra_init(void)
+void latxs_tr_ra_init(TRANSLATION_DATA *td)
 {
-    TRANSLATION_DATA *td = lsenv->tr_data;
-    lsassert(td);
-
     td->itemp_num = 32;
     td->ftemp_num = 32;
 

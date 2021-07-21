@@ -6,19 +6,6 @@
 #include "translate.h"
 #include <string.h>
 
-void tr_em_init(void)
-{
-    TRANSLATION_DATA *td = lsenv->tr_data;
-    lsassert(td != NULL);
-
-    int i = 0;
-
-    for (i = 0; i < CPU_NB_REGS; ++i) {
-        td->reg_exmode[i] = EXMode_S;
-        td->reg_exbits[i] = 32;
-    }
-}
-
 /* Extension Mode
  *
  * Key Rules:

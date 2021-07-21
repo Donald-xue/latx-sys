@@ -4,6 +4,20 @@
 #include "translate.h"
 #include "latx-options.h"
 
+void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb)
+{
+    if (option_lsfpu) {
+        return;
+    }
+
+    if (tb != NULL) {
+        latxs_td_fpu_set_top(tb->_top_in);
+        lsassert(t->curr_top != -1);
+    } else {
+        latxs_td_fpu_set_top(0);
+    }
+}
+
 void latxs_td_fpu_set_top(int ctop)
 {
     if (option_lsfpu) {

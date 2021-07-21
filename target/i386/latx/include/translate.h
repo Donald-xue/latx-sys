@@ -1191,8 +1191,20 @@ static inline ADDR cpu_get_guest_base(void)
 
 #ifdef CONFIG_SOFTMMU
 
+#include "env.h"
+
 /* main translation procees */
-void tr_em_init(void);
+void latxs_tr_init(TranslationBlock *tb);
+int  latxs_tr_ir2_assemble(void *code_buffer);
+void latxs_tr_fini(void);
+
+void latxs_tr_tb_init(TRANSLATION_DATA *td, TranslationBlock *tb);
+void latxs_tr_ra_init(TRANSLATION_DATA *td);
+void latxs_tr_em_init(TRANSLATION_DATA *td);
+void latxs_tr_ir2_array_init(TRANSLATION_DATA *td);
+void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb);
+
+void latxs_label_dispose(void *code_buffer);
 
 /* opnd process */
 void latxs_load_imm64(IR2_OPND *, int64_t);
