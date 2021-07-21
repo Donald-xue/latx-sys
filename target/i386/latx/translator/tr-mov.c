@@ -252,6 +252,7 @@ bool translate_movs(IR1_INST *pir1)
         lsassert(ir1_prefix(pir1) == X86_PREFIX_REP);
         la_append_ir2_opnd2i_em(LISA_ADDI_W, ecx_opnd, ecx_opnd, -1);
         la_append_ir2_opnd3(LISA_BNE, ecx_opnd, zero_ir2_opnd, label_loop_begin);
+        store_ireg_to_ir1(ecx_opnd, &ecx_ir1_opnd, false);
     }
 
     /* 5. exit */
@@ -296,6 +297,7 @@ bool translate_stos(IR1_INST *pir1)
         lsassert(ir1_prefix(pir1) == X86_PREFIX_REP);
         la_append_ir2_opnd2i_em(LISA_ADDI_W, ecx_opnd, ecx_opnd, -1);
         la_append_ir2_opnd3(LISA_BNE, ecx_opnd, zero_ir2_opnd, label_loop_begin);
+        store_ireg_to_ir1(ecx_opnd, &ecx_ir1_opnd, false);
     }
 
     /* 5. exit */
@@ -340,6 +342,7 @@ bool translate_lods(IR1_INST *pir1)
         lsassert(ir1_prefix(pir1) == X86_PREFIX_REP);
         la_append_ir2_opnd2i_em(LISA_ADDI_W, ecx_opnd, ecx_opnd, -1);
         la_append_ir2_opnd3(LISA_BNE, ecx_opnd, zero_ir2_opnd, label_loop_begin);
+        store_ireg_to_ir1(ecx_opnd, &ecx_ir1_opnd, false);
     }
 
     store_ireg_to_ir1(esi_mem_value, ir1_get_opnd(pir1, 0), false);
@@ -399,7 +402,7 @@ bool translate_cmps(IR1_INST *pir1)
 
         /* 4.2 loop ends when result != 0 (repe), and when result==0 (repne) */
         IR2_OPND condition2 = ra_alloc_itemp();
-        if (ir1_prefix(pir1) == X86_PREFIX_REP)
+        if (ir1_prefix(pir1) == X86_PREFIX_REPE)
             la_append_ir2_opnd3_em(
                 LISA_SLTU, condition2, zero_ir2_opnd,
                 cmp_result); /* set 1 when 0<result, i.e., result!=0 */
@@ -416,6 +419,7 @@ bool translate_cmps(IR1_INST *pir1)
 
         ra_free_temp(condition);
         ra_free_temp(condition2);
+        store_ireg_to_ir1(ecx_opnd, &ecx_ir1_opnd, false);
     }
 
     /* 5. calculate eflags */
@@ -477,7 +481,7 @@ bool translate_scas(IR1_INST *pir1)
 
         /* 4.2 loop ends when result != 0 (repe), and when result==0 (repne) */
         IR2_OPND condition2 = ra_alloc_itemp();
-        if (ir1_prefix(pir1) == X86_PREFIX_REP)
+        if (ir1_prefix(pir1) == X86_PREFIX_REPE)
             la_append_ir2_opnd3_em(LISA_SLTU, condition2, zero_ir2_opnd,
                 cmp_result); /* set 1 when 0<result, i.e., result!=0 */
         else
@@ -490,6 +494,7 @@ bool translate_scas(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_BEQ, condition, zero_ir2_opnd, label_loop_begin);
         ra_free_temp(condition);
         ra_free_temp(condition2);
+        store_ireg_to_ir1(ecx_opnd, &ecx_ir1_opnd, false);
     }
 
     /* 5. calculate eflags */
