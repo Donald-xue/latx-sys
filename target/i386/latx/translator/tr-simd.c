@@ -1132,23 +1132,38 @@ bool translate_pshufw(IR1_INST *pir1)
                                          true); /* fill default parameter */
     IR2_OPND src = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, true,
                                         true); /* fill default parameter */
-    uint64_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 2));
-    la_append_ir2_opnd2i(LISA_VSHUFI1_H, dest, src, imm8);
+    IR1_OPND *imm8_reg = ir1_get_opnd(pir1, 2);
+    IR2_OPND temp = ra_alloc_ftemp();
+    uint64_t imm8 = ir1_opnd_uimm(imm8_reg);
+    if (ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)) ||
+        (ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 0)) !=
+         ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 1)))) {
+        la_append_ir2_opnd2i(LISA_VORI_B, dest, src, 0);
+    }
+    la_append_ir2_opnd2i(LISA_VSHUF4I_H, dest, dest, imm8);
     return true;
 }
 
 bool translate_pshufhw(IR1_INST *pir1)
 {
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
-    IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
-    IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
-    uint64_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 2));
+    IR1_OPND *dest_reg = ir1_get_opnd(pir1, 0);
+    IR1_OPND *src_reg = ir1_get_opnd(pir1, 1);
+    IR1_OPND *imm8_reg = ir1_get_opnd(pir1, 2);
+
+    IR2_OPND dest = load_freg128_from_ir1(dest_reg);
+    IR2_OPND src = load_freg128_from_ir1(src_reg);
+    IR2_OPND temp = ra_alloc_ftemp();
+
+    uint64_t imm8 = ir1_opnd_uimm(imm8_reg);
     if (ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)) ||
         (ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 0)) !=
          ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 1)))) {
         la_append_ir2_opnd2i(LISA_VORI_B, dest, src, 0);
     }
-    la_append_ir2_opnd2i(LISA_VSHUFI2_H, dest, dest, imm8);
+    la_append_ir2_opnd2i(LISA_VORI_B, temp, src, 0);
+    la_append_ir2_opnd2i(LISA_VSHUF4I_H, dest, dest, imm8);
+    la_append_ir2_opnd2i(LISA_XVINSVE0_D, dest, temp, 0);
     return true;
 }
 
@@ -1157,13 +1172,18 @@ bool translate_pshuflw(IR1_INST *pir1)
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
+    IR2_OPND temp = ra_alloc_ftemp();
     uint64_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 2));
     if (ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)) ||
         (ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 0)) !=
          ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 1)))) {
         la_append_ir2_opnd2i(LISA_VORI_B, dest, src, 0);
     }
-    la_append_ir2_opnd2i(LISA_VSHUFI1_H, dest, dest, imm8);
+
+    la_append_ir2_opnd2i(LISA_VORI_B, temp, src, 0);
+    la_append_ir2_opnd2i(LISA_VBSRL_V, temp, temp, 8);
+    la_append_ir2_opnd2i(LISA_VSHUF4I_H, dest, dest, imm8);
+    la_append_ir2_opnd2i(LISA_XVINSVE0_D, dest, temp, 1);
     return true;
 }
 
