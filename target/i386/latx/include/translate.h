@@ -1218,6 +1218,13 @@ IR2_OPND latxs_convert_gpr_opnd(IR1_OPND *, EXMode);
 void latxs_store_ir2_to_ir1_gpr_em(IR2_OPND *, IR1_OPND *);
 void latxs_load_ir1_imm_to_ir2_em(IR2_OPND *, IR1_OPND *, EXMode);
 
+/* LSFPU */
+void latxs_tr_load_lstop_from_env(IR2_OPND *top);
+void latxs_tr_save_lstop_to_env(IR2_OPND *top);
+void latxs_tr_gen_top_mode_init(void);
+void latxs_tr_fpu_enable_top_mode(void);
+void latxs_tr_fpu_disable_top_mode(void);
+
 #endif
 
 #endif
