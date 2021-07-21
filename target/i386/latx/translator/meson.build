@@ -28,5 +28,6 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: files(
 i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-opnd-process.c',
   'sys-translate.c',
+  'sys-eflags.c',
   'sys-fpu.c'
 ))

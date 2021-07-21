@@ -280,4 +280,22 @@ static inline int lsenv_offset_of_tr_data(ENV *lsenv)
     return (ADDR)(&lsenv->tr_data) - (ADDR)lsenv;
 }
 
+static inline int lsenv_offset_of_cc_src(ENV *lsenv)
+{
+    CPUX86State *env = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&env->cc_src) - (ADDR)env);
+}
+
+static inline int lsenv_offset_of_cc_op(ENV *lsenv)
+{
+    CPUX86State *env = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&env->cc_op) - (ADDR)env);
+}
+
+static inline int lsenv_offset_of_df(ENV *lsenv)
+{
+    CPUX86State *env = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&env->df) - (ADDR)env);
+}
+
 #endif

@@ -1206,6 +1206,12 @@ void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb);
 
 void latxs_label_dispose(void *code_buffer);
 
+/* eflags related functions */
+void latxs_tr_save_eflags(void);
+void latxs_tr_load_eflags(int simple);
+void latxs_tr_gen_static_save_eflags(void);
+void latxs_tr_gen_static_load_eflags(int simple);
+
 /* FPU TOP related functions */
 void latxs_tr_fpu_push(void);
 void latxs_tr_fpu_pop(void);

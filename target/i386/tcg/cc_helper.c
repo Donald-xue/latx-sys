@@ -336,8 +336,17 @@ target_ulong helper_read_eflags(CPUX86State *env)
     uint32_t eflags;
 
     eflags = cpu_cc_compute_all(env, CC_OP);
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    eflags |= env->eflags;
+    if (env->df == 1) {
+        eflags &= ~DF_MASK;
+    } else {
+        eflags |= DF_MASK;
+    }
+#else
     eflags |= (env->df & DF_MASK);
     eflags |= env->eflags & ~(VM_MASK | RF_MASK);
+#endif
     return eflags;
 }
 
