@@ -517,6 +517,11 @@ bool translate_mul(IR1_INST *pir1)
         store_ireg_to_ir1(dest_opnd, &dx_ir1_opnd, false);
     } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) {
         src_opnd_1 = load_ireg_from_ir1(&eax_ir1_opnd, ZERO_EXTENSION, false);
+        /*
+         * NOTE: for X86 MUL insn, we have to make sure src_opnd_0 data is zero
+         * extension, otherwise, mul data will be incorrect.
+         */
+        la_append_ir2_opnd3_em(LISA_AND, src_opnd_0, src_opnd_0, n1_ir2_opnd);
         generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
         la_append_ir2_opnd3_em(LISA_MUL_D, dest_opnd, src_opnd_0, src_opnd_1);
         store_ireg_to_ir1(dest_opnd, &eax_ir1_opnd, false);
