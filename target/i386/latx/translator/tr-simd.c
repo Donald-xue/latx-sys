@@ -1133,7 +1133,6 @@ bool translate_pshufw(IR1_INST *pir1)
     IR2_OPND src = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, true,
                                         true); /* fill default parameter */
     IR1_OPND *imm8_reg = ir1_get_opnd(pir1, 2);
-    IR2_OPND temp = ra_alloc_ftemp();
     uint64_t imm8 = ir1_opnd_uimm(imm8_reg);
     if (ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)) ||
         (ir1_opnd_base_reg_num(ir1_get_opnd(pir1, 0)) !=
