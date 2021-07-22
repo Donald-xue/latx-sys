@@ -29,6 +29,10 @@ i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-opnd-process.c',
   'sys-translate.c',
   'sys-eflags.c',
+  'sys-disasm.c',
+  'sys-cvt-addr.c',
   'sys-static-codes.c',
+  'sys.c',
+  'sys-eob.c',
   'sys-fpu.c'
 ))

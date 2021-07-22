@@ -231,6 +231,14 @@ static void xtm_capstone_init(void)
         exit(-1);
     }
     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+#ifdef CONFIG_SOFTMMU
+    if (cs_open(CS_ARCH_X86, CS_MODE_16, &handle16) != CS_ERR_OK) {
+        fprintf(stderr, "%s %s %d error : cs_open\n",
+                __FILE__, __func__, __LINE__);
+        exit(-1);
+    }
+    cs_option(handle16, CS_OPT_DETAIL, CS_OPT_ON);
+#endif
 }
 
 static QHT etb_qht_real;

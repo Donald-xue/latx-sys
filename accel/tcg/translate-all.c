@@ -1923,6 +1923,10 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
 #else
     tb->_top_out = -1;
     tb->_top_in = -1;
+#ifdef CONFIG_SOFTMMU
+    tb->sys_eob_pir1 = NULL;
+    tb->tb_too_large_pir1 = NULL;
+#endif
 #endif
 
 #ifndef CONFIG_LATX

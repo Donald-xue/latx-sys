@@ -298,4 +298,10 @@ static inline int lsenv_offset_of_df(ENV *lsenv)
     return (int)((ADDR)(&env->df) - (ADDR)env);
 }
 
+static inline int lsenv_offset_of_hflags(ENV *lsenv)
+{
+    CPUX86State *env = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&env->hflags) - (ADDR)env);
+}
+
 #endif

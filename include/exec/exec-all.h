@@ -543,6 +543,12 @@ struct TranslationBlock {
     void *next_tb[2];
     /* remember to free these memory when QEMU recycle one TB */
     ETB extra_tb;
+#ifdef CONFIG_SOFTMMU
+    /* TB ends because of special situation in system-mode */
+    struct IR1_INST *sys_eob_pir1;
+    /* record the last instruction if TB is too large */
+    struct IR1_INST *tb_too_large_pir1;
+#endif
 #endif
 };
 

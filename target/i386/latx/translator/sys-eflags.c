@@ -214,10 +214,9 @@ void latxs_tr_gen_static_save_eflags(void)
             lsenv_offset_of_df(lsenv));
 }
 
-void tr_gen_static_load_eflags(int simple)
+void latxs_tr_gen_static_load_eflags(int simple)
 {
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
-    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
 
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;

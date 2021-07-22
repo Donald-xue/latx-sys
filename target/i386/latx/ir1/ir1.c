@@ -70,6 +70,9 @@ IR1_OPND esi_mem32_ir1_opnd;
 IR1_OPND edi_mem32_ir1_opnd;
 
 csh handle;
+#ifdef CONFIG_SOFTMMU
+csh handle16;
+#endif
 
 static IR1_OPND ir1_opnd_new_static_reg(IR1_OPND_TYPE opnd_type, int size,
                                         x86_reg reg)
@@ -829,8 +832,18 @@ int ir1_is_call(IR1_INST *ir1)
 
 int ir1_is_return(IR1_INST *ir1)
 {
+#ifndef CONFIG_SOFTMMU
     return ir1->info->id == X86_INS_RET || ir1->info->id == X86_INS_IRET ||
            ir1->info->id == X86_INS_RETF;
+#else
+    /*
+     * 'iret' and 'retf' is special EOB in sys-mode.
+     * In current version, it depends on the added jmp.
+     * Can be further optimized to use gen_exit_tb().
+     * Take care of EIP, eflags, mapping registers, etc.
+     */
+    return ir1->info->id == X86_INS_RET;
+#endif
 }
 
 int ir1_is_indirect(IR1_INST *ir1)
@@ -855,6 +868,9 @@ bool ir1_is_tb_ending(IR1_INST *ir1)
         return false;
     }
     return ir1_is_branch(ir1) || ir1_is_jump(ir1) || ir1_is_call(ir1) ||
+#ifdef CONFIG_SOFTMMU
+           latxs_ir1_is_jump_far(ir1)   ||
+#endif
            ir1_is_return(ir1) || ir1_is_syscall(ir1);
 }
 
@@ -1426,3 +1442,345 @@ bool ir1_is_prefix_lock(IR1_INST *ir1)
 }
 
 const char *ir1_reg_name(x86_reg reg) { return cs_reg_name(handle, reg); }
+
+#ifdef CONFIG_SOFTMMU
+
+void latxs_ir1_opnd_build_full_mem(
+        IR1_OPND *opnd, int size,
+        x86_reg seg, x86_reg base, int64_t disp,
+        int64_t index, int64_t scale)
+{
+    opnd->type = X86_OP_MEM;
+
+    lsassert(size % 8 == 0);
+    opnd->size = size / 8;
+
+    opnd->mem.segment = seg;
+    opnd->mem.base    = base;
+
+    opnd->mem.disp  = disp;
+    opnd->mem.index = index;
+    opnd->mem.scale = scale;
+
+    opnd->avx_bcast = X86_AVX_BCAST_INVALID;
+}
+
+uint8_t *latxs_ir1_inst_opbytes(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.opcode;
+}
+
+int latxs_ir1_mem_opnd_is_base_imm(IR1_OPND *opnd)
+{
+    if (!ir1_opnd_has_index(opnd) && ir1_opnd_has_base(opnd) &&
+        !ir1_opnd_has_seg(opnd)) {
+        return 1;
+    }
+    return 0;
+}
+
+int latxs_ir1_opnd_is_cr(IR1_OPND *opnd)
+{
+    if (ir1_opnd_type(opnd) != X86_OP_REG) {
+        return 0;
+    }
+
+    switch (opnd->reg) {
+    case X86_REG_CR0:
+    case X86_REG_CR1:
+    case X86_REG_CR2:
+    case X86_REG_CR3:
+    case X86_REG_CR4:
+    case X86_REG_CR5:
+    case X86_REG_CR6:
+    case X86_REG_CR7:
+    case X86_REG_CR8:
+    case X86_REG_CR9:
+    case X86_REG_CR10:
+    case X86_REG_CR11:
+    case X86_REG_CR12:
+    case X86_REG_CR13:
+    case X86_REG_CR14:
+    case X86_REG_CR15:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int latxs_ir1_opnd_get_cr_num(IR1_OPND *opnd, int *flag)
+{
+    switch (opnd->reg) {
+    case X86_REG_CR0:
+    case X86_REG_CR2:
+    case X86_REG_CR3:
+    case X86_REG_CR4:
+    case X86_REG_CR8:
+        *flag = 1; /* OK to read/write CR */
+        return opnd->reg - X86_REG_CR0;
+    case X86_REG_CR1:
+    case X86_REG_CR5:
+    case X86_REG_CR6:
+    case X86_REG_CR7:
+    case X86_REG_CR9:
+    case X86_REG_CR10:
+    case X86_REG_CR11:
+    case X86_REG_CR12:
+    case X86_REG_CR13:
+    case X86_REG_CR14:
+    case X86_REG_CR15:
+        return opnd->reg - X86_REG_CR0;
+    default:
+        return -1;
+    }
+}
+
+int latxs_ir1_opnd_is_dr(IR1_OPND *opnd)
+{
+    if (ir1_opnd_type(opnd) != X86_OP_REG) {
+        return 0;
+    }
+
+    switch (opnd->reg) {
+    case X86_REG_DR0:
+    case X86_REG_DR1:
+    case X86_REG_DR2:
+    case X86_REG_DR3:
+    case X86_REG_DR4:
+    case X86_REG_DR5:
+    case X86_REG_DR6:
+    case X86_REG_DR7:
+    case X86_REG_DR8:
+    case X86_REG_DR9:
+    case X86_REG_DR10:
+    case X86_REG_DR11:
+    case X86_REG_DR12:
+    case X86_REG_DR13:
+    case X86_REG_DR14:
+    case X86_REG_DR15:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int latxs_ir1_opnd_get_dr_num(IR1_OPND *opnd)
+{
+    switch (opnd->reg) {
+    case X86_REG_DR0:
+    case X86_REG_DR1:
+    case X86_REG_DR2:
+    case X86_REG_DR3:
+    case X86_REG_DR4:
+    case X86_REG_DR5:
+    case X86_REG_DR6:
+    case X86_REG_DR7:
+    case X86_REG_DR8:
+    case X86_REG_DR9:
+    case X86_REG_DR10:
+    case X86_REG_DR11:
+    case X86_REG_DR12:
+    case X86_REG_DR13:
+    case X86_REG_DR14:
+    case X86_REG_DR15:
+        return opnd->reg - X86_REG_DR0;
+    default:
+        return -1;
+    }
+}
+
+int latxs_ir1_has_prefix_lock(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.prefix[0] == X86_PREFIX_LOCK;
+}
+int latxs_ir1_has_prefix_opsize(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.prefix[2] == X86_PREFIX_OPSIZE;
+}
+int latxs_ir1_has_prefix_rep(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.prefix[0] == X86_PREFIX_REP;
+}
+int latxs_ir1_has_prefix_repe(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.prefix[0] == X86_PREFIX_REPE;
+}
+int latxs_ir1_has_prefix_repne(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.prefix[0] == X86_PREFIX_REPNE;
+}
+
+int latxs_ir1_is_lea(IR1_INST *ir1)
+{
+    return ir1->info->id == X86_INS_LEA;
+}
+
+int latxs_ir1_is_string_op(IR1_INST *ir1)
+{
+    uint8_t *opbytes = latxs_ir1_inst_opbytes(ir1);
+    uint8_t opc = opbytes[0];
+    return (0x6c <= opc && opc <= 0x6f) || /* ins/outs       */
+           (0xa4 <= opc && opc <= 0xa7) || /* movs/cmps      */
+           (0xaa <= opc && opc <= 0xaf) ;  /* stos/lods/scas */
+}
+
+int latxs_ir1_is_jump_far(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_LJMP;
+}
+int latxs_ir1_is_mov_to_cr(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_MOV &&
+        latxs_ir1_opnd_is_cr(ir1_get_opnd(ir1, 0));
+}
+int latxs_ir1_is_mov_from_cr(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_MOV &&
+        latxs_ir1_opnd_is_cr(ir1_get_opnd(ir1, 1));
+}
+int latxs_ir1_is_mov_to_dr(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_MOV &&
+        latxs_ir1_opnd_is_dr(ir1_get_opnd(ir1, 0));
+}
+int latxs_ir1_is_mov_to_seg(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_MOV &&
+        ir1_opnd_is_seg(ir1_get_opnd(ir1, 0));
+}
+int latxs_ir1_is_pop_eflags(IR1_INST *ir1)
+{
+    IR1_OPCODE opcode = ir1_opcode(ir1);
+    return opcode == X86_INS_POPF  ||
+           opcode == X86_INS_POPFD ||
+           opcode == X86_INS_POPFQ ;
+}
+int latxs_ir1_is_rsm(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_RSM;
+}
+int latxs_ir1_is_sti(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_STI;
+}
+int latxs_ir1_is_nop(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_NOP;
+}
+int latxs_ir1_is_repz_nop(IR1_INST *ir1)
+{
+    if (!latxs_ir1_is_nop(ir1)) {
+        return 0;
+    }
+
+    /*
+     * might be a bug of capstone:
+     * For inst '0xf3 0x90' the prefix in cs_insn
+     * will not be setted, but the bytes is OK.
+     */
+    uint8_t  *bytes = (uint8_t *)(ir1->info->bytes);
+    if (bytes[0] == X86_PREFIX_REPE) {
+        return 1;
+    }
+
+    return 0;
+}
+int latxs_ir1_is_iret(IR1_INST *ir1)
+{
+    IR1_OPCODE opcode = ir1_opcode(ir1);
+    return opcode == X86_INS_IRET ||
+           opcode == X86_INS_IRETD ;
+}
+int latxs_ir1_is_lmsw(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_LMSW;
+}
+int latxs_ir1_is_retf(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_RETF;
+}
+int latxs_ir1_is_clts(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_CLTS;
+}
+int latxs_ir1_is_call_far(IR1_INST *ir1)
+{
+    return ir1->info->id == X86_INS_LCALL;
+}
+int latxs_ir1_is_invlpg(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_INVLPG;
+}
+int latxs_ir1_is_pause(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_PAUSE;
+}
+int latxs_ir1_is_sysenter(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_SYSENTER;
+}
+int latxs_ir1_is_sysexit(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_SYSEXIT;
+}
+int latxs_ir1_is_xrstor(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_XRSTOR;
+}
+int latxs_ir1_is_xsetbv(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_XSETBV;
+}
+int latxs_ir1_is_mwait(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_MWAIT;
+}
+int latxs_ir1_is_vmrun(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_VMRUN;
+}
+int latxs_ir1_is_stgi(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_STGI;
+}
+/* EOB for instruction might change FPU state */
+int latxs_ir1_contains_fldenv(IR1_INST *ir1)
+{
+    IR1_OPCODE opc = ir1_opcode(ir1);
+    return opc == X86_INS_FLDENV  ||
+           opc == X86_INS_FRSTOR  ||
+           opc == X86_INS_FXRSTOR ||
+           opc == X86_INS_XRSTOR;
+}
+int latxs_ir1_is_fninit(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_FNINIT;
+}
+int latxs_ir1_is_fnsave(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_FNSAVE;
+}
+
+int latxs_ir1_addr_size(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.addr_size;
+}
+
+int latxs_ir1_inst_size(IR1_INST *ir1)
+{
+    return ir1->info->size;
+}
+
+void latxs_ir1_free_info(IR1_INST *ir1)
+{
+    if (ir1) {
+        cs_free(ir1->info, ir1->info_count);
+    }
+}
+
+int latxs_ir1_is_illegal(IR1_INST *ir1)
+{
+    return ir1->info->id == X86_INS_INVALID;
+}
+
+#endif

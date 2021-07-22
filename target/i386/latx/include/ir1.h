@@ -5,6 +5,9 @@
 #include "common.h"
 
 extern csh handle;
+#ifdef CONFIG_SOFTMMU
+extern csh handle16;
+#endif
 
 #define eax_index 0
 #define ecx_index 1
@@ -90,6 +93,7 @@ typedef x86_insn_group IR1_OPCODE_TYPE;
 
 typedef struct IR1_INST {
     cs_insn *info;
+    uint8_t info_count;
     uint8_t _eflag_use;
     uint8_t _eflag_def;
     uint8_t _native_inst_num;
@@ -282,5 +286,81 @@ bool ir1_is_indirect_jmp(IR1_INST *);
 bool ir1_is_prefix_lock(IR1_INST *ir1);
 
 const char *ir1_reg_name(x86_reg reg);
+
+#ifdef CONFIG_SOFTMMU
+
+ADDRX latxs_ir1_disasm(IR1_INST *ir1,
+        uint8_t *addr, ADDRX t_pc, int *error, int ir1_num);
+
+void latxs_ir1_opnd_build_full_mem(IR1_OPND *opnd, int size,
+        x86_reg seg, x86_reg base, int64_t disp,
+        int64_t index, int64_t scale);
+
+uint8_t *latxs_ir1_inst_opbytes(IR1_INST *ir1);
+
+int latxs_ir1_mem_opnd_is_base_imm(IR1_OPND *opnd);
+
+int latxs_ir1_opnd_is_cr(IR1_OPND *opnd);
+int latxs_ir1_opnd_is_dr(IR1_OPND *opnd);
+int latxs_ir1_opnd_get_cr_num(IR1_OPND *opnd, int *flag);
+int latxs_ir1_opnd_get_dr_num(IR1_OPND *opnd);
+
+int latxs_ir1_has_prefix_lock(IR1_INST *ir1);
+int latxs_ir1_has_prefix_opsize(IR1_INST *ir1);
+int latxs_ir1_has_prefix_rep(IR1_INST *ir1);
+int latxs_ir1_has_prefix_repe(IR1_INST *ir1);
+int latxs_ir1_has_prefix_repne(IR1_INST *ir1);
+
+int latxs_ir1_is_lea(IR1_INST *ir1);
+int latxs_ir1_is_string_op(IR1_INST *ir1);
+/* EOB instructions in system-mode */
+int latxs_ir1_is_eob_in_sys(IR1_INST *ir1);
+int latxs_ir1_is_jump_far(IR1_INST *ir1);
+int latxs_ir1_is_mov_to_cr(IR1_INST *ir1);
+int latxs_ir1_is_mov_from_cr(IR1_INST *ir1);
+int latxs_ir1_is_mov_to_dr(IR1_INST *ir1);
+int latxs_ir1_is_mov_to_seg(IR1_INST *ir1);
+int latxs_ir1_is_mov_to_seg_eob(IR1_INST *ir1);
+int latxs_ir1_is_pop_eflags(IR1_INST *ir1);
+int latxs_ir1_is_rsm(IR1_INST *ir1);
+int latxs_ir1_is_sti(IR1_INST *ir1);
+int latxs_ir1_is_nop(IR1_INST *ir1);
+int latxs_ir1_is_repz_nop(IR1_INST *ir1);
+int latxs_ir1_is_iret(IR1_INST *ir1);
+int latxs_ir1_is_lmsw(IR1_INST *ir1);
+int latxs_ir1_is_retf(IR1_INST *ir1);
+int latxs_ir1_is_clts(IR1_INST *ir1);
+int latxs_ir1_is_call_far(IR1_INST *ir1);
+int latxs_ir1_is_invlpg(IR1_INST *ir1);
+int latxs_ir1_is_pause(IR1_INST *ir1);
+int latxs_ir1_is_sysenter(IR1_INST *ir1);
+int latxs_ir1_is_sysexit(IR1_INST *ir1);
+int latxs_ir1_is_xrstor(IR1_INST *ir1);
+int latxs_ir1_is_xsetbv(IR1_INST *ir1);
+int latxs_ir1_is_mwait(IR1_INST *ir1);
+int latxs_ir1_is_vmrun(IR1_INST *ir1);
+int latxs_ir1_is_stgi(IR1_INST *ir1);
+/* EOB instructions that might change the state of FPU */
+int latxs_ir1_contains_fldenv(IR1_INST *ir1);
+int latxs_ir1_is_fninit(IR1_INST *ir1);
+int latxs_ir1_is_fnsave(IR1_INST *ir1);
+
+void latxs_fix_up_ir1(IR1_INST *ir1);
+
+void latxs_ir1_free_info(IR1_INST *ir1);
+
+int latxs_ir1_is_illegal(IR1_INST *ir1);
+
+int latxs_ir1_inst_size(IR1_INST *ir1);
+int latxs_ir1_addr_size(IR1_INST *ir1); /* Address Size */
+
+int latxs_ir1_data_size(IR1_INST *ir1); /* Operand Size */
+
+#define LATXS_IR1_FLAGS_ILLOP     1
+#define LATXS_IR1_FLAGS_GENNOP    2
+void latxs_ir1_make_ins_ILLEGAL(IR1_INST *ir1,
+        ADDRX addr, int size, int flags);
+
+#endif
 
 #endif

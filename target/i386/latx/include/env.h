@@ -101,11 +101,81 @@ typedef struct TRANSLATION_DATA {
                                    /* (because of flag pattern, etc) */
 
 #ifdef CONFIG_SOFTMMU
+    int max_insns; /* max number of target instruction */
+    void *code_highwater; /* to check buffer overflow */
+
+    IR1_INST *ir1_inst_array;
+    int ir1_nr;
+
+    /*
+     * TODO
+     * int slow_path_rcd_max;
+     * int slow_path_rcd_nr;
+     * softmmu_sp_rcd_t *slow_path_rcd;
+     * int in_gen_slow_path;
+     */
+
+    /* number of mips for each x86 */
+    /*
+     * TODO
+     * int x86_ins_idx[MAX_IR1_NUM_PER_TB];
+     * int x86_ins_mips_nr[MAX_IR1_NUM_PER_TB];
+     * int x86_ins_nr;
+     * int x86_ins_size;
+     */
+
     EXMode reg_exmode[CPU_NB_REGS];
     EXBits reg_exbits[CPU_NB_REGS];
 
     uint32_t itemp_mask;
     uint32_t ftemp_mask;
+    uint32_t itemp_mask_bk;
+    int itemp_saved;
+
+    /* flags for system-mode translation */
+    struct __sys {
+        uint32_t flags; /* all execution flags */
+        uint32_t cflags; /* compile flags*/
+        ADDRX pc;
+        ADDRX cs_base;
+        int pe;     /* protected mode */
+        int code32; /* 32 bit code segment */
+        int ss32;   /* 32 bit stack segment */
+        int addseg; /* non zero if either DS/ES/SS have a non zero base */
+        int f_st;   /* currently unused */
+        int vm86;   /* vm86 mode */
+        int cpl;    /* current privilege level */
+        int iopl;   /* I/O privilege level */
+        int tf;     /* TF cpu flag */
+        int mem_index; /* select memory access functions */
+        int popl_esp_hack; /* for correct popl with esp base handling */
+        int cpuid_features;
+        int cpuid_ext_features;
+        int cpuid_ext2_features;
+        int cpuid_ext3_features;
+        int cpuid_7_0_ebx_features;
+        int cpuid_xsave_features;
+        int bp_hit;
+    } sys;
+
+    /* flags for special EOB */
+    int need_eob;
+    int inhibit_irq;
+    int recheck_tf; /* currently not used. it is mainly for debug.*/
+    /*
+     * Special EOB is ended with a jmp to next instruction.
+     * Some special instruction will modify eip in helper function.
+     * The the execution will not continue from the next instruction.
+     * Set this to ignoe the eip update in generate_exit_tb() of jmp.
+     */
+    int ignore_eip_update;
+    int ignore_top_update;
+
+    /* exit label for icount_decr less than zero */
+    IR2_OPND exitreq_label;
+
+    int end_with_exception;
+    int dec_icount_inst_id;
 #endif
 
 } TRANSLATION_DATA;

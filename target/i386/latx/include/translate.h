@@ -1194,6 +1194,11 @@ static inline ADDR cpu_get_guest_base(void)
 #include "env.h"
 
 /* main translation procees */
+uint8_t latxs_cpu_read_code_via_qemu(CPUX86State *env, ADDRX pc);
+void latxs_tr_disasm(TranslationBlock *);
+IR1_INST *latxs_get_ir1_list(TranslationBlock *, ADDRX, int *);
+
+void latxs_tr_sys_init(TranslationBlock *, int max, void *code_highwater);
 void latxs_tr_init(TranslationBlock *tb);
 int  latxs_tr_ir2_assemble(void *code_buffer);
 void latxs_tr_fini(void);
@@ -1231,6 +1236,47 @@ void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top);
 void latxs_tr_load_xmms_from_env(uint8_t lo_mask, uint8_t hi_mask);
 void latxs_tr_load_vreg_from_env(uint8_t mask);
 
+/* helper related functions */
+
+void latxs_tr_cvt_fp64_to_80(void);
+void latxs_tr_cvt_fp80_to_64(void);
+
+typedef struct helper_cfg_t {
+    int sv_allgpr;
+    int sv_eflags;
+    int cvt_fp80;
+} helper_cfg_t;
+
+extern helper_cfg_t all_helper_cfg;
+extern helper_cfg_t zero_helper_cfg;
+extern helper_cfg_t default_helper_cfg;
+int cmp_helper_cfg(helper_cfg_t cfg1, helper_cfg_t cfg2);
+
+IR2_INST *latxs_tr_gen_call_to_helper(ADDR);
+
+void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper0_cfg(ADDR func, helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper1_cfg(ADDR func, helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper2_cfg(ADDR func,
+        int arg, helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper3_cfg(ADDR func,
+        int arg2, int arg3, helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper3_u64_cfg(ADDR func,
+        uint64_t arg2, uint64_t arg3, helper_cfg_t cfg);
+void latxs_tr_gen_call_to_helper4_u64_cfg(ADDR func,
+        uint64_t arg2, uint64_t arg3, uint64_t arg4, helper_cfg_t cfg);
+
+void latxs_tr_gen_infinite_loop(void);
+
+void latxs_tr_gen_save_curr_eip(void);
+void latxs_tr_gen_save_next_eip(void);
+
+void latxs_tr_save_temp_register(void);
+void latxs_tr_restore_temp_register(void);
+void latxs_tr_save_temp_register_mask(int mask);
+void latxs_tr_restore_temp_register_mask(int mask);
+
 /* eflags related functions */
 void latxs_tr_save_eflags(void);
 void latxs_tr_load_eflags(int simple);
@@ -1266,6 +1312,28 @@ void latxs_tr_save_lstop_to_env(IR2_OPND *top);
 void latxs_tr_gen_top_mode_init(void);
 void latxs_tr_fpu_enable_top_mode(void);
 void latxs_tr_fpu_disable_top_mode(void);
+
+/* convert address in system mode */
+ADDR latxs_tr_cvt_cpu_addr_read(CPUX86State *, target_ulong, int *);
+ADDR latxs_tr_cvt_cpu_addr_write(CPUX86State *, target_ulong, int *);
+ADDR latxs_tr_cvt_cpu_addr_code(CPUX86State *, target_ulong, int *);
+
+/* End of TB related functions */
+void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id);
+void latxs_tr_gen_exit_tb_load_tb_addr(IR2_OPND *tbptr, ADDR tb_addr);
+void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id);
+void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env,
+        IR2_OPND *eip_opnd, ADDRX eip, int opnd_size);
+void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
+        int can_link, int succ_id);
+
+void latxs_tr_gen_eob(void);
+void latxs_tr_gen_sys_eob(IR1_INST *pir1);
+void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1);
+
+extern ADDR native_jmp_glue_0;
+extern ADDR native_jmp_glue_1;
+extern ADDR native_jmp_glue_2;
 
 #endif
 
