@@ -618,7 +618,6 @@ bool translate_btx(IR1_INST *pir1)
     /* imm will not be used, if opnd1 is a ireg.*/
     int imm = 0x0;
     int t_imm = 0x1f;
-    IR2_OPND label_ll = ir2_opnd_new_type(IR2_OPND_LABEL);
 
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, ZERO_EXTENSION, false);

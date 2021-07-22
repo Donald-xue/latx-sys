@@ -35,5 +35,7 @@ void tb_check_watchpoint(CPUState *cpu, uintptr_t retaddr);
 #ifdef CONFIG_USER_ONLY
 int page_unprotect(target_ulong address, uintptr_t pc);
 #endif
-
+#ifdef CONFIG_LATX
+void tb_exit_to_qemu(CPUArchState *env, uintptr_t pc);
+#endif
 #endif /* TRANSLATE_ALL_H */

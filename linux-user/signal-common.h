@@ -46,4 +46,8 @@ void setup_frame(int sig, struct target_sigaction *ka,
 void setup_rt_frame(int sig, struct target_sigaction *ka,
                     target_siginfo_t *info,
                     target_sigset_t *set, CPUArchState *env);
+
+#ifdef CONFIG_LATX
+void tb_exit_to_qemu(CPUArchState *env, uintptr_t pc);
+#endif
 #endif

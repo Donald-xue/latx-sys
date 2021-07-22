@@ -788,9 +788,7 @@ int cpu_signal_handler(int host_signum, void *pinfo,
     siginfo_t *info = pinfo;
     ucontext_t *uc = puc;
     greg_t pc = uc->uc_mcontext.__pc;
-#ifdef CONFIG_LATX
-    CPUArchState *env = thread_cpu->env_ptr;
-#endif
+
     int is_write = 0;
     //TODO use kernel to send write info
     //only st/stl/str handled, may cause bugs

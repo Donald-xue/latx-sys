@@ -3369,7 +3369,7 @@ void tr_fpu_disable_top_mode(void)
     }
 }
 
-void tr_save_fcsr_to_env()
+void tr_save_fcsr_to_env(void)
 {
     IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
     la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
@@ -3377,7 +3377,7 @@ void tr_save_fcsr_to_env()
                           lsenv_offset_of_fcsr(lsenv));
 }
 
-void tr_load_fcsr_from_env()
+void tr_load_fcsr_from_env(void)
 {
     IR2_OPND saved_fcsr_value_opnd = ra_alloc_itemp();
     la_append_ir2_opnd2i(LISA_LD_W, saved_fcsr_value_opnd, env_ir2_opnd,
@@ -3448,11 +3448,6 @@ void tr_load_registers_from_env(uint8 gpr_to_load, uint8 fpr_to_load,
                                 uint8 vreg_to_load)
 {
     int i = 0;
-
-    /* set f3 = 32 */
-    IR2_OPND temp_opnd = ra_alloc_dbt_arg1();
-    //load_ireg_from_imm32(temp_opnd, 32, SIGN_EXTENSION);
-    //la_append_ir2_opnd2(LISA_MOVGR2FR_D, f32_ir2_opnd, temp_opnd);
 
     /* 4. virtual registers */
     for (i = 0; i < 8; ++i) {

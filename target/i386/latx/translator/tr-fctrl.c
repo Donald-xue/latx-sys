@@ -669,7 +669,6 @@ bool translate_fnstenv(IR1_INST *pir1)
 {
     IR2_OPND value = ra_alloc_itemp();
     IR2_OPND temp = ra_alloc_itemp();
-    IR2_OPND temp1 = ra_alloc_itemp();
     load_ireg_from_imm32(temp, 0xffff0000ULL, UNKNOWN_EXTENSION);
 
     /* mem_opnd is not supported in ir2 assemble */
