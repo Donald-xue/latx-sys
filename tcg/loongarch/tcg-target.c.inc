@@ -1780,6 +1780,11 @@ static void tcg_target_qemu_prologue(TCGContext *s)
 {
 
     int inst_nr = 0;
+#ifdef CONFIG_SOFTMMU
+    inst_nr = target_latxs_static_codes(s->code_ptr);
+    s->code_ptr += inst_nr;
+    return;
+#endif
 
 // --------------------------------- prologue ------------------------------- //
     inst_nr = target_latx_prologue(s->code_ptr);

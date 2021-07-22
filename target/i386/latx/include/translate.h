@@ -1206,6 +1206,31 @@ void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb);
 
 void latxs_label_dispose(void *code_buffer);
 
+/* translate functions */
+void latxs_tr_save_registers_to_env(
+        uint8_t gpr_to_save,
+        uint8_t fpr_to_save, int save_top,
+        uint8_t xmm_lo_to_save,
+        uint8_t xmm_hi_to_save,
+        uint8_t vreg_to_save);
+
+void latxs_tr_load_registers_from_env(
+        uint8_t gpr_to_load,
+        uint8_t fpr_to_load, int load_top,
+        uint8_t xmm_lo_to_load,
+        uint8_t xmm_hi_to_load,
+        uint8_t vreg_to_load);
+
+void latxs_tr_save_gprs_to_env(uint8_t mask);
+void latxs_tr_save_fprs_to_env(uint8_t mask, int save_top);
+void latxs_tr_save_xmms_to_env(uint8_t lo_mask, uint8_t hi_mask);
+void latxs_tr_save_vreg_to_env(uint8_t mask);
+
+void latxs_tr_load_gprs_from_env(uint8_t mask);
+void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top);
+void latxs_tr_load_xmms_from_env(uint8_t lo_mask, uint8_t hi_mask);
+void latxs_tr_load_vreg_from_env(uint8_t mask);
+
 /* eflags related functions */
 void latxs_tr_save_eflags(void);
 void latxs_tr_load_eflags(int simple);

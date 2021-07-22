@@ -6,7 +6,7 @@
 #include "translate.h"
 #include <string.h>
 
-/* main translation procees */
+/* Main Translation Process */
 
 void latxs_tr_init(TranslationBlock *tb)
 {
@@ -199,4 +199,167 @@ _NEXT_IR2_:
     }
 
     return code_nr;
+}
+
+/* translate functions */
+
+void latxs_tr_save_registers_to_env(
+        uint8_t gpr_to_save,
+        uint8_t fpr_to_save, int save_top,
+        uint8_t xmm_lo_to_save,
+        uint8_t xmm_hi_to_save,
+        uint8_t vreg_to_save)
+{
+    /* 1. GPR */
+    latxs_tr_save_gprs_to_env(gpr_to_save);
+
+    /* 2. FPR (MMX) */
+    latxs_tr_save_fprs_to_env(fpr_to_save, save_top);
+
+    /* 3. XMM */
+    latxs_tr_save_xmms_to_env(xmm_lo_to_save, xmm_hi_to_save);
+
+    /* 4. virtual registers */
+    latxs_tr_save_vreg_to_env(vreg_to_save);
+}
+
+void latxs_tr_load_registers_from_env(
+        uint8_t gpr_to_load,
+        uint8_t fpr_to_load, int load_top,
+        uint8_t xmm_lo_to_load,
+        uint8_t xmm_hi_to_load,
+        uint8_t vreg_to_load)
+{
+    /* 4. virtual registers */
+    latxs_tr_load_vreg_from_env(vreg_to_load);
+
+    /* 3. XMM */
+    latxs_tr_load_xmms_from_env(xmm_lo_to_load, xmm_hi_to_load);
+
+    /* 2. FPR (MMX) */
+    latxs_tr_load_fprs_from_env(fpr_to_load, load_top);
+
+    /* 1. GPR */
+    latxs_tr_load_gprs_from_env(gpr_to_load);
+
+}
+
+void latxs_tr_save_gprs_to_env(uint8_t mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if (BITS_ARE_SET(mask, 1 << i)) {
+            IR2_OPND gpr_opnd = latxs_ra_alloc_gpr(i);
+            latxs_append_ir2_opnd2i(LISA_ST_W, &gpr_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_gpr(lsenv, i));
+        }
+    }
+}
+
+void latxs_tr_save_fprs_to_env(uint8_t mask, int save_top)
+{
+    int i = 0;
+
+    /* 1. save FPU top: curr_top is rotated */
+    if (save_top) {
+        latxs_tr_gen_save_curr_top();
+        latxs_tr_fpu_disable_top_mode();
+    }
+    /* 2. save FPRs: together with FPU top */
+    for (i = 0; i < 8; i++) {
+        if (BITS_ARE_SET(mask, 1 << i)) {
+            IR2_OPND mmx_opnd = latxs_ra_alloc_mmx(i);
+            latxs_append_ir2_opnd2i(LISA_FST_D, &mmx_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_mmx(lsenv, i));
+        }
+    }
+
+}
+
+void latxs_tr_save_xmms_to_env(uint8_t lo_mask, uint8_t hi_mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; i++) {
+        if (BITS_ARE_SET(lo_mask, 1 << i)) {
+            IR2_OPND xmm_opnd = latxs_ra_alloc_xmm(i);
+            latxs_append_ir2_opnd2i(LISA_VST, &xmm_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_xmm(lsenv, i));
+        }
+    }
+}
+
+void latxs_tr_save_vreg_to_env(uint8_t mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if (BITS_ARE_SET(mask, 1 << i)) {
+            IR2_OPND vreg_opnd = latxs_ra_alloc_vreg(i);
+            latxs_append_ir2_opnd2i(LISA_ST_D, &vreg_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_vreg(lsenv, i));
+        }
+    }
+}
+
+void latxs_tr_load_gprs_from_env(uint8_t mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if (BITS_ARE_SET(mask, 1 << i)) {
+            IR2_OPND gpr_opnd = latxs_ra_alloc_gpr(i);
+            latxs_append_ir2_opnd2i(LISA_LD_W, &gpr_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_gpr(lsenv, i));
+        }
+    }
+}
+
+void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top)
+{
+    int i = 0;
+
+    for (i = 0; i < 8; i++) {
+        if (BITS_ARE_SET(mask, 1 << i)) {
+            IR2_OPND mmx_opnd = latxs_ra_alloc_mmx(i);
+            latxs_append_ir2_opnd2i(LISA_FLD_D, &mmx_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_mmx(lsenv, i));
+        }
+    }
+
+    if (load_top && option_lsfpu) {
+        IR2_OPND top = latxs_ra_alloc_itemp();
+        latxs_tr_load_lstop_from_env(&top);
+        latxs_ra_free_temp(&top);
+        latxs_tr_fpu_enable_top_mode();
+    }
+}
+
+void latxs_tr_load_xmms_from_env(uint8_t lo_mask, uint8_t hi_mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; i++) {
+        if (BITS_ARE_SET(lo_mask, 1 << i)) {
+            IR2_OPND xmm_opnd = latxs_ra_alloc_xmm(i);
+            latxs_append_ir2_opnd2i(LISA_VLD, &xmm_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_xmm(lsenv, i));
+        }
+    }
+}
+
+void latxs_tr_load_vreg_from_env(uint8_t mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if (BITS_ARE_SET(mask, 1 << i)) {
+            IR2_OPND vreg_opnd = latxs_ra_alloc_vreg(i);
+            latxs_append_ir2_opnd2i(LISA_LD_D, &vreg_opnd,
+                    &latxs_env_ir2_opnd,
+                    lsenv_offset_of_vreg(lsenv, i));
+        }
+    }
 }

@@ -30,4 +30,9 @@ void latx_set_tls_ibtc_table(CPUArchState *env);
  * to avoid strange compile warning
  */
 ETB *etb_find(ADDRX pc);
+
+#ifdef CONFIG_SOFTMMU
+int target_latxs_static_codes(void *code_ptr);
+#endif
+
 #endif /* _LATX_CONFIG_H_ */
