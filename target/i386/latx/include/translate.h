@@ -1267,8 +1267,6 @@ void latxs_tr_gen_call_to_helper3_u64_cfg(ADDR func,
 void latxs_tr_gen_call_to_helper4_u64_cfg(ADDR func,
         uint64_t arg2, uint64_t arg3, uint64_t arg4, helper_cfg_t cfg);
 
-void latxs_tr_gen_infinite_loop(void);
-
 void latxs_tr_gen_save_curr_eip(void);
 void latxs_tr_gen_save_next_eip(void);
 
@@ -1367,6 +1365,20 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1);
 extern ADDR native_jmp_glue_0;
 extern ADDR native_jmp_glue_1;
 extern ADDR native_jmp_glue_2;
+
+/* exception check */
+int latxs_tr_gen_excp_check(IR1_INST *pir1);
+int latxs_tr_gen_fp_common_excp_check(IR1_INST *pir1);
+int latxs_tr_gen_sse_common_excp_check(IR1_INST *pir1);
+
+void latxs_tr_gen_excp_illegal_op(IR1_INST *ir1, int end);
+void latxs_tr_gen_excp_gp(IR1_INST *ir1, int end);
+void latxs_tr_gen_excp_prex(IR1_INST *ir1, int end);
+void latxs_tr_gen_excp_divz(IR1_INST *ir1, int end);
+
+void latxs_tr_gen_infinite_loop(void);
+
+int latxs_tb_encode_search(TranslationBlock *, uint8_t *);
 
 #endif
 

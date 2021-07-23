@@ -36,4 +36,27 @@ void print_stack_trace(void);
 #define lsassertm(cond, ...)    ((void)0)
 #endif
 
+#ifdef CONFIG_SOFTMMU
+
+#include "latx-types.h"
+
+/* generate exception directly */
+void latxs_tr_gen_excp_illegal_op_addr(ADDRX addr, int end);
+
+/* lsassert to simply codes */
+#define lsassert_illop(addr, cond) do {                 \
+        if (!(cond)) {                                  \
+            latxs_tr_gen_excp_illegal_op_addr(addr, 1); \
+        }                                               \
+    } while (0)
+
+#define lsassertm_illop(addr, cond, ...) do {           \
+        if (!(cond)) {                                  \
+            fprintf(stderr, __VA_ARGS__);               \
+            latxs_tr_gen_excp_illegal_op_addr(addr, 1); \
+        }                                               \
+    } while (0)
+
+#endif /* CONFIG_SOFTMMU */
+
 #endif /* _ERROR_H_ */
