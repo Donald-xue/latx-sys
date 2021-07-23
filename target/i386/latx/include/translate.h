@@ -1301,10 +1301,43 @@ void latxs_load_imm64_to_ir2(IR2_OPND *, uint64_t);
 void latxs_load_addrx_to_ir2(IR2_OPND *, ADDRX);
 void latxs_load_addr_to_ir2(IR2_OPND *, ADDR);
 
+IR2_OPND latxs_convert_mem_ir2_opnd_plus_2(IR2_OPND *mem);
+IR2_OPND latxs_convert_mem_ir2_opnd_plus_4(IR2_OPND *mem);
+IR2_OPND latxs_convert_mem_ir2_opnd_no_offset(IR2_OPND *mem, int *newtmp);
+
+/* Softmmu related */
+typedef struct softmmu_slow_path_rcd {
+    int tmp_need_save;
+    int tmp_mask;
+
+    int is_load;
+    IR2_OPCODE op;
+    IR2_OPND gpr_ir2_opnd;
+    IR2_OPND mem_ir2_opnd;
+    int mmu_index;
+
+    int fpu_top;
+    ADDR retaddr;
+
+    IR2_OPND label_slow_path;
+    IR2_OPND label_exit;
+
+    EXMode reg_exmode[CPU_NB_REGS];
+    EXBits reg_exbits[CPU_NB_REGS];
+} softmmu_sp_rcd_t;
+
+void gen_ldst_softmmu_helper(IR2_OPCODE op,
+        IR2_OPND *opnd_gpr, IR2_OPND *opnd_mem, int save_temp);
+void tr_gen_softmmu_slow_path(void);
+
 /* extension mode optimization */
 IR2_OPND latxs_convert_gpr_opnd(IR1_OPND *, EXMode);
 void latxs_store_ir2_to_ir1_gpr_em(IR2_OPND *, IR1_OPND *);
 void latxs_load_ir1_imm_to_ir2_em(IR2_OPND *, IR1_OPND *, EXMode);
+
+void latxs_td_set_reg_extmb_after_cs(int mask);
+void latxs_tr_reset_extmb(int mask);
+void latxs_tr_setto_extmb_after_cs(int mask);
 
 /* LSFPU */
 void latxs_tr_load_lstop_from_env(IR2_OPND *top);

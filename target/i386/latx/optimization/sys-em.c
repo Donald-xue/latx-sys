@@ -267,3 +267,114 @@ void latxs_load_ir1_imm_to_ir2_em(IR2_OPND *opnd2,
         }
     }
 }
+
+/*
+ * original                     new
+ * EM       -> st_w -> ld_w ->  EM
+ * ----------------------------------
+ *     0                        0
+ *     8s/z                     8s/z
+ *    16s/z                    16s/z
+ *    32n/z/s                  32s
+ */
+static void latxs_td_set_reg_extmb_ldw(int gpr)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    if (lsenv->tr_data->reg_exbits[gpr] < 32) {
+        return;
+    }
+    /* eb == 32 */
+    lsenv->tr_data->reg_exmode[gpr] = EXMode_S;
+}
+
+static void latxs_td_set_reg_extmb_after_cs_all(void)
+{
+    latxs_td_set_reg_extmb_ldw(0);
+    latxs_td_set_reg_extmb_ldw(1);
+    latxs_td_set_reg_extmb_ldw(2);
+    latxs_td_set_reg_extmb_ldw(3);
+    latxs_td_set_reg_extmb_ldw(4);
+    latxs_td_set_reg_extmb_ldw(5);
+    latxs_td_set_reg_extmb_ldw(6);
+    latxs_td_set_reg_extmb_ldw(7);
+}
+
+void latxs_td_set_reg_extmb_after_cs(int mask)
+{
+    if (mask == 0xff) {
+        latxs_td_set_reg_extmb_after_cs_all();
+        return;
+    }
+
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if ((mask >> i) & 1) {
+            latxs_td_set_reg_extmb_ldw(i);
+        }
+    }
+}
+
+static void latxs_tr_reset_reg_extmb(int gpr)
+{
+    lsassert(gpr < CPU_NB_REGS);
+    EXMode gpr_em = latxs_td_get_reg_extm(gpr);
+    EXBits gpr_eb = latxs_td_get_reg_extb(gpr);
+
+    if (gpr_eb == 32 && gpr_em != EXMode_S) {
+        /* 32n 32z */
+        IR2_OPND gpr_opnd = latxs_ra_alloc_gpr(gpr);
+        latxs_append_ir2_opnd2_(lisa_mov32s, &gpr_opnd, &gpr_opnd);
+        latxs_td_set_reg_extmb(gpr, EXMode_S, 32);
+    } else {
+        /* 0 8s/z 16s/z 32s */
+        latxs_td_set_reg_extmb(gpr, EXMode_S, 32);
+    }
+}
+
+void latxs_tr_reset_extmb(int mask)
+{
+    /* reset to 32s */
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if ((mask >> i) & 1) {
+            latxs_tr_reset_reg_extmb(i);
+        }
+    }
+}
+
+static void latxs_tr_setto_reg_extmb_after_cs(int gpr)
+{
+    EXMode gpr_em = latxs_td_get_reg_extm(gpr);
+    EXBits gpr_eb = latxs_td_get_reg_extb(gpr);
+
+    /*
+     * @gpr_em and @gpr_eb is the original EM
+     * from softmmu fast path.
+     *
+     *  8s/z -> st_w -> ld_w ->  8s/z
+     * 16s/z -> st_w -> ld_w -> 16s/z
+     * 32s/z -> st_w -> ld_w -> 32s   : 32z
+     * 32n   -> st_w -> ld_w -> 32s
+     *  0    -> st_w -> ld_w ->  0
+     *
+     * If original EM is 32z, we need to reset it.
+     */
+
+    if (gpr_eb == 32 && gpr_em == EXMode_Z) {
+        IR2_OPND gpr_opnd = latxs_ra_alloc_gpr(gpr);
+        latxs_append_ir2_opnd2_(lisa_mov32z, &gpr_opnd, &gpr_opnd);
+    }
+}
+
+/*
+ * Should be called ONLY in softmmu slow path generation.
+ */
+void latxs_tr_setto_extmb_after_cs(int mask)
+{
+    int i = 0;
+    for (i = 0; i < 8; ++i) {
+        if ((mask >> i) & 1) {
+            latxs_tr_setto_reg_extmb_after_cs(i);
+        }
+    }
+}

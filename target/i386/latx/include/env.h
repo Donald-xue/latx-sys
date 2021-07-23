@@ -107,13 +107,10 @@ typedef struct TRANSLATION_DATA {
     IR1_INST *ir1_inst_array;
     int ir1_nr;
 
-    /*
-     * TODO
-     * int slow_path_rcd_max;
-     * int slow_path_rcd_nr;
-     * softmmu_sp_rcd_t *slow_path_rcd;
-     * int in_gen_slow_path;
-     */
+    int slow_path_rcd_max;
+    int slow_path_rcd_nr;
+    int in_gen_slow_path;
+    void *slow_path_rcd;
 
     /* number of mips for each x86 */
     /*

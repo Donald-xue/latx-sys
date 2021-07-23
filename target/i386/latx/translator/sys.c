@@ -200,8 +200,8 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     uint32_t flags  = tb->flags;
     uint32_t cflags = tb->cflags;
 
-    /* td->slow_path_rcd_nr = 0; TODO */
-    /* td->in_gen_slow_path = 0; TODO */
+    td->slow_path_rcd_nr = 0;
+    td->in_gen_slow_path = 0;
 
     td->sys.pe = (flags >> HF_PE_SHIFT) & 1;
     td->sys.code32 = (flags >> HF_CS32_SHIFT) & 1;

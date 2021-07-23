@@ -4,6 +4,7 @@
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "translate.h"
+#include "fpu/softfloat.h"
 #include <string.h>
 
 helper_cfg_t all_helper_cfg = {
@@ -42,11 +43,35 @@ IR2_INST *latxs_tr_gen_call_to_helper(ADDR func_addr)
     return NULL;
 }
 
+static void latxs_convert_fpregs_64_to_x80(void)
+{
+    int i;
+    CPUX86State *env = (CPUX86State *)lsenv->cpu_state;
+    float_status s = env->fp_status;
+    for (i = 0; i < 8; i++) {
+        FPReg *p = &(env->fpregs[i]);
+        p->d = float64_to_floatx80((float64)p->d.low, &s);
+    }
+}
+
+static void latxs_convert_fpregs_x80_to_64(void)
+{
+    int i;
+    CPUX86State *env = (CPUX86State *)lsenv->cpu_state;
+    float_status s = env->fp_status;
+    for (i = 0; i < 8; i++) {
+        FPReg *p = &(env->fpregs[i]);
+        p->d.low = (uint64_t)floatx80_to_float64(p->d, &s);
+        p->d.high = 0;
+    }
+}
+
 void latxs_tr_cvt_fp64_to_80(void)
 {
     /* 1. call convert_fpregs_x64_to_80 */
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-    latxs_load_addr_to_ir2(&func_addr_opnd, (ADDR)convert_fpregs_64_to_x80);
+    latxs_load_addr_to_ir2(&func_addr_opnd,
+            (ADDR)latxs_convert_fpregs_64_to_x80);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
 
     /* 2. call update_fp_status */
@@ -66,7 +91,8 @@ void latxs_tr_cvt_fp80_to_64(void)
 
     /* 2. call convert_fpregs_x80_to_64 */
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-    latxs_load_addr_to_ir2(&func_addr_opnd, (ADDR)convert_fpregs_x80_to_64);
+    latxs_load_addr_to_ir2(&func_addr_opnd,
+            (ADDR)latxs_convert_fpregs_x80_to_64);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
@@ -144,7 +170,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
      *      another way in tr_softmmu.c
      */
     TRANSLATION_DATA *td = lsenv->tr_data;
-    /* int fix_em = option_by_hand && !(td->in_gen_slow_path); TODO */
+    int fix_em = option_by_hand && !(td->in_gen_slow_path);
 
     /* Use static helper epilogue for default */
     /*
@@ -170,10 +196,12 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     }
 
     if (likely(cfg.sv_allgpr)) {
-        tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x7);
-        /* if (fix_em) td_set_reg_extmb_after_cs(0xFF); TODO */
+        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x7);
+        if (fix_em) {
+            latxs_td_set_reg_extmb_after_cs(0xFF);
+        }
     } else {
-        tr_load_registers_from_env(
+        latxs_tr_load_registers_from_env(
                 GPR_USEDEF_TO_SAVE,
                 FPR_USEDEF_TO_SAVE, 1,
                 XMM_LO_USEDEF_TO_SAVE,
@@ -181,7 +209,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
                 0x7);
         if (fix_em) {
             lsassertm(0, "not ready.\n");
-            /* td_set_reg_extmb_after_cs(GPR_USEDEF_TO_SAVE); TODO */
+            latxs_td_set_reg_extmb_after_cs(GPR_USEDEF_TO_SAVE);
         }
     }
 }
@@ -226,7 +254,7 @@ void latxs_tr_gen_call_to_helper2_cfg(ADDR func,
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
     latxs_load_addr_to_ir2(&func_addr_opnd, func);
-    latxs_load_imm32_to_ir2(&arg1_ir2_opnd, arg2, EXMode_S);
+    latxs_load_imm32_to_ir2(&latxs_arg1_ir2_opnd, arg2, EXMode_S);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                                 &latxs_env_ir2_opnd);
@@ -338,7 +366,7 @@ void latxs_tr_gen_save_next_eip(void)
 
 void latxs_tr_save_temp_register_mask(int mask)
 {
-    TEMP_REG_STATUS *p = itemp_status_default;
+    const TEMP_REG_STATUS *p = itemp_status_default;
     int i;
     for (i = 0; i < itemp_status_num; ++i) {
         if ((mask >> i) & 0x1) {
@@ -353,7 +381,7 @@ void latxs_tr_save_temp_register_mask(int mask)
 
 void latxs_tr_restore_temp_register_mask(int mask)
 {
-    TEMP_REG_STATUS *p = itemp_status_default;
+    const TEMP_REG_STATUS *p = itemp_status_default;
     int i;
     for (i = 0; i < itemp_status_num; ++i) {
         if ((mask >> i) & 0x1) {
@@ -371,7 +399,7 @@ void latxs_tr_restore_temp_register_mask(int mask)
 void latxs_tr_save_temp_register(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
-    TEMP_REG_STATUS  *p  = itemp_status_default;
+    const TEMP_REG_STATUS *p = itemp_status_default;
 
     int mask = td->itemp_mask;
     td->itemp_mask_bk = mask;
@@ -398,7 +426,7 @@ void latxs_tr_save_temp_register(void)
 void latxs_tr_restore_temp_register(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
-    TEMP_REG_STATUS  *p  = itemp_status_default;
+    const TEMP_REG_STATUS *p = itemp_status_default;
 
     int mask_bk = td->itemp_mask_bk;
     td->itemp_mask = mask_bk;

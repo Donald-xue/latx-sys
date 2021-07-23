@@ -96,3 +96,94 @@ void latxs_load_addr_to_ir2(IR2_OPND *opnd, ADDR addr)
 {
     latxs_load_imm64_to_ir2(opnd, (uint64_t)addr);
 }
+
+static IR2_OPND latxs_convert_mem_ir2_opnd_plus_offset(
+        IR2_OPND *mem, int addend)
+{
+    lsassert(latxs_ir2_opnd_is_mem(mem));
+    IR2_OPND mem_opnd = *mem;
+
+    int mem_offset = latxs_ir2_opnd_imm(mem);
+
+    /* addend = 2 : 0x7fe */
+    /* addend = 4 : 0x7fc */
+    int mem_offset_high = ((int)0x800) - addend;
+
+    /* situation 1: >> directly adjust mem_offset in IR2_OPND */
+    /* situation 2: >> directly adjust base register in IR2_OPND */
+    /* situation 3: >> use a new temp register as new base */
+    if (likely(mem_offset < mem_offset_high)) {
+        /* situation 1 */
+        latxs_ir2_opnd_mem_adjust_offset(&mem_opnd, addend);
+    } else {
+        IR2_OPND mem_old_base = latxs_ir2_opnd_mem_get_base(mem);
+        if (latxs_ir2_opnd_is_itemp(&mem_old_base)) {
+            /* situation 2 */
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &mem_old_base,
+                    &mem_old_base, addend);
+        } else {
+            /* situation 3 */
+            IR2_OPND mem_new_base = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &mem_new_base,
+                    &mem_old_base, addend);
+            latxs_ir2_opnd_mem_set_base(&mem_opnd, &mem_new_base);
+        }
+
+    }
+
+    return mem_opnd;
+}
+
+IR2_OPND latxs_convert_mem_ir2_opnd_plus_2(IR2_OPND *mem)
+{
+    return latxs_convert_mem_ir2_opnd_plus_offset(mem, 2);
+}
+IR2_OPND latxs_convert_mem_ir2_opnd_plus_4(IR2_OPND *mem)
+{
+    return latxs_convert_mem_ir2_opnd_plus_offset(mem, 4);
+}
+
+/*
+ * @mem                        return mem_no_offset
+ * --------------------       ------------------------
+ *    GPR   |  offset     =>       GPR     |  offset
+ * ---------+----------       -------------+----------
+ *  mapping |  no                new temp  |  no
+ *  mapping |  yes               new temp  |  no
+ *   temp   |  no                old temp  |  no
+ *   temp   |  yes               new temp  |  no
+ * ---------+----------       -------------+----------
+ */
+IR2_OPND latxs_convert_mem_ir2_opnd_no_offset(IR2_OPND *mem, int *newtmp)
+{
+    lsassert(latxs_ir2_opnd_is_mem(mem));
+    IR2_OPND mem_opnd;
+
+    int mem_offset = latxs_ir2_opnd_mem_get_offset(mem);
+
+    IR2_OPND mem_old_base = latxs_ir2_opnd_mem_get_base(mem);
+    IR2_OPND mem_new_base;
+
+    if (mem_offset) {
+        mem_new_base = latxs_ra_alloc_itemp();
+        *newtmp = 1;
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &mem_new_base,
+                &mem_old_base, mem_offset);
+    } else {
+        if (latxs_ir2_opnd_is_itemp(&mem_old_base)) {
+            *newtmp = 0;
+            mem_new_base = mem_old_base;
+        } else {
+            mem_new_base = latxs_ra_alloc_itemp();
+            *newtmp = 1;
+            latxs_append_ir2_opnd3(LISA_OR, &mem_new_base,
+                    &mem_old_base, &latxs_zero_ir2_opnd);
+        }
+    }
+
+    latxs_ir2_opnd_build_mem(&mem_opnd,
+            latxs_ir2_opnd_reg(&mem_new_base), /* base   */
+            0);                                /* offset */
+
+    return mem_opnd;
+}
