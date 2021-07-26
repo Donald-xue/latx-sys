@@ -1122,7 +1122,7 @@ void load_ireg_from_cf_opnd(IR2_OPND *a);
 IR2_OPND load_ireg_from_cf_void(void);
 
 /* load to freg */
-IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert);
+IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, uint32_t options);
 void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, uint32_t options);
 void store_freg_to_ir1(IR2_OPND, IR1_OPND *, bool is_xmm_hi, bool is_convert);
 void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd);
@@ -1180,7 +1180,7 @@ static inline ADDR cpu_get_guest_base(void)
 }
 
 #define NONE            0
-#define IS_XMM_HI       1
-#define IS_CONVERT      (1 << 2)
+#define IS_CONVERT      1
+#define IS_XMM_HI       (1 << 2)
 #define IS_DEST_MMX     (1 << 3)
 #endif

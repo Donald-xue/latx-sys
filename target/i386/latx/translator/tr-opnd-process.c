@@ -1410,8 +1410,9 @@ static void load_freg_from_ir1_mem(IR2_OPND opnd2, IR1_OPND *opnd1,
                                    bool is_xmm_hi, uint32 options)
 {
     IR2_OPND mem_opnd;
-    bool is_convert = (options & IS_CONVERT) >> 2;
+    bool is_convert = (options & IS_CONVERT);
     bool is_dest_mmx = (options & IS_DEST_MMX) >> 3;
+
     if (is_xmm_hi)
         mem_opnd = convert_mem_opnd_with_bias(opnd1, 8);
     else
@@ -1493,9 +1494,16 @@ static void load_freg_from_ir1_xmm(IR2_OPND opnd2, IR1_OPND *opnd1,
         la_append_ir2_opnd2_em(LISA_FMOV_D, opnd2, xmm_opnd);
 }
 
-IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
+IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, uint32_t options)
 {
-    is_convert = is_convert ? (IS_CONVERT) : is_convert;
+    /*
+     * NOTE: Previous arg support is_covert only, to minimum modification,
+     * here is a around to support new options.
+     * bit0: false
+     * bit1: true (is_covert)
+     * bit3: (1 << 3) to avoid float covertion
+     */
+
     switch (ir1_opnd_type(opnd1)) {
     case X86_OP_REG: {
         if (ir1_opnd_is_fpr(opnd1)){
@@ -1520,7 +1528,7 @@ IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
     }
     case X86_OP_MEM: {
         IR2_OPND ret_opnd = ra_alloc_ftemp_internal();
-        load_freg_from_ir1_mem(ret_opnd, opnd1, is_xmm_hi, is_convert);
+        load_freg_from_ir1_mem(ret_opnd, opnd1, is_xmm_hi, options);
         return ret_opnd;
     }
     default:
@@ -1532,7 +1540,7 @@ IR2_OPND load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
 void load_freg_from_ir1_2(IR2_OPND opnd2, IR1_OPND *opnd1, uint32_t options)
 {
     lsassert(ir2_opnd_is_freg(&opnd2));
-    bool is_xmm_hi = (options & IS_XMM_HI);
+    bool is_xmm_hi = (options & IS_XMM_HI) >> 2;
     assert(is_xmm_hi == 0);
 
     switch (ir1_opnd_type(opnd1)) {

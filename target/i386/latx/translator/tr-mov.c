@@ -1501,7 +1501,7 @@ bool translate_movq(IR1_INST *pir1)
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
-        IR2_OPND temp = load_freg_from_ir1_1(src, false, false);
+        IR2_OPND temp = load_freg_from_ir1_1(src, false, IS_DEST_MMX);
         la_append_ir2_opnd2i(LISA_XVPICKVE_D,
                           ra_alloc_xmm(ir1_opnd_base_reg_num(dest)), temp,
                           0);
