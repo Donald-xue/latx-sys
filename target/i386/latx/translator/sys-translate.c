@@ -5,6 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include <string.h>
+#include "qemu/cacheflush.h"
 
 /* Main Translation Process */
 
@@ -27,6 +28,12 @@ void latxs_tr_init(TranslationBlock *tb)
 
     /* 5. set up lsfpu */
     latxs_tr_fpu_init(td, tb);
+
+    if (tb) {
+        td->x86_ins_nr = 0;
+        td->exitreq_label = latxs_ir2_opnd_new_label();
+        td->end_with_exception = 0;
+    }
 }
 
 void latxs_tr_tb_init(TRANSLATION_DATA *td, TranslationBlock *tb)
@@ -164,6 +171,24 @@ void latxs_label_dispose(void *code_buffer)
     }
 }
 
+int latxs_tr_check_buffer_overflow(void *code_start, TRANSLATION_DATA *td)
+{
+    uint64_t code_highwater = (uint64_t)td->code_highwater;
+    uint64_t code_tb_end = (uint64_t)code_start;
+
+    int code_nr = td->ir2_inst_num_current;
+    code_nr -= td->label_num; /* lisa_label    */
+    code_nr -= td->ir1_nr;    /* lisa_x86_inst */
+
+    code_tb_end += code_nr << 2;
+
+    if (code_tb_end >= code_highwater) {
+        return 1;
+    }
+
+    return 0;
+}
+
 int latxs_tr_ir2_assemble(void *code_base)
 {
     /* 1. label dispose */
@@ -174,10 +199,39 @@ int latxs_tr_ir2_assemble(void *code_base)
     void *code_ptr = code_base;
     int code_nr = 0;
 
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    TranslationBlock *tb = td->curr_tb;
+
+    /* Buffer Overflow Check */
+    if (tb) {
+        /* Do not check buffer overflow when generating */
+        /* context switch (prologue/epilogue) */
+        if (latxs_tr_check_buffer_overflow(code_base, td)) {
+            return -1;
+        }
+    }
+
+    /* Counter for encode search */
+    int x86ins_idx  = 0;
+    int x86ins_nr  = -1;
+    int x86ins_hcnt = 0; /* host instruction count */
+    int x86ins_size = 0;
+
     while (pir2 != NULL) {
         IR2_OPCODE ir2_opc = latxs_ir2_opcode(pir2);
 
         if (ir2_opc == LISA_X86_INST) {
+
+            if (x86ins_nr >= 0) {
+                td->x86_ins_idx[x86ins_nr] = x86ins_idx;
+                td->x86_ins_lisa_nr[x86ins_nr] = x86ins_hcnt;
+            }
+            x86ins_idx = latxs_ir2_get_id(pir2);
+            x86ins_nr += 1;
+            /* calculate TB size */
+            IR1_INST *pir1 = &td->ir1_inst_array[x86ins_nr];
+            x86ins_size += latxs_ir1_inst_size(pir1);
+
             goto _NEXT_IR2_;
         }
 
@@ -192,13 +246,223 @@ int latxs_tr_ir2_assemble(void *code_base)
             *(uint32_t *)code_ptr = ir2_binary;
             code_ptr = code_ptr + 4;
             code_nr += 1;
+
+            x86ins_hcnt += 1;
         }
 
 _NEXT_IR2_:
         pir2 = latxs_ir2_next(pir2);
     }
 
+    if (td->curr_tb) {
+        td->x86_ins_idx[x86ins_nr] = x86ins_idx;
+        td->x86_ins_lisa_nr[x86ins_nr] = x86ins_hcnt;
+        td->x86_ins_nr = x86ins_nr + 1;
+        td->x86_ins_size = x86ins_size;
+
+        lsassertm(td->x86_ins_nr == td->ir1_nr,
+                "x86 inst %d not equal to IR1 %d.\n",
+                td->x86_ins_nr, td->ir1_nr);
+
+        tb->icount = td->x86_ins_nr;
+        tb->size = x86ins_size;
+    }
+
     return code_nr;
+}
+
+int latxs_tr_translate_tb(TranslationBlock *tb, int *search_size)
+{
+    int code_nr = 0;
+    int code_size = 0;
+    int is_buffer_overflow = 0;
+
+    latxs_tr_init(tb);
+
+    bool translation_done = latxs_tr_ir2_generate(tb);
+
+    if (translation_done) {
+        code_nr = latxs_tr_ir2_assemble(tb->tc.ptr);
+    }
+
+    if (likely(code_nr > 0)) {
+        code_size = code_nr * 4;
+        counter_mips_tr += code_nr;
+        is_buffer_overflow = 0;
+    } else {
+        /* Buffer Overflow */
+        code_size = -1;
+        is_buffer_overflow = 1;
+    }
+
+    if (tb && !is_buffer_overflow) {
+        void *search_block = (ADDR)tb->tc.ptr + code_size;
+        *search_size = latxs_tb_encode_search(tb, search_block);
+    }
+
+    latxs_tr_fini();
+
+    if (tb) {
+        /* 0. IR1 will not be used again, free it */
+        int i = 0;
+        for (i = 0; i < tb->icount; ++i) {
+            latxs_ir1_free_info(tb->_ir1_instructions + i);
+        }
+        /* 1. check buffer overflow */
+        if (unlikely(is_buffer_overflow)) {
+            return -1;
+        }
+        /* 2. TODO check TB overflow */
+        /* if (code_nr >= 0x3fff) { */
+            /* return -2; */
+        /* } */
+        /* 3. flush icache range */
+        ADDR s = (ADDR)tb->tc.ptr;
+        ADDR e = s + code_size;
+        flush_idcache_range((uintptr_t)s, (uintptr_t)s, (uintptr_t)e);
+    }
+
+    return code_size;
+}
+
+void latxs_tr_init_translate_ir1(TranslationBlock *tb, int index)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    IR1_INST *ir1_list = td->ir1_inst_array;
+    int ir1_nr = td->ir1_nr;
+
+    (void)ir1_nr; /* to avoid warning */
+    lsassert(index >= 0 && ir1_nr >= 0 && index < ir1_nr);
+
+    /* 1. initialize global data */
+    IR1_INST *pir1 = ir1_list + index;
+    lsenv->tr_data->curr_ir1_inst = pir1;
+
+    /* 2. Append mips_x86_inst into IR2 list to mark */
+    /*    the start of each IR1 */
+    latxs_append_ir2_opnda(LISA_X86_INST, ir1_addr(pir1));
+
+    /* 3. clear temp register mapping */
+    td->itemp_mask = 0;
+    td->ftemp_mask = 0;
+    td->itemp_mask_bk = 0;
+}
+
+bool latxs_tr_ir2_generate(TranslationBlock *tb)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    int i = 0;
+
+    IR1_INST *ir1_list = td->ir1_inst_array;
+    int ir1_nr = td->ir1_nr;
+
+    latxs_tr_gen_tb_start();
+
+    IR1_INST *pir1 = NULL;
+    for (i = 0; i < ir1_nr; ++i) {
+        pir1 = ir1_list + i;
+
+        /* option_trace_ir1(pir1); TODO for trace */
+
+        latxs_tr_init_translate_ir1(tb, i);
+
+        /* if ((td->max_insns == i + 1) && (td->sys.cflags & CF_LAST_IO)) { */
+            /* latxs_tr_gen_io_start(); TODO for icount */
+        /* } */
+
+        bool translation_success = ir1_translate(pir1);
+
+        (void)translation_success; /* to avoid warning  */
+        lsassertm(translation_success,
+                "translate failed for inst %s\n",
+                pir1->info->mnemonic);
+
+        if (td->end_with_exception) {
+            /* 1. get real number of IR1 */
+            int real_ir1_nr = i + 1;
+            td->ir1_nr = real_ir1_nr;
+            /* 2. Reset related fields in ETB */
+            for (++i; i < ir1_nr; ++i) {
+                pir1 = ir1_list + i;
+                latxs_ir1_free_info(pir1);
+            }
+            tb->icount = real_ir1_nr;
+            /* 3. TODO ICOUNT: decrease real number of IR1 */
+            /* if (atomic_read(&tb->cflags) & CF_USE_ICOUNT) { */
+                /* IR2_INST *pir2 = latxs_ir2_get(td->dec_icount_inst_id); */
+                /* pir2->_opnd[2] = latxs_ir2_opnd_new(IR2_OPND_IMMH, */
+                        /* 0 - real_ir1_nr); */
+            /* } */
+            break;
+        }
+    }
+
+    if (!(td->end_with_exception)) {
+        latxs_tr_gen_eob_if_tb_too_large(tb->tb_too_large_pir1);
+        latxs_tr_gen_sys_eob(tb->sys_eob_pir1);
+    }
+    latxs_tr_gen_tb_end();
+    tr_gen_softmmu_slow_path();
+
+    if (!option_lsfpu) {
+        tb->_top_out = latxs_td_fpu_get_top();
+    }
+
+    return true;
+}
+
+void latxs_tr_gen_tb_start(void)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    IR2_OPND count = ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2i(LISA_LD_W, &count,
+            &latxs_env_ir2_opnd,
+            (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+            (int32_t)offsetof(X86CPU, env));
+
+    /* TODO icount */
+
+    latxs_append_ir2_opnd3(LISA_BLT, &count, &latxs_zero_ir2_opnd,
+            &(td->exitreq_label));
+
+    latxs_ra_free_temp(&count);
+}
+
+void latxs_tr_gen_tb_end(void)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    TranslationBlock *tb = td->curr_tb;
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &td->exitreq_label);
+
+    IR2_OPND tb_ptr_opnd = ra_alloc_dbt_arg1();
+    IR2_OPND eip_opnd = ra_alloc_dbt_arg2();
+
+    ADDR tb_addr = (ADDR)tb;
+
+    latxs_tr_gen_exit_tb_load_tb_addr(&tb_ptr_opnd, tb_addr);
+
+    int eip = tb->pc - tb->cs_base;
+    latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
+
+    if (!option_lsfpu) {
+        /* FPU top shoud be TB's top_in, not top_out. */
+        IR2_OPND top_in = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ORI, &top_in,
+                &latxs_zero_ir2_opnd, tb->_top_in & 0x7);
+        latxs_append_ir2_opnd2i(LISA_ST_W, &top_in,
+                &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
+        latxs_ra_free_temp(&top_in);
+    }
+
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_ret0_ir2_opnd,
+            &tb_ptr_opnd, TB_EXIT_REQUESTED);
+
+    void *code_buf = tb->tc.ptr;
+    int offset = td->real_ir2_inst_num << 2;
+    latxs_append_ir2_opnda(LISA_B, (context_switch_native_to_bt
+                - (ADDR)code_buf - offset) >> 2);
 }
 
 /* translate functions */

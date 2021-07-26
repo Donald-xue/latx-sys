@@ -289,3 +289,25 @@ void latx_set_tls_ibtc_table(CPUArchState *env)
 {
     env->ibtc_table_p = &ibtc_table;
 }
+
+#ifdef CONFIG_SOFTMMU
+
+int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
+        int max_insns, void *code_highwater, int *search_size)
+{
+    CPUArchState *env = cpu->env_ptr;
+
+    latxs_tr_sys_init(tb, max_insns, code_highwater);
+
+    latxs_tr_disasm(tb);
+
+    tb_flag(tb);
+
+    if (!option_lsfpu) {
+        tb->_top_in = env->fpstt & 0x7;
+    }
+
+    return latxs_tr_translate_tb(tb, search_size);
+}
+
+#endif

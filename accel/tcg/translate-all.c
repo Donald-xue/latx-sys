@@ -249,6 +249,7 @@ static void cpu_gen_init(void)
     tcg_context_init(&tcg_init_ctx);
 }
 
+#if !defined(CONFIG_LATX) || !defined(CONFIG_SOFTMMU)
 /* Encode VAL as a signed leb128 sequence at P.
    Return P incremented past the encoded value.  */
 static uint8_t *encode_sleb128(uint8_t *p, target_long val)
@@ -268,6 +269,7 @@ static uint8_t *encode_sleb128(uint8_t *p, target_long val)
 
     return p;
 }
+#endif
 
 /* Decode a signed leb128 sequence at *PP; increment *PP past the
    decoded value.  Return the decoded value.  */
@@ -290,6 +292,7 @@ static target_long decode_sleb128(const uint8_t **pp)
     return val;
 }
 
+#if !defined(CONFIG_LATX) || !defined(CONFIG_SOFTMMU)
 /* Encode the data collected about the instructions while compiling TB.
    Place the data at BLOCK, and return the number of bytes consumed.
 
@@ -333,6 +336,7 @@ static int encode_search(TranslationBlock *tb, uint8_t *block)
 
     return p - block;
 }
+#endif
 
 /* The cpu state corresponding to 'searched_pc' is restored.
  * When reset_icount is true, current TB will be interrupted and
@@ -1583,6 +1587,9 @@ static inline void tb_reset_jump(TranslationBlock *tb, int n)
 {
     uintptr_t addr = (uintptr_t)(tb->tc.ptr + tb->jmp_reset_offset[n]);
     tb_set_jmp_target(tb, n, addr);
+#ifdef CONFIG_LATX
+    tb->next_tb[n] = NULL;
+#endif
 }
 
 /* remove any jumps to the TB */
@@ -1840,8 +1847,8 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
 }
 
 #ifdef CONFIG_LATX
-#ifndef CONFIG_SOFTMMU
 #include "latx-config.h"
+#ifndef CONFIG_SOFTMMU
 
 void tb_exit_to_qemu (CPUArchState *env, uintptr_t pc)
 {
@@ -1899,9 +1906,17 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         max_insns = 1;
     }
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    int latxs_is_buffer_overflow = 0;
+#endif
+
  buffer_overflow:
     tb = tcg_tb_alloc(tcg_ctx);
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    if (unlikely(!tb) || latxs_is_buffer_overflow) {
+#else
     if (unlikely(!tb)) {
+#endif
         /* flush must be done */
         tb_flush(cpu);
         mmap_unlock();
@@ -1924,6 +1939,8 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->_top_out = -1;
     tb->_top_in = -1;
 #ifdef CONFIG_SOFTMMU
+    tb->next_tb[0] = NULL;
+    tb->next_tb[1] = NULL;
     tb->sys_eob_pir1 = NULL;
     tb->tb_too_large_pir1 = NULL;
 #endif
@@ -2092,6 +2109,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         ROUND_UP((uintptr_t)gen_code_buf + gen_code_size + search_size,
                  CODE_GEN_ALIGN));
 #else
+#ifndef CONFIG_SOFTMMU
     gen_code_size = target_latx_host(env, tb);
 
     /*
@@ -2102,6 +2120,28 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     if (unlikely(search_size < 0)) {
         goto buffer_overflow;
     }
+#else
+    latxs_is_buffer_overflow  = 0;
+    /* translation by latx in system-mode */
+    gen_code_size = target_latxs_host(cpu, tb,
+            max_insns,
+            tcg_ctx->code_gen_highwater,
+            &search_size);
+    if (unlikely(gen_code_size < 0)) {
+        switch (gen_code_size) {
+        case -1:
+            latxs_is_buffer_overflow  = 1;
+            goto buffer_overflow;
+        /* case -2: TODO not sure if we really need to check tb overflow */
+            /* max_insns = tb->icount; */
+            /* assert(max_insns > 1); */
+            /* max_insns /= 2; */
+            /* goto tb_overflow; */
+        default:
+            g_assert_not_reached();
+        }
+    }
+#endif
     tb->tc.size = gen_code_size;
     qatomic_set(&tcg_ctx->code_gen_ptr, (void *)
         ROUND_UP((uintptr_t)gen_code_buf + gen_code_size + search_size,

@@ -661,8 +661,8 @@ int latxs_tb_encode_search(TranslationBlock *tb, uint8_t *block)
             }
         }
 
-        /* prev_data = (i == 0 ? 0 : td->x86_ins_mips_nr[i - 1]*4); TODO */
-        /* this_data = td->x86_ins_mips_nr[i] * 4; TODO */
+        prev_data = (i == 0 ? 0 : td->x86_ins_lisa_nr[i - 1] * 4);
+        this_data = td->x86_ins_lisa_nr[i] * 4;
         p = encode_sleb128(p, this_data - prev_data);
         if (option_dump) {
             fprintf(stderr, "[%3d]OFF = 0x%x\n", i, this_data);

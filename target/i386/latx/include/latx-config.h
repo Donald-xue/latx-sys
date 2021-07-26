@@ -33,6 +33,8 @@ ETB *etb_find(ADDRX pc);
 
 #ifdef CONFIG_SOFTMMU
 int target_latxs_static_codes(void *code_ptr);
+int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
+        int max_insns, void *code_highwater, int *search_size);
 #endif
 
 #endif /* _LATX_CONFIG_H_ */

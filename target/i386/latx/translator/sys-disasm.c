@@ -244,6 +244,9 @@ void latxs_tr_disasm(TranslationBlock *tb)
     td->ir1_inst_array = ir1_list;
     td->ir1_nr = ir1_num;
     td->curr_ir1_inst = NULL;
+
+    tb->_ir1_instructions = ir1_list;
+    tb->icount = ir1_num;
 }
 
 IR1_INST *latxs_get_ir1_list(TranslationBlock *tb, ADDRX pc, int *p_ir1_num)

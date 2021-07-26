@@ -112,14 +112,10 @@ typedef struct TRANSLATION_DATA {
     int in_gen_slow_path;
     void *slow_path_rcd;
 
-    /* number of mips for each x86 */
-    /*
-     * TODO
-     * int x86_ins_idx[MAX_IR1_NUM_PER_TB];
-     * int x86_ins_mips_nr[MAX_IR1_NUM_PER_TB];
-     * int x86_ins_nr;
-     * int x86_ins_size;
-     */
+    int x86_ins_idx[MAX_IR1_NUM_PER_TB];
+    int x86_ins_lisa_nr[MAX_IR1_NUM_PER_TB];
+    int x86_ins_nr;
+    int x86_ins_size;
 
     EXMode reg_exmode[CPU_NB_REGS];
     EXBits reg_exbits[CPU_NB_REGS];

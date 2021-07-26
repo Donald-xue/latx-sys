@@ -1203,6 +1203,13 @@ void latxs_tr_init(TranslationBlock *tb);
 int  latxs_tr_ir2_assemble(void *code_buffer);
 void latxs_tr_fini(void);
 
+int latxs_tr_translate_tb(TranslationBlock *tb, int *search_size);
+bool latxs_tr_ir2_generate(TranslationBlock *tb);
+void latxs_tr_init_translate_ir1(TranslationBlock *tb, int index);
+
+void latxs_tr_gen_tb_start(void);
+void latxs_tr_gen_tb_end(void);
+
 void latxs_tr_tb_init(TRANSLATION_DATA *td, TranslationBlock *tb);
 void latxs_tr_ra_init(TRANSLATION_DATA *td);
 void latxs_tr_em_init(TRANSLATION_DATA *td);
