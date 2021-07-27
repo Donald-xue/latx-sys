@@ -136,9 +136,9 @@ bool translate_pxor(IR1_INST *pir1)
     }
 
     IR2_OPND dest_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false,
-                                            true); /* fill default parameter */
+                                            IS_CONVERT | IS_DEST_MMX);
     IR2_OPND src_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, false,
-                                           true); /* fill default parameter */
+                                           IS_CONVERT | IS_DEST_MMX);
     la_append_ir2_opnd3(LISA_VXOR_V, dest_lo, dest_lo, src_lo);
     return true;
 }
@@ -888,9 +888,9 @@ bool translate_paddq(IR1_INST *pir1)
         return true;
     }
     IR2_OPND dest_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false,
-                                            true); /* fill default parameter */
+                                            IS_CONVERT | IS_DEST_MMX);
     IR2_OPND src_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, false,
-                                           true); /* fill default parameter */
+                                           IS_CONVERT | IS_DEST_MMX);
     la_append_ir2_opnd3(LISA_VADD_D, dest_lo, dest_lo, src_lo);
     return true;
 }
@@ -1091,9 +1091,9 @@ bool translate_pmuludq(IR1_INST *pir1)
         return true;
     }
     IR2_OPND dest_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false,
-                                            true); /* fill default parameter */
+                                            IS_CONVERT | IS_DEST_MMX);
     IR2_OPND src_lo = load_freg_from_ir1_1(ir1_get_opnd(pir1, 0) + 1, false,
-                                           true); /* fill default parameter */
+                                           IS_CONVERT | IS_DEST_MMX);
     la_append_ir2_opnd3(LISA_VMULWEV_D_WU, dest_lo, dest_lo, src_lo);
     return true;
 }
