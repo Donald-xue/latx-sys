@@ -190,6 +190,9 @@ typedef struct ENV {
 #ifdef CONFIG_LATX_FLAG_PATTERN
     FLAG_PATTERN_DATA *fp_data; /* from LATX */
 #endif
+#ifdef CONFIG_SOFTMMU
+    int after_exec_tb_fixed;
+#endif
 } ENV;
 
 /* eflags mask */

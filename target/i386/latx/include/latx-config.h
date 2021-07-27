@@ -35,6 +35,9 @@ ETB *etb_find(ADDRX pc);
 int target_latxs_static_codes(void *code_ptr);
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
         int max_insns, void *code_highwater, int *search_size);
+void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb);
+void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb);
+void latxs_fix_after_excp_or_int(void);
 #endif
 
 #endif /* _LATX_CONFIG_H_ */

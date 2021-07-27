@@ -197,6 +197,7 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
     latx_before_exec_trace_tb(env, itb);
 #endif
 #ifdef CONFIG_LATX
+#ifndef CONFIG_SOFTMMU
     latx_before_exec_rotate_fpu(env, itb);
 
     ret = tcg_qemu_tb_exec(env, tb_ptr);
@@ -205,6 +206,11 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
         ret |= (uintptr_t)itb & 0xffffffff00000000LL;
     }
     latx_after_exec_rotate_fpu(env, itb);
+#else
+    latxs_before_exec_tb(cpu, itb);
+    ret = tcg_qemu_tb_exec(env, tb_ptr);
+    latxs_after_exec_tb(cpu, itb);
+#endif
 #else
     ret = tcg_qemu_tb_exec(env, tb_ptr);
 #endif

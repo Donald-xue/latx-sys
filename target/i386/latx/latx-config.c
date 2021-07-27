@@ -275,6 +275,7 @@ void latx_lsenv_init(CPUArchState *env)
     lsenv = &lsenv_real;
     lsenv->cpu_state = env;
     lsenv->tr_data = &tr_data_real;
+#ifndef CONFIG_SOFTMMU
 #ifdef CONFIG_LATX_FLAG_PATTERN
     lsenv->fp_data = &fp_data_real;
 #endif
@@ -283,6 +284,9 @@ void latx_lsenv_init(CPUArchState *env)
     if (option_dump) {
         fprintf(stderr, "[LATX] env init : %p\n", lsenv->cpu_state);
     }
+#else
+    env->latxs_fpu = LATXS_FPU_RESET_VALUE;
+#endif
 }
 
 void latx_set_tls_ibtc_table(CPUArchState *env)
@@ -308,6 +312,190 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
     }
 
     return latxs_tr_translate_tb(tb, search_size);
+}
+
+void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
+{
+    CPUX86State *env = cpu->env_ptr;
+
+    if (!option_lsfpu) {
+        lsassert(lsenv_get_top_bias(lsenv) == 0);
+        latxs_fpu_fix_before_exec_tb(env, tb);
+    }
+
+    /*
+     * sync the eflags
+     *
+     * collaborate with tr_load_eflags() in context switch
+     * to load the newest elfags into native context
+     */
+    env->eflags = helper_read_eflags(env);
+    env->cc_src = env->eflags;
+    env->cc_op  = CC_OP_EFLAGS;
+
+    lsenv->after_exec_tb_fixed = 0;
+}
+
+void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb)
+{
+    CPUX86State *env = cpu->env_ptr;
+
+    if (!option_lsfpu) {
+        /*
+         * if tb linked to other tbs, last executed tb might not be current tb
+         * if last_executed_tb is null, it is not linked indirect jmps
+         */
+        /* TranslationBlock *last_tb = */
+            /* (TranslationBlock *)(lsenv_get_last_executed_tb(lsenv)); */
+
+        /* if(last_tb) { */
+            /* last_tb = (TranslationBlock*)((uintptr_t)last_executed_tb |\ */
+                    /* ((uintptr_t)tb & 0xffffffff00000000));  */
+        /* } */
+
+        /* latxs_fpu_fix_after_exec_tb(env, tb, last_tb); */
+        latxs_fpu_fix_after_exec_tb(env, NULL);
+    }
+
+    lsenv->after_exec_tb_fixed = 1;
+}
+
+/*
+ * Because of exception or interrupt, latxs_after_exec_tb() will no
+ * be executed.
+ *
+ * Here we use this function to finish some necessary job.
+ *
+ * Current implemented instructions need this fix :
+ * ========================================================================
+ *   > X86_INS_INT :
+ *     helper_raise_interrupt() -> raise_interrupt()
+ *     -> raise_interrupt2() -> cpu_loop_exit_restore() --> cpu_loop_exit()
+ *   > All Exception Check :
+ *     helper_raise_exception() -> raise_exception()
+ *     -> raise_interrupt2() -> cpu_loop_exit_restore() --> cpu_loop_exit()
+ *   > X86_INS_PAUSE : helper_pause() -> do_pause() ------> cpu_loop_exit()
+ *   > X86_INS_HLT : helper_hlt() -> do_hlt() ------------> cpu_loop_exit()
+ *   > ...
+ * ========================================================================
+ *
+ * Other helpers might need this fix too :
+ * ========================================================================
+ *   > X86_INS_INTO : helper_into()
+ *     -> raise_interrupt() -> raise_interrupt2() --------> cpu_loop_exit()
+ *   > helpers in misc/seg_helper.c might call
+ *     raise_exception_err() -> raise_interrupt2() -------> cpu_loop_exit()
+ *   > helpers in bpt/excp/misc/seg_helper.c might call
+ *     raise_exception_err_ra() -> raise_interrupt2() ----> cpu_loop_exit()
+ *   > helpers in bpt/excp/svm_helper.c might call
+ *     raise_exception() -> raise_interrupt2() -----------> cpu_loop_exit()
+ *   > helpers in cc/fpu/int/mem/misc/mpx_helper.c might call
+ *     raise_exception_ra() -> raise_interrupt2() --------> cpu_loop_exit()
+ *   > helpers in svm/seg/misc_helper.c might call -------> cpu_loop_exit()
+ *   > cpu_handle_exception() -> do_interrupt_all()
+ *                            -> do_interrupt_protected/real()
+ *                            -> raise_exception_err() ---> cpu_loop_exit()
+ *   > all of the raise_interrupt2()
+ *                -> cpu_svm_check_interrupt_param()
+ *                -> cpu_vmexit() ------------------------> cpu_loop_exit()
+ *   > all of the raise_interrupt2()
+ *                -> check_exception() -> qemu_system_reset_request()
+ *                   -> cpu_stop_current()
+ *                   -> cpu_exit() : cpu->exit_request = 1
+ *                -> cpu_loop_exit_restore() -------------> cpu_loop_exit()
+ *   > helper_svm_check_interrupt_param() ----------------> cpu_loop_exit()
+ *   > helper_svm_check_io() -> cpu_vmexit() -------------> cpu_loop_exit()
+ * ========================================================================
+ *
+ * The execution might be :
+ * ========================================================================
+ * <1> native code -> context switch ---------> x86_to_mips_after_exec_tb()
+ *     -> x86_to_mips_after_exec_tb()
+ *     -> cpu_handle_interrupt()    // no interrupt
+ *     -> next TB
+ * ========================================================================
+ * <2> native code -> context switch ---------> x86_to_mips_after_exec_tb()
+ *     -> x86_to_mips_after_exec_tb()
+ *     -> cpu_handle_interrupt()    // have interrupt
+ *     -> x86_cpu_exec_interrupt()
+ *     -> EIP updated -> new TB
+ * ========================================================================
+ * <3> native code -> context switch ---------> x86_to_mips_after_exec_tb()
+ *     -> x86_to_mips_after_exec_tb()
+ *     -> cpu_handle_interrupt()    // have hard interrupt
+ *     -> x86_cpu_exec_interrupt()
+ *     -> do_interrupt_x86_hardirq()
+ *     -> do_interrupt_all()
+ *     -> do_interrupt_protected/real()
+ *     -> EIP updated -> new TB
+ * ========================================================================
+ * <4> native code -> context switch ---------> x86_to_mips_after_exec_tb()
+ *     -> cpu_handle_interrupt()    // have hard interrupt
+ *     -> x86_cpu_exec_interrupt()
+ *     -> do_interrupt_x86_hardirq()
+ *     -> do_interrupt_all()
+ *     -> do_interrupt_protected/real()
+ *     -> raise_exception_err() --------------------------> cpu_loop_exit()
+ *     -> cpu_hadnle_exception()
+ *     -> EIP updated -> new TB
+ * ========================================================================
+ * <5> native code -> helper ->
+ *     raise_exception/interrupt() -----------------------> cpu_loop_exit()
+ *     -> cpu_handle_exception()
+ *     -> do_interrupt_all()
+ *     -> do_interrupt_protected/real()
+ *     -> EIP updated -> new TB
+ * ========================================================================
+ * <6> native code -> helper ->
+ *     raise_exception/interrupt() -----------------------> cpu_loop_exit()
+ *     -> cpu_handle_exception()
+ *     -> do_interrupt_all()
+ *     -> do_interrupt_protected/real()
+ *     -> raise_exception_err()
+ *     -> raise_interrupt2() -----------------------------> cpu_loop_exit()
+ *     -> cpu_handle_exception()
+ *     -> do_interrupt_all()
+ *     -> do_interrupt_protected/real()
+ *     -> EIP updated -> new TB
+ * ========================================================================
+ *
+ * Plan 1: always do this in cpu_loop_exit()
+ * Plan 2: do this fix in each possible execution
+ *
+ * Advantage of Plan 1:
+ *
+ *      Only need to modify one function cpu_loop_exit() to cover all the
+ *      cases that need to be fix.
+ *
+ * Advantage of Plan 2:
+ *
+ *      Easy to control only exec it when necessary.
+ *
+ * Disadvantage of plan 1: Too many ways to call cpu_loop_exit()!
+ *
+ *      It is hard to tell when this fix is really needed and when it
+ *      should not be executed such as exception happends and the CPU
+ *      has to restore.
+ *
+ * Disadvantage of plan 2: Need to modity too many places.
+ *
+ * We choose plan 1:
+ *      Use the flag 'after_exec_tb_fixed' in lsenv to control not to execute
+ *      it more than once.
+ */
+
+
+void latxs_fix_after_excp_or_int(void)
+{
+    if (lsenv->after_exec_tb_fixed) {
+        return;
+    }
+
+    if (!option_lsfpu) {
+        latxs_fpu_fix_cpu_loop_exit();
+    }
+
+    lsenv->after_exec_tb_fixed = 1;
 }
 
 #endif

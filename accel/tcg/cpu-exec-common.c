@@ -22,6 +22,10 @@
 #include "sysemu/tcg.h"
 #include "exec/exec-all.h"
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+#include "latx-config.h"
+#endif
+
 bool tcg_allowed;
 
 /* exit the current TB, but without causing any exception to be raised */
@@ -63,6 +67,9 @@ void cpu_reloading_memory_map(void)
 
 void cpu_loop_exit(CPUState *cpu)
 {
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    latxs_fix_after_excp_or_int();
+#endif
     /* Undo the setting in cpu_tb_exec.  */
     cpu->can_do_io = 1;
     siglongjmp(cpu->jmp_env, 1);
