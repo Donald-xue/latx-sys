@@ -1310,6 +1310,44 @@ IR2_OPND latxs_convert_mem_ir2_opnd_plus_2(IR2_OPND *mem);
 IR2_OPND latxs_convert_mem_ir2_opnd_plus_4(IR2_OPND *mem);
 IR2_OPND latxs_convert_mem_ir2_opnd_no_offset(IR2_OPND *mem, int *newtmp);
 
+void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *, IR1_OPND *, int as);
+void latxs_convert_mem_opnd(IR2_OPND *, IR1_OPND *, int as);
+void latxs_convert_mem_opnd_with_bias(IR2_OPND *, IR1_OPND *, int b, int as);
+
+void latxs_load_ir1_imm_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
+void latxs_load_ir1_seg_to_ir2(IR2_OPND *, IR1_OPND *);
+void latxs_load_ir1_mem_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool, int as);
+void latxs_load_ir1_gpr_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
+void latxs_load_ir1_mmx_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
+void latxs_load_ir1_xmm_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool);
+void latxs_load_ir1_cr_to_ir2(IR2_OPND *, IR1_OPND *);
+void latxs_load_ir1_dr_to_ir2(IR2_OPND *, IR1_OPND *);
+void latxs_load_ir1_to_i2(IR2_OPND *, IR1_OPND *, EXMode, bool);
+
+void latxs_store_ir2_to_ir1_gpr(IR2_OPND *, IR1_OPND *);
+void latxs_store_ir2_to_ir1_seg(IR2_OPND *, IR1_OPND *);
+void latxs_store_ir2_to_ir1_mem(IR2_OPND *, IR1_OPND *, bool, int as);
+void latxs_store_ir2_to_ir1_cr(IR2_OPND *, IR1_OPND *);
+void latxs_store_ir2_to_ir1_dr(IR2_OPND *, IR1_OPND *);
+void latxs_store_ir2_to_ir1(IR2_OPND *, IR1_OPND *, bool);
+
+void latxs_load_eflags_cf_to_ir2(IR2_OPND *opnd2);
+
+IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *, bool hi, bool cvt);
+void latxs_load_freg_from_ir1_2(IR2_OPND *, IR1_OPND *, bool hi, bool cvt);
+
+void latxs_load_singles_from_ir1_pack(IR2_OPND *, IR2_OPND *, IR1_OPND *, bool);
+void latxs_store_singles_to_ir2_pack(IR2_OPND *, IR2_OPND *, IR2_OPND *);
+
+void latxs_store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND *, IR2_OPND *);
+void latxs_store_freg_to_ir1(IR2_OPND *, IR1_OPND *, bool hi, bool cvt);
+
+void latxs_load_freg128_from_ir1_mem(IR2_OPND *, IR1_OPND *);
+void latxs_store_freg128_to_ir1_mem(IR2_OPND *, IR1_OPND *);
+IR2_OPND latxs_load_freg128_from_ir1(IR1_OPND *);
+
+void latxs_reverse_ir2_ireg_opnd_endian(IR2_OPND *, int);
+
 /* Softmmu related */
 typedef struct softmmu_slow_path_rcd {
     int tmp_need_save;
@@ -1333,6 +1371,8 @@ typedef struct softmmu_slow_path_rcd {
 
 void gen_ldst_softmmu_helper(IR2_OPCODE op,
         IR2_OPND *opnd_gpr, IR2_OPND *opnd_mem, int save_temp);
+void gen_ldst_c1_softmmu_helper(IR2_OPCODE op,
+        IR2_OPND *opnd_fpr, IR2_OPND *opnd_mem, int save_temp);
 void tr_gen_softmmu_slow_path(void);
 
 /* extension mode optimization */

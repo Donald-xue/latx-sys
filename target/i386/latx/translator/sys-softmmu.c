@@ -540,3 +540,48 @@ void gen_ldst_softmmu_helper(
 
     lsassertm(0, "Softmmu not support non-load/store instruction.");
 }
+
+void gen_ldst_c1_softmmu_helper(
+        IR2_OPCODE op,
+        IR2_OPND *opnd_fpr,
+        IR2_OPND *opnd_mem,
+        int save_temp)
+{
+    IR2_OPCODE ldst_op = LISA_INVALID;
+    IR2_OPCODE mfmt_op = LISA_INVALID;
+
+    switch (op) {
+    case LISA_FLD_S:
+        ldst_op = LISA_LD_WU;
+        mfmt_op = LISA_MOVGR2FR_W;
+        break;
+    case LISA_FLD_D:
+        ldst_op = LISA_LD_D;
+        mfmt_op = LISA_MOVGR2FR_D;
+        break;
+    case LISA_FST_S:
+        ldst_op = LISA_ST_W;
+        mfmt_op = LISA_MOVFR2GR_S;
+        break;
+    case LISA_FST_D:
+        ldst_op = LISA_ST_D;
+        mfmt_op = LISA_MOVFR2GR_D;
+        break;
+    default:
+        lsassert(0);
+        break;
+    }
+
+    IR2_OPND tmp = ra_alloc_itemp();
+    if (latxs_ir2_opcode_is_load(op)) {
+        /* 1. load to GPR from memory */
+        gen_ldst_softmmu_helper(ldst_op, &tmp, opnd_mem, save_temp);
+        /* 2. move GPR to FPR */
+        latxs_append_ir2_opnd2(mfmt_op, opnd_fpr, &tmp);
+    } else {
+        /* 1. move FPR to GPR */
+        latxs_append_ir2_opnd2(mfmt_op, &tmp, opnd_fpr);
+        /* 2. store GPR to to memory */
+        gen_ldst_softmmu_helper(ldst_op, &tmp, opnd_mem, save_temp);
+    }
+}
