@@ -296,10 +296,33 @@ void latx_set_tls_ibtc_table(CPUArchState *env)
 
 #ifdef CONFIG_SOFTMMU
 
+static unsigned long long latxs_bpc_tb_cnt;
+
+static void latxs_break_point(CPUX86State *env, TranslationBlock *tb)
+{
+    if (!option_break_point) {
+        return;
+    }
+
+    if (option_break_point &&
+            latxs_sc_bpc &&
+            tb->pc == option_break_point_addrx) {
+        latxs_bpc_tb_cnt += 1;
+        fprintf(stderr, "[debug] BP at TB 0x%x cnt = %lld\n",
+                tb->pc, latxs_bpc_tb_cnt);
+
+        if (break_point_tb_exec_count >= option_break_point_count) {
+            ((void(*)(void))latxs_sc_bpc)();
+        }
+    }
+}
+
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
         int max_insns, void *code_highwater, int *search_size)
 {
     CPUArchState *env = cpu->env_ptr;
+
+    latxs_break_point(env, tb);
 
     latxs_tr_sys_init(tb, max_insns, code_highwater);
 
@@ -314,9 +337,43 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
     return latxs_tr_translate_tb(tb, search_size);
 }
 
+static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
+{
+    if (!option_trace_simple) {
+        return;
+    }
+
+    uint32_t eflags = helper_read_eflags(env);
+
+    fprintf(stderr, "[tracesp] ");
+    fprintf(stderr, "PC=0x%x / ", tb->pc);
+    fprintf(stderr, "CS=0x%x / ", tb->cs_base);
+    fprintf(stderr, "EF=0x%x / ", tb->flags);
+    switch (option_trace_simple) {
+    case 2: /* Print with FPU state */
+        fprintf(stderr, "TOP=%d / ",  env->fpstt);
+        fprintf(stderr, "TOPin=%d / ",  tb->_top_in);
+        fprintf(stderr, "TOPot=%d / ", tb->_top_out);
+        fprintf(stderr, "FP=0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx / ",
+                env->fpregs[0].d.low, env->fpregs[1].d.low,
+                env->fpregs[2].d.low, env->fpregs[3].d.low,
+                env->fpregs[4].d.low, env->fpregs[5].d.low,
+                env->fpregs[6].d.low, env->fpregs[7].d.low);
+        break;
+    default:
+        break;
+    }
+    fprintf(stderr, "REGS=0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x\n",
+            env->regs[0], env->regs[1], env->regs[2], env->regs[3],
+            env->regs[4], env->regs[5], env->regs[6], env->regs[7]);
+}
+
 void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
 {
     CPUX86State *env = cpu->env_ptr;
+
+    latxs_trace_simple(env, tb);
+    latxs_break_point(env, tb);
 
     if (!option_lsfpu) {
         lsassert(lsenv_get_top_bias(lsenv) == 0);
