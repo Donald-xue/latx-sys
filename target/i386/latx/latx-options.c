@@ -505,6 +505,8 @@ void dump_latxs_options(void)
 
 void latxs_options_init(void)
 {
+    option_tb_link = 0;
+
     option_smmu_slow = 0;
 
     option_break_point = 0;
