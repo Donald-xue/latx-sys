@@ -37,5 +37,6 @@ i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-softmmu.c',
   'sys-helper.c',
   'sys-excp.c',
+  'sys-tr-misc.c',
   'sys-fpu.c'
 ))

@@ -681,7 +681,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_extrq,     //X86_INS_EXTRQ,
     translate_f2xm1,     //X86_INS_F2XM1,
     NULL,                //X86_INS_LCALL,
-    NULL,                //X86_INS_LJMP,
+    translate_jmp_far,   /* X86_INS_LJMP */
     translate_fbld,      //X86_INS_FBLD,
     translate_fbstp,     //X86_INS_FBSTP,
     translate_fcompp,    //X86_INS_FCOMPP,

@@ -1429,6 +1429,8 @@ void latxs_tr_gen_infinite_loop(void);
 
 int latxs_tb_encode_search(TranslationBlock *, uint8_t *);
 
+bool latxs_translate_jmp_far(IR1_INST *pir1);
+
 #endif
 
 #endif
