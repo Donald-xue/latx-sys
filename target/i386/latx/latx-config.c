@@ -311,7 +311,7 @@ static void latxs_break_point(CPUX86State *env, TranslationBlock *tb)
         fprintf(stderr, "[debug] BP at TB 0x%x cnt = %lld\n",
                 tb->pc, latxs_bpc_tb_cnt);
 
-        if (break_point_tb_exec_count >= option_break_point_count) {
+        if (latxs_bpc_tb_cnt >= option_break_point_count) {
             ((void(*)(void))latxs_sc_bpc)();
         }
     }
