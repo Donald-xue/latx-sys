@@ -836,7 +836,7 @@ void latxs_store_ir2_to_ir1_dr(IR2_OPND *opnd2, IR1_OPND *opnd1)
  * @em: sign, zero or unknown
  *      Used only for imm, gpr, mem, mmx, xmm
  */
-void latxs_load_ir1_to_i2(IR2_OPND *opnd2,
+void latxs_load_ir1_to_ir2(IR2_OPND *opnd2,
         IR1_OPND *opnd1, EXMode em, bool is_xmm_hi)
 {
     lsassert(latxs_ir2_opnd_is_gpr(opnd2));

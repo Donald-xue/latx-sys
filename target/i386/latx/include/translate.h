@@ -1324,7 +1324,7 @@ void latxs_load_ir1_mmx_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
 void latxs_load_ir1_xmm_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool);
 void latxs_load_ir1_cr_to_ir2(IR2_OPND *, IR1_OPND *);
 void latxs_load_ir1_dr_to_ir2(IR2_OPND *, IR1_OPND *);
-void latxs_load_ir1_to_i2(IR2_OPND *, IR1_OPND *, EXMode, bool);
+void latxs_load_ir1_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool);
 
 void latxs_store_ir2_to_ir1_gpr(IR2_OPND *, IR1_OPND *);
 void latxs_store_ir2_to_ir1_seg(IR2_OPND *, IR1_OPND *);
