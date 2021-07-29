@@ -38,7 +38,7 @@ void latxs_tr_init(TranslationBlock *tb)
 
 void latxs_tr_tb_init(TRANSLATION_DATA *td, TranslationBlock *tb)
 {
-    td->curr_tb = NULL;
+    td->curr_tb = tb;
     td->curr_ir1_inst = NULL;
 }
 
