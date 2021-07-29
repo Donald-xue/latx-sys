@@ -286,6 +286,13 @@ void latx_lsenv_init(CPUArchState *env)
     }
 #else
     env->latxs_fpu = LATXS_FPU_RESET_VALUE;
+
+    lsenv->after_exec_tb_fixed = 1;
+
+    lsenv->tr_data->slow_path_rcd_max = 4;
+    lsenv->tr_data->slow_path_rcd_nr  = 0;
+    lsenv->tr_data->slow_path_rcd =
+        mm_calloc(4, sizeof(softmmu_sp_rcd_t));
 #endif
 }
 
