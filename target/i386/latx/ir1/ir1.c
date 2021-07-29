@@ -1774,7 +1774,7 @@ int latxs_ir1_inst_size(IR1_INST *ir1)
 void latxs_ir1_free_info(IR1_INST *ir1)
 {
     if (ir1) {
-        cs_free(ir1->info, ir1->info_count);
+        /* cs_free(ir1->info, ir1->info_count); */
     }
 }
 
