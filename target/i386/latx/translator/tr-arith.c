@@ -264,7 +264,7 @@ bool translate_daa(IR1_INST *pir1)
 
 bool translate_add(IR1_INST *pir1)
 {
-#ifdef COFNIG_SOFTMMU
+#ifdef CONFIG_SOFTMMU
     return latxs_translate_add(pir1);
 #else
     IR2_OPND src_opnd_1 =
