@@ -10018,7 +10018,7 @@ static abi_long do_syscall1(void *cpu_env, int num, abi_long arg1,
             }
             if (page_check_range(arg1, arg2, PAGE_VALID))
                 return -TARGET_ENOMEM;
-            return get_errno(msync(g2h(cpu, arg1), arg2, arg3));
+            return get_errno(target_msync(arg1, arg2, arg3));
         }
         return ret;
 #endif

@@ -789,6 +789,24 @@ int cpu_signal_handler(int host_signum, void *pinfo,
     ucontext_t *uc = puc;
     greg_t pc = uc->uc_mcontext.__pc;
 
+#ifndef CONFIG_SOFTMMU
+    unsigned long address = (unsigned long)info->si_addr;
+    uint32_t *inst = (uint32_t *)pc;
+    /* prologue */
+    if (info->si_signo == SIGSEGV && h2g_valid(address) &&
+        !is_handling_shd_wrt() && is_shd_wrt(address)) {
+        shd_wrt_pro(address, pc + 4);
+        return 1;
+    }
+    /* epilogue */
+    if (info->si_signo == SIGSEGV && is_handling_shd_wrt() &&
+        is_epi_pc(inst)) {
+        shd_wrt_epi(inst);
+        return 1;
+    }
+#endif
+
+
     int is_write = 0;
     //TODO use kernel to send write info
     //only st/stl/str handled, may cause bugs

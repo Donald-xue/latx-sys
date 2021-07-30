@@ -189,11 +189,14 @@ static int mmap_frag(abi_ulong real_start,
                      int prot, int flags, int fd, abi_ulong offset)
 {
     abi_ulong real_end, addr;
-    void *host_start;
+    void *host_start, *data_start;
     int prot1, prot2, prot_new;
+    /* failed:-1, 0:succeeded, 1:succeeded with shared-write problem */
+    int ret = 0;
 
     real_end = real_start + qemu_host_page_size;
     host_start = g2h_untagged(real_start);
+    data_start = g2h_untagged(start);
 
     /* get the protection of the target pages outside the mapping */
     prot1 = 0;
@@ -232,19 +235,80 @@ static int mmap_frag(abi_ulong real_start,
 
     prot_new = prot | prot1;
     if (!(flags & MAP_ANONYMOUS)) {
-        /* msync() won't work here, so we return an error if write is
-           possible while it is a shared mapping */
+        /*
+         * carefully handle shared writable memory map, by using signal
+         * like the way dealing with self-modified codes
+         */
         if ((flags & MAP_TYPE) == MAP_SHARED &&
             (prot & PROT_WRITE))
-            return -1;
+        {
+            assert(qemu_host_page_size == 0x4000);
+            void *shd_p = mmap(0, qemu_host_page_size, prot,
+                    (flags & ~MAP_FIXED) | MAP_ANONYMOUS , -1, 0);
+            if (shd_p == MAP_FAILED) {
+                return -1;
+            }
+            insert_frag_map((unsigned long)host_start, (unsigned long)shd_p,
+                    prot, true);
+
+            /*
+             * move original page to new place, set original address
+             * unaccessiable
+             */
+            void *nbr_p = mmap(0, qemu_host_page_size, prot1,
+                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if (nbr_p == MAP_FAILED) {
+                return -1;
+            }
+            void *nbr_actual_p = mremap(host_start, qemu_host_page_size,
+                    qemu_host_page_size, MREMAP_MAYMOVE | MREMAP_FIXED,
+                    nbr_p);
+            if (nbr_actual_p == MAP_FAILED) {
+                return -1;
+            }
+            if (nbr_actual_p != nbr_p) {
+                return -1;
+            }
+            for (unsigned long off = 0; off < qemu_host_page_size;
+                    off += TARGET_PAGE_SIZE)
+            {
+                void *olda = host_start + off;
+                void *newa = nbr_p + off;
+                data_start = host_start + (start & ~qemu_host_page_mask);
+                /* ignore shared writable page, only focus on neighbor page */
+                if (data_start <= olda && olda < data_start + (end - start)) {
+                    continue;
+                }
+                insert_frag_map((unsigned long)olda, (unsigned long)newa,
+                        page_get_flags(h2g(olda)), false);
+            }
+
+            /*
+             * disable directly access original place, thus, qemu is able to
+             * catch a segmentation fault when accessing original place,
+             * then, redirect the access to the actual shared-writable page
+             */
+            mmap(host_start, qemu_host_page_size, PROT_NONE,
+                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            page_set_flags(real_start, real_end, 0);
+
+            host_start = shd_p;
+            uint64_t offset = start & ~qemu_host_page_mask;
+            data_start = host_start + offset;
+            prot1 = PROT_NONE;
+            prot_new = prot;
+
+            ret = 1; /* 1 indicates a shared writable fragment */
+        }
 
         /* adjust protection to be able to read */
         if (!(prot1 & PROT_WRITE))
             mprotect(host_start, qemu_host_page_size, prot1 | PROT_WRITE);
 
         /* read the corresponding file data */
-        if (pread(fd, g2h_untagged(start), end - start, offset) == -1)
+        if (pread(fd, data_start, end - start, offset) == -1) {
             return -1;
+        }
 
         /* put final protection */
         if (prot_new != (prot1 | PROT_WRITE))
@@ -257,7 +321,7 @@ static int mmap_frag(abi_ulong real_start,
             memset(g2h_untagged(start), 0, end - start);
         }
     }
-    return 0;
+    return ret;
 }
 
 #if HOST_LONG_BITS == 64 && TARGET_ABI_BITS == 64
@@ -445,6 +509,7 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
                      int flags, int fd, uint64_t offset)
 {
     abi_ulong ret, end, real_start, real_end, retaddr, host_len;
+    abi_long flags_start_revision = 0, flags_len_revision = 0;
     int page_flags, host_prot;
     uint64_t host_offset;
 
@@ -600,13 +665,22 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
                                 host_prot, flags, fd, offset);
                 if (ret == -1)
                     goto fail;
+                if (ret == 1) {
+                    goto the_end;
+                }
                 goto the_end1;
             }
             ret = mmap_frag(real_start, start, real_start + qemu_host_page_size,
                             host_prot, flags, fd, offset);
-            if (ret == -1)
+            if (ret == -1) {
                 goto fail;
+            }
             real_start += qemu_host_page_size;
+            if (ret == 1) {
+                abi_long revision = real_start - start;
+                flags_len_revision -= revision;
+                flags_start_revision += revision;
+            }
         }
         /* handle the end of the mapping */
         if (end < real_end) {
@@ -614,9 +688,15 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
                             real_end - qemu_host_page_size, end,
                             host_prot, flags, fd,
                             offset + real_end - qemu_host_page_size - start);
-            if (ret == -1)
+            if (ret == -1) {
+                errno = ENOTSUP;
                 goto fail;
+            }
             real_end -= qemu_host_page_size;
+            if (ret == 1) {
+                abi_long revision = end - real_end;
+                flags_len_revision -= revision;
+            }
         }
 
         /* map the middle (easier) */
@@ -638,7 +718,11 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
         page_flags |= PAGE_ANON;
     }
     page_flags |= PAGE_RESET;
-    page_set_flags(start, start + len, page_flags);
+
+    if ((abi_long)len + flags_len_revision > 0) {
+        page_set_flags(start + flags_start_revision,
+                start + len + flags_len_revision, host_prot | PAGE_VALID);
+    }
 
     /*
      * When mapping files into a memory area larger than the file, accesses
@@ -734,6 +818,9 @@ int target_munmap(abi_ulong start, abi_ulong len)
     end = start + len;
     real_start = start & qemu_host_page_mask;
     real_end = HOST_PAGE_ALIGN(end);
+
+    /* handle shared writable fragemnt first */
+    munmap_shd_nbr_frag(&real_start, start, end, &real_end);
 
     if (start > real_start) {
         /* handle host page containing start */
@@ -873,4 +960,14 @@ abi_long target_mremap(abi_ulong old_addr, abi_ulong old_size,
     tb_invalidate_phys_range(new_addr, new_addr + new_size);
     mmap_unlock();
     return new_addr;
+}
+
+int target_msync(abi_ulong addr, abi_ulong length, int flags)
+{
+    int ret = 0;
+    ret = msync_shd_nbr_frag(addr, length, flags);
+    if (ret == -1) {
+        return ret;
+    }
+    return msync(g2h_untagged(addr), length, flags);
 }

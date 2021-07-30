@@ -219,6 +219,172 @@ static int v_l2_levels;
 
 static void *l1_map[V_L1_MAX_SIZE];
 
+#ifdef CONFIG_USER_ONLY
+/*
+ * frag_map is meant to solve shared writable fragment page problem
+ * e.g. on 16k-size-page host, guest try to mmap a shard writable page
+ */
+#define FRAG_MAP_SIZE   32
+#define SHD_NBR_BIT     0x80  /* 1 for shd, 0 for nbr */
+#define FRAG_VALID_BIT  0x40    /* 1 for valid, 0 for invalid */
+
+typedef struct FragDesc {
+    uint64_t shd;
+    uint64_t nbr;
+    /* the prots of all original guest page in single host page */
+    GArray *prots;
+} FragDesc;
+
+static GHashTable *frag_map;
+
+static inline bool is_frag_map_inited(void)
+{
+    return frag_map ? true : false;
+}
+
+static FragDesc *FragDesc_alloc(void)
+{
+    FragDesc *fd = (FragDesc *)malloc(sizeof(FragDesc));
+    fd->prots = g_array_sized_new(FALSE, TRUE, 1,
+        qemu_host_page_size / TARGET_PAGE_SIZE);
+    return fd;
+}
+
+static void FragDesc_free(void *p)
+{
+    FragDesc *fd = (FragDesc *)p;
+    g_array_free(fd->prots, TRUE);
+    free(fd);
+}
+
+static inline void init_shd_wrt_frag_map(void)
+{
+    frag_map = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL,
+         FragDesc_free);
+}
+
+static inline uint64_t page_offset(uint64_t address)
+{
+    return address & ~qemu_host_page_mask;
+}
+
+static void set_prot_with_aux(FragDesc *fd, int i, char prot, char aux)
+{
+    char *proti = &g_array_index(fd->prots, char, i);
+    prot &= PAGE_BITS;
+    *proti = prot | aux;
+}
+
+uint64_t get_frag_map(uint64_t key)
+{
+    int prot;
+    uint64_t offset = page_offset(key);
+    FragDesc *fd = g_hash_table_lookup(frag_map, (void *)key);
+
+    key -= offset;
+    if (!fd) {
+        return 0;
+    }
+
+    prot = g_array_index(fd->prots, char, offset / TARGET_PAGE_SIZE);
+    if (!(prot & FRAG_VALID_BIT)) {
+        return 0;
+    }
+    if (prot & SHD_NBR_BIT) {
+        return fd->shd;
+    } else {
+        return fd->nbr;
+    }
+}
+
+static char get_frag_map_prot_with_aux(uint64_t key)
+{
+    uint64_t offset = page_offset(key);
+    FragDesc *fd = g_hash_table_lookup(frag_map, (void *)key);
+    key -= offset;
+
+    if (!fd) {
+        return 0;
+    }
+
+    return g_array_index(fd->prots, char, offset / TARGET_PAGE_SIZE);
+}
+
+/* sn choose {true: shared-writable page} or {false: neighbor page} */
+void insert_frag_map(uint64_t key, uint64_t value, uint64_t prot, int sn)
+{
+    if (unlikely(!is_frag_map_inited())) {
+        init_shd_wrt_frag_map();
+    }
+
+    uint64_t offset0 = page_offset(key);
+    uint64_t offset1 = page_offset(value);
+    assert(offset0 == offset1);
+    uint64_t offset = offset0;
+    key -= offset;
+    value -= offset;
+
+    /* find if key already exists */
+    FragDesc *fd = g_hash_table_lookup(frag_map, (void *)key);
+
+    if (!fd) {
+        fd = FragDesc_alloc();
+        g_hash_table_insert(frag_map, (void *)key, fd);
+    }
+    /* frag_map no enough space */
+    assert(fd);
+
+    if (sn) {
+        fd->shd = value;
+    } else {
+        fd->nbr = value;
+    }
+
+    char aux = sn ? SHD_NBR_BIT : 0;
+    aux |= FRAG_VALID_BIT;
+    set_prot_with_aux(fd, offset / TARGET_PAGE_SIZE, prot, aux);
+}
+
+uint64_t delete_frag_map(uint64_t key)
+{
+    key -= page_offset(key);
+    gboolean res = g_hash_table_remove(frag_map, (void *)key);
+    return res ? key : 0;
+}
+
+static int whether_shd_frag_exist_within_a_host_page(FragDesc *fd,
+        uint64_t start, uint64_t end)
+{
+    uint64_t base = start & qemu_host_page_mask;
+    int index;
+    char prot;
+    assert(end <= base + qemu_host_page_size);
+
+    for (uint64_t addr = start; addr < end; addr += TARGET_PAGE_SIZE) {
+        index = (addr - base) / TARGET_PAGE_SIZE;
+        prot = g_array_index(fd->prots, char, index);
+        if ((prot & FRAG_VALID_BIT) && (prot & SHD_NBR_BIT)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static void clear_prots_within_a_host_page(FragDesc *fd,
+        uint64_t start, uint64_t end)
+{
+    uint64_t base = start & qemu_host_page_mask;
+    int index;
+    assert(end <= base + qemu_host_page_size);
+
+    for (uint64_t addr = start; addr < end; addr += TARGET_PAGE_SIZE) {
+        index = (addr - base) / TARGET_PAGE_SIZE;
+        set_prot_with_aux(fd, index, 0, 0);
+    }
+}
+#endif/* CONFIG_USER_ONLY */
+
 /* code generation context */
 TCGContext tcg_init_ctx;
 __thread TCGContext *tcg_ctx;
@@ -588,6 +754,235 @@ page_collection_lock(tb_page_addr_t start, tb_page_addr_t end)
 
 void page_collection_unlock(struct page_collection *set)
 { }
+
+int is_shd_wrt(unsigned long addr)
+{
+    if (!is_frag_map_inited()) {
+        return 0;
+    }
+    addr &= qemu_host_page_mask;
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, frag_map);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        if ((unsigned long)key == addr) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+typedef struct BreakInfo {
+    uint32_t inst_buf;
+    uint32_t *inst_addr;
+} BreakInfo;
+#define SIGSEGV_TRIGGER 0x29c00000
+static unsigned long old_page, new_page;
+static PageDesc *snpage;
+static BreakInfo bi = {0};
+
+static inline int hit_a_break_inst(uint32_t *cp)
+{
+    return bi.inst_addr == cp ? 1 : 0;
+}
+
+static int insert_break_next(uint64_t next_pc)
+{
+    assert(bi.inst_addr == NULL);
+    uint32_t *next_inst = (uint32_t *)next_pc;
+
+    int ret = mprotect((void *)(next_pc & qemu_host_page_mask),
+        qemu_host_page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
+    if (ret == -1) {
+        perror("mprotect");
+    }
+    bi.inst_buf = *next_inst;
+    *next_inst = SIGSEGV_TRIGGER;
+    bi.inst_addr = next_inst;
+
+    return 0;
+}
+
+static inline void remove_break(uint32_t *addr)
+{
+    assert(hit_a_break_inst(addr));
+    *addr = bi.inst_buf;
+    bi.inst_addr = NULL;
+}
+
+int is_handling_shd_wrt(void)
+{
+    return snpage != NULL;
+}
+
+int is_epi_pc(uint32_t *inst)
+{
+    return hit_a_break_inst(inst);
+}
+
+void shd_wrt_pro(unsigned long siaddr, uint64_t next_pc) /* host addr */
+{
+    unsigned long *remap_addr;
+
+    /* backup addr, in order addr can be used in epi */
+    old_page = siaddr & qemu_host_page_mask;
+
+    /* get the PageDesc, determine shared writable fragment or neighbor */
+    snpage = page_find(h2g(siaddr) >> TARGET_PAGE_BITS);
+    new_page = get_frag_map(old_page);
+
+    remap_addr = mremap((void *)new_page, qemu_host_page_size,
+            qemu_host_page_size, MREMAP_MAYMOVE | MREMAP_FIXED, old_page);
+    assert((unsigned long)remap_addr == old_page);
+
+    /* restore prot in PageDesc */
+    snpage->flags |= get_frag_map_prot_with_aux(siaddr) & PAGE_BITS;
+
+    /* add signal stub into code cache */
+    insert_break_next(next_pc);
+}
+
+void shd_wrt_epi(uint32_t *pc) /* host addr */
+{
+    /* move page in old_page to new_page */
+    unsigned long *remap_addr;
+    remap_addr = mremap((void *)old_page, qemu_host_page_size,
+            qemu_host_page_size, MREMAP_MAYMOVE | MREMAP_FIXED, new_page);
+    assert((unsigned long)remap_addr == new_page);
+
+    /* clear prot in PageDesc */
+    snpage->flags &= ~PAGE_BITS;
+
+    /* restore original machine code in inst_buf */
+    remove_break(pc);
+
+    snpage = NULL;
+}
+
+static void recover_prots_within_a_host_page(FragDesc *fd,
+        unsigned long start, unsigned long end)
+{
+    unsigned long base = start & qemu_host_page_mask;
+    assert(end <= base + qemu_host_page_size);
+    for (unsigned long addr = start; addr < end; addr += TARGET_PAGE_SIZE) {
+        int index = (addr - base) / TARGET_PAGE_SIZE;
+        char prot = g_array_index(fd->prots, char, index);
+        PageDesc *pd = page_find(addr >> TARGET_PAGE_BITS);
+        pd->flags |= prot;
+    }
+}
+
+void munmap_shd_nbr_frag(abi_ulong *real_start, abi_ulong start,
+        abi_ulong end, abi_ulong *real_end)
+{
+    if (!is_frag_map_inited()) {
+        return;
+    }
+    unsigned long host_real_start = (unsigned long)g2h_untagged(*real_start);
+    unsigned long host_real_end = (unsigned long)g2h_untagged(*real_end);
+    unsigned long host_start = (unsigned long)g2h_untagged(start);
+    unsigned long host_end = (unsigned long)g2h_untagged(end);
+    FragDesc *fd = NULL;
+    int shd_remain = 0;
+
+    /* handle start fragment */
+    fd = g_hash_table_lookup(frag_map, (void *)host_real_start);
+    if (fd) {
+        unsigned clear_pstart = host_start;
+        unsigned clear_pend = host_end;
+        shd_remain |= whether_shd_frag_exist_within_a_host_page(
+                fd, host_real_start, host_start);
+        if (host_real_start + qemu_host_page_size == host_real_end) {
+            shd_remain |= whether_shd_frag_exist_within_a_host_page(
+                    fd, host_end, host_real_end);
+        } else {
+            clear_pend = host_real_start + qemu_host_page_size;
+        }
+
+        if (shd_remain) {
+            clear_prots_within_a_host_page(fd, clear_pstart, clear_pend);
+            *real_start += qemu_host_page_size;
+        } else { /* if no shd frag remain, then we can free this frag mapping */
+            munmap((void *)fd->shd, qemu_host_page_size);
+            mremap((void *)fd->nbr, qemu_host_page_size,
+                    qemu_host_page_size, MREMAP_MAYMOVE | MREMAP_FIXED,
+                    host_real_start);
+            recover_prots_within_a_host_page(fd, host_real_start, clear_pstart);
+            recover_prots_within_a_host_page(fd, clear_pend, host_real_end);
+            g_hash_table_remove(frag_map, (void *)host_real_start);
+        }
+    }
+
+    fd = NULL;
+    shd_remain = 0;
+    /* handle end fragment */
+    fd = g_hash_table_lookup(frag_map,
+            (void *)host_real_end - qemu_host_page_size);
+    if (fd) {
+        shd_remain = whether_shd_frag_exist_within_a_host_page(fd,
+               host_end, host_real_end);
+        if (shd_remain) {
+            clear_prots_within_a_host_page(fd,
+                    host_real_end - qemu_host_page_size, host_end);
+            *real_end -= qemu_host_page_size;
+        } else {
+            munmap((void *)fd->shd, qemu_host_page_size);
+            mremap((void *)fd->nbr, qemu_host_page_size,
+                    qemu_host_page_size, MREMAP_MAYMOVE | MREMAP_FIXED,
+                    host_real_end - qemu_host_page_size);
+            recover_prots_within_a_host_page(fd, host_end, host_real_end);
+            g_hash_table_remove(frag_map,
+                    (void *)host_real_end - qemu_host_page_size);
+        }
+    }
+
+    /* handle middle fragment */
+    if (host_start >= host_end) {
+        return;
+    }
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, frag_map);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        unsigned long old_page = (unsigned long)key;
+        FragDesc *fd = (FragDesc *)value;
+        if (host_start <= old_page && old_page <= host_end) {
+            munmap((void *)fd->shd, qemu_host_page_size);
+            munmap((void *)fd->nbr, qemu_host_page_size);
+        }
+    }
+}
+
+int msync_shd_nbr_frag(uint64_t addr, uint64_t length, int flags)
+{
+    if (!is_frag_map_inited()) {
+        return 0;
+    }
+    int ret = 0;
+    unsigned long host_start = (unsigned long)g2h_untagged(addr);
+    unsigned long host_end = (unsigned long)g2h_untagged(addr + length);
+    unsigned long host_real_start = host_start & qemu_host_page_mask;
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, frag_map);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        unsigned long old_page = (unsigned long)key;
+        FragDesc *fd = (FragDesc *)value;
+        if (host_real_start <= old_page && old_page <= host_end) {
+            /* for simplicity just msync them all, can we? */
+            ret = msync((void *)fd->nbr, qemu_host_page_size, flags);
+            if (ret == -1) {
+                return ret;
+            }
+            ret = msync((void *)fd->nbr, qemu_host_page_size, flags);
+            if (ret == -1) {
+                return ret;
+            }
+        }
+    }
+
+    return ret;
+}
 #else /* !CONFIG_USER_ONLY */
 
 #ifdef CONFIG_DEBUG_TCG

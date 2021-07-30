@@ -307,6 +307,14 @@ void *page_alloc_target_data(target_ulong address, size_t size);
  * at @address, as per page_alloc_target_data.
  */
 void *page_get_target_data(target_ulong address);
+
+unsigned long get_frag_map(unsigned long key);
+void insert_frag_map(unsigned long key, unsigned long value,
+        uint64_t prot, int sn);
+unsigned long delete_frag_map(unsigned long key);
+void munmap_shd_nbr_frag(abi_ulong *real_start, abi_ulong start,
+        abi_ulong end, abi_ulong *real_end);
+int msync_shd_nbr_frag(uint64_t addr, uint64_t length, int flags);
 #endif
 
 CPUArchState *cpu_copy(CPUArchState *env);

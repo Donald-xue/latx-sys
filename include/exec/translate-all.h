@@ -34,6 +34,11 @@ void tb_check_watchpoint(CPUState *cpu, uintptr_t retaddr);
 
 #ifdef CONFIG_USER_ONLY
 int page_unprotect(target_ulong address, uintptr_t pc);
+int is_epi_pc(uint32_t *inst);
+int is_shd_wrt(unsigned long addr);
+int is_handling_shd_wrt(void);
+void shd_wrt_pro(unsigned long addr, uint64_t next_pc); /* host addr */
+void shd_wrt_epi(uint32_t *pc); /* host addr */
 #endif
 #ifdef CONFIG_LATX
 void tb_exit_to_qemu(CPUArchState *env, uintptr_t pc);
