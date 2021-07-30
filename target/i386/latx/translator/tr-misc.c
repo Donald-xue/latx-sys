@@ -1125,6 +1125,9 @@ bool translate_lahf(IR1_INST *pir1)
 
 bool translate_loopnz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_loopnz(pir1);
+#else
     IR2_OPND ir2_xcx;
     if (sizeof(ADDRX) == 4) {
         ir2_xcx = ra_alloc_gpr(ir1_opnd_base_reg_num(&ecx_ir1_opnd));
@@ -1150,10 +1153,14 @@ bool translate_loopnz(IR1_INST *pir1)
     /* env->tr_data->curr_tb->generate_tb_linkage(1); */
     tr_generate_exit_tb(pir1, 1);
     return true;
+#endif
 }
 
 bool translate_loopz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_loopz(pir1);
+#else
     IR2_OPND ir2_xcx;
     if (sizeof(ADDRX) == 4) {
         ir2_xcx = ra_alloc_gpr(ir1_opnd_base_reg_num(&ecx_ir1_opnd));
@@ -1178,10 +1185,14 @@ bool translate_loopz(IR1_INST *pir1)
     /* env->tr_data->curr_tb->generate_tb_linkage(1); */
     tr_generate_exit_tb(pir1, 1);
     return true;
+#endif
 }
 
 bool translate_loop(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_loop(pir1);
+#else
     IR2_OPND ir2_xcx;
     if (sizeof(ADDRX) == 4) {
         ir2_xcx = ra_alloc_gpr(ir1_opnd_base_reg_num(&ecx_ir1_opnd));
@@ -1198,6 +1209,7 @@ bool translate_loop(IR1_INST *pir1)
     /* env->tr_data->curr_tb->generate_tb_linkage(1); */
     tr_generate_exit_tb(pir1, 1);
     return true;
+#endif
 }
 
 bool translate_cmc(IR1_INST *pir1)

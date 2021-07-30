@@ -1453,6 +1453,32 @@ bool latxs_translate_idiv(IR1_INST *pir1);
 
 void latxs_tr_gen_div_result_check(IR1_INST *, IR2_OPND, int s, int);
 
+/* sys-tr-branch */
+bool latxs_translate_jz(IR1_INST *pir1);
+bool latxs_translate_jnz(IR1_INST *pir1);
+bool latxs_translate_js(IR1_INST *pir1);
+bool latxs_translate_jns(IR1_INST *pir1);
+bool latxs_translate_jb(IR1_INST *pir1);
+bool latxs_translate_jae(IR1_INST *pir1);
+bool latxs_translate_jo(IR1_INST *pir1);
+bool latxs_translate_jno(IR1_INST *pir1);
+bool latxs_translate_jbe(IR1_INST *pir1);
+bool latxs_translate_ja(IR1_INST *pir1);
+bool latxs_translate_jp(IR1_INST *pir1);
+bool latxs_translate_jnp(IR1_INST *pir1);
+bool latxs_translate_jl(IR1_INST *pir1);
+bool latxs_translate_jge(IR1_INST *pir1);
+bool latxs_translate_jle(IR1_INST *pir1);
+bool latxs_translate_jg(IR1_INST *pir1);
+
+bool latxs_translate_jcxz(IR1_INST *pir1);
+bool latxs_translate_jecxz(IR1_INST *pir1);
+bool latxs_translate_jrcxz(IR1_INST *pir1);
+
+bool latxs_translate_loop(IR1_INST *pir1);
+bool latxs_translate_loopz(IR1_INST *pir1);
+bool latxs_translate_loopnz(IR1_INST *pir1);
+
 #endif
 
 #endif
