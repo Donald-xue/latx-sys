@@ -119,15 +119,22 @@ bool translate_push(IR1_INST *pir1)
 
 bool translate_mov(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_mov(pir1);
+#else
     IR2_OPND source_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 1), UNKNOWN_EXTENSION, false);
 
     store_ireg_to_ir1(source_opnd, ir1_get_opnd(pir1, 0), false);
     return true;
+#endif
 }
 
 bool translate_movzx(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movzx(pir1);
+#else
     IR1_OPND *source_ir1 = ir1_get_opnd(pir1, 1);
     IR1_OPND *dest_ir1 = ir1_get_opnd(pir1, 0);
 
@@ -175,15 +182,20 @@ bool translate_movzx(IR1_INST *pir1)
 
     store_ireg_to_ir1(source_opnd, dest_ir1, false);
     return true;
+#endif
 }
 
 bool translate_movsx(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movsx(pir1);
+#else
     IR2_OPND source_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
 
     store_ireg_to_ir1(source_opnd, ir1_get_opnd(pir1, 0), false);
     return true;
+#endif
 }
 
 static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
@@ -510,6 +522,9 @@ bool translate_scas(IR1_INST *pir1)
 
 bool translate_cmovo(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovo(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -554,10 +569,14 @@ bool translate_cmovo(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovno(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovno(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -602,10 +621,14 @@ bool translate_cmovno(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovb(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -650,10 +673,14 @@ bool translate_cmovb(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovae(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovae(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -698,10 +725,14 @@ bool translate_cmovae(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovz(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -746,10 +777,14 @@ bool translate_cmovz(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovnz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovnz(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -794,10 +829,14 @@ bool translate_cmovnz(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovbe(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovbe(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -842,10 +881,14 @@ bool translate_cmovbe(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmova(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmova(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -890,10 +933,14 @@ bool translate_cmova(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovs(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovs(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -938,10 +985,14 @@ bool translate_cmovs(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovns(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovns(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -986,10 +1037,14 @@ bool translate_cmovns(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovp(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -1034,10 +1089,14 @@ bool translate_cmovp(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovnp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovnp(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -1082,10 +1141,14 @@ bool translate_cmovnp(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovl(IR1_INST *pir1)
 { /* sf != of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovl(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -1130,10 +1193,14 @@ bool translate_cmovl(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovge(IR1_INST *pir1)
 { /* sf == of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovge(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -1178,10 +1245,14 @@ bool translate_cmovge(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovle(IR1_INST *pir1)
 { /* zf==1 || sf!=of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovle(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -1226,10 +1297,14 @@ bool translate_cmovle(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_cmovg(IR1_INST *pir1)
 { /* zf==0 && sf==of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmovg(pir1);
+#else
     IR2_OPND neg_condition = ra_alloc_itemp();
 #ifdef CONFIG_LATX_FLAG_PATTERN
     if (!fp_translate_pattern_tail(pir1, neg_condition)) {
@@ -1274,10 +1349,14 @@ bool translate_cmovg(IR1_INST *pir1)
 
     ra_free_temp(neg_condition);
     return true;
+#endif
 }
 
 bool translate_lea(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_lea(pir1);
+#else
     IR2_OPND value_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
@@ -1285,6 +1364,7 @@ bool translate_lea(IR1_INST *pir1)
 
     store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
     return true;
+#endif
 }
 
 bool translate_xchg(IR1_INST *pir1)
@@ -1498,6 +1578,9 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
 
 bool translate_movq(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movq(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
@@ -1532,10 +1615,14 @@ bool translate_movq(IR1_INST *pir1)
         store_freg_to_ir1(source_opnd, ir1_get_opnd(pir1, 0), false, false);
     }
     return true;
+#endif
 }
 
 bool translate_movd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movd(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
@@ -1586,6 +1673,7 @@ bool translate_movd(IR1_INST *pir1)
             store_ireg_to_ir1(zero_ir2_opnd, ir1_get_opnd(pir1, 0), true);
     }
     return true;
+#endif
 }
 bool translate_pusha(IR1_INST *pir1) {
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);

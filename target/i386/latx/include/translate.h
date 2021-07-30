@@ -1500,6 +1500,32 @@ bool latxs_translate_shrd(IR1_INST *pir1);
 bool latxs_translate_shld(IR1_INST *pir1);
 bool latxs_translate_bswap(IR1_INST *pir1);
 
+/* sys-tr-mov */
+bool latxs_translate_mov(IR1_INST *pir1);
+bool latxs_translate_movzx(IR1_INST *pir1);
+bool latxs_translate_movsx(IR1_INST *pir1);
+
+bool latxs_translate_lea(IR1_INST *pir1);
+
+bool latxs_translate_movq(IR1_INST *pir1);
+
+bool latxs_translate_cmovo(IR1_INST *pir1);
+bool latxs_translate_cmovno(IR1_INST *pir1);
+bool latxs_translate_cmovb(IR1_INST *pir1);
+bool latxs_translate_cmovae(IR1_INST *pir1);
+bool latxs_translate_cmovz(IR1_INST *pir1);
+bool latxs_translate_cmovnz(IR1_INST *pir1);
+bool latxs_translate_cmovbe(IR1_INST *pir1);
+bool latxs_translate_cmova(IR1_INST *pir1);
+bool latxs_translate_cmovs(IR1_INST *pir1);
+bool latxs_translate_cmovns(IR1_INST *pir1);
+bool latxs_translate_cmovp(IR1_INST *pir1);
+bool latxs_translate_cmovnp(IR1_INST *pir1);
+bool latxs_translate_cmovl(IR1_INST *pir1);
+bool latxs_translate_cmovge(IR1_INST *pir1);
+bool latxs_translate_cmovle(IR1_INST *pir1);
+bool latxs_translate_cmovg(IR1_INST *pir1);
+
 #endif
 
 #endif
