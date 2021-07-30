@@ -264,6 +264,9 @@ bool translate_daa(IR1_INST *pir1)
 
 bool translate_add(IR1_INST *pir1)
 {
+#ifdef COFNIG_SOFTMMU
+    return latxs_translate_add(pir1);
+#else
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
@@ -292,10 +295,14 @@ bool translate_add(IR1_INST *pir1)
     ra_free_temp(dest_opnd);
 
     return true;
+#endif
 }
 
 bool translate_adc(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_adc(pir1);
+#else
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
@@ -323,10 +330,14 @@ bool translate_adc(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_inc(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_inc(pir1);
+#else
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     IR2_OPND lat_lock_addr;
@@ -351,10 +362,14 @@ bool translate_inc(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_dec(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_dec(pir1);
+#else
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     IR2_OPND lat_lock_addr;
@@ -379,10 +394,14 @@ bool translate_dec(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_sub(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sub(pir1);
+#else
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
@@ -411,10 +430,14 @@ bool translate_sub(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_sbb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sbb(pir1);
+#else
     IR2_OPND dest_opnd = ra_alloc_itemp();
     IR2_OPND src_opnd_1 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
@@ -445,10 +468,14 @@ bool translate_sbb(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_neg(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_neg(pir1);
+#else
     IR2_OPND dest_opnd = ra_alloc_itemp();
 
     IR2_OPND lat_lock_addr;
@@ -473,10 +500,14 @@ bool translate_neg(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_cmp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmp(pir1);
+#else
     IR2_OPND src_opnd_0 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
     IR2_OPND src_opnd_1 =
@@ -493,10 +524,14 @@ bool translate_cmp(IR1_INST *pir1)
     ra_free_temp(dest_opnd);
 
     return true;
+#endif
 }
 
 bool translate_mul(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_mul(pir1);
+#else
     IR2_OPND src_opnd_0 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
     IR2_OPND dest_opnd = ra_alloc_itemp();
@@ -535,6 +570,7 @@ bool translate_mul(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 static bool translate_imul_1_opnd(IR1_INST *pir1)
@@ -585,6 +621,9 @@ static bool translate_imul_1_opnd(IR1_INST *pir1)
 
 bool translate_imul(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_imul(pir1);
+#else
     if (ir1_opnd_num(pir1) == 1)
         return translate_imul_1_opnd(pir1);
 
@@ -610,10 +649,14 @@ bool translate_imul(IR1_INST *pir1)
         store_ireg_to_ir1(dest_opnd, ir1_get_src_opnd(pir1, 0), false);
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_div(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_div(pir1);
+#else
     IR2_OPND small_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
     IR2_OPND result = ra_alloc_itemp();
@@ -691,10 +734,14 @@ bool translate_div(IR1_INST *pir1)
     ra_free_temp(result);
     ra_free_temp(result_remainder);
     return true;
+#endif
 }
 
 bool translate_idiv(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_idiv(pir1);
+#else
     IR2_OPND dest_opnd = ra_alloc_itemp();
     IR2_OPND src_opnd_0 =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
@@ -756,6 +803,7 @@ bool translate_idiv(IR1_INST *pir1)
 
     ra_free_temp(dest_opnd);
     return true;
+#endif
 }
 
 bool translate_xadd(IR1_INST *pir1)

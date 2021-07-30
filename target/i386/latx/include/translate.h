@@ -1429,7 +1429,29 @@ void latxs_tr_gen_infinite_loop(void);
 
 int latxs_tb_encode_search(TranslationBlock *, uint8_t *);
 
+/* eflags calculation */
+void latxs_generate_eflag_calculation(IR2_OPND*,
+        IR2_OPND*, IR2_OPND*,
+        IR1_INST *, bool has_address);
+
+/* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
+
+/* sys-arith */
+bool latxs_translate_add(IR1_INST *pir1);
+bool latxs_translate_adc(IR1_INST *pir1);
+bool latxs_translate_sub(IR1_INST *pir1);
+bool latxs_translate_sbb(IR1_INST *pir1);
+bool latxs_translate_inc(IR1_INST *pir1);
+bool latxs_translate_dec(IR1_INST *pir1);
+bool latxs_translate_neg(IR1_INST *pir1);
+bool latxs_translate_cmp(IR1_INST *pir1);
+bool latxs_translate_mul(IR1_INST *pir1);
+bool latxs_translate_imul(IR1_INST *pir1);
+bool latxs_translate_div(IR1_INST *pir1);
+bool latxs_translate_idiv(IR1_INST *pir1);
+
+void latxs_tr_gen_div_result_check(IR1_INST *, IR2_OPND, int s, int);
 
 #endif
 

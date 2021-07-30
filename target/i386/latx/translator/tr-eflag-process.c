@@ -1000,3 +1000,273 @@ void generate_eflag_calculation(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1,
             generate_of_not_sx(dest, src0, src1);
     }
 }
+
+#ifdef CONFIG_SOFTMMU
+
+static void latxs_generate_cf(
+        IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
+
+    switch (ir1_opcode(pir1)) {
+    case X86_INS_SHLD: {
+        if (latxs_ir2_opnd_is_imm(src1)) {
+            IR2_OPND t_dest = latxs_ra_alloc_itemp();
+            int count = latxs_ir2_opnd_imm(src1) - 1;
+            latxs_append_ir2_opnd2i(LISA_SLLI_D, &t_dest, src0, count);
+            latxs_append_ir2_opnd2i(LISA_SRLI_D, &t_dest, &t_dest,
+                    ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 1);
+            latxs_append_ir2_opnd2i(LISA_ANDI,   &t_dest, &t_dest, 1);
+            latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &t_dest, 0x1);
+            latxs_ra_free_temp(&t_dest);
+        } else {
+            IR2_OPND t_dest = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &t_dest, src1, -1);
+            latxs_append_ir2_opnd3(LISA_SLL_W,   &t_dest, src0, &t_dest);
+            latxs_append_ir2_opnd2i(LISA_SRLI_D, &t_dest, &t_dest,
+                /* 64bit not handled */
+                ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 1);
+            latxs_append_ir2_opnd2i(LISA_ANDI,   &t_dest, &t_dest , 1);
+            latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &t_dest, 0x1);
+            latxs_ra_free_temp(&t_dest);
+        }
+        return;
+    }
+    case X86_INS_SHRD: {
+        if (latxs_ir2_opnd_is_imm(src1)) {
+            IR2_OPND t_dest = latxs_ra_alloc_itemp();
+            int count = latxs_ir2_opnd_imm(src1) - 1;
+            latxs_append_ir2_opnd2i(LISA_SRLI_D, &t_dest, src0, count);
+            latxs_append_ir2_opnd2i(LISA_ANDI,   &t_dest, &t_dest, 1);
+            latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &t_dest, 0x1);
+            latxs_ra_free_temp(&t_dest);
+        } else {
+            IR2_OPND t_dest = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &t_dest, src1, -1);
+            latxs_append_ir2_opnd3(LISA_SRL_D, &t_dest, src0, &t_dest);
+            latxs_append_ir2_opnd2i(LISA_ANDI, &t_dest, &t_dest, 1);
+            latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &t_dest, 0x1);
+            latxs_ra_free_temp(&t_dest);
+        }
+        return;
+    }
+    default:
+        break;
+    }
+
+    lsassertm(0, "%s for %s is not implemented\n",
+            __func__, ir1_name(ir1_opcode(pir1)));
+}
+static void latxs_generate_pf(
+        IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    static char pf_table[256] = {
+        4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 0, 4, 4, 0, 4, 0,
+        0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4,
+        0, 4, 4, 0, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4,
+
+        0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 4, 0, 0, 4, 0, 4,
+        4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0,
+        4, 0, 0, 4, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0, 4, 4, 0,
+
+        0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 4, 0, 0, 4, 0, 4,
+        4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0,
+        4, 0, 0, 4, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0, 4, 4, 0,
+
+        4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 0, 4, 4, 0, 4, 0,
+        0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4,
+        0, 4, 4, 0, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4,
+    };
+
+    IR2_OPND pf_opnd = latxs_ra_alloc_itemp();
+    IR2_OPND low_byte = latxs_ra_alloc_itemp();
+    latxs_load_addr_to_ir2(&pf_opnd, (ADDR)pf_table);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &low_byte, dest, 0xff);
+    latxs_append_ir2_opnd3(LISA_ADD_D, &low_byte, &pf_opnd, &low_byte);
+    latxs_append_ir2_opnd2i(LISA_LD_BU, &pf_opnd, &low_byte, 0);
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &pf_opnd, 0x2);
+    latxs_ra_free_temp(&pf_opnd);
+    latxs_ra_free_temp(&low_byte);
+}
+
+static void latxs_generate_af(
+        IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    IR2_OPND af_opnd = latxs_ra_alloc_itemp();
+    if (latxs_ir2_opnd_is_imm(src1)) {
+        latxs_append_ir2_opnd2i(LISA_XORI,
+                &af_opnd, src0, latxs_ir2_opnd_imm(src1));
+    } else {
+        latxs_append_ir2_opnd3(LISA_XOR, &af_opnd, src0, src1);
+    }
+    latxs_append_ir2_opnd3(LISA_XOR, &af_opnd, &af_opnd, dest);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &af_opnd, &af_opnd, 0x10);
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &af_opnd, 0x4);
+    latxs_ra_free_temp(&af_opnd);
+}
+
+static void latxs_generate_zf(IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
+    int opnd_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
+    lsassert(opnd_size == 8 || opnd_size == 16 || opnd_size == 32);
+
+    IR2_OPND extended_dest_opnd = latxs_ra_alloc_itemp();
+    switch (opnd_size) {
+    case 8:
+        latxs_append_ir2_opnd2_(lisa_mov8z,  &extended_dest_opnd, dest);
+        break;
+    case 16:
+        latxs_append_ir2_opnd2_(lisa_mov16z, &extended_dest_opnd, dest);
+        break;
+    case 32:
+        latxs_append_ir2_opnd2_(lisa_mov32z, &extended_dest_opnd, dest);
+        break;
+    default:
+        lsassert(0);
+        break;
+    }
+
+    IR2_OPND temp_eflags = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &temp_eflags,
+            &latxs_zero_ir2_opnd, 0xfff);
+
+    IR2_OPND is_zero = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd3(LISA_BEQ, &extended_dest_opnd,
+            &latxs_zero_ir2_opnd, &is_zero);
+    latxs_append_ir2_opnd2_(lisa_mov, &temp_eflags, &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd1(LISA_LABEL, &is_zero);
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &temp_eflags, 0x8);
+    latxs_ra_free_temp(&temp_eflags);
+}
+
+static void latxs_generate_sf(IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
+    int os = ir1_opnd_size(ir1_get_opnd(pir1, 0));
+    IR2_OPND sf_opnd = latxs_ra_alloc_itemp();
+
+    if (os > 8) {
+        latxs_append_ir2_opnd2i(LISA_SRLI_D, &sf_opnd, dest, os - 8);
+        latxs_append_ir2_opnd2i(LISA_ANDI, &sf_opnd, &sf_opnd, SF_BIT);
+    } else {
+        latxs_append_ir2_opnd2i(LISA_ANDI, &sf_opnd, dest, SF_BIT);
+    }
+
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &sf_opnd, 0x10);
+    latxs_ra_free_temp(&sf_opnd);
+}
+
+static void latxs_generate_of(IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
+
+    switch (ir1_opcode(pir1)) {
+    case X86_INS_SHLD:
+    case X86_INS_SHRD: {
+        if (latxs_ir2_opnd_is_imm(src1)) {
+            if (latxs_ir2_opnd_imm(src1) != 1) {
+                return;
+            }
+
+            IR2_OPND t_of_opnd = latxs_ra_alloc_itemp();
+            IR2_OPND offset = latxs_ra_alloc_itemp();
+
+            latxs_append_ir2_opnd3(LISA_XOR, &t_of_opnd, src0, dest);
+            latxs_append_ir2_opnd2i(LISA_SRLI_D, &t_of_opnd, &t_of_opnd,
+                    ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 12);
+
+            latxs_load_imm32_to_ir2(&offset, 0x800, EXMode_Z);
+            latxs_append_ir2_opnd3(LISA_AND, &t_of_opnd, &t_of_opnd, &offset);
+
+            latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &t_of_opnd, 0x20);
+
+            latxs_ra_free_temp(&t_of_opnd);
+        } else {
+            IR2_OPND t_of_opnd = latxs_ra_alloc_itemp();
+            IR2_OPND offset = latxs_ra_alloc_itemp();
+            IR2_OPND label_temp = latxs_ir2_opnd_new_label();
+
+            latxs_append_ir2_opnd2i(LISA_ORI, &t_of_opnd, &zero_ir2_opnd, 1);
+            latxs_append_ir2_opnd3(LISA_BNE, src1, &t_of_opnd, &label_temp);
+
+            latxs_append_ir2_opnd3(LISA_XOR, &t_of_opnd, src0, dest);
+            latxs_append_ir2_opnd2i(LISA_SRLI_D, &t_of_opnd, &t_of_opnd,
+                    ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 12);
+
+            latxs_load_imm32_to_ir2(&offset, 0x800, EXMode_Z);
+            latxs_append_ir2_opnd3(LISA_AND, &t_of_opnd, &t_of_opnd, &offset);
+
+            latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &t_of_opnd, 0x20);
+
+            latxs_append_ir2_opnd1(LISA_LABEL, &label_temp);
+            latxs_ra_free_temp(&t_of_opnd);
+        }
+        return;
+    }
+    default:
+        break;
+    }
+
+    lsassertm(0, "%s for %s is not implemented\n",
+            __func__, ir1_name(ir1_opcode(pir1)));
+}
+
+static void latxs_generate_cf_not_sx(
+        IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
+}
+
+static void latxs_generate_of_not_sx(
+        IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
+{
+    lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
+}
+
+void latxs_generate_eflag_calculation(
+        IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1,
+        IR1_INST *pir1, bool is_sx)
+{
+    if (ir1_get_eflag_def(pir1) == 0) {
+        return;
+    }
+
+    if (ir1_need_calculate_any_flag(pir1) == 0 ||
+            latxs_generate_eflag_by_lbt(dest, src0, src1, pir1, is_sx)) {
+        return;
+    }
+
+    /* extension mode does not affect pf, af and zf */
+    if (ir1_need_calculate_pf(pir1)) {
+        latxs_generate_pf(dest, src0, src1);
+    }
+    if (ir1_need_calculate_af(pir1)) {
+        latxs_generate_af(dest, src0, src1);
+    }
+    if (ir1_need_calculate_zf(pir1)) {
+        latxs_generate_zf(dest, src0, src1);
+    }
+    if (ir1_need_calculate_sf(pir1)) {
+        latxs_generate_sf(dest, src0, src1);
+    }
+
+    /* calculate cf and of separately */
+    if (is_sx) {
+        if (ir1_need_calculate_cf(pir1)) {
+            latxs_generate_cf(dest, src0, src1);
+        }
+        if (ir1_need_calculate_of(pir1)) {
+            latxs_generate_of(dest, src0, src1);
+        }
+    } else {
+        if (ir1_need_calculate_cf(pir1)) {
+            latxs_generate_cf_not_sx(dest, src0, src1);
+        }
+        if (ir1_need_calculate_of(pir1)) {
+            latxs_generate_of_not_sx(dest, src0, src1);
+        }
+    }
+}
+
+#endif
