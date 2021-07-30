@@ -1479,6 +1479,27 @@ bool latxs_translate_loop(IR1_INST *pir1);
 bool latxs_translate_loopz(IR1_INST *pir1);
 bool latxs_translate_loopnz(IR1_INST *pir1);
 
+/* sys-tr-logic */
+bool latxs_translate_xor(IR1_INST *pir1);
+bool latxs_translate_and(IR1_INST *pir1);
+bool latxs_translate_test(IR1_INST *pir1);
+bool latxs_translate_or(IR1_INST *pir1);
+bool latxs_translate_not(IR1_INST *pir1);
+
+bool latxs_translate_shl(IR1_INST *pir1);
+bool latxs_translate_shr(IR1_INST *pir1);
+bool latxs_translate_sal(IR1_INST *pir1);
+bool latxs_translate_sar(IR1_INST *pir1);
+
+bool latxs_translate_rol(IR1_INST *pir1);
+bool latxs_translate_ror(IR1_INST *pir1);
+bool latxs_translate_rcl(IR1_INST *pir1);
+bool latxs_translate_rcr(IR1_INST *pir1);
+
+bool latxs_translate_shrd(IR1_INST *pir1);
+bool latxs_translate_shld(IR1_INST *pir1);
+bool latxs_translate_bswap(IR1_INST *pir1);
+
 #endif
 
 #endif
