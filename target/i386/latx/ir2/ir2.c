@@ -4840,13 +4840,20 @@ IR2_INST *la_append_ir2_opnd1i_em(IR2_OPCODE opcode, IR2_OPND op0, int imm) {
     pir2->_opnd[0] = op0;
     pir2->_opnd[1] = op1;
     ir2_append(pir2);
-    if (opcode == LISA_X86MFFLAG || opcode == LISA_X86MTFLAG) {
-        ir2_opnd_set_em(&op0, ZERO_EXTENSION, 0);
-    }else if(opcode == LISA_LU12I_W || opcode == LISA_LU32I_D || opcode == LISA_LU52I_D){
-        ir2_opnd_set_em(&op0, SIGN_EXTENSION, 0);
+
+    switch (opcode) {
+    case LISA_X86MFFLAG:
+        ir2_opnd_set_em(&op0, ZERO_EXTENSION, 12);
+        break;
+    case LISA_LU12I_W:
+        ir2_opnd_set_em(&op0, SIGN_EXTENSION, 32);
+        break;
+    case LISA_LU32I_D:
+        ir2_opnd_set_em(&op0, SIGN_EXTENSION, 52);
+        break;
     }
-    if(!ir2_op_check(pir2))
-        lsassertm(0, "Maybe you should check the type of operand");
+
+    lsassertm(ir2_op_check(pir2), "Maybe you should check the type of operand");
     return pir2;
 }
 
