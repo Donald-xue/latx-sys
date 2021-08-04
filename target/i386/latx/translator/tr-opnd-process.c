@@ -72,6 +72,7 @@ void load_ireg_from_ir1_addrx(IR1_OPND *opnd1, IR2_OPND value_opnd)
         } else {
             lsassert(0);
         }
+        ra_free_temp(tmp_opnd);
 
         if (offset != 0) {
             if (offset_reg_part == 0) { /* offset_imm_part != 0 */
@@ -303,7 +304,7 @@ IR2_OPND convert_mem_opnd_with_bias(IR1_OPND *opnd1, int bias)
 
         la_append_ir2_opnd3_em(LISA_AND, seg_base_opnd, seg_base_opnd, n1_ir2_opnd);
     }
-    ra_free_temp(offset_reg_opnd);
+    /* ra_free_temp(offset_reg_opnd); */
     return mem_opnd;
 }
 
@@ -1095,6 +1096,7 @@ static void store_ireg_to_ir1_gpr(IR2_OPND opnd2, IR1_OPND *opnd1)
         }
 
         ra_free_temp(result_in_place);
+        ra_free_temp(imm);
         return;
     } else {
         if (ir2_opnd_is_zx(&opnd2, 8)) {
@@ -1179,7 +1181,6 @@ static void store_ireg_to_ir1_mem(IR2_OPND value_opnd, IR1_OPND *opnd1,
 void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 {
     lsassert(ir2_opnd_is_ireg(&seg_value_opnd));
-    int itemp_index = lsenv->tr_data->itemp_num;
 #ifdef N64
 
     /* 1. set selector */
@@ -1196,6 +1197,7 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
     IR2_OPND dt_opnd = ra_alloc_itemp_internal();
     la_append_ir2_opnd2i_em(LISA_ANDI, is_ldt, seg_value_opnd, 0x4);
     la_append_ir2_opnd3(LISA_BNE, is_ldt, zero_ir2_opnd, label_ldt);
+    ra_free_temp(is_ldt);
     /* 2.1 get gdt base */
     la_append_ir2_opnd2i_em(LISA_LD_W, dt_opnd, env_ir2_opnd,
                       lsenv_offset_of_gdt_base(lsenv));
@@ -1208,7 +1210,7 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
     la_append_ir2_opnd3_em(LISA_AND, dt_opnd, dt_opnd, n1_ir2_opnd);
 
     /* 2.2 get entry offset of gdt and add it on gdt-base */
-    IR2_OPND offset_in_gdt_opnd = is_ldt;
+    IR2_OPND offset_in_gdt_opnd = ra_alloc_itemp_internal();
     IR2_OPND offset_imm16 = ra_alloc_itemp_internal();
     /*
      * We cannot generate imm16 directly.
@@ -1218,6 +1220,8 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
     la_append_ir2_opnd3_em(LISA_ADD_D, dt_opnd, dt_opnd, offset_in_gdt_opnd);
     //append_ir2_opnd2i(mips_andi, offset_in_gdt_opnd, seg_value_opnd, 0xfff8);
     //append_ir2_opnd3(mips_daddu, dt_opnd, dt_opnd, offset_in_gdt_opnd);
+    ra_free_temp(offset_in_gdt_opnd);
+    ra_free_temp(offset_imm16);
 
     if (cpu_get_guest_base() != 0) {
         /* 2.3 add guest-base */
@@ -1233,9 +1237,9 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
     IR2_OPND gdt_entry = ra_alloc_itemp_internal();
 
     la_append_ir2_opnd2i_em(LISA_LD_D, gdt_entry, dt_opnd, 0);
+    ra_free_temp(dt_opnd);
 
-
-    IR2_OPND seg_limit = offset_in_gdt_opnd; /* [51:48] [15: 0] limit */
+    IR2_OPND seg_limit = ra_alloc_itemp_internal(); /* [51:48] [15: 0] limit */
     IR2_OPND seg_base = ra_alloc_itemp_internal();  /* [63:56] [39:16] base */
     IR2_OPND seg_flags = ra_alloc_itemp_internal(); /* [55:40] flags */
 
@@ -1262,6 +1266,7 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
 
     /* 2.5 get new limit */
     //append_ir2_opnd2i(mips_andi, seg_limit, gdt_entry, 0xffff); /* [15: 0] */
+    offset_imm16 = ra_alloc_itemp_internal();
     load_ireg_from_imm32(offset_imm16, 0xffff, ZERO_EXTENSION);
     la_append_ir2_opnd3_em(LISA_AND, seg_limit, gdt_entry, offset_imm16);
 
@@ -1283,6 +1288,9 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
                       1); /* TypeField in GDT whichrepresent accessed, */
                           /* TypeField should be written to GDT,we ommit it */
     la_append_ir2_opnd2i_em(LISA_SLLI_W, seg_flags, seg_flags, 8);
+    ra_free_temp(tmp);
+    ra_free_temp(offset_imm16);
+    ra_free_temp(gdt_entry);
 
     /* 2.7 write into seg cache */
     la_append_ir2_opnd2i(LISA_ST_D, seg_base, env_ir2_opnd,
@@ -1291,11 +1299,13 @@ void store_ireg_to_ir1_seg(IR2_OPND seg_value_opnd, IR1_OPND *opnd1)
                       lsenv_offset_of_seg_limit(lsenv, seg_num));
     la_append_ir2_opnd2i(LISA_ST_W, seg_flags, env_ir2_opnd,
                       lsenv_offset_of_seg_flags(lsenv, seg_num));
+    ra_free_temp(seg_limit);
+    ra_free_temp(seg_base);
+    ra_free_temp(seg_flags);
 
 #else
     lsassertm(0, "not implement for MIPS o32/n32.\n");
 #endif
-    lsenv->tr_data->itemp_num = itemp_index;
 }
 
 void store_ireg_to_ir1(IR2_OPND opnd2, IR1_OPND *opnd1, bool is_xmm_hi)
@@ -1352,9 +1362,6 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
                                                  IR2_OPND mem_opnd, int mem_imm)
 {
     /* load 80bit float from memory and convert it to 64bit float */
-    int itemp_index = lsenv->tr_data->itemp_num;
-    int ftemp_index = lsenv->tr_data->ftemp_num;
-
     IR2_OPND ir2_sign_exp = ra_alloc_ftemp();
     IR2_OPND ir2_fraction = ra_alloc_ftemp();
 
@@ -1381,6 +1388,8 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
     la_append_ir2_opnd1(LISA_LABEL, label_no_excp1);
 
     la_append_ir2_opnd3(LISA_FCVT_D_LD, opnd2, ir2_fraction, ir2_sign_exp);
+    ra_free_temp(ir2_sign_exp);
+    ra_free_temp(ir2_fraction);
 
     la_append_ir2_opnd2_em(LISA_MOVFCSR2GR, itemp_reg, fcsr_ir2_opnd);
     /* unmask V if necessary */
@@ -1397,14 +1406,10 @@ void load_64_bit_freg_from_ir1_80_bit_mem(IR2_OPND opnd2,
     la_append_ir2_opnd2_em(LISA_MOVFR2GR_D, itemp_reg, opnd2);
     la_append_ir2_opnd2ii(LISA_BSTRINS_D, itemp_reg, zero_ir2_opnd, 51, 51);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, opnd2, itemp_reg);
+    ra_free_temp(itemp_reg);
+    ra_free_temp(itemp1_reg);
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
-
-    ra_free_temp(ir2_sign_exp);
-    ra_free_temp(ir2_fraction);
-    lsenv->tr_data->itemp_num = itemp_index;
-    lsenv->tr_data->ftemp_num = ftemp_index;
-
 }
 
 /**
@@ -1646,13 +1651,12 @@ void store_singles_to_ir2_pack(IR2_OPND single0, IR2_OPND single1,
     la_append_ir2_opnd2_em(LISA_MOVFR2GR_D, itemp0, single0);
     la_append_ir2_opnd3_em(LISA_OR, itemp1, itemp1, itemp0);
     la_append_ir2_opnd2_em(LISA_MOVGR2FR_D, pack, itemp1);
-    return;
+    ra_free_temp(itemp1);
+    ra_free_temp(itemp0);
 }
 
 void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
-    int ftemp_index = lsenv->tr_data->ftemp_num;
     IR2_OPND ir2_sign_exp = ra_alloc_ftemp();
     IR2_OPND ir2_fraction = ra_alloc_ftemp();
     IR2_OPND itemp = ra_alloc_itemp();
@@ -1688,6 +1692,8 @@ void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd)
     la_append_ir2_opnd2i(LISA_ST_H, itemp1, mem_opnd, mem_imm + 8);
     la_append_ir2_opnd2_em(LISA_MOVFR2GR_D, itemp1, ir2_fraction);
     la_append_ir2_opnd3(LISA_BEQ, itemp, zero_ir2_opnd, label_ok);
+    ra_free_temp(ir2_sign_exp);
+    ra_free_temp(ir2_fraction);
 
     //Identify SNAN and write snan to opnd2
     la_append_ir2_opnd2ii(LISA_BSTRINS_D, itemp1, zero_ir2_opnd, 62, 62);
@@ -1695,12 +1701,8 @@ void store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND opnd2, IR2_OPND mem_opnd)
     la_append_ir2_opnd1(LISA_LABEL, label_ok);
     la_append_ir2_opnd2i(LISA_ST_D, itemp1, mem_opnd, mem_imm);
 
-    ra_free_temp(ir2_sign_exp);
-    ra_free_temp(ir2_fraction);
     ra_free_temp(itemp);
     ra_free_temp(itemp1);
-    lsenv->tr_data->itemp_num = itemp_index;
-    lsenv->tr_data->ftemp_num = ftemp_index;
 }
 
 static void store_freg_to_ir1_mem(IR2_OPND opnd2, IR1_OPND *opnd1,

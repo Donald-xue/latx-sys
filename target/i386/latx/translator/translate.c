@@ -218,8 +218,8 @@ void tr_adjust_em(void)
 }
 
 #ifdef CONFIG_LATX_FLAG_REDUCTION
-void etb_add_succ(void* petb,int depth) 
-{    
+void etb_add_succ(void *petb, int depth)
+{
     ETB* etb = (ETB*)petb;
     if (depth==0 || (etb->flags & SUCC_IS_SET_MASK))
         return;
@@ -2354,7 +2354,6 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         }
         curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
         la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt - curr_ins_pos)>>2);
-        ra_free_temp(succ_x86_addr_opnd);
         break;
     // case X86_INS_JMPIN:  JUMPIN and CALLIN (part of jmp and call) are not standard i386 instruction 
     // case X86_INS_CALLIN:
@@ -2424,7 +2423,6 @@ indirect_jmp :
         }
         curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
         la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt - curr_ins_pos)>>2);
-        ra_free_temp(succ_x86_addr_opnd);
         break;
     default:
         lsassertm(0, "not implement.\n");
@@ -2475,6 +2473,7 @@ void generate_context_switch_bt_to_native(void *code_buf)
     la_append_ir2_opnd2i(LISA_LD_W, fcsr_value_opnd, env_ir2_opnd,
                           lsenv_offset_of_fcsr(lsenv));
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
+    ra_free_temp(fcsr_value_opnd);
 
     ///* 5. set native code FCSR (#31) */
     //IR2_OPND temp_opnd = ra_alloc_itemp();
@@ -2628,7 +2627,7 @@ static int generate_native_jmp_glue(void *code_buf, int n)
          * scenarios to keep eflags in ENV is the latest value.
          */
         IR2_OPND eflags_opnd = ra_alloc_eflags();
-        IR2_OPND eflags_temp = ir2_opnd_new(IR2_OPND_IREG, 4);
+        IR2_OPND eflags_temp = ra_alloc_itemp();
         la_append_ir2_opnd1i(LISA_X86MFFLAG, eflags_temp, 0x3f);
         la_append_ir2_opnd3(LISA_OR, eflags_opnd, eflags_opnd, eflags_temp);
         ra_free_temp(eflags_temp);
@@ -2850,6 +2849,7 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     append_ir2_opnd1_not_nop(mips_b, label_pop_till_find);
     append_ir2_opnd2i(mips_addi_addr, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
     ra_free_temp(temp_result);
+    ra_free_temp(ss_esp);
 
     // esp equal, adjust esp with 24#reg value
     append_ir2_opnd1(mips_label, label_esp_equal);
@@ -2858,6 +2858,7 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     append_ir2_opnd2i(mips_load_addr, etb_addr, ss_opnd, (int)offsetof(SS_ITEM, return_tb));
     IR2_OPND ret_tb_addr = ra_alloc_itemp();
     append_ir2_opnd2i(mips_load_addr, ret_tb_addr, etb_addr, offsetof(ETB, tb));
+    ra_free_temp(etb_addr);
     /* check if etb->tb is set */
     IR2_OPND label_have_no_native_code = ir2_opnd_new_type(IR2_OPND_LABEL);
     append_ir2_opnd3(mips_beq, ret_tb_addr, zero_ir2_opnd, label_have_no_native_code);
@@ -2865,6 +2866,7 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     append_ir2_opnd2i(mips_load_addrx, ss_x86_addr, ret_tb_addr, (int)offsetof(TranslationBlock, pc));
     IR2_OPND x86_addr = ra_alloc_dbt_arg2();
     append_ir2_opnd3(mips_bne, ss_x86_addr, x86_addr, label_exit_with_fail_match);
+    ra_free_temp(ss_x86_addr);
 
     // after several ss_pop, finally match successfully
     IR2_OPND esp_change_bytes = ra_alloc_mda();
@@ -2908,8 +2910,6 @@ static int ss_generate_match_fail_native_code(void* code_buf){
     //append_ir2(mips_jr, indirect_lookup_code_addr);
     //ra_free_temp(indirect_lookup_code_addr);
 
-    ra_free_temp(ss_esp);
-    ra_free_temp(ss_x86_addr);
     tr_fini(false);
     total_mips_num = tr_ir2_assemble(code_buf) + 1;
 
@@ -2978,6 +2978,7 @@ int generate_native_rotate_fpu_by(void *code_buf_addr)
                  lsenv_offset_of_top_bias(lsenv) <= 2047);
         la_append_ir2_opnd2i(LISA_ST_W, top_bias, env_ir2_opnd,
                           lsenv_offset_of_top_bias(lsenv));
+        ra_free_temp(top_bias);
         la_append_ir2_opnd2i(LISA_JIRL, zero_ir2_opnd, target_native_code_addr, 0);
         mips_num = 0;
         rotate_by_step_0_addr[step - 8] = rotate_by_step_0_addr[step] =
@@ -3009,6 +3010,7 @@ int generate_native_rotate_fpu_by(void *code_buf_addr)
     la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, rotation_code_addr, rotation_code_addr,
                       0);
     la_append_ir2_opnd2i(LISA_JIRL, zero_ir2_opnd, rotation_code_addr, 0);
+    ra_free_temp(rotation_code_addr);
 
     mips_num = 0;
     native_rotate_fpu_by = (ADDR)code_buf;
@@ -3164,7 +3166,7 @@ void tr_load_top_from_env(void)
         la_append_ir2_opnd3(LISA_BEQ, top_opnd, zero_ir2_opnd, label_exit);
         la_append_ir2_opnd2i_em(LISA_ADDI_W, top_opnd, top_opnd, -1);
     }
-
+    ra_free_temp(top_opnd);
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 }
 
@@ -3380,6 +3382,7 @@ void tr_save_fcsr_to_env(void)
     la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
     la_append_ir2_opnd2i(LISA_ST_W, fcsr_value_opnd, env_ir2_opnd,
                           lsenv_offset_of_fcsr(lsenv));
+    ra_free_temp(fcsr_value_opnd);
 }
 
 void tr_load_fcsr_from_env(void)
@@ -3388,6 +3391,7 @@ void tr_load_fcsr_from_env(void)
     la_append_ir2_opnd2i(LISA_LD_W, saved_fcsr_value_opnd, env_ir2_opnd,
                           lsenv_offset_of_fcsr(lsenv));
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, saved_fcsr_value_opnd);
+    ra_free_temp(saved_fcsr_value_opnd);
 }
 
 void tr_save_registers_to_env(uint8 gpr_to_save, uint8 fpr_to_save,
@@ -3627,7 +3631,6 @@ IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
     IR2_OPND label_lat_lock = ir2_opnd_new_type(IR2_OPND_LABEL);
     IR2_OPND label_locked= ir2_opnd_new_type(IR2_OPND_LABEL);
     IR2_OPND lat_lock_addr = ra_alloc_itemp();
-    int itemp_num = lsenv->tr_data->itemp_num;
     IR2_OPND lat_lock_val= ra_alloc_itemp();
     IR2_OPND cpu_index = ra_alloc_itemp();
     ir2_opnd_set_em(&lat_lock_addr, ZERO_EXTENSION, 64);
@@ -3653,7 +3656,6 @@ IR2_OPND tr_lat_spin_lock(IR2_OPND mem_addr, int imm)
 
     ra_free_temp(cpu_index);
     ra_free_temp(lat_lock_val);
-    lsenv->tr_data->itemp_num = itemp_num;
 
 	return lat_lock_addr;
 }

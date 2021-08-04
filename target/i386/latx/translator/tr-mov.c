@@ -146,6 +146,7 @@ bool translate_movzx(IR1_INST *pir1)
                 la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 31, 8);
                 la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, tmp_opnd, 7, 0);
             }
+            ra_free_temp(tmp_opnd);
         } else {
             la_append_ir2_opnd2ii(LISA_BSTRINS_D, dest_opnd, zero_ir2_opnd, 31, 16);
         }
@@ -181,7 +182,6 @@ bool translate_movsx(IR1_INST *pir1)
 
 static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
     IR2_OPND df_opnd = ra_alloc_itemp();
     IR2_OPND eflags_opnd = ra_alloc_eflags();
     la_append_ir2_opnd2i_em(LISA_ANDI, df_opnd, eflags_opnd, 0x400);
@@ -203,7 +203,6 @@ static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
     IR2_OPND tmp_step = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_SRAI_W, tmp_step, df_opnd, bits);
     la_append_ir2_opnd2i_em(LISA_ADDI_W, *p_step_opnd, tmp_step, 0 - bytes);
-    lsenv->tr_data->itemp_num = itemp_index;
 
     ra_free_temp(df_opnd);
     ra_free_temp(tmp_step);
@@ -400,7 +399,6 @@ bool translate_cmps(IR1_INST *pir1)
 
     /* 4. loop ends? */
     if (ir1_prefix(pir1) != 0) {
-        int itemp_index = lsenv->tr_data->itemp_num;
         la_append_ir2_opnd2i_em(LISA_ADDI_W, ecx_opnd, ecx_opnd, -1);
 
         /* 4.1. loop ends when ecx==0 */
@@ -422,8 +420,6 @@ bool translate_cmps(IR1_INST *pir1)
          */
         la_append_ir2_opnd3_em(LISA_OR, condition, condition, condition2);
         la_append_ir2_opnd3(LISA_BEQ, condition, zero_ir2_opnd, label_loop_begin);
-
-        lsenv->tr_data->itemp_num = itemp_index;
 
         ra_free_temp(condition);
         ra_free_temp(condition2);
@@ -541,7 +537,7 @@ bool translate_cmovo(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -562,7 +558,7 @@ bool translate_cmovo(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -593,7 +589,7 @@ bool translate_cmovno(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -614,7 +610,7 @@ bool translate_cmovno(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -645,7 +641,7 @@ bool translate_cmovb(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -666,7 +662,7 @@ bool translate_cmovb(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -697,7 +693,7 @@ bool translate_cmovae(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -718,7 +714,7 @@ bool translate_cmovae(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -749,7 +745,7 @@ bool translate_cmovz(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -770,7 +766,7 @@ bool translate_cmovz(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -801,7 +797,7 @@ bool translate_cmovnz(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -822,7 +818,7 @@ bool translate_cmovnz(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -853,7 +849,7 @@ bool translate_cmovbe(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -874,7 +870,7 @@ bool translate_cmovbe(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -905,7 +901,7 @@ bool translate_cmova(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -926,7 +922,7 @@ bool translate_cmova(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -957,7 +953,7 @@ bool translate_cmovs(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -978,7 +974,7 @@ bool translate_cmovs(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1009,7 +1005,7 @@ bool translate_cmovns(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1030,7 +1026,7 @@ bool translate_cmovns(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1061,7 +1057,7 @@ bool translate_cmovp(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1082,7 +1078,7 @@ bool translate_cmovp(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1113,7 +1109,7 @@ bool translate_cmovnp(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1134,7 +1130,7 @@ bool translate_cmovnp(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1165,7 +1161,7 @@ bool translate_cmovl(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1186,7 +1182,7 @@ bool translate_cmovl(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1217,7 +1213,7 @@ bool translate_cmovge(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1238,7 +1234,7 @@ bool translate_cmovge(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1269,7 +1265,7 @@ bool translate_cmovle(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1290,7 +1286,7 @@ bool translate_cmovle(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BEQZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1321,7 +1317,7 @@ bool translate_cmovg(IR1_INST *pir1)
         IR2_OPND dest_opnd =
             load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, src_opnd, zero_ir2_opnd);
     } else {
         lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16);
@@ -1342,7 +1338,7 @@ bool translate_cmovg(IR1_INST *pir1)
                              src_opnd);
         }
 
-        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2); 
+        la_append_ir2_opnd1i(LISA_BNEZ, neg_condition, 2);
         la_append_ir2_opnd3_em(LISA_OR, dest_opnd, dest_opnd_when_mov, zero_ir2_opnd);
         if (dest_opnd_when_mov_is_temp)
             ra_free_temp(dest_opnd_when_mov);
@@ -1529,8 +1525,8 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
      /*
      * There is only one parameter from IR1.
      * if EDX:EAX == m64
-     *      set ZF and m64 = ECX:EBX 
-     *  else 
+     *      set ZF and m64 = ECX:EBX
+     *  else
      *      clear ZF and EDX:EAX = m64
       */
     //IR2_OPND t_dest_opnd = ra_alloc_itemp();
@@ -1566,6 +1562,7 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
       */
     la_append_ir2_opnd2i_em(LISA_LD_D, src_opnd_0, mem_opnd, imm);
     la_append_ir2_opnd3(LISA_BNE, src_opnd_0, edx_eax_opnd, label_unequal);
+    ra_free_temp(edx_eax_opnd);
 
     /* equal */
     la_append_ir2_opnd2i(LISA_ST_D, ecx_ebx_opnd, mem_opnd, imm);
@@ -1573,6 +1570,7 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
     la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
     store_ireg_to_ir1(ecx_ebx_opnd, ir1_get_opnd(pir1, 0), false);
     la_append_ir2_opnd1(LISA_B, label_exit);
+    ra_free_temp(ecx_ebx_opnd);
 
     /* unequal */
     la_append_ir2_opnd1(LISA_LABEL, label_unequal);
@@ -1581,6 +1579,7 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
     store_ireg_to_ir1(src_opnd_0, reg_eax, false);
     la_append_ir2_opnd2i_em(LISA_SRLI_D, src_opnd_0, src_opnd_0, 32);
     store_ireg_to_ir1(src_opnd_0, reg_edx, false);
+    ra_free_temp(src_opnd_0);
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
     tr_lat_spin_unlock(lat_lock_addr);

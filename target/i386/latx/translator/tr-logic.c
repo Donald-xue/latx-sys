@@ -69,7 +69,7 @@ bool translate_and(IR1_INST *pir1)
     if (ir1_is_prefix_lock(pir1)) {
         tr_lat_spin_unlock(lat_lock_addr);
     }
- 
+
     ra_free_temp(dest_opnd);
     return true;
 #endif
@@ -181,6 +181,7 @@ bool translate_shl(IR1_INST *pir1)
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
+    ra_free_temp(count);
     ra_free_temp(dest);
     return true;
 #endif
@@ -268,6 +269,7 @@ bool translate_sar(IR1_INST *pir1)
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
+    ra_free_temp(count);
     ra_free_temp(dest);
     return true;
 #endif
@@ -298,7 +300,7 @@ bool translate_rol(IR1_INST *pir1)
         }
         else if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32){
             la_append_ir2_opnd2(LISA_X86ROTL_W, dest, original_count);
-        } 
+        }
     }
 
 
@@ -362,7 +364,7 @@ bool translate_ror(IR1_INST *pir1)
         }
         else if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32){
             la_append_ir2_opnd2(LISA_X86ROTR_W, dest, original_count);
-        } 
+        }
     }
 
 
@@ -429,8 +431,9 @@ bool translate_rcl(IR1_INST *pir1)
         la_append_ir2_opnd2i_em(LISA_SLLI_D, cf, cf, 32);
     else
         la_append_ir2_opnd2i_em(LISA_SLLI_D, cf, cf, ir1_opnd_size(ir1_get_opnd(pir1, 0)));
-    IR2_OPND tmp_dest = tmp_imm;
+    IR2_OPND tmp_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, tmp_dest, dest, cf);
+    ra_free_temp(cf);
 
     IR2_OPND high_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_SLL_D, high_dest, tmp_dest, count);
@@ -444,19 +447,18 @@ bool translate_rcl(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_SRL_D, low_dest, tmp_dest, tmp_count);
     ra_free_temp(tmp_count);
     ra_free_temp(tmp_dest);
-    ra_free_temp(cf);
 
-    IR2_OPND final_dest = tmp_count;
+    IR2_OPND final_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, final_dest, high_dest, low_dest);
+    ra_free_temp(high_dest);
+    ra_free_temp(low_dest);
 
     generate_eflag_calculation(final_dest, dest, count, pir1, true);
+    ra_free_temp(count);
 
     store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
 
-    ra_free_temp(high_dest);
-    ra_free_temp(low_dest);
     ra_free_temp(final_dest);
-    ra_free_temp(count);
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
     return true;
@@ -492,8 +494,9 @@ bool translate_rcr(IR1_INST *pir1)
         la_append_ir2_opnd2i_em(LISA_SLLI_D, cf, cf, 32);
     else
         la_append_ir2_opnd2i_em(LISA_SLLI_D, cf, cf, ir1_opnd_size(ir1_get_opnd(pir1, 0)));
-    IR2_OPND tmp_dest = tmp_imm;
+    IR2_OPND tmp_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, tmp_dest, dest, cf);
+    ra_free_temp(cf);
 
     IR2_OPND low_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_SRL_D, low_dest, tmp_dest, count);
@@ -507,19 +510,18 @@ bool translate_rcr(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_SLL_D, high_dest, tmp_dest, tmp_count);
     ra_free_temp(tmp_count);
     ra_free_temp(tmp_dest);
-    ra_free_temp(cf);
 
-    IR2_OPND final_dest = tmp_count;
+    IR2_OPND final_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, final_dest, high_dest, low_dest);
+    ra_free_temp(low_dest);
+    ra_free_temp(high_dest);
 
     generate_eflag_calculation(final_dest, dest, count, pir1, true);
+    ra_free_temp(count);
 
     store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
 
-    ra_free_temp(high_dest);
-    ra_free_temp(low_dest);
     ra_free_temp(final_dest);
-    ra_free_temp(count);
 
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
     return true;
@@ -543,7 +545,7 @@ bool translate_shrd_cl(IR1_INST *pir1)
     ra_free_temp(size);
 
     IR2_OPND dest_opnd = load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
-    IR2_OPND low_dest = size;
+    IR2_OPND low_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_SRL_D, low_dest, dest_opnd, count);
 
     IR2_OPND src_opnd =
@@ -552,18 +554,17 @@ bool translate_shrd_cl(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_SLL_D, high_dest, src_opnd, left_count);
     ra_free_temp(left_count);
 
-    IR2_OPND final_dest = left_count;
+    IR2_OPND final_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, final_dest, high_dest, low_dest);
-
-    generate_eflag_calculation(final_dest, dest_opnd, count, pir1, true);
-
-    ra_free_all_internal_temp();
-    store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
-
     ra_free_temp(low_dest);
     ra_free_temp(high_dest);
-    ra_free_temp(final_dest);
+
+    generate_eflag_calculation(final_dest, dest_opnd, count, pir1, true);
     ra_free_temp(count);
+
+    store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
+
+    ra_free_temp(final_dest);
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
     return true;
@@ -590,14 +591,14 @@ bool translate_shrd_imm(IR1_INST *pir1)
 
     IR2_OPND final_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, final_dest, high_dest, low_dest);
+    ra_free_temp(low_dest);
+    ra_free_temp(high_dest);
 
     IR2_OPND count_opnd = ir2_opnd_new(IR2_OPND_IMM, (int16)count);
     generate_eflag_calculation(final_dest, dest_opnd, count_opnd, pir1, true);
 
     store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
 
-    ra_free_temp(low_dest);
-    ra_free_temp(high_dest);
     ra_free_temp(final_dest);
 
     return true;
@@ -634,7 +635,7 @@ bool translate_shld_cl(IR1_INST *pir1)
     ra_free_temp(size);
 
     IR2_OPND dest_opnd = load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
-    IR2_OPND high_dest = size;
+    IR2_OPND high_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_SLL_D, high_dest, dest_opnd, count);
 
     IR2_OPND src_opnd =
@@ -643,18 +644,17 @@ bool translate_shld_cl(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_SRL_D, low_dest, src_opnd, left_count);
     ra_free_temp(left_count);
 
-    IR2_OPND final_dest = left_count;
+    IR2_OPND final_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, final_dest, high_dest, low_dest);
-
-    generate_eflag_calculation(final_dest, dest_opnd, count, pir1, true);
-
-    ra_free_all_internal_temp();
-    store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
-
     ra_free_temp(low_dest);
     ra_free_temp(high_dest);
-    ra_free_temp(final_dest);
+
+    generate_eflag_calculation(final_dest, dest_opnd, count, pir1, true);
     ra_free_temp(count);
+
+    store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
+
+    ra_free_temp(final_dest);
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
     return true;
@@ -681,14 +681,14 @@ bool translate_shld_imm(IR1_INST *pir1)
 
     IR2_OPND final_dest = ra_alloc_itemp();
     la_append_ir2_opnd3_em(LISA_OR, final_dest, high_dest, low_dest);
+    ra_free_temp(low_dest);
+    ra_free_temp(high_dest);
 
     IR2_OPND count_opnd = ir2_opnd_new(IR2_OPND_IMM, (int16)count);
     generate_eflag_calculation(final_dest, dest_opnd, count_opnd, pir1, true);
 
     store_ireg_to_ir1(final_dest, ir1_get_opnd(pir1, 0), false);
 
-    ra_free_temp(low_dest);
-    ra_free_temp(high_dest);
     ra_free_temp(final_dest);
 
     return true;

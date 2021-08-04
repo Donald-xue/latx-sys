@@ -130,9 +130,17 @@ IR2_OPND ra_alloc_itemp(void)
     int itemp_index = (lsenv->tr_data->itemp_num)++;
     IR2_OPND ir2_opnd;
 
-    lsassert(itemp_index < 10);
+    lsassert(itemp_index < itemp_status_num);
 
-    int itemp_num = itemp_status_default[itemp_index%10].physical_id;
+    int itemp_num = -1;
+    for (int i = 0; i < itemp_status_num; ++i) {
+        if (!lsenv->tr_data->itemp_status[i].is_used) {
+            lsenv->tr_data->itemp_status[i].is_used = true;
+            itemp_num = lsenv->tr_data->itemp_status[i].physical_id;
+            break;
+        }
+    }
+    lsassertm(itemp_num != -1, "ra_alloc_itemp failed");
 
     lsenv->tr_data->ireg_em[itemp_num] = UNKNOWN_EXTENSION;
     lsenv->tr_data->ireg_eb[itemp_num] = 32;
@@ -145,9 +153,18 @@ IR2_OPND ra_alloc_ftemp(void)
 {
     int ftemp_index = (lsenv->tr_data->ftemp_num)++;
 
-    lsassert(ftemp_index < 7);
+    lsassert(ftemp_index < ftemp_status_num);
 
-    int ftemp_num = ftemp_status_default[ftemp_index%7].physical_id;
+    int ftemp_num = -1;
+    for (int i = 0; i < ftemp_status_num; ++i) {
+        if (!lsenv->tr_data->ftemp_status[i].is_used) {
+            lsenv->tr_data->ftemp_status[i].is_used = true;
+            ftemp_num = lsenv->tr_data->ftemp_status[i].physical_id;
+            break;
+        }
+    }
+    lsassertm(ftemp_num != -1, "ra_alloc_ftemp failed");
+
     return ir2_opnd_new(IR2_OPND_FREG, ftemp_num);
 }
 
@@ -155,16 +172,58 @@ IR2_OPND ra_alloc_itemp_internal(void) { return ra_alloc_itemp(); }
 
 IR2_OPND ra_alloc_ftemp_internal(void) { return ra_alloc_ftemp(); }
 
-void ra_free_temp(IR2_OPND opnd) {}
-void ra_free_all_internal_temp(void) {
+void ra_free_temp(IR2_OPND opnd)
+{
+    if (ir2_opnd_is_itemp(&opnd)) {
+        ra_free_itemp(opnd._reg_num);
+    } else if (ir2_opnd_is_ftemp(&opnd)) {
+        ra_free_ftemp(opnd._reg_num);
+    } else {
+        lsassertm(0, "attempt to free a non-temp register");
+    }
+}
+
+void ra_free_all_internal_temp(void)
+{
     /* reset itemp_num*/
     TRANSLATION_DATA *tr_data = lsenv->tr_data;
 
+    ra_init();
     tr_data->itemp_num = 0;
     tr_data->ftemp_num = 0;
 }
-void ra_free_itemp(int i) {}
-void ra_free_ftemp(int i) {}
+
+void ra_free_itemp(int phy_id)
+{
+    bool freed = false;
+    for (int i = 0; i < itemp_status_num; ++i) {
+        if (lsenv->tr_data->itemp_status[i].physical_id == phy_id) {
+            lsassertm(lsenv->tr_data->itemp_status[i].is_used,
+                      "attempt to free a unallocated itemp register %d", phy_id);
+            lsenv->tr_data->itemp_status[i].is_used = false;
+            lsenv->tr_data->itemp_num--;
+            freed = true;
+            break;
+        }
+    }
+    lsassertm(freed, "ra_free_itemp failed");
+}
+
+void ra_free_ftemp(int phy_id)
+{
+    bool freed = false;
+    for (int i = 0; i < ftemp_status_num; ++i) {
+        if (lsenv->tr_data->ftemp_status[i].physical_id == phy_id) {
+            lsassertm(lsenv->tr_data->ftemp_status[i].is_used,
+                      "attempt to free a unallocated ftemp register %d", phy_id);
+            lsenv->tr_data->ftemp_status[i].is_used = false;
+            lsenv->tr_data->ftemp_num--;
+            freed = true;
+            break;
+        }
+    }
+    lsassertm(freed, "ra_free_ftemp failed");
+}
 
 EXTENSION_MODE ir2_opnd_default_em(IR2_OPND *opnd)
 {

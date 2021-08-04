@@ -637,11 +637,10 @@ void ss_gen_push(IR1_INST *pir1) {
         assert(ir1_is_indirect_call(pir1));
         IR2_OPND next_execut_pc = ra_alloc_dbt_arg2();
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, next_execut_pc, ss_opnd, (int)offsetof(SS_ITEM, x86_callee_addr));
-        ra_free_temp(next_execut_pc);
         //debug_type = 2;//callin
     }
 
-    // 3. store ret_tb onto ss 
+    /* 3. store ret_tb onto ss */
     IR2_OPND ret_tb_opnd = ra_alloc_itemp();
     ETB *etb = etb_find(ir1_addr_next(pir1));
     load_ireg_from_addr(ret_tb_opnd, (ADDR)etb);
@@ -649,7 +648,7 @@ void ss_gen_push(IR1_INST *pir1) {
 
     // 4. adjust ss (ss_curr++ )
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDR, ss_opnd, ss_opnd, sizeof(SS_ITEM));
-    
+
     ra_free_temp(ret_tb_opnd);
     return;
 }
@@ -679,6 +678,7 @@ bool translate_call(IR1_INST *pir1)
         la_append_ir2_opnd3_em(LISA_ADD_ADDR, tmp, esp_opnd, gbase);
         ir2_opnd_set_em(&tmp, EM_MIPS_ADDRESS, 32);
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, tmp, 0);
+        ra_free_temp(tmp);
     } else {
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, esp_opnd, 0);
     }
@@ -717,6 +717,7 @@ bool translate_callnext(IR1_INST *pir1)
         la_append_ir2_opnd3_em(LISA_ADD_ADDR, tmp, esp_opnd, gbase);
         ir2_opnd_set_em(&tmp, EM_MIPS_ADDRESS, 32);
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, next_addr, tmp, 0);
+        ra_free_temp(tmp);
     } else {
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, next_addr, esp_opnd, 0);
     }
@@ -736,9 +737,8 @@ bool translate_callin(IR1_INST *pir1)
     IR2_OPND succ_x86_addr_opnd = ra_alloc_dbt_arg2();
     load_ireg_from_ir1_2(succ_x86_addr_opnd, ir1_get_opnd(pir1, 0), ZERO_EXTENSION,
                          false);
-    ra_free_temp(succ_x86_addr_opnd);
 
-    /* 
+    /*
      * 2. adjust esp
      * NOTE: There is a corner case during wine kernel32 virtual unit test.
      * If esp updated at the begin of the insn, once stw trigger the segv,
@@ -764,6 +764,7 @@ bool translate_callin(IR1_INST *pir1)
         la_append_ir2_opnd3_em(LISA_ADD_ADDR, tmp, temp_esp, gbase);
         ir2_opnd_set_em(&tmp, EM_MIPS_ADDRESS, 32);
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, tmp, 0);
+        ra_free_temp(tmp);
     } else {
         la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, return_addr_opnd, temp_esp, 0);
     }
@@ -772,8 +773,9 @@ bool translate_callin(IR1_INST *pir1)
     ra_free_temp(return_addr_opnd);
     ra_free_temp(temp_esp);
     /* 4. push esp, callee_addr, ret_tb onto shadow statck */
-    if(option_shadow_stack) 
-         ss_gen_push(pir1); 
+    if (option_shadow_stack) {
+        ss_gen_push(pir1);
+    }
 
     /* 5. adjust em to defaul em */
     tr_adjust_em();
@@ -803,6 +805,7 @@ bool translate_iret(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_LD_W, eflags_opnd, esp_opnd, 8);
     ir1_opnd_build_reg(&seg_opnd, 16, X86_REG_CS);
     store_ireg_to_ir1_seg(cs_opnd, &seg_opnd);
+    ra_free_temp(cs_opnd);
 
     la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_opnd, 0x3f);
     /* 2. adjust esp */
@@ -840,13 +843,14 @@ bool translate_ret_with_ss_opt(IR1_INST *pir1) {
     int esp_change_imm = 4;
     if(pir1!=NULL && ir1_opnd_num(pir1) && ir1_opnd_type(ir1_get_opnd(pir1, 0))==X86_OP_IMM)
         esp_change_imm = ir1_opnd_uimm(ir1_get_opnd(pir1, 0)) + 4;
-    
+
     /*1. load supposed returning target TB */
     IR2_OPND ss_opnd = ra_alloc_ss();
     IR2_OPND ss_etb = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, ss_etb, ss_opnd, -(int)sizeof(SS_ITEM)+(int)offsetof(SS_ITEM, return_tb));
     IR2_OPND supposed_tb = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, supposed_tb, ss_etb, offsetof(ETB, tb));
+    ra_free_temp(ss_etb);
 
     /*2. pop return target address from x86 stack */
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
@@ -865,11 +869,10 @@ bool translate_ret_with_ss_opt(IR1_INST *pir1) {
     IR2_OPND label_match_fail = ir2_opnd_new_type(IR2_OPND_LABEL);
     la_append_ir2_opnd3(LISA_BNE, supposed_x86_addr, return_addr_opnd, label_match_fail);
     ra_free_temp(supposed_x86_addr);
-    ra_free_temp(return_addr_opnd);
 
     // 5. find next tb,dirctly jmp
     IR2_OPND supposed_native_addr = ra_alloc_itemp();
-    la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, supposed_native_addr, supposed_tb, 
+    la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, supposed_native_addr, supposed_tb,
         offsetof(TranslationBlock, tc) + offsetof(struct tb_tc,ptr));
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDR, ss_opnd, ss_opnd, -(int)sizeof(SS_ITEM));
 
@@ -882,9 +885,9 @@ bool translate_ret_with_ss_opt(IR1_INST *pir1) {
     IR2_OPND rotate_step = ra_alloc_dbt_arg1();
     IR2_OPND rotate_ret_addr = ra_alloc_dbt_arg2();
     IR2_OPND label_no_rotate = ir2_opnd_new_type(IR2_OPND_LABEL);
-    la_append_ir2_opnd2i_em(LISA_LD_BU, top_out, last_executed_tb, 
+    la_append_ir2_opnd2i_em(LISA_LD_BU, top_out, last_executed_tb,
         offsetof(TranslationBlock,_top_out));
-    la_append_ir2_opnd2i_em(LISA_LD_BU, top_in, supposed_tb, 
+    la_append_ir2_opnd2i_em(LISA_LD_BU, top_in, supposed_tb,
         offsetof(TranslationBlock, _top_in));
     la_append_ir2_opnd3(LISA_BEQ, top_out, top_in, label_no_rotate);
     ra_free_temp(supposed_tb);
@@ -919,12 +922,11 @@ bool translate_ret_with_ss_opt(IR1_INST *pir1) {
     la_append_ir2_opnd1(LISA_LABEL, label_match_fail);
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, -esp_change_imm);
     IR2_OPND esp_change_bytes = ra_alloc_mda();
-    la_append_ir2_opnd2i_em(LISA_ADDI_W, esp_change_bytes, zero_ir2_opnd, esp_change_imm); 
+    la_append_ir2_opnd2i_em(LISA_ADDI_W, esp_change_bytes, zero_ir2_opnd, esp_change_imm);
     // prepare the last executed tb, and jump to the adjustment
     load_ireg_from_imm64(tb_ptr_opnd, (ADDR)curr_tb );
     la_append_ir2_opnda(LISA_B, ss_match_fail_native);//TODO reloc
-    ra_free_temp(tb_ptr_opnd);
-    
+
     return true;
 }
 
@@ -933,10 +935,11 @@ bool translate_ret(IR1_INST *pir1)
 #ifdef CONFIG_SOFTMMU
     return latxs_translate_ret(pir1);
 #else
-    if (option_shadow_stack)
-        return translate_ret_with_ss_opt(pir1); 
-    else 
+    if (option_shadow_stack) {
+        return translate_ret_with_ss_opt(pir1);
+    } else {
         return translate_ret_without_ss_opt(pir1);
+    }
 #endif
 }
 
@@ -1020,6 +1023,7 @@ bool translate_int(IR1_INST *pir1)
     load_ireg_from_addrx(intno, ir1_get_opnd(pir1, 0)->imm);
     la_append_ir2_opnd2i(LISA_ST_W, intno, env_ir2_opnd,
                       lsenv_offset_exception_index(lsenv));
+    ra_free_temp(intno);
 
     /* * store next pc to CPUX86State */
     IR2_OPND next_pc = ra_alloc_itemp();
@@ -1027,12 +1031,14 @@ bool translate_int(IR1_INST *pir1)
     load_ireg_from_addrx(next_pc, ir1_addr_next(pir1));
     la_append_ir2_opnd2i_em(LISA_STORE_ADDRX, next_pc, env_ir2_opnd,
                       lsenv_offset_exception_next_eip(lsenv));
+    ra_free_temp(next_pc);
 
     /* * store curr_tb to last_executed_tb */
     IR2_OPND tb = ra_alloc_itemp();
     load_ireg_from_addr(tb, (ADDR)lsenv->tr_data->curr_tb);
     la_append_ir2_opnd2i_em(LISA_STORE_ADDR, tb, env_ir2_opnd,
                       lsenv_offset_of_last_executed_tb(lsenv));
+    ra_free_temp(tb);
 
     /* * call helper function */
     IR2_OPND helper_addr_opnd = ra_alloc_dbt_arg2();
@@ -1046,6 +1052,7 @@ bool translate_int(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_LD_W, fcsr_value_opnd, env_ir2_opnd,
                           lsenv_offset_of_fcsr(lsenv));
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
+    ra_free_temp(fcsr_value_opnd);
 
     return true;
 #endif
@@ -1144,12 +1151,12 @@ bool translate_sahf(IR1_INST *pir1)
     return true;
 }
 
-bool translate_lahf(IR1_INST *pir1) 
+bool translate_lahf(IR1_INST *pir1)
 {
     IR2_OPND ah = ra_alloc_itemp();
     la_append_ir2_opnd1i_em(LISA_X86MFFLAG, ah, 0x1f);
     la_append_ir2_opnd2i_em(LISA_ORI, ah, ah, 0x2);
-    store_ireg_to_ir1(ah, &ah_ir1_opnd, false); 
+    store_ireg_to_ir1(ah, &ah_ir1_opnd, false);
     ra_free_temp(ah);
     return true;
 }
@@ -1332,11 +1339,12 @@ bool translate_fnsave(IR1_INST *pir1)
     IR2_OPND temp_1 = ra_alloc_itemp();
     load_ireg_from_imm32(temp_1, 0xffff0000ULL, UNKNOWN_EXTENSION);
     la_append_ir2_opnd3_em(LISA_AND, value, value, temp_1);
-    la_append_ir2_opnd2i(LISA_ST_W, value,
-                         mem_opnd, offset + 8);
+    ra_free_temp(temp_1);
+    la_append_ir2_opnd2i(LISA_ST_W, value, mem_opnd, offset + 8);
+    ra_free_temp(value);
 
-    la_append_ir2_opnd2i(LISA_ST_W, temp,
-		        mem_opnd, offset + 24);
+    la_append_ir2_opnd2i(LISA_ST_W, temp, mem_opnd, offset + 24);
+    ra_free_temp(temp);
 
     /* store x87 registers stack */
     int i;
@@ -1449,7 +1457,7 @@ bool translate_prefetcht0(IR1_INST *pir1)
     return true;
 }
 
-bool translate_prefetchw(IR1_INST *pir1) 
+bool translate_prefetchw(IR1_INST *pir1)
 {
     IR2_OPND mem = convert_mem_opnd(ir1_get_opnd(pir1, 0));
     la_append_ir2_opnd1i(LISA_PRELDX, mem, 0);

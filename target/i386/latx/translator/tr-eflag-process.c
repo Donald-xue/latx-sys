@@ -276,7 +276,6 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 
 static void generate_pf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
     static char pf_table[256] = {
         4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 0, 4, 4, 0, 4, 0,
         0, 4, 4, 0, 0, 4, 0, 4, 4, 0, 0, 4, 4, 0, 4, 0, 0, 4, 4, 0, 0, 4,
@@ -304,12 +303,10 @@ static void generate_pf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, pf_opnd, 0x2);
     ra_free_temp(pf_opnd);
     ra_free_temp(low_byte);
-    lsenv->tr_data->itemp_num = itemp_index;
 }
 
 static void generate_af(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
     IR2_OPND af_opnd = ra_alloc_itemp();
     if (ir2_opnd_is_imm(&src1)) {
         la_append_ir2_opnd2i_em(LISA_XORI, af_opnd, src0, src1._imm16);
@@ -320,14 +317,11 @@ static void generate_af(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd2i_em(LISA_ANDI, af_opnd, af_opnd, 0x10);
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, af_opnd, 0x4);
     ra_free_temp(af_opnd);
-    lsenv->tr_data->itemp_num = itemp_index;
 
 }
 
 static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
-
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
 
     int operation_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
@@ -344,6 +338,7 @@ static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         load_ireg_from_imm32(offset_imm16, 0xffff, ZERO_EXTENSION);
         la_append_ir2_opnd3_em(LISA_AND, extended_dest_opnd, dest, offset_imm16);
         //append_ir2_opnd2i(mips_andi, extended_dest_opnd, dest, 0xffff);
+        ra_free_temp(offset_imm16);
     }
     else if (operation_size == 32 && ir2_opnd_is_ax(&dest, 32))
         la_append_ir2_opnd2_em(LISA_MOV32_SX, extended_dest_opnd, dest);
@@ -371,17 +366,14 @@ static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd1(LISA_LABEL, is_zero);
 
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, temp_eflags, 0x8);
-    if (!extended_dest_opnd_freed)
-    ra_free_temp(extended_dest_opnd);
+    if (!extended_dest_opnd_freed) {
+        ra_free_temp(extended_dest_opnd);
+    }
     ra_free_temp(temp_eflags);
-    lsenv->tr_data->itemp_num = itemp_index;
-
 }
 
 static void generate_sf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
-
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
     int operation_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
     IR2_OPND sf_opnd = ra_alloc_itemp();
@@ -393,14 +385,10 @@ static void generate_sf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 
     la_append_ir2_opnd1i_em(LISA_X86MTFLAG, sf_opnd, 0x10);
     ra_free_temp(sf_opnd);
-    lsenv->tr_data->itemp_num = itemp_index;
-
 }
 
 static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 {
-    int itemp_index = lsenv->tr_data->itemp_num;
-
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
     /* IR2_OPND eflags_opnd = ra_alloc_eflags(); */
     switch (ir1_opcode(pir1)) {
@@ -768,6 +756,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             la_append_ir2_opnd3_em(LISA_AND, t_of_opnd, t_of_opnd, offset);
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_of_opnd, 0x20);
             ra_free_temp(t_of_opnd);
+            ra_free_temp(offset);
         } else {
             IR2_OPND t_of_opnd = ra_alloc_itemp();
             IR2_OPND offset = ra_alloc_itemp();
@@ -783,6 +772,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_of_opnd, 0x20);
             la_append_ir2_opnd1(LISA_LABEL, label_temp);
             ra_free_temp(t_of_opnd);
+            ra_free_temp(offset);
         }
         return;
     }
@@ -854,7 +844,6 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     default:
         break;
     }
-    lsenv->tr_data->itemp_num = itemp_index;
 
     /* lsenv->tr_data->curr_tb->dump(); */
     lsassertm(0, "%s for %s is not implemented\n", __FUNCTION__,
