@@ -471,6 +471,7 @@ static void load_imm64(IR2_OPND opnd2, int64 value)
             la_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value >> 32);
         } else if ((value & 0xfff) == 0) {
             la_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
+            la_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value >> 32);
         } else {
             la_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
             la_append_ir2_opnd2i(LISA_ORI, opnd2, opnd2, value & 0xfff);
