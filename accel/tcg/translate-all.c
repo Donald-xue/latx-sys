@@ -275,6 +275,36 @@ static void set_prot_with_aux(FragDesc *fd, int i, char prot, char aux)
     *proti = prot | aux;
 }
 
+bool in_frag_map(uint64_t addr)
+{
+    if (is_frag_map_inited()) {
+        if (g_hash_table_lookup(frag_map, (void *)addr)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void update_prot(FragDesc *fd, int i, char prot)
+{
+    char *proti = &g_array_index(fd->prots, char, i);
+    prot &= PAGE_BITS;
+    *proti &= ~PAGE_BITS;
+    *proti |= prot;
+}
+
+void update_prot_one_hostpage(uint64_t host_start, int prot)
+{
+    int i;
+    FragDesc *fd = g_hash_table_lookup(frag_map, (void *)host_start);
+
+    if (fd) {
+        for (i = 0; i < qemu_host_page_size / TARGET_PAGE_SIZE; i++) {
+            update_prot(fd, i, prot);
+        }
+    }
+}
+
 uint64_t get_frag_map(uint64_t key)
 {
     int prot;

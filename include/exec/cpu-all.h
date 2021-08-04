@@ -308,6 +308,8 @@ void *page_alloc_target_data(target_ulong address, size_t size);
  */
 void *page_get_target_data(target_ulong address);
 
+bool in_frag_map(uint64_t addr);
+void update_prot_one_hostpage(uint64_t host_start, int prot);
 unsigned long get_frag_map(unsigned long key);
 void insert_frag_map(unsigned long key, unsigned long value,
         uint64_t prot, int sn);
