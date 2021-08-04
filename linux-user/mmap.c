@@ -654,13 +654,6 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int target_prot,
            aligned, so we read it */
         if (!(flags & MAP_ANONYMOUS) &&
             (offset & ~qemu_host_page_mask) != (start & ~qemu_host_page_mask)) {
-            /* msync() won't work here, so we return an error if write is
-               possible while it is a shared mapping */
-            if ((flags & MAP_TYPE) == MAP_SHARED &&
-                (host_prot & PROT_WRITE)) {
-                errno = EINVAL;
-                goto fail;
-            }
             retaddr = target_mmap(start, len, target_prot | PROT_WRITE,
                                   MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS,
                                   -1, 0);
