@@ -145,9 +145,6 @@ void tr_init(void *tb)
 #endif
     } else
         t->curr_top = 0;
-
-    /* pushpop */
-    t->curr_esp_need_decrease = 0;
 }
 
 void tr_fini(bool check_the_extension)

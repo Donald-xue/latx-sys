@@ -11,58 +11,37 @@ bool translate_pop(IR1_INST *pir1)
     return latxs_translate_pop(pir1);
 #else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-
-    int esp_increment = 4;
-    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16)
-        esp_increment = 2;
-
-    /* 1. if esp is used or this pir1 is the last pushpop, We should update esp
-     */
-    /* first; o.w, increase curr_esp_need_decrease */
-    IR1_OPCODE next_opcode = ir1_opcode((IR1_INST *)(pir1 + 1));
-    if (ir1_opnd_is_gpr_used(ir1_get_opnd(pir1, 0), esp_index) ||
-        (next_opcode != X86_INS_PUSH && next_opcode != X86_INS_POP &&
-         next_opcode != X86_INS_PUSHF && next_opcode != X86_INS_POPF)) {
-        if (esp_increment - lsenv->tr_data->curr_esp_need_decrease != 0) {
-            la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
-                esp_increment - lsenv->tr_data->curr_esp_need_decrease);
-        }
-        lsenv->tr_data->curr_esp_need_decrease = 0;
-    } else {
-        lsenv->tr_data->curr_esp_need_decrease -= esp_increment;
-    }
+    IR1_OPND mem_ir1_opnd;
+    int esp_increment;
+    int has_esp = ir1_opnd_is_gpr_used(ir1_get_opnd(pir1, 0), esp_index);
 
     /*  2. pop value from mem */
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
-        IR1_OPND mem_ir1_opnd;
-        // ir1_opnd_build_mem(&mem_ir1_opnd, IR1_OPND_MEM, 16, 4,
-        //                -esp_increment - lsenv->tr_data->curr_esp_need_decrease);
-        ir1_opnd_build_mem(&mem_ir1_opnd, 16, X86_REG_ESP, 
-                        -esp_increment - lsenv->tr_data->curr_esp_need_decrease);
+        esp_increment = 2;
+        ir1_opnd_build_mem(&mem_ir1_opnd, 16, X86_REG_ESP, 0);
 
         if (ir1_opnd_is_gpr(ir1_get_opnd(pir1, 0)) &&
             ir1_opnd_is_zx(ir1_get_opnd(pir1, 0), 16)) {
-            /* when dest is gpr, and high 16 bits are zero, load into gpr */
-            /* directly */
             IR2_OPND dest_opnd =
                 load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
             load_ireg_from_ir1_2(dest_opnd, &mem_ir1_opnd, ZERO_EXTENSION,
-                                 false);
+                                                    false);
         } else {
             /* load value */
             IR2_OPND value_opnd =
                 load_ireg_from_ir1(&mem_ir1_opnd, ZERO_EXTENSION, false);
-            store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false);
+            IR1_OPND *dest_ir1_opnd = ir1_get_opnd(pir1, 0);
+            if (has_esp) {
+                dest_ir1_opnd->mem.disp += esp_increment;
+            }
+            store_ireg_to_ir1(value_opnd, dest_ir1_opnd, false);
         }
+        la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
+                                                    esp_increment);
     } else {
-        IR1_OPND mem_ir1_opnd;
-        // ir1_opnd_build(&mem_ir1_opnd, IR1_OPND_MEM, 32, 4,
-        //                -esp_increment - lsenv->tr_data->curr_esp_need_decrease);
-        ir1_opnd_build_mem(&mem_ir1_opnd, 32, X86_REG_ESP,
-                       -esp_increment - lsenv->tr_data->curr_esp_need_decrease);
-
+        esp_increment = 4;
+        ir1_opnd_build_mem(&mem_ir1_opnd, 32, X86_REG_ESP, 0);
         if (ir1_opnd_is_gpr(ir1_get_opnd(pir1, 0))) {
-            /* when dest is gpr, load into gpr directly */
             IR2_OPND dest_opnd =
                 load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
             EXTENSION_MODE dest_em = SIGN_EXTENSION;
@@ -70,14 +49,23 @@ bool translate_pop(IR1_INST *pir1)
                 dest_em = ZERO_EXTENSION;
 
             load_ireg_from_ir1_2(dest_opnd, &mem_ir1_opnd, dest_em, false);
+            if (!has_esp) {
+                la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
+                                                            esp_increment);
+            }
         } else {
             /* dest is mem, as normal */
             IR2_OPND value_opnd =
                 load_ireg_from_ir1(&mem_ir1_opnd, SIGN_EXTENSION, false);
-            store_ireg_to_ir1(value_opnd, ir1_get_opnd(pir1, 0), false); /* TODO */
+            IR1_OPND *dest_ir1_opnd = ir1_get_opnd(pir1, 0);
+            if (has_esp) {
+                dest_ir1_opnd->mem.disp += esp_increment;
+            }
+            store_ireg_to_ir1(value_opnd, dest_ir1_opnd, false);
+            la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
+                                                            esp_increment);
         }
     }
-
     return true;
 #endif
 }
@@ -87,40 +75,25 @@ bool translate_push(IR1_INST *pir1)
 #ifdef CONFIG_SOFTMMU
     return latxs_translate_push(pir1);
 #else
-    /* 1. if esp is used by push, update esp now */
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-    if ((ir1_opnd_is_gpr_used(ir1_get_opnd(pir1, 0), esp_index) != 0) &&
-        (lsenv->tr_data->curr_esp_need_decrease != 0)) {
-        la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
-                          -lsenv->tr_data->curr_esp_need_decrease);
-        lsenv->tr_data->curr_esp_need_decrease = 0;
-    }
-
     int esp_decrement = 4;
-    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16)
+
+    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
         esp_decrement = 2;
+    }
 
     /* 2. push value onto stack */
     IR1_OPND mem_ir1_opnd;
-    // ir1_opnd_build(&mem_ir1_opnd, IR1_OPND_MEM, esp_decrement << 3, 4,
-    //                -esp_decrement - lsenv->tr_data->curr_esp_need_decrease);
+
     ir1_opnd_build_mem(&mem_ir1_opnd, esp_decrement << 3, X86_REG_ESP,
-                    -esp_decrement - lsenv->tr_data->curr_esp_need_decrease);
+                    -esp_decrement);
 
     IR2_OPND value_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0), UNKNOWN_EXTENSION, false);
     store_ireg_to_ir1(value_opnd, &mem_ir1_opnd, false);
 
-    /* 3. adjust esp */
-    IR1_OPCODE next_opcode = ir1_opcode(((IR1_INST *)(pir1 + 1)));
-    if (next_opcode != X86_INS_PUSH && next_opcode != X86_INS_POP &&
-        next_opcode != X86_INS_PUSHF && next_opcode != X86_INS_POPF) {
-        la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
-            -esp_decrement - lsenv->tr_data->curr_esp_need_decrease);
-        lsenv->tr_data->curr_esp_need_decrease = 0;
-    } else
-        lsenv->tr_data->curr_esp_need_decrease += esp_decrement;
-
+    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
+                    -esp_decrement);
     return true;
 #endif
 }
@@ -1720,9 +1693,6 @@ bool translate_pusha(IR1_INST *pir1) {
     return latxs_translate_pusha(pir1);
 #else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
-                              -lsenv->tr_data->curr_esp_need_decrease);
-    lsenv->tr_data->curr_esp_need_decrease = 0;
 
     int esp_decrement = 4;
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16)
@@ -1745,9 +1715,6 @@ bool translate_popa(IR1_INST *pir1) {
     return latxs_translate_popa(pir1);
 #else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-    la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
-                              -lsenv->tr_data->curr_esp_need_decrease);
-    lsenv->tr_data->curr_esp_need_decrease = 0;
 
     int esp_increment = 4;
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16)

@@ -94,7 +94,6 @@ typedef struct TRANSLATION_DATA {
     TEMP_REG_STATUS ftemp_status[ftemp_status_num];
 
     int curr_top;               /* top value (changes when translating) */
-    int curr_esp_need_decrease; /* curr_esp need to decrease */
 
     /* TODO : support static translation */
     uint8 curr_ir1_skipped_eflags; /* these eflag calculation can be skipped */
