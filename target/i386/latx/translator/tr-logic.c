@@ -319,9 +319,9 @@ bool translate_rol(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_SRL_D, high_dest, dest, tmp_count);
     ra_free_temp(tmp_count);
 
-    la_append_ir2_opnd3_em(LISA_OR, dest, high_dest, low_dest);
+    la_append_ir2_opnd3_em(LISA_OR, high_dest, high_dest, low_dest);
 
-    store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
+    store_ireg_to_ir1(high_dest, ir1_get_opnd(pir1, 0), false);
 
     la_append_ir2_opnd1(LISA_LABEL, label_calc_eflags);
     generate_eflag_calculation(dest, dest, count, pir1, true);
@@ -384,9 +384,9 @@ bool translate_ror(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_SLL_D, low_dest, dest, tmp_count);
     ra_free_temp(tmp_count);
 
-    la_append_ir2_opnd3_em(LISA_OR, dest, high_dest, low_dest);
+    la_append_ir2_opnd3_em(LISA_OR, high_dest, high_dest, low_dest);
 
-    store_ireg_to_ir1(dest, ir1_get_opnd(pir1, 0), false);
+    store_ireg_to_ir1(high_dest, ir1_get_opnd(pir1, 0), false);
 
     la_append_ir2_opnd1(LISA_LABEL, label_calc_eflags);
     generate_eflag_calculation(dest, dest, count, pir1, true);
@@ -575,12 +575,14 @@ bool translate_shrd_imm(IR1_INST *pir1)
     int count = ir1_opnd_simm(ir1_get_opnd(pir1, 0) + 2) & 0x1f;
     if (count == 0)
         return true;
+    int left_count = ir1_opnd_size(ir1_get_opnd(pir1, 0)) - count;
+    if (!(left_count >= 0 && left_count <= 31)) {
+        return true;
+    }
     IR2_OPND dest_opnd = load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
     IR2_OPND low_dest = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_SRLI_D, low_dest, dest_opnd, count);
 
-    int left_count = ir1_opnd_size(ir1_get_opnd(pir1, 0)) - count;
-    lsassert(left_count >= 0 && left_count <= 31);
     IR2_OPND src_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, ZERO_EXTENSION, false);
     IR2_OPND high_dest = ra_alloc_itemp();
@@ -664,12 +666,14 @@ bool translate_shld_imm(IR1_INST *pir1)
     int count = ir1_opnd_simm(ir1_get_opnd(pir1, 0) + 2) & 0x1f;
     if (count == 0)
         return true;
+    int left_count = ir1_opnd_size(ir1_get_opnd(pir1, 0)) - count;
+    if (!(left_count >= 0 && left_count <= 31)) {
+        return true;
+    }
     IR2_OPND dest_opnd = load_ireg_from_ir1(ir1_get_opnd(pir1, 0), ZERO_EXTENSION, false);
     IR2_OPND high_dest = ra_alloc_itemp();
     la_append_ir2_opnd2i_em(LISA_SLLI_D, high_dest, dest_opnd, count);
 
-    int left_count = ir1_opnd_size(ir1_get_opnd(pir1, 0)) - count;
-    lsassert(left_count >= 0 && left_count <= 31);
     IR2_OPND src_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, ZERO_EXTENSION, false);
     IR2_OPND low_dest = ra_alloc_itemp();
@@ -727,6 +731,12 @@ bool translate_bswap(IR1_INST *pir1)
                 break;
             case X86_REG_DX:
                 ir1_opnd->reg = X86_REG_EDX;
+                break;
+            case X86_REG_SP:
+                ir1_opnd->reg = X86_REG_ESP;
+                break;
+            case X86_REG_BP:
+                ir1_opnd->reg = X86_REG_EBP;
                 break;
             case X86_REG_SI:
                 ir1_opnd->reg = X86_REG_ESI;
