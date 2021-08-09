@@ -7,6 +7,17 @@
 #include "sys-excp.h"
 #include <string.h>
 
+int latxs_get_sys_stack_addr_size(void)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    if (td->sys.ss32) {
+        return 4;
+    } else {
+        return 2;
+    }
+}
+
 static void translate_jmp_far_pe_imm(IR1_INST *pir1, IR1_OPND *opnd0)
 {
     /*
@@ -247,5 +258,184 @@ bool latxs_translate_jmp_far(IR1_INST *pir1)
         translate_jmp_far_real_mem(pir1, opnd0);
     }
 
+    return true;
+}
+
+bool latxs_translate_call(IR1_INST *pir1)
+{
+    if (ir1_is_indirect_call(pir1)) {
+        return latxs_translate_callin(pir1);
+    } else if (ir1_addr_next(pir1) == ir1_target_addr(pir1)) {
+        return latxs_translate_callnext(pir1);
+    }
+
+    bool ss32 = lsenv->tr_data->sys.ss32;
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    int data_size = latxs_ir1_data_size(pir1);
+    int opnd_size = ir1_opnd_size(opnd0);
+    lsassert(opnd_size == 16 || opnd_size == 32);
+    lsassert(data_size == opnd_size);
+
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+
+    /* 1. get return address */
+    IR2_OPND return_addr_opnd = latxs_ra_alloc_itemp();
+    latxs_load_addrx_to_ir2(&return_addr_opnd, ir1_addr_next(pir1));
+
+    /* 2. save return address at MEM(SS:ESP - 2/4)*/
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
+            X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
+    latxs_store_ir2_to_ir1_mem(&return_addr_opnd,
+            &mem_ir1_opnd, false, ss_addr_size);
+    latxs_ra_free_temp(&return_addr_opnd);
+
+    /* 3. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd, &esp_opnd,
+                          0 - (opnd_size >> 3));
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &tmp, &esp_opnd,
+                          0 - (opnd_size >> 3));
+        latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    /* 4. exit TB */
+    latxs_tr_generate_exit_tb(pir1, 0);
+
+    return true;
+}
+
+bool latxs_translate_callnext(IR1_INST *pir1)
+{
+    bool ss32 = lsenv->tr_data->sys.ss32;
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    int data_size = latxs_ir1_data_size(pir1);
+    int opnd_size = ir1_opnd_size(opnd0);
+    lsassert(opnd_size == 16 || opnd_size == 32);
+    lsassert(data_size == opnd_size);
+
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+
+    /* 1. get return address */
+    IR2_OPND next_addr_opnd = latxs_ra_alloc_itemp();
+    latxs_load_addrx_to_ir2(&next_addr_opnd, ir1_addr_next(pir1));
+
+    /* 2. save return address at MEM(SS:ESP - 2/4)*/
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
+            X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
+    latxs_store_ir2_to_ir1_mem(&next_addr_opnd,
+            &mem_ir1_opnd, false, ss_addr_size);
+    latxs_ra_free_temp(&next_addr_opnd);
+
+    /* 3. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd,
+                &esp_opnd, 0 - (opnd_size >> 3));
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &tmp,
+                &esp_opnd, 0 - (opnd_size >> 3));
+        latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    return true;
+}
+
+bool latxs_translate_callin(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    bool ss32 = td->sys.ss32;
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    int data_size = latxs_ir1_data_size(pir1);
+    int opnd_size = ir1_opnd_size(opnd0);
+    lsassert(opnd_size == 16 || opnd_size == 32);
+    lsassert(data_size == opnd_size);
+
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+
+    /* 1. prepare successor x86 address */
+    IR2_OPND next_eip_opnd = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&next_eip_opnd, opnd0, EXMode_Z, false);
+    if (opnd_size == 16) {
+        latxs_append_ir2_opnd2_(lisa_mov16z, &next_eip_opnd,
+                                             &next_eip_opnd);
+    }
+
+    /* 2. get return address */
+    IR2_OPND return_addr_opnd = latxs_ra_alloc_itemp();
+    latxs_load_addrx_to_ir2(&return_addr_opnd, ir1_addr_next(pir1));
+
+    /* 3. save return address at MEM(SS:ESP - 2/4)*/
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size, /* 16 or 32 */
+            X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
+    latxs_store_ir2_to_ir1_mem(&return_addr_opnd,
+            &mem_ir1_opnd, false, ss_addr_size);
+    latxs_ra_free_temp(&return_addr_opnd);
+
+    /* 4. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd,
+                &esp_opnd, 0 - (opnd_size >> 3));
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &tmp, &esp_opnd,
+                          0 - (opnd_size >> 3));
+        latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    /* 5. go to next TB */
+    IR2_OPND succ_x86_addr_opnd = latxs_ra_alloc_dbt_arg2();
+    latxs_append_ir2_opnd3(LISA_OR, &succ_x86_addr_opnd,
+            &latxs_zero_ir2_opnd, &next_eip_opnd);
+
+    latxs_tr_generate_exit_tb(pir1, 0);
+
+    return true;
+}
+
+bool latxs_translate_jmp(IR1_INST *pir1)
+{
+    if (ir1_is_indirect_jmp(pir1)) {
+        return latxs_translate_jmpin(pir1);
+    }
+
+    latxs_tr_generate_exit_tb(pir1, 1);
+    return true;
+}
+
+bool latxs_translate_jmpin(IR1_INST *pir1)
+{
+    /* 1. set successor x86 address */
+    IR2_OPND next_eip = latxs_ra_alloc_dbt_arg2();
+    latxs_load_ir1_to_ir2(&next_eip,
+            ir1_get_opnd(pir1, 0), EXMode_Z, false);
+
+    if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
+        latxs_append_ir2_opnd2_(lisa_mov16z, &next_eip, &next_eip);
+    }
+
+    latxs_tr_generate_exit_tb(pir1, 1);
     return true;
 }

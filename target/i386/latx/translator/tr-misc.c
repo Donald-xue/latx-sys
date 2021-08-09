@@ -681,6 +681,9 @@ void ss_gen_push(IR1_INST *pir1) {
 
 bool translate_call(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_call(pir1);
+#else
     if(ir1_is_indirect_call(pir1)){
         return translate_callin(pir1);
     }
@@ -714,10 +717,14 @@ bool translate_call(IR1_INST *pir1)
 
     ra_free_temp(return_addr_opnd);
     return true;
+#endif
 }
 
 bool translate_callnext(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_callnext(pir1);
+#else
     /* 1. load next_instr_addr to tmp_reg */
     IR2_OPND next_addr = ra_alloc_itemp();
     load_ireg_from_addrx(next_addr, ir1_addr_next(pir1));
@@ -742,10 +749,14 @@ bool translate_callnext(IR1_INST *pir1)
     ra_free_temp(next_addr);
 
     return true;
+#endif
 }
 
 bool translate_callin(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_callin(pir1);
+#else
     /* 1. set successor x86 address */
     IR2_OPND succ_x86_addr_opnd = ra_alloc_dbt_arg2();
     load_ireg_from_ir1_2(succ_x86_addr_opnd, ir1_get_opnd(pir1, 0), ZERO_EXTENSION,
@@ -796,6 +807,7 @@ bool translate_callin(IR1_INST *pir1)
     /* env->tr_data->curr_tb->generate_tb_linkage_indirect(); */
     tr_generate_exit_tb(pir1, 0);
     return true;
+#endif
 }
 
 bool translate_iret(IR1_INST *pir1)
@@ -947,6 +959,9 @@ bool translate_ret(IR1_INST *pir1)
 
 bool translate_jmp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_jmp(pir1);
+#else
     if(ir1_is_indirect_jmp(pir1)){
         return translate_jmpin(pir1);
     }
@@ -957,10 +972,14 @@ bool translate_jmp(IR1_INST *pir1)
 
     tr_generate_exit_tb(pir1, 1);
     return true;
+#endif
 }
 
 bool translate_jmpin(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_jmpin(pir1);
+#else
     /* 1. set successor x86 address */
     IR2_OPND succ_x86_addr_opnd = ra_alloc_dbt_arg2();
     load_ireg_from_ir1_2(succ_x86_addr_opnd, ir1_get_opnd(pir1, 0), ZERO_EXTENSION,
@@ -972,6 +991,7 @@ bool translate_jmpin(IR1_INST *pir1)
     /* env->tr_data->curr_tb->generate_tb_linkage_indirect(); */
     tr_generate_exit_tb(pir1, 1);
     return true;
+#endif
 }
 
 bool translate_leave(IR1_INST *pir1)

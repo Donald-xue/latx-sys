@@ -2067,10 +2067,12 @@ bool ir1_translate(IR1_INST *ir1)
 
     bool translation_success = false;
 
+#ifndef CONFIG_SOFTMMU
     if (ir1_opcode(ir1) == X86_INS_CALL && !ir1_is_indirect_call(ir1) &&
         ir1_addr_next(ir1) == ir1_target_addr(ir1)) {
         return translate_callnext(ir1);
     }
+#endif
 
     // MOVSD means movsd(movs) or movsd(sse2) , diff opcode
     if (ir1_opcode(ir1) == X86_INS_MOVSD) {

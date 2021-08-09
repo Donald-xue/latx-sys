@@ -1434,8 +1434,18 @@ void latxs_generate_eflag_calculation(IR2_OPND*,
         IR2_OPND*, IR2_OPND*,
         IR1_INST *, bool has_address);
 
+/* sys attribute */
+int latxs_get_sys_stack_addr_size(void);
+
 /* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
+
+bool latxs_translate_call(IR1_INST *pir1);
+bool latxs_translate_callnext(IR1_INST *pir1);
+bool latxs_translate_callin(IR1_INST *pir1);
+
+bool latxs_translate_jmp(IR1_INST *pir1);
+bool latxs_translate_jmpin(IR1_INST *pir1);
 
 /* sys-arith */
 bool latxs_translate_add(IR1_INST *pir1);
