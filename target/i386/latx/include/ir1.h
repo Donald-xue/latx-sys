@@ -124,9 +124,11 @@ extern IR1_OPND dx_ir1_opnd;
 extern IR1_OPND edx_ir1_opnd;
 extern IR1_OPND rdx_ir1_opnd;
 
+extern IR1_OPND sp_ir1_opnd;
 extern IR1_OPND esp_ir1_opnd;
 extern IR1_OPND rsp_ir1_opnd;
 
+extern IR1_OPND bp_ir1_opnd;
 extern IR1_OPND ebp_ir1_opnd;
 extern IR1_OPND rbp_ir1_opnd;
 

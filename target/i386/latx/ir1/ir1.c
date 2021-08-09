@@ -28,9 +28,11 @@ IR1_OPND bx_ir1_opnd;
 IR1_OPND ebx_ir1_opnd;
 IR1_OPND rbx_ir1_opnd;
 
+IR1_OPND sp_ir1_opnd;
 IR1_OPND esp_ir1_opnd;
 IR1_OPND rsp_ir1_opnd;
 
+IR1_OPND bp_ir1_opnd;
 IR1_OPND ebp_ir1_opnd;
 IR1_OPND rbp_ir1_opnd;
 
@@ -150,9 +152,11 @@ static void __attribute__((__constructor__)) x86tomisp_ir1_init(void)
     ebx_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 32, X86_REG_EBX);
     rbx_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 64, X86_REG_RBX);
 
+    sp_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 16, X86_REG_ESP);
     esp_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 32, X86_REG_ESP);
     rsp_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 64, X86_REG_RSP);
 
+    bp_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 16, X86_REG_EBP);
     ebp_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 32, X86_REG_EBP);
     rbp_ir1_opnd = ir1_opnd_new_static_reg(X86_OP_REG, 64, X86_REG_RBP);
 
