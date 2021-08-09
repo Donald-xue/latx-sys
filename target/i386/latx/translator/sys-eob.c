@@ -416,7 +416,7 @@ void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
         int can_link, int succ_id)
 {
     IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
-    IR2_OPND *zero = &latxs_ret0_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
 
     if (can_link) {
         latxs_append_ir2_opnd2i(LISA_ORI, ret0, tbptr, succ_id);
