@@ -3,7 +3,7 @@ capStone_data.set('CAPSTONE_USE_SYS_DYN_MEM', '1')
 
 # As the macro in qemu can not pass to capstone, so if
 # you want to open the CONFIG_LATX_DEBUG, open the line below.
-# capStone_data.set('CONFIG_LATX_DEBUG', '1')
+capStone_data.set('CONFIG_LATX_DEBUG', '1')
 
 capStone_files = files(
   'capStone/cs.c',

@@ -372,6 +372,11 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 
         bool translation_success = ir1_translate(pir1);
 
+        if (option_dump_ir1) {
+            fprintf(stderr, "ir1 translate >>> ");
+            ir1_dump(pir1);
+        }
+
         (void)translation_success; /* to avoid warning  */
         lsassertm(translation_success,
                 "translate failed for inst %s\n",
