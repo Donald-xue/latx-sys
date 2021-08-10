@@ -366,9 +366,9 @@ void latxs_tr_gen_save_next_eip(void)
 
 void latxs_tr_save_temp_register_mask(int mask)
 {
-    const TEMP_REG_STATUS *p = itemp_status_default;
+    const TEMP_REG_STATUS *p = latxs_itemp_status_default;
     int i;
-    for (i = 0; i < itemp_status_num; ++i) {
+    for (i = 0; i < latxs_itemp_status_num; ++i) {
         if ((mask >> i) & 0x1) {
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
@@ -381,9 +381,9 @@ void latxs_tr_save_temp_register_mask(int mask)
 
 void latxs_tr_restore_temp_register_mask(int mask)
 {
-    const TEMP_REG_STATUS *p = itemp_status_default;
+    const TEMP_REG_STATUS *p = latxs_itemp_status_default;
     int i;
-    for (i = 0; i < itemp_status_num; ++i) {
+    for (i = 0; i < latxs_itemp_status_num; ++i) {
         if ((mask >> i) & 0x1) {
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
@@ -399,7 +399,7 @@ void latxs_tr_restore_temp_register_mask(int mask)
 void latxs_tr_save_temp_register(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
-    const TEMP_REG_STATUS *p = itemp_status_default;
+    const TEMP_REG_STATUS *p = latxs_itemp_status_default;
 
     int mask = td->itemp_mask;
     td->itemp_mask_bk = mask;
@@ -408,7 +408,7 @@ void latxs_tr_save_temp_register(void)
             "Can not save temp again after save temp.\n");
 
     int i;
-    for (i = 0; i < itemp_status_num; ++i) {
+    for (i = 0; i < latxs_itemp_status_num; ++i) {
         /* if ((mask >> i) & 0x1) { */
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
@@ -426,7 +426,7 @@ void latxs_tr_save_temp_register(void)
 void latxs_tr_restore_temp_register(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
-    const TEMP_REG_STATUS *p = itemp_status_default;
+    const TEMP_REG_STATUS *p = latxs_itemp_status_default;
 
     int mask_bk = td->itemp_mask_bk;
     td->itemp_mask = mask_bk;
@@ -435,7 +435,7 @@ void latxs_tr_restore_temp_register(void)
             "Can not resoter temp again if not save temp.\n");
 
     int i;
-    for (i = 0; i < itemp_status_num; ++i) {
+    for (i = 0; i < latxs_itemp_status_num; ++i) {
         if ((mask_bk >> i) & 0x1) {
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
