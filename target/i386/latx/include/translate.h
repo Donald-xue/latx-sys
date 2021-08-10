@@ -1471,6 +1471,9 @@ bool latxs_translate_sldt(IR1_INST *pir1);
 bool latxs_translate_ltr(IR1_INST *pir1);
 bool latxs_translate_str(IR1_INST *pir1);
 
+bool latxs_translate_pop(IR1_INST *pir1);
+bool latxs_translate_push(IR1_INST *pir1);
+
 /* sys-io */
 bool latxs_translate_in(IR1_INST *pir1);
 bool latxs_translate_out(IR1_INST *pir1);

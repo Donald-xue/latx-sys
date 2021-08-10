@@ -7,6 +7,9 @@
 
 bool translate_pop(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pop(pir1);
+#else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
 
     int esp_increment = 4;
@@ -76,10 +79,14 @@ bool translate_pop(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_push(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_push(pir1);
+#else
     /* 1. if esp is used by push, update esp now */
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
     if ((ir1_opnd_is_gpr_used(ir1_get_opnd(pir1, 0), esp_index) != 0) &&
@@ -115,6 +122,7 @@ bool translate_push(IR1_INST *pir1)
         lsenv->tr_data->curr_esp_need_decrease += esp_decrement;
 
     return true;
+#endif
 }
 
 bool translate_mov(IR1_INST *pir1)
