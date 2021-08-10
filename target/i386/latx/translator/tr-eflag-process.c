@@ -170,23 +170,32 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
 #endif
     case X86_INS_SHLD: {
         if (ir2_opnd_is_imm(&src1)) {
+            lsassertm((src1._imm16 &
+                ((ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) ? 0x3f : 0x1f))
+                == src1._imm16, "The value cannot be 0x%"PRIx16, src1._imm16);
             IR2_OPND t_dest_opnd = ra_alloc_itemp();
-            int count = src1._imm16 - 1;
-            //append_ir2_opnd2i(mips_dsll, t_dest_opnd, src0, count);
-            la_append_ir2_opnd2i_em(LISA_SLLI_D, t_dest_opnd, src0, count);
-            la_append_ir2_opnd2i_em(LISA_SRLI_D, t_dest_opnd, t_dest_opnd,
-                              ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 1);
-            la_append_ir2_opnd2i_em(LISA_ANDI, t_dest_opnd, t_dest_opnd, 1);
+            int count = src1._imm16;
+            lsassertm(ir1_opnd_size(ir1_get_opnd(pir1, 0)) >= count && count > 0,
+                "Shift count is bigger than opnd size. The count is %d, opnd size is %d",
+                count, ir1_opnd_size(ir1_get_opnd(pir1, 0)));
+            /* the dest reg need be shift right (SIZE - COUNT) */
+            la_append_ir2_opnd2i_em(LISA_SRLI_D, t_dest_opnd, src0,
+                              ir1_opnd_size(ir1_get_opnd(pir1, 0)) - count);
+
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         } else {
+            lsassertm(ir2_opnd_is_zx(&src1,
+                (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) ? 6 : 5),
+                "The em is error, dump is: em=%d, eb=%d",
+                ir2_opnd_em(&src1), ir2_opnd_eb(&src1));
             IR2_OPND t_dest_opnd = ra_alloc_itemp();
-            //append_ir2_opnd2i(mips_daddiu, t_dest_opnd, src1, -1);
-            la_append_ir2_opnd2i_em(LISA_ADDI_D, t_dest_opnd, src1, -1);
-            la_append_ir2_opnd3_em(LISA_SLL_W, t_dest_opnd, src0, t_dest_opnd);
-            la_append_ir2_opnd2i_em(LISA_SRLI_D, t_dest_opnd, t_dest_opnd,
-                ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 1); /* 64bit not handled */
-            la_append_ir2_opnd2i_em(LISA_ANDI, t_dest_opnd, t_dest_opnd, 1);
+            /* src0 >> (size - count) */
+            la_append_ir2_opnd2i_em(LISA_ADDI_D, t_dest_opnd, zero_ir2_opnd,
+                                    ir1_opnd_size(ir1_get_opnd(pir1, 0)));
+            la_append_ir2_opnd3_em(LISA_SUB_D, t_dest_opnd, t_dest_opnd, src1);
+            la_append_ir2_opnd3_em(LISA_SRL_D, t_dest_opnd, src0, t_dest_opnd);
+
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         }
@@ -194,17 +203,20 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     }
     case X86_INS_SHRD: {
         if (ir2_opnd_is_imm(&src1)) {
+            lsassertm((src1._imm16 &
+                ((ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) ? 0x3f : 0x1f))
+                == src1._imm16, "The value cannot be 0x%"PRIx16, src1._imm16);
             IR2_OPND t_dest_opnd = ra_alloc_itemp();
             int count = src1._imm16 - 1;
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_dest_opnd, src0, count);
-            la_append_ir2_opnd2i_em(LISA_ANDI, t_dest_opnd, t_dest_opnd, 1);
+
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         } else {
             IR2_OPND t_dest_opnd = ra_alloc_itemp();
             la_append_ir2_opnd2i_em(LISA_ADDI_D, t_dest_opnd, src1, -1);
             la_append_ir2_opnd3_em(LISA_SRL_D, t_dest_opnd, src0, t_dest_opnd);
-            la_append_ir2_opnd2i_em(LISA_ANDI, t_dest_opnd, t_dest_opnd, 1);
+
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         }
@@ -744,35 +756,35 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     case X86_INS_SHLD:
     case X86_INS_SHRD: {
         if (ir2_opnd_is_imm(&src1)) {
+            lsassertm((src1._imm16 &
+                ((ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) ? 0x3f : 0x1f))
+                == src1._imm16, "The value cannot be 0x%"PRIx16, src1._imm16);
             if (src1._imm16 != 1)
                 return;
             IR2_OPND t_of_opnd = ra_alloc_itemp();
-            IR2_OPND offset = ra_alloc_itemp();
             la_append_ir2_opnd3_em(LISA_XOR, t_of_opnd, src0, dest);
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_of_opnd, t_of_opnd,
-                              ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 12);
-            //la_append_ir2_opnd2i_em(LISA_ANDI, t_of_opnd, t_of_opnd, 0x800);
-            load_ireg_from_imm32(offset, 0x800, ZERO_EXTENSION);
-            la_append_ir2_opnd3_em(LISA_AND, t_of_opnd, t_of_opnd, offset);
+                            ir1_opnd_size(ir1_get_opnd(pir1, 0)) - OF_BIT_INDEX - 1);
+
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_of_opnd, 0x20);
             ra_free_temp(t_of_opnd);
-            ra_free_temp(offset);
         } else {
+            lsassertm(ir2_opnd_is_zx(&src1,
+                (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) ? 6 : 5),
+                "The em is error, dump is: em=%d, eb=%d",
+                ir2_opnd_em(&src1), ir2_opnd_eb(&src1));
             IR2_OPND t_of_opnd = ra_alloc_itemp();
-            IR2_OPND offset = ra_alloc_itemp();
             IR2_OPND label_temp = ir2_opnd_new_type(IR2_OPND_LABEL);
             la_append_ir2_opnd2i_em(LISA_ORI, t_of_opnd, zero_ir2_opnd, 1);
             la_append_ir2_opnd3(LISA_BNE, src1, t_of_opnd, label_temp);
 
             la_append_ir2_opnd3_em(LISA_XOR, t_of_opnd, src0, dest);
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_of_opnd, t_of_opnd,
-                              ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 12);
-            load_ireg_from_imm32(offset, 0xff00, ZERO_EXTENSION);
-            la_append_ir2_opnd3(LISA_AND, t_of_opnd, t_of_opnd, offset);
+                              ir1_opnd_size(ir1_get_opnd(pir1, 0)) - OF_BIT_INDEX - 1);
+
             la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_of_opnd, 0x20);
             la_append_ir2_opnd1(LISA_LABEL, label_temp);
             ra_free_temp(t_of_opnd);
-            ra_free_temp(offset);
         }
         return;
     }
