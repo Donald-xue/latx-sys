@@ -395,8 +395,11 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
     }
 
     /* 2. apply segment base and address size */
-    int seg_num = ir1_opnd_get_seg_index(opnd1);
-    if (ir1_opnd_has_seg(opnd1) && seg_num >= 0 &&
+    int seg_num = -1;
+    if (ir1_opnd_has_seg(opnd1)) {
+        seg_num = ir1_opnd_get_seg_index(opnd1);
+    }
+    if (seg_num >= 0 &&
         ((seg_num == ss_index ||
          seg_num == ds_index ||
          seg_num == es_index) ? td->sys.addseg : 1))
