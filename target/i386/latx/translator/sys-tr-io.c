@@ -291,7 +291,7 @@ bool latxs_translate_out(IR1_INST *pir1)
      *    > ax  : 16-bits from  ax register
      *    > eax : 32-bits from eax regiser
      */
-    IR2_OPND data_reg = ra_alloc_itemp();
+    IR2_OPND data_reg = latxs_ra_alloc_itemp();
     latxs_load_ir1_gpr_to_ir2(&data_reg, opnd1, EXMode_Z);
     latxs_append_ir2_opnd3(LISA_OR, &latxs_arg2_ir2_opnd,
             &data_reg, &latxs_zero_ir2_opnd);

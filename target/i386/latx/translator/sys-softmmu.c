@@ -572,7 +572,7 @@ void gen_ldst_c1_softmmu_helper(
         break;
     }
 
-    IR2_OPND tmp = ra_alloc_itemp();
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
     if (latxs_ir2_opcode_is_load(op)) {
         /* 1. load to GPR from memory */
         gen_ldst_softmmu_helper(ldst_op, &tmp, opnd_mem, save_temp);

@@ -380,7 +380,7 @@ bool latxs_translate_jecxz(IR1_INST *pir1)
     GEN_EOB;
     LOAD_TB_PTR_TO_DBT_ARG1;
 
-    IR2_OPND ecx_opnd = ra_alloc_itemp();
+    IR2_OPND ecx_opnd = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&ecx_opnd, &ecx_ir1_opnd, EXMode_Z, false);
 
     IR2_OPND target_label_opnd = latxs_ir2_opnd_new_label();
