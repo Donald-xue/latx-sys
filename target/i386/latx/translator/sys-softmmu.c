@@ -414,7 +414,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     if (sp->is_load) {
         latxs_load_imm64_to_ir2(arg3, sp->retaddr);
     } else {
-        latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, memopidx);
+        latxs_append_ir2_opnd2i(LISA_ORI, arg3, zero, memopidx);
         /* 3.5 arg4 : retaddr(STORE) */
         latxs_load_imm64_to_ir2(arg4, sp->retaddr);
     }
