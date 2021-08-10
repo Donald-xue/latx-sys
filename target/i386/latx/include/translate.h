@@ -1451,6 +1451,7 @@ void latxs_sys_eflags_register_ir1(void);
 
 /* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
+bool latxs_translate_cpuid(IR1_INST *pir1);
 
 bool latxs_translate_call(IR1_INST *pir1);
 bool latxs_translate_callnext(IR1_INST *pir1);

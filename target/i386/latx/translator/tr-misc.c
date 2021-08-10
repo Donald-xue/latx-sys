@@ -1082,6 +1082,9 @@ bool translate_rdtscp(IR1_INST *pir1) {
 
 bool translate_cpuid(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cpuid(pir1);
+#else
     /* 1. store registers to env */
     tr_save_registers_to_env(EAX_USEDEF_BIT, 0, 0, 0, 0x1|options_to_save());
 
@@ -1100,6 +1103,7 @@ bool translate_cpuid(IR1_INST *pir1)
         0, 0x1|options_to_save());
 
     return true;
+#endif
 }
 
 bool translate_cdq(IR1_INST *pir1)

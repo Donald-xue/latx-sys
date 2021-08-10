@@ -25,6 +25,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PUSH);
     latxs_register_ir1(X86_INS_POP);
     latxs_register_ir1(X86_INS_RET);
+    latxs_register_ir1(X86_INS_CPUID);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1112,6 +1113,24 @@ bool latxs_translate_ret(IR1_INST *pir1)
     }
 
     latxs_tr_generate_exit_tb(pir1, 0);
+
+    return true;
+}
+
+bool latxs_translate_cpuid(IR1_INST *pir1)
+{
+    /* 0. save next instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /*
+     * 1. call helper_cpuid
+     *
+     * void helper_cpuid(
+     *      CPUX86State *env)
+     * >> load new EAX/ECX/EDX/EBX
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_cpuid, cfg);
 
     return true;
 }
