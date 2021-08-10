@@ -1450,6 +1450,10 @@ bool latxs_translate_jmpin(IR1_INST *pir1);
 bool latxs_translate_cli(IR1_INST *pir1);
 bool latxs_translate_sti(IR1_INST *pir1);
 
+/* sys-io */
+bool latxs_translate_in(IR1_INST *pir1);
+bool latxs_translate_out(IR1_INST *pir1);
+
 /* sys-arith */
 bool latxs_translate_add(IR1_INST *pir1);
 bool latxs_translate_adc(IR1_INST *pir1);
