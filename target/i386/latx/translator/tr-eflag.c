@@ -6,6 +6,9 @@
 
 bool translate_popf(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_popf(pir1);
+#else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
     IR2_OPND eflags_opnd = ra_alloc_eflags();
     IR2_OPND eflags_temp_opnd = ra_alloc_itemp();
@@ -51,10 +54,14 @@ bool translate_popf(IR1_INST *pir1)
         lsenv->tr_data->curr_esp_need_decrease -= 4;
 
     return true;
+#endif
 }
 
 bool translate_pushf(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pushf(pir1);
+#else
     IR2_OPND eflags_opnd = ra_alloc_eflags();
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
 
@@ -91,6 +98,7 @@ bool translate_pushf(IR1_INST *pir1)
         lsenv->tr_data->curr_esp_need_decrease += 4;
 
     return true;
+#endif
 }
 
 bool translate_clc(IR1_INST *pir1) {

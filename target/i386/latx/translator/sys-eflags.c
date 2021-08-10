@@ -4,12 +4,17 @@
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "translate.h"
+#include "sys-excp.h"
 #include <string.h>
 
 void latxs_sys_eflags_register_ir1(void)
 {
     latxs_register_ir1(X86_INS_CLD);
     latxs_register_ir1(X86_INS_STD);
+    latxs_register_ir1(X86_INS_PUSHF);
+    latxs_register_ir1(X86_INS_PUSHFD);
+    latxs_register_ir1(X86_INS_POPF);
+    latxs_register_ir1(X86_INS_POPFD);
 }
 
 /*
@@ -290,3 +295,171 @@ bool latxs_translate_std(IR1_INST *pir1)
 
     return true;
 }
+
+/* End of TB in system-mode */
+bool latxs_translate_popf(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_POPF(pir1);
+
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+
+    /*
+     * popf
+     * ----------------------
+     * > eflags <= MEM(SS:ESP)
+     * > ESP    <= ESP + 2/4
+     * ----------------------
+     * 1. tmp   <= MEM(SS:ESP) : softmmu
+     * 2. tmp   => eflags : helper_write_eflags
+     * 3. ESP   <= ESP + 2/4
+     */
+
+    /* 1.1 build MEM(SS:ESP) */
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+            X86_REG_SS, X86_REG_ESP, 0, 0, 0);
+
+    /* 1.2 read data from stack   : might generate exception */
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+    latxs_load_ir1_mem_to_ir2(&tmp,
+            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+
+    /*
+     * 2. write into eflags
+     *
+     * void helper_write_eflags(
+     *      CPUX86State *env,
+     *      target_ulong t0,
+     *      uint32_t update_mask)
+     */
+    IR2_OPND tmp2 = latxs_ra_alloc_itemp();
+
+    /* 2.0 save native context */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* 2.1 tmp2: mask for eflags */
+    uint32 eflags_mask = 0;
+    if (td->sys.cpl == 0) {
+        eflags_mask = TF_MASK | AC_MASK | ID_MASK | NT_MASK |
+                      IF_MASK | IOPL_MASK;
+    } else {
+        if (td->sys.cpl <= td->sys.iopl) {
+            eflags_mask = TF_MASK | AC_MASK | ID_MASK | NT_MASK |
+                          IF_MASK;
+        } else {
+            eflags_mask = TF_MASK | AC_MASK | ID_MASK | NT_MASK;
+        }
+    }
+    if (data_size == 16) {
+        eflags_mask &= 0xffff;
+    }
+    latxs_load_imm32_to_ir2(&tmp2, eflags_mask, EXMode_Z);
+    /* 2.2 arg1: data to write */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &tmp);
+    /* 2.3 arg2: eflags mask */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg2_ir2_opnd, &tmp2);
+    /* 2.4 arg0: env */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                                      &latxs_env_ir2_opnd);
+    /* 2.5 call helper_write_eflags : might generate exception */
+    latxs_tr_gen_call_to_helper((ADDR)helper_write_eflags);
+    /* 2.6 restore context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    /* 3. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (lsenv->tr_data->sys.ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W,
+                &esp_opnd, &esp_opnd, (data_size >> 3));
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_D,
+                &tmp, &esp_opnd, (data_size >> 3));
+        latxs_store_ir2_to_ir1(&tmp, &sp_ir1_opnd, false);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    return true;
+}
+
+bool latxs_translate_pushf(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_PUSHF(pir1);
+
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+
+    /*
+     * pushf
+     * ----------------------
+     * >  ESP    <= ESP - 2/4
+     * >  eflags => MEM(SS:ESP)
+     * ----------------------
+     * 1. eflags <= eflags : mapping register
+     * 2. tmp    => MEM(SS:ESP - 2/4) : softmmu
+     * 3. ESP    <= ESP - 2/4
+     */
+
+    /*
+     * 1. get the eflags
+     *    since we sync the eflags in context switch and
+     *    x86_to_mips_before_exec_tb(), the eflags mapping
+     *    registers always contains the up-to-date eflags
+     */
+    IR2_OPND *eflags = &latxs_eflags_ir2_opnd;
+    IR2_OPND ls_eflags = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2_(lisa_mov, &ls_eflags, &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd1i(LISA_X86MFFLAG, &ls_eflags,  0x3f);
+    latxs_append_ir2_opnd3(LISA_OR, &ls_eflags, eflags, &ls_eflags);
+
+    /* 2.1 build MEM(SS:ESP - 2/4) */
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+            X86_REG_SS, X86_REG_ESP, 0 - (data_size >> 3), 0, 0);
+
+    /*
+     * 2.2 write eflags into stack : might generate exception
+     *     pushf will not write VM(17) and RF(16)
+     */
+    IR2_OPND eflags_to_push = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &eflags_to_push,
+                                      &latxs_zero_ir2_opnd,  0x3);
+    latxs_append_ir2_opnd2i(LISA_SLLI_D, &eflags_to_push,
+                                         &eflags_to_push, 0x10);
+    latxs_append_ir2_opnd2_(lisa_not, &eflags_to_push, &eflags_to_push);
+
+    latxs_append_ir2_opnd3(LISA_AND,
+            &eflags_to_push, &ls_eflags, &eflags_to_push);
+
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+    latxs_store_ir2_to_ir1_mem(&eflags_to_push,
+            &mem_ir1_opnd, false, ss_addr_size);
+    latxs_ra_free_temp(&eflags_to_push);
+
+    /* 3. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (lsenv->tr_data->sys.ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W,
+                &esp_opnd, &esp_opnd, 0 - (data_size >> 3));
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_D,
+                &tmp, &esp_opnd, 0 - (data_size >> 3));
+        latxs_store_ir2_to_ir1(&tmp, &sp_ir1_opnd, false);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    return true;
+}
+
+
