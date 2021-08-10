@@ -6,6 +6,9 @@
 
 bool translate_setz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setz(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -35,10 +38,14 @@ bool translate_setz(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setnz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setnz(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -68,10 +75,14 @@ bool translate_setnz(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_seto(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_seto(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -101,10 +112,14 @@ bool translate_seto(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setno(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setno(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -134,10 +149,14 @@ bool translate_setno(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setb(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -164,10 +183,14 @@ bool translate_setb(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setae(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setae(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -197,10 +220,14 @@ bool translate_setae(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setbe(IR1_INST *pir1)
 { /* cf==1 || zf==1 */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setbe(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -230,10 +257,14 @@ bool translate_setbe(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_seta(IR1_INST *pir1)
 { /* cf==0 && zf==0 */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_seta(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -263,10 +294,14 @@ bool translate_seta(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_sets(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sets(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -296,10 +331,14 @@ bool translate_sets(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setns(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setns(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -329,10 +368,14 @@ bool translate_setns(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setp(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -362,10 +405,14 @@ bool translate_setp(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setnp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setnp(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -395,10 +442,14 @@ bool translate_setnp(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setl(IR1_INST *pir1)
 { /* sf != of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setl(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -425,10 +476,14 @@ bool translate_setl(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setge(IR1_INST *pir1)
 { /* sf == of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setge(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -456,10 +511,14 @@ bool translate_setge(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setle(IR1_INST *pir1)
 { /* zf==1 || sf!=of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setle(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -488,10 +547,14 @@ bool translate_setle(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_setg(IR1_INST *pir1)
 { /* zf==0 && sf==of */
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_setg(pir1);
+#else
     /* 1. prepare the value operand */
     IR2_OPND value_opnd;
     bool value_opnd_is_temp = false;
@@ -520,10 +583,14 @@ bool translate_setg(IR1_INST *pir1)
     if (value_opnd_is_temp)
         ra_free_temp(value_opnd);
     return true;
+#endif
 }
 
 bool translate_bsf(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_bsf(pir1);
+#else
     IR2_OPND src_opnd =
         load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, ZERO_EXTENSION, false);
     IR2_OPND count = ra_alloc_itemp();
@@ -560,10 +627,14 @@ bool translate_bsf(IR1_INST *pir1)
     ra_free_temp(count);
     ra_free_temp(t_opnd);
     return true;
+#endif
 }
 
 bool translate_bsr(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_bsr(pir1);
+#else
     IR2_OPND count = ra_alloc_itemp();
     IR2_OPND t_opnd = ra_alloc_itemp();
     IR2_OPND src_opnd =
@@ -604,10 +675,14 @@ bool translate_bsr(IR1_INST *pir1)
     ra_free_temp(count);
     ra_free_temp(t_opnd);
     return true;
+#endif
 }
 
 bool translate_btx(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_btx(pir1);
+#else
     IR2_OPND bit_opnd = ra_alloc_itemp();
     IR2_OPND bit_offset = ra_alloc_itemp();
     IR2_OPND eflag_opnd = ra_alloc_itemp();
@@ -681,4 +756,5 @@ bool translate_btx(IR1_INST *pir1)
     ra_free_temp(bit_offset);
     ra_free_temp(eflag_opnd);
     return true;
+#endif
 }
