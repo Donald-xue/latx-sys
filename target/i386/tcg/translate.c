@@ -8645,14 +8645,14 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
                           target_ulong *data)
 {
     int cc_op = data[1];
-#ifdef CONFIG_LATX
+#if defined(CONFIG_LATX) && !defined(CONFIG_SOFTMMU)
     ucontext_t *uc = env->puc;
 #endif
     env->eip = data[0] - tb->cs_base;
     if (cc_op != CC_OP_DYNAMIC) {
         env->cc_op = cc_op;
     }
-#ifdef CONFIG_LATX
+#if defined(CONFIG_LATX) && !defined(CONFIG_SOFTMMU)
     /*
      * Update gpr to env 15, 18, 19, 26, 27, 28, 29, 30
      * TODO: update fp if any
