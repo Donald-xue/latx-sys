@@ -24,6 +24,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_STR);
     latxs_register_ir1(X86_INS_PUSH);
     latxs_register_ir1(X86_INS_POP);
+    latxs_register_ir1(X86_INS_RET);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1029,6 +1030,88 @@ bool latxs_translate_push(IR1_INST *pir1)
         latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
         latxs_ra_free_temp(&tmp);
     }
+
+    return true;
+}
+
+bool latxs_translate_ret(IR1_INST *pir1)
+{
+    /*
+     * ESP update   according to dflag(opnd size)
+     * Value size   according to dflag(opnd size)
+     * Address size according to aflag(addr size) : load ret addr
+     *
+     * code32 || (code16 && prefix_data) : dflag = 4
+     * code16 || (code32 && prefix_data) : dflag = 2
+     *
+     * aflag = ir1_addr_size(pir1) : provided by capstone
+     * code32 || (code16 && prefix_addr) : aflag = 4
+     * code16 || (code32 && prefix_addr) : aflag = 2
+     *
+     * Usually the dflag(opnd size) stores in inst's operand.
+     * But 'ret' is allowed to have zero operand. And if it has
+     * one operand, it must be 'imm16' which must has 16-bit opnd size.
+     * So there is no way to get the dflag from pir1 itself.
+     *
+     * In normal situation, the capstone will translate zero operand with
+     * different opnd size into serival instruction, such as 'ins'.
+     * But near 'ret' has only one instruction in capstone......
+     */
+
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+    int addr_size = latxs_ir1_addr_size(pir1);
+    lsassert(addr_size == 2 || addr_size == 4);
+
+    /* 1. load ret_addr into $25 from MEM(SS:ESP) */
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+            X86_REG_SS, X86_REG_ESP, 0, 0, 0);
+    IR2_OPND return_addr_opnd = latxs_ra_alloc_dbt_arg2();
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+    latxs_load_ir1_mem_to_ir2(&return_addr_opnd,
+            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+
+    /* 2. apply address size */
+    if (data_size == 32 && addr_size == 2) {
+        latxs_append_ir2_opnd2_(lisa_mov16z, &return_addr_opnd,
+                                             &return_addr_opnd);
+    }
+
+    /* 3. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (pir1 != NULL && ir1_opnd_num(pir1) &&
+            ir1_opnd_is_imm(ir1_get_opnd(pir1, 0))) {
+        if (lsenv->tr_data->sys.ss32) {
+            latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd, &esp_opnd,
+                ir1_opnd_uimm(ir1_get_opnd(pir1, 0)) + (data_size >> 3));
+            if (option_by_hand) {
+                latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+            }
+        } else {
+            IR2_OPND tmp = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, &esp_opnd,
+                ir1_opnd_uimm(ir1_get_opnd(pir1, 0)) + (data_size >> 3));
+            latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+            latxs_ra_free_temp(&tmp);
+        }
+    } else {
+        if (lsenv->tr_data->sys.ss32) {
+            latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd, &esp_opnd,
+                              (data_size >> 3));
+            if (option_by_hand) {
+                latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+            }
+        } else {
+            IR2_OPND tmp = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, &esp_opnd,
+                              (data_size >> 3));
+            latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+            latxs_ra_free_temp(&tmp);
+        }
+    }
+
+    latxs_tr_generate_exit_tb(pir1, 0);
 
     return true;
 }

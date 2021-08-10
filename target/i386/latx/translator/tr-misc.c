@@ -939,10 +939,14 @@ bool translate_ret_with_ss_opt(IR1_INST *pir1) {
 
 bool translate_ret(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_ret(pir1);
+#else
     if (option_shadow_stack)
         return translate_ret_with_ss_opt(pir1); 
     else 
         return translate_ret_without_ss_opt(pir1);
+#endif
 }
 
 bool translate_jmp(IR1_INST *pir1)
