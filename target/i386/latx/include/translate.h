@@ -1462,6 +1462,15 @@ bool latxs_translate_jmpin(IR1_INST *pir1);
 bool latxs_translate_cli(IR1_INST *pir1);
 bool latxs_translate_sti(IR1_INST *pir1);
 
+bool latxs_translate_lidt(IR1_INST *pir1);
+bool latxs_translate_sidt(IR1_INST *pir1);
+bool latxs_translate_lgdt(IR1_INST *pir1);
+bool latxs_translate_sgdt(IR1_INST *pir1);
+bool latxs_translate_lldt(IR1_INST *pir1);
+bool latxs_translate_sldt(IR1_INST *pir1);
+bool latxs_translate_ltr(IR1_INST *pir1);
+bool latxs_translate_str(IR1_INST *pir1);
+
 /* sys-io */
 bool latxs_translate_in(IR1_INST *pir1);
 bool latxs_translate_out(IR1_INST *pir1);

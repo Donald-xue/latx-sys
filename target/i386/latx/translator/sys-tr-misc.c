@@ -14,6 +14,14 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_JMP);
     latxs_register_ir1(X86_INS_CLI);
     latxs_register_ir1(X86_INS_STI);
+    latxs_register_ir1(X86_INS_LIDT);
+    latxs_register_ir1(X86_INS_SIDT);
+    latxs_register_ir1(X86_INS_LGDT);
+    latxs_register_ir1(X86_INS_SGDT);
+    latxs_register_ir1(X86_INS_LLDT);
+    latxs_register_ir1(X86_INS_SLDT);
+    latxs_register_ir1(X86_INS_LTR);
+    latxs_register_ir1(X86_INS_STR);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -488,6 +496,329 @@ bool latxs_translate_sti(IR1_INST *pir1)
 
     /* sti is EOB in system-mode */
     lsenv->tr_data->inhibit_irq = 1;
+
+    return true;
+}
+
+bool latxs_translate_lidt(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_LIDT(pir1);
+
+    IR1_OPND *opnd = ir1_get_opnd(pir1, 0);
+    lsassertm_illop(ir1_addr(pir1),
+            ir1_opnd_is_mem(opnd),
+            "not a valid LIDT insn: pir1 = %p\n", (void *)pir1);
+
+    /*
+     * In i386: always load 6 bytes
+     *  >  ir1_opnd_size(opnd) == 6, not a regular load operation
+     *
+     * 2 bytes for limit, and limit is always 16-bits long
+     *
+     * 4 bytes for base address, and base assress is 24-bits long
+     * in real-address mode and vm86 mode, 32-bits long in PE mode.
+     */
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd, -1);
+
+    IR2_OPND limit = latxs_ra_alloc_itemp();
+    IR2_OPND base  = latxs_ra_alloc_itemp();
+
+    int save_temp = 1;
+
+    /* 1. load 2 bytes for limit at MEM(addr)*/
+    gen_ldst_softmmu_helper(LISA_LD_HU, &limit, &mem_opnd, save_temp);
+
+    /* 2. load 4 bytes for base address at MEM(addr + 2)*/
+    IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+    gen_ldst_softmmu_helper(LISA_LD_WU, &base, &mem, save_temp);
+
+    /* 3. 24-bits long base address in Real-Address mode and vm86 mode */
+    if (!td->sys.pe || td->sys.vm86) {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND tmp1 = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_SRAI_D, &tmp, &base, 0x10);
+        latxs_append_ir2_opnd2i(LISA_ANDI, &tmp, &tmp, 0xff);
+        latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp, &tmp, 0x10);
+        latxs_append_ir2_opnd2_(lisa_mov16z, &tmp1, &base);
+        latxs_append_ir2_opnd3(LISA_OR, &tmp, &tmp, &tmp1);
+        base = tmp;
+    }
+
+    /* 4. store limit/base into IDTR */
+    latxs_append_ir2_opnd2i(LISA_ST_W, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_idtr_base(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ST_W, &limit, &latxs_env_ir2_opnd,
+            lsenv_offset_of_idtr_limit(lsenv));
+
+    return true;
+}
+
+bool latxs_translate_sidt(IR1_INST *pir1)
+{
+    IR1_OPND *opnd = ir1_get_opnd(pir1, 0);
+    lsassertm_illop(ir1_addr(pir1),
+            ir1_opnd_is_mem(opnd),
+            "not a valid SIDT insn: pir1 = %p\n", (void *)pir1);
+
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd, -1);
+
+    /* 1. load limit/base into temp register */
+    IR2_OPND base = latxs_ra_alloc_itemp();
+    IR2_OPND limit = latxs_ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2i(LISA_LD_W, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_idtr_base(lsenv));
+    latxs_append_ir2_opnd2i(LISA_LD_W, &limit, &latxs_env_ir2_opnd,
+            lsenv_offset_of_idtr_limit(lsenv));
+
+    int save_temp = 1;
+    /* 2. store 2 bytes limit at MEM(addr) */
+    gen_ldst_softmmu_helper(LISA_ST_H, &limit, &mem_opnd, save_temp);
+
+    /* 3. store 4 bytes base at MEM(addr + 2) */
+    IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+    if (latxs_ir1_addr_size(pir1) == 2) {
+        latxs_append_ir2_opnd2_(lisa_mov24z, &base, &base);
+    }
+    gen_ldst_softmmu_helper(LISA_ST_W, &base, &mem, save_temp);
+
+    latxs_ra_free_temp(&base);
+    latxs_ra_free_temp(&limit);
+    return true;
+}
+
+bool latxs_translate_lgdt(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_LGDT(pir1);
+
+    IR1_OPND *opnd = ir1_get_opnd(pir1, 0);
+    lsassertm_illop(ir1_addr(pir1),
+            ir1_opnd_is_mem(opnd),
+            "not a valid LGDT insn: pir1 = %p\n", (void *)pir1);
+
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd, -1);
+
+    IR2_OPND limit = latxs_ra_alloc_itemp();
+    IR2_OPND base = latxs_ra_alloc_itemp();
+
+    int save_temp = 1;
+
+    /* 1. load 2 bytes for limit at MEM(addr)*/
+    gen_ldst_softmmu_helper(LISA_LD_HU, &limit, &mem_opnd, save_temp);
+
+    /* 2. load 4 bytes for base address at MEM(addr + 2)*/
+    IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+    gen_ldst_softmmu_helper(LISA_LD_WU, &base, &mem, save_temp);
+
+    /* 3. 24-bits long base address in Real-Address mode and vm86 mode */
+    if (!td->sys.pe || td->sys.vm86) {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND tmp1 = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_SRAI_D, &tmp, &base, 0x10);
+        latxs_append_ir2_opnd2i(LISA_ANDI, &tmp, &tmp, 0xff);
+        latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp, &tmp, 0x10);
+        latxs_append_ir2_opnd2_(lisa_mov16z, &tmp1, &base);
+        latxs_append_ir2_opnd3(LISA_OR, &tmp, &tmp, &tmp1);
+        base = tmp;
+    }
+
+    /* 4. store limit/base into GDTR */
+    latxs_append_ir2_opnd2i(LISA_ST_W, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_gdtr_base(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ST_W, &limit, &latxs_env_ir2_opnd,
+            lsenv_offset_of_gdtr_limit(lsenv));
+
+    return true;
+}
+
+bool latxs_translate_sgdt(IR1_INST *pir1)
+{
+    IR1_OPND *opnd = ir1_get_opnd(pir1, 0);
+    lsassertm_illop(ir1_addr(pir1),
+            ir1_opnd_is_mem(opnd),
+            "not a valid SGDT insn: pir1 = %p\n", (void *)pir1);
+
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd, -1);
+
+    /* 0. mem_opnd might be temp register */
+    int save_temp = 1;
+
+    /* 1. load gdtr.limit from env */
+    IR2_OPND limit = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_LD_W, &limit, &latxs_env_ir2_opnd,
+            lsenv_offset_of_gdtr_limit(lsenv));
+    /* 2. store 16-bits limit at MEM(addr) */
+    gen_ldst_softmmu_helper(LISA_ST_H, &limit, &mem_opnd, save_temp);
+    latxs_ra_free_temp(&limit);
+
+    /* 3. load gdtr.base  from env */
+    IR2_OPND base = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_LD_W, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_gdtr_base(lsenv));
+
+    /* 4. store 32-bit base at MEM(addr + 2) */
+    IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+    gen_ldst_softmmu_helper(LISA_ST_W, &base, &mem, save_temp);
+    latxs_ra_free_temp(&base);
+
+    return true;
+}
+
+static void latxs_translate_lldt_gpr(IR1_INST *pir1, IR1_OPND *opnd0)
+{
+    /* helper might cause exception, save complete CPUX86State */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* void helper_lldt(CPUX86State  *env, int selector) */
+
+    /* 1. get selector into arg1 (a1) */
+    latxs_load_ir1_gpr_to_ir2(&latxs_arg1_ir2_opnd, opnd0, EXMode_Z);
+
+    /* 2. call helper */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    latxs_tr_gen_call_to_helper((ADDR)helper_lldt);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+}
+
+static void latxs_translate_lldt_mem(IR1_INST *pir1, IR1_OPND *opnd0)
+{
+    /* 0. load selector value */
+    IR2_OPND selector = latxs_ra_alloc_itemp();
+    latxs_load_ir1_mem_to_ir2(&selector, opnd0, EXMode_Z, false, -1);
+
+    /* helper might cause exception, save complete CPUX86State */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* void helper_lldt(CPUX86State  *env, int selector) */
+
+    /* 1. get selector into arg1 (a1) */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd,
+            &selector, &latxs_zero_ir2_opnd);
+
+    /* 2. call helper */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    latxs_tr_gen_call_to_helper((ADDR)helper_lldt);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+}
+
+bool latxs_translate_lldt(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_LLDT(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* GPR or MEM */
+
+    if (ir1_opnd_is_gpr(opnd0)) {
+        latxs_translate_lldt_gpr(pir1, opnd0);
+    } else {
+        lsassertm_illop(ir1_addr(pir1),
+                ir1_opnd_is_mem(opnd0),
+                "not a valid LLDT insn: pir1 = %p\n", (void *)pir1);
+
+        latxs_translate_lldt_mem(pir1, opnd0);
+    }
+
+    return true;
+}
+
+bool latxs_translate_sldt(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_SLDT(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* GPR or MEM */
+
+    /* load ldtr.selector from env */
+    IR2_OPND selector = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_LD_W, &selector, &latxs_env_ir2_opnd,
+            lsenv_offset_of_ldtr_selector(lsenv));
+
+    latxs_store_ir2_to_ir1(&selector, opnd0, false);
+
+    return true;
+}
+
+static void latxs_translate_ltr_gpr(IR1_INST *pir1, IR1_OPND *opnd0)
+{
+    /* helper might cause exception, save complete CPUX86State */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* void helper_ltr(CPUX86State  *env, int selector) */
+
+    /* 1. get selector into arg1 (a1) */
+    latxs_load_ir1_gpr_to_ir2(&latxs_arg1_ir2_opnd, opnd0, EXMode_Z);
+
+    /* 2. call helper */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    latxs_tr_gen_call_to_helper((ADDR)helper_ltr);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+}
+
+static void latxs_translate_ltr_mem(IR1_INST *pir1, IR1_OPND *opnd0)
+{
+    /* helper might cause exception, save complete CPUX86State */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* void helper_ltr(CPUX86State  *env, int selector) */
+
+    /* 1. get selector into arg1 (a1) */
+    IR2_OPND selector = latxs_ra_alloc_itemp();
+    latxs_load_ir1_mem_to_ir2(&selector, opnd0, EXMode_Z, false, -1);
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd,
+            &selector, &latxs_zero_ir2_opnd);
+
+    /* 2. call helper */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    latxs_tr_gen_call_to_helper((ADDR)helper_ltr);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+}
+
+bool latxs_translate_ltr(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_LTR(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* GPR or MEM */
+
+    if (ir1_opnd_is_gpr(opnd0)) {
+        latxs_translate_ltr_gpr(pir1, opnd0);
+    } else {
+        lsassertm_illop(ir1_addr(pir1),
+                ir1_opnd_is_mem(opnd0),
+                "not a valid LTR insn: pir1 = %p\n", (void *)pir1);
+        latxs_translate_ltr_mem(pir1, opnd0);
+    }
+
+    return true;
+}
+
+bool latxs_translate_str(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_STR(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+
+    /* load tr.selector from env */
+    IR2_OPND selector = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_LD_W, &selector, &latxs_env_ir2_opnd,
+            lsenv_offset_of_tr_selector(lsenv));
+
+    latxs_store_ir2_to_ir1(&selector, opnd0, false);
 
     return true;
 }

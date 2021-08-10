@@ -304,4 +304,34 @@ static inline int lsenv_offset_of_hflags(ENV *lsenv)
     return (int)((ADDR)(&env->hflags) - (ADDR)env);
 }
 
+static inline int lsenv_offset_of_idtr_base(ENV *lsenv)
+{
+    return offsetof(CPUX86State, idt.base);
+}
+
+static inline int lsenv_offset_of_idtr_limit(ENV *lsenv)
+{
+    return offsetof(CPUX86State, idt.limit);
+}
+
+static inline int lsenv_offset_of_gdtr_base(ENV *lsenv)
+{
+    return offsetof(CPUX86State, gdt.base);
+}
+
+static inline int lsenv_offset_of_gdtr_limit(ENV *lsenv)
+{
+    return offsetof(CPUX86State, gdt.limit);
+}
+
+static inline int lsenv_offset_of_ldtr_selector(ENV *lsenv)
+{
+    return offsetof(CPUX86State, ldt.selector);
+}
+
+static inline int lsenv_offset_of_tr_selector(ENV *lsenv)
+{
+    return offsetof(CPUX86State, tr.selector);
+}
+
 #endif
