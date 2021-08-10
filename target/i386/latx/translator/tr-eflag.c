@@ -100,11 +100,15 @@ bool translate_clc(IR1_INST *pir1) {
 
 bool translate_cld(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cld(pir1);
+#else
     IR2_OPND eflags = ra_alloc_eflags();
 
     la_append_ir2_opnd2ii(LISA_BSTRINS_W, eflags, zero_ir2_opnd, 10, 10);
 
     return true;
+#endif
 }
 
 bool translate_stc(IR1_INST *pir1) {
@@ -114,9 +118,13 @@ bool translate_stc(IR1_INST *pir1) {
 
 bool translate_std(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_std(pir1);
+#else
     IR2_OPND eflags = ra_alloc_eflags();
 
     la_append_ir2_opnd2i_em(LISA_ORI, eflags, eflags, 0x400);
 
     return true;
+#endif
 }

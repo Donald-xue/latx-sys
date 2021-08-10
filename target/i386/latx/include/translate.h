@@ -1447,6 +1447,9 @@ bool latxs_translate_callin(IR1_INST *pir1);
 bool latxs_translate_jmp(IR1_INST *pir1);
 bool latxs_translate_jmpin(IR1_INST *pir1);
 
+bool latxs_translate_cli(IR1_INST *pir1);
+bool latxs_translate_sti(IR1_INST *pir1);
+
 /* sys-arith */
 bool latxs_translate_add(IR1_INST *pir1);
 bool latxs_translate_adc(IR1_INST *pir1);
@@ -1535,6 +1538,10 @@ bool latxs_translate_cmovl(IR1_INST *pir1);
 bool latxs_translate_cmovge(IR1_INST *pir1);
 bool latxs_translate_cmovle(IR1_INST *pir1);
 bool latxs_translate_cmovg(IR1_INST *pir1);
+
+/* sys-eflags */
+bool latxs_translate_cld(IR1_INST *pir1);
+bool latxs_translate_std(IR1_INST *pir1);
 
 #endif
 

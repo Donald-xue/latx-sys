@@ -439,3 +439,46 @@ bool latxs_translate_jmpin(IR1_INST *pir1)
     latxs_tr_generate_exit_tb(pir1, 1);
     return true;
 }
+
+bool latxs_translate_cli(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_CLI(pir1);
+
+    IR2_OPND *eflags = &latxs_eflags_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND mask = latxs_ra_alloc_itemp();
+
+    /* helper_cli */
+    latxs_append_ir2_opnd2i(LISA_ORI, &mask, zero, IF_BIT);
+    latxs_append_ir2_opnd3(LISA_NOR, &mask, zero, &mask);
+    latxs_append_ir2_opnd3(LISA_AND, eflags, eflags, &mask);
+
+    latxs_ra_free_temp(&mask);
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_sti(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_CLI(pir1);
+
+    IR2_OPND *eflags = &latxs_eflags_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND mask = latxs_ra_alloc_itemp();
+
+    /* helper_sti */
+    latxs_append_ir2_opnd2i(LISA_ORI, &mask, zero, IF_BIT);
+    latxs_append_ir2_opnd3(LISA_OR, eflags, eflags, &mask);
+
+    latxs_ra_free_temp(&mask);
+
+    /* sti is EOB in system-mode */
+    lsenv->tr_data->inhibit_irq = 1;
+
+    return true;
+}

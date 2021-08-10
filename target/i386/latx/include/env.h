@@ -203,6 +203,7 @@ typedef struct ENV {
 #define SF_BIT (1 << 7)
 #define OF_BIT (1 << 11)
 #define DF_BIT (1 << 10)
+#define IF_BIT (1 << 9)
 
 #define CF_BIT_INDEX 0
 #define PF_BIT_INDEX 2
@@ -211,6 +212,7 @@ typedef struct ENV {
 #define SF_BIT_INDEX 7
 #define OF_BIT_INDEX 11
 #define DF_BIT_INDEX 10
+#define IF_BIT_INDEX 9
 
 /* fcsr */
 #define FCSR_OFF_EN_I           0

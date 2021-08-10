@@ -254,3 +254,33 @@ void latxs_tr_gen_static_load_eflags(int simple)
     latxs_append_ir2_opnd3(LISA_NOR, cc_mask, zero, cc_mask);
     latxs_append_ir2_opnd3(LISA_AND, eflags, eflags, cc_mask);
 }
+
+bool latxs_translate_cld(IR1_INST *pir1)
+{
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W,
+            &latxs_eflags_ir2_opnd,
+            &latxs_zero_ir2_opnd, 10, 10);
+
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &tmp,
+            &latxs_zero_ir2_opnd, 1);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp,
+            &latxs_env_ir2_opnd, lsenv_offset_of_df(lsenv));
+    latxs_ra_free_temp(&tmp);
+
+    return true;
+}
+
+bool latxs_translate_std(IR1_INST *pir1)
+{
+    latxs_append_ir2_opnd2i(LISA_ORI,
+            &latxs_eflags_ir2_opnd,
+            &latxs_eflags_ir2_opnd, 0x400);
+
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    latxs_load_imm64_to_ir2(&tmp, -1);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp,
+            &latxs_env_ir2_opnd, lsenv_offset_of_df(lsenv));
+
+    return true;
+}

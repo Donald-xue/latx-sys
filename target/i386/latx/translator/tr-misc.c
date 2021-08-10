@@ -34,8 +34,6 @@ bool translate_in(IR1_INST *pir1) { return false; }
 bool translate_out(IR1_INST *pir1) { return false; }
 bool translate_int1(IR1_INST *pir1) { return false; }
 
-bool translate_cli(IR1_INST *pir1) { return false; }
-bool translate_sti(IR1_INST *pir1) { return false; }
 bool translate_lar(IR1_INST *pir1) { return false; }
 bool translate_lsl(IR1_INST *pir1) { return false; }
 bool translate_syscall(IR1_INST *pir1) { return false; }
@@ -1439,6 +1437,24 @@ bool translate_jmp_far(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
     return latxs_translate_jmp_far(pir1);
+#else
+    return false;
+#endif
+}
+
+bool translate_cli(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cli(pir1);
+#else
+    return false;
+#endif
+}
+
+bool translate_sti(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sti(pir1);
 #else
     return false;
 #endif
