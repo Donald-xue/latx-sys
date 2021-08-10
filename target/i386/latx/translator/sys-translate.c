@@ -419,7 +419,7 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 void latxs_tr_gen_tb_start(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
-    IR2_OPND count = ra_alloc_itemp();
+    IR2_OPND count = latxs_ra_alloc_itemp();
 
     latxs_append_ir2_opnd2i(LISA_LD_W, &count,
             &latxs_env_ir2_opnd,

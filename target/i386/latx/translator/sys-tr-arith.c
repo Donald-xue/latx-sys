@@ -7,6 +7,22 @@
 #include "sys-excp.h"
 #include <string.h>
 
+void latxs_sys_arith_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_ADD);
+    latxs_register_ir1(X86_INS_ADC);
+    latxs_register_ir1(X86_INS_SUB);
+    latxs_register_ir1(X86_INS_SBB);
+    latxs_register_ir1(X86_INS_INC);
+    latxs_register_ir1(X86_INS_DEC);
+    latxs_register_ir1(X86_INS_NEG);
+    latxs_register_ir1(X86_INS_CMP);
+    latxs_register_ir1(X86_INS_MUL);
+    latxs_register_ir1(X86_INS_IMUL);
+    latxs_register_ir1(X86_INS_DIV);
+    latxs_register_ir1(X86_INS_IDIV);
+}
+
 bool latxs_translate_add(IR1_INST *pir1)
 {
     /* TODO if (option_by_hand) return translate_add_byhand(pir1); */

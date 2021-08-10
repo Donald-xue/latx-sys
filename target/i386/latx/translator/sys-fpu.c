@@ -12,7 +12,7 @@ void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb)
 
     if (tb != NULL) {
         latxs_td_fpu_set_top(tb->_top_in);
-        lsassert(t->curr_top != -1);
+        lsassert(td->curr_top != -1);
     } else {
         latxs_td_fpu_set_top(0);
     }

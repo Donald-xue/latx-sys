@@ -121,7 +121,7 @@ IR2_OPND latxs_convert_gpr_opnd(IR1_OPND *opnd1, EXMode em)
 
 void latxs_store_ir2_to_ir1_gpr_em(IR2_OPND *opnd2, IR1_OPND *opnd1)
 {
-    lsassert(ir1_opnd_is_gpr(opnd1) && ir2_opnd_is_gpr(opnd2));
+    lsassert(ir1_opnd_is_gpr(opnd1) && latxs_ir2_opnd_is_gpr(opnd2));
     int gpr_num = ir1_opnd_base_reg_num(opnd1);
     IR2_OPND gpr_opnd = latxs_ra_alloc_gpr(gpr_num);
     int opnd_size = ir1_opnd_size(opnd1);

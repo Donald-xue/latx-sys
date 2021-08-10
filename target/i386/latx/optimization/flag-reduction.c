@@ -160,8 +160,8 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* extractps */        //X86_INS_EXTRACTPS,
     {0, 0, 0},                                       /* extrq */            //X86_INS_EXTRQ,
     {0, 0, 0},                                       /* f2xm1, */           //X86_INS_F2XM1,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_LCALL,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_LJMP,
+    {0, 0, 0},                                       /* X86_INS_LCALL, */
+    {0, 0, 0},                                       /* X86_INS_LJMP, */
     {0, 0, 0},                                       /* fbld, */            //X86_INS_FBLD,
     {0, 0, 0},                                       /* fbstp, */           //X86_INS_FBSTP,
     {0, 0, 0},                                       /* fcompp, */          //X86_INS_FCOMPP,

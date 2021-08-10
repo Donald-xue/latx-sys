@@ -7,6 +7,12 @@
 #include "sys-excp.h"
 #include <string.h>
 
+void latxs_sys_io_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_IN);
+    latxs_register_ir1(X86_INS_OUT);
+}
+
 static void latxs_tr_gen_io_check(
         IR1_INST *ir1,
         IR1_OPND *opnd_io,

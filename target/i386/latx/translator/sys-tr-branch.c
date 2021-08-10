@@ -7,6 +7,33 @@
 #include "sys-excp.h"
 #include <string.h>
 
+void latxs_sys_branch_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_JE);
+    latxs_register_ir1(X86_INS_JNE);
+    latxs_register_ir1(X86_INS_JS);
+    latxs_register_ir1(X86_INS_JNS);
+    latxs_register_ir1(X86_INS_JB);
+    latxs_register_ir1(X86_INS_JAE);
+    latxs_register_ir1(X86_INS_JO);
+    latxs_register_ir1(X86_INS_JNO);
+    latxs_register_ir1(X86_INS_JBE);
+    latxs_register_ir1(X86_INS_JA);
+    latxs_register_ir1(X86_INS_JP);
+    latxs_register_ir1(X86_INS_JNP);
+    latxs_register_ir1(X86_INS_JL);
+    latxs_register_ir1(X86_INS_JGE);
+    latxs_register_ir1(X86_INS_JLE);
+    latxs_register_ir1(X86_INS_JG);
+    latxs_register_ir1(X86_INS_JCXZ);
+    latxs_register_ir1(X86_INS_JECXZ);
+    latxs_register_ir1(X86_INS_JRCXZ);
+
+    latxs_register_ir1(X86_INS_LOOP);
+    latxs_register_ir1(X86_INS_LOOPE);
+    latxs_register_ir1(X86_INS_LOOPNE);
+}
+
 #ifdef CONFIG_SOFTMMU
 
 #define LOAD_TB_PTR_TO_DBT_ARG1 do {                        \

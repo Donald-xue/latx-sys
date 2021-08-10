@@ -254,7 +254,7 @@ void latxs_tr_ra_init(TRANSLATION_DATA *td)
 
 IR2_OPND latxs_ra_alloc_gpr(int gpr_num)
 {
-    lsassert(gpr_num >= 0 && gpr_num < 7);
+    lsassert(gpr_num >= 0 && gpr_num <= 7);
 
     /* EAX - EDI => S1 - S8 */
     static const int8_t latxs_rai_imap_gpr[8] = {
@@ -406,7 +406,7 @@ void latxs_ra_free_temp(IR2_OPND *opnd)
     int i = 0;
     switch (latxs_ir2_opnd_type(opnd)) {
     case IR2_OPND_GPR:
-    case IR2_OPND_MEM:
+    case IR2_OPND_MEMY:
         for (i = 0; i < latxs_itemp_status_num; ++i) {
             if (ireg_map[i].physical_id == physical_reg_num) {
                 td->itemp_mask = td->itemp_mask & ~(1 << i);

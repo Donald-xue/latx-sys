@@ -8,6 +8,33 @@
 #include "sys-excp.h"
 #include <string.h>
 
+void latxs_sys_mov_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_MOV);
+    latxs_register_ir1(X86_INS_MOVZX);
+    latxs_register_ir1(X86_INS_MOVSX);
+    latxs_register_ir1(X86_INS_LEA);
+    latxs_register_ir1(X86_INS_MOVQ);
+    latxs_register_ir1(X86_INS_MOVD);
+
+    latxs_register_ir1(X86_INS_CMOVO);
+    latxs_register_ir1(X86_INS_CMOVNO);
+    latxs_register_ir1(X86_INS_CMOVB);
+    latxs_register_ir1(X86_INS_CMOVAE);
+    latxs_register_ir1(X86_INS_CMOVE);
+    latxs_register_ir1(X86_INS_CMOVNE);
+    latxs_register_ir1(X86_INS_CMOVBE);
+    latxs_register_ir1(X86_INS_CMOVA);
+    latxs_register_ir1(X86_INS_CMOVS);
+    latxs_register_ir1(X86_INS_CMOVNS);
+    latxs_register_ir1(X86_INS_CMOVP);
+    latxs_register_ir1(X86_INS_CMOVNP);
+    latxs_register_ir1(X86_INS_CMOVL);
+    latxs_register_ir1(X86_INS_CMOVGE);
+    latxs_register_ir1(X86_INS_CMOVLE);
+    latxs_register_ir1(X86_INS_CMOVG);
+}
+
 bool latxs_translate_mov(IR1_INST *pir1)
 {
     /* TranslationBlock *tb = lsenv->tr_data->curr_tb; */
@@ -21,7 +48,7 @@ bool latxs_translate_mov(IR1_INST *pir1)
         /* return translate_mov_byhand(pir1); */
     /* } */
 
-    IR2_OPND src = ra_alloc_itemp();
+    IR2_OPND src = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_N, false);
     latxs_store_ir2_to_ir1(&src, ir1_get_opnd(pir1, 0), false);
 
@@ -32,7 +59,7 @@ bool latxs_translate_movzx(IR1_INST *pir1)
 {
     /* if (option_by_hand) return translate_movzx_byhand(pir1); */
 
-    IR2_OPND src = ra_alloc_itemp();
+    IR2_OPND src = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_Z, false);
     latxs_store_ir2_to_ir1(&src, ir1_get_opnd(pir1, 0), false);
     return true;
@@ -42,7 +69,7 @@ bool latxs_translate_movsx(IR1_INST *pir1)
 {
     /* if (option_by_hand) return translate_movsx_byhand(pir1); */
 
-    IR2_OPND src = ra_alloc_itemp();
+    IR2_OPND src = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_S, false);
     latxs_store_ir2_to_ir1(&src, ir1_get_opnd(pir1, 0), false);
     return true;
@@ -50,7 +77,7 @@ bool latxs_translate_movsx(IR1_INST *pir1)
 
 bool latxs_translate_lea(IR1_INST *pir1)
 {
-    IR2_OPND value_opnd = ra_alloc_itemp();
+    IR2_OPND value_opnd = latxs_ra_alloc_itemp();
     int addr_size = latxs_ir1_addr_size(pir1);
     latxs_load_ir1_mem_addr_to_ir2(&value_opnd,
             ir1_get_opnd(pir1, 1), addr_size);

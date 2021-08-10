@@ -2033,6 +2033,12 @@ static bool (*translate_functions[])(IR1_INST *) = {
 bool ir1_translate(IR1_INST *ir1)
 {
 
+#ifdef CONFIG_SOFTMMU
+    lsassertm(latxs_is_ir1_ok(ir1),
+            "IR1 is not ready in sys %s\n",
+            ir1_name(ir1_opcode(ir1)));
+#endif
+
     /* 2. call translate_xx function */
     int tr_func_idx = ir1_opcode(ir1) - X86_INS_INVALID;
 

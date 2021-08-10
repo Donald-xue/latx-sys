@@ -6,6 +6,12 @@
 #include "translate.h"
 #include <string.h>
 
+void latxs_sys_eflags_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_CLD);
+    latxs_register_ir1(X86_INS_STD);
+}
+
 /*
  * always set CPUX86State.cc_src == eflags
  *

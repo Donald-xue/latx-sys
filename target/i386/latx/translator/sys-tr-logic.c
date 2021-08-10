@@ -8,6 +8,30 @@
 #include "sys-excp.h"
 #include <string.h>
 
+void latxs_sys_logic_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_XOR);
+    latxs_register_ir1(X86_INS_AND);
+    latxs_register_ir1(X86_INS_TEST);
+    latxs_register_ir1(X86_INS_OR);
+    latxs_register_ir1(X86_INS_NOT);
+
+    latxs_register_ir1(X86_INS_SHL);
+    latxs_register_ir1(X86_INS_SHR);
+    latxs_register_ir1(X86_INS_SAL);
+    latxs_register_ir1(X86_INS_SAR);
+
+    latxs_register_ir1(X86_INS_ROL);
+    latxs_register_ir1(X86_INS_ROR);
+    latxs_register_ir1(X86_INS_RCL);
+    latxs_register_ir1(X86_INS_RCR);
+
+    latxs_register_ir1(X86_INS_SHRD);
+    latxs_register_ir1(X86_INS_SHLD);
+
+    latxs_register_ir1(X86_INS_BSWAP);
+}
+
 bool latxs_translate_xor(IR1_INST *pir1)
 {
     /* if (option_by_hand) return translate_xor_byhand(pir1); */

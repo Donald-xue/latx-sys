@@ -1437,6 +1437,18 @@ void latxs_generate_eflag_calculation(IR2_OPND*,
 /* sys attribute */
 int latxs_get_sys_stack_addr_size(void);
 
+/* sys developing */
+int latxs_is_ir1_ok(IR1_INST *pir1);
+void latxs_register_ir1(IR1_OPCODE opc);
+
+void latxs_sys_misc_register_ir1(void);
+void latxs_sys_io_register_ir1(void);
+void latxs_sys_arith_register_ir1(void);
+void latxs_sys_branch_register_ir1(void);
+void latxs_sys_logic_register_ir1(void);
+void latxs_sys_mov_register_ir1(void);
+void latxs_sys_eflags_register_ir1(void);
+
 /* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
 

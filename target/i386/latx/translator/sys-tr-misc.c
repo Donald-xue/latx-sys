@@ -7,6 +7,15 @@
 #include "sys-excp.h"
 #include <string.h>
 
+void latxs_sys_misc_register_ir1(void)
+{
+    latxs_register_ir1(X86_INS_LJMP);
+    latxs_register_ir1(X86_INS_CALL);
+    latxs_register_ir1(X86_INS_JMP);
+    latxs_register_ir1(X86_INS_CLI);
+    latxs_register_ir1(X86_INS_STI);
+}
+
 int latxs_get_sys_stack_addr_size(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
