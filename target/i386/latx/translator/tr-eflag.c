@@ -102,8 +102,12 @@ bool translate_pushf(IR1_INST *pir1)
 }
 
 bool translate_clc(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_clc(pir1);
+#else
     la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x1);
     return true;
+#endif
 }
 
 bool translate_cld(IR1_INST *pir1)
@@ -120,8 +124,12 @@ bool translate_cld(IR1_INST *pir1)
 }
 
 bool translate_stc(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_stc(pir1);
+#else
     la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
     return true;
+#endif
 }
 
 bool translate_std(IR1_INST *pir1)

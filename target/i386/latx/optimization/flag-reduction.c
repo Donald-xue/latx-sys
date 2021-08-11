@@ -67,7 +67,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                          /* cdq, */          //X86_INS_CDQ,
     {0, 0, 0},                                          /* cdqe, */         //X86_INS_CDQE,
     {0, 0, 0},                                       /* fchs, */            //X86_INS_FCHS,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_CLAC,
+    {0, 0, 0},                                  /* X86_INS_CLAC, */
     {0, __CF, 0},                                    /* clc, */             //X86_INS_CLC,
     {0, __DF, 0},                                    /* cld, */             //X86_INS_CLD,
     {0, 0, 0},                                       /* clflush, */         //X86_INS_CLFLUSH,
@@ -675,7 +675,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* sqrtsd, */          //X86_INS_SQRTSD,
     {0, 0, 0},                                       /* sqrtss, */          //X86_INS_SQRTSS,
     {0, 0, 0},                                       /* fsqrt, */           //X86_INS_FSQRT,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_STAC,
+    {0, 0, 0},                                  /* X86_INS_STAC, */
     {0, __CF, 0},                                    /* stc, */             //X86_INS_STC,
     {0, __DF, 0},                                    /* std, */             //X86_INS_STD,
     {0, 0, 0},                                       /* stgi, */            //X86_INS_STGI,

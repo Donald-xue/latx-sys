@@ -587,7 +587,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_cdq,       //X86_INS_CDQ,
     translate_cdqe,      //X86_INS_CDQE,
     translate_fchs,      //X86_INS_FCHS,
-    NULL,                //X86_INS_CLAC,
+    translate_clac,      /* X86_INS_CLAC, */
     translate_clc,       //X86_INS_CLC,
     translate_cld,       //X86_INS_CLD,
     translate_clflush,   //X86_INS_CLFLUSH,
@@ -1195,7 +1195,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_sqrtsd,    //X86_INS_SQRTSD,
     translate_sqrtss,    //X86_INS_SQRTSS,
     translate_fsqrt,     //X86_INS_FSQRT,
-    NULL,                //X86_INS_STAC,
+    translate_stac,      /* X86_INS_STAC, */
     translate_stc,       //X86_INS_STC,
     translate_std,       //X86_INS_STD,
     translate_stgi,      //X86_INS_STGI,

@@ -11,6 +11,10 @@ void latxs_sys_eflags_register_ir1(void)
 {
     latxs_register_ir1(X86_INS_CLD);
     latxs_register_ir1(X86_INS_STD);
+    latxs_register_ir1(X86_INS_CLC);
+    latxs_register_ir1(X86_INS_STC);
+    latxs_register_ir1(X86_INS_CLAC);
+    latxs_register_ir1(X86_INS_STAC);
     latxs_register_ir1(X86_INS_PUSHF);
     latxs_register_ir1(X86_INS_PUSHFD);
     latxs_register_ir1(X86_INS_POPF);
@@ -293,6 +297,46 @@ bool latxs_translate_std(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_ST_W, &tmp,
             &latxs_env_ir2_opnd, lsenv_offset_of_df(lsenv));
 
+    return true;
+}
+
+bool latxs_translate_clc(IR1_INST *pir1)
+{
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &latxs_zero_ir2_opnd, 0x1);
+    return true;
+}
+
+bool latxs_translate_stc(IR1_INST *pir1)
+{
+    IR2_OPND cf_opnd = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &cf_opnd, &latxs_zero_ir2_opnd, 0x1);
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &cf_opnd, 0x1);
+    latxs_ra_free_temp(&cf_opnd);
+    return true;
+}
+
+bool latxs_translate_clac(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_CLAC(pir1);
+
+    IR2_OPND mask = latxs_ra_alloc_itemp();
+    latxs_load_imm32_to_ir2(&mask, AC_MASK, EXMode_Z);
+    latxs_append_ir2_opnd3(LISA_NOR, &mask, &mask, &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd3(LISA_AND, &latxs_eflags_ir2_opnd,
+            &latxs_eflags_ir2_opnd, &mask);
+    return true;
+}
+
+bool latxs_translate_stac(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_STAC(pir1);
+
+    IR2_OPND mask = latxs_ra_alloc_itemp();
+    latxs_load_imm32_to_ir2(&mask, AC_MASK, EXMode_Z);
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_eflags_ir2_opnd,
+            &latxs_eflags_ir2_opnd, &mask);
     return true;
 }
 

@@ -5,6 +5,9 @@
 #include "ir1.h"
 #include "ir2.h"
 
+bool translate_clac(IR1_INST *pir1);
+bool translate_stac(IR1_INST *pir1);
+
 bool translate_add(IR1_INST *pir1);
 bool translate_push(IR1_INST *pir1);
 bool translate_pop(IR1_INST *pir1);
@@ -1608,6 +1611,10 @@ bool latxs_translate_cmovg(IR1_INST *pir1);
 /* sys-eflags */
 bool latxs_translate_cld(IR1_INST *pir1);
 bool latxs_translate_std(IR1_INST *pir1);
+bool latxs_translate_clc(IR1_INST *pir1);
+bool latxs_translate_stc(IR1_INST *pir1);
+bool latxs_translate_clac(IR1_INST *pir1);
+bool latxs_translate_stac(IR1_INST *pir1);
 bool latxs_translate_popf(IR1_INST *pir1);
 bool latxs_translate_pushf(IR1_INST *pir1);
 
