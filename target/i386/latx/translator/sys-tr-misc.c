@@ -45,6 +45,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_CWD);
     latxs_register_ir1(X86_INS_CWDE);
     latxs_register_ir1(X86_INS_CBW);
+    latxs_register_ir1(X86_INS_LCALL);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1826,5 +1827,213 @@ bool latxs_translate_cbw(IR1_INST *pir1)
     IR2_OPND val = latxs_ra_alloc_itemp();
     latxs_load_ir1_gpr_to_ir2(&val, &al_ir1_opnd, EXMode_S);
     latxs_store_ir2_to_ir1(&val, &ax_ir1_opnd, false);
+    return true;
+}
+
+static void latxs_translate_call_far_imm(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    /* 1. save native context */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* 2. prepare the values for parameters */
+
+    /* 2.1 prepare parameter new_cs and new_eip */
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    /*
+     * -------------------------------------------
+     *  opndtype |      opnd[0]    |     opnd[1]
+     * -------------------------------------------
+     *  ptr16:16 |  imm16 selector |  imm16 offset
+     *  ptr16:32 |  imm16 selector |  imm32 offset
+     * -------------------------------------------
+     */
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+    lsassert(ir1_opnd_size(opnd0) == 16);
+    lsassert(ir1_opnd_size(opnd1) == data_size);
+
+    uint32_t selector = ir1_opnd_uimm(opnd0); /* new_cs  : 16-bit    */
+    uint32_t offset   = ir1_opnd_uimm(opnd1); /* new_eip : 16/32-bit */
+
+    /* 2.2 prepare parameter next_eip */
+    ADDRX next_eip = ir1_addr_next(pir1);
+
+    /*
+     * 2.3 prepare shift: data size
+     *     16-bit: shift = 0
+     *     32-bit: shift = 1
+     */
+    int shift = (data_size >> 4) - 1;
+
+    /* 3. building the parameters: take care of temp register */
+    /* 3.1 arg0 : env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    /* 3.2 arg1 : selector */
+    /*     arg2 : offset   */
+    latxs_load_imm32_to_ir2(&latxs_arg1_ir2_opnd,
+            selector & 0xffff, EXMode_Z);
+    if (data_size == 32) {
+        latxs_load_imm32_to_ir2(&latxs_arg2_ir2_opnd, offset, EXMode_Z);
+    } else {
+        latxs_load_imm32_to_ir2(&latxs_arg2_ir2_opnd,
+                offset & 0xffff, EXMode_Z);
+    }
+    /* 3.3 arg3 : shift according to data size */
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
+            &latxs_zero_ir2_opnd, shift);
+    /* 3.4 arg4 : next eip */
+    latxs_load_imm32_to_ir2(&latxs_arg4_ir2_opnd,
+            (uint32_t)next_eip, EXMode_Z);
+
+    /* 4. call the helper */
+    if (td->sys.pe && !td->sys.vm86) {
+        latxs_tr_gen_call_to_helper((ADDR)helper_lcall_protected);
+    } else {
+        latxs_tr_gen_call_to_helper((ADDR)helper_lcall_real);
+    }
+
+    /*
+     *  far call in protected mode    * far call in real-mode or vm86 mode
+     *  > complete cpustate is used   *  > SS and ESP (mapping) is used
+     *  > CS and EIP is updated       *  > CS and EIP is updated
+     *  > might generate exception    *  > might generate exception
+     *
+     * target/i386/seg_helper.c       * target/i386/seg_helper.c
+     * void helper_lcall_protected(   * void helper_lcall_real(
+     *      CPUX86State     *env,     *      CPUX86State     *env,
+     *      int             new_cs,   *      int             new_cs,
+     *      target_ulong    new_eip,  *      target_ulong    new_eip,
+     *      int             shift,    *      int             shift,
+     *      target_ulong    next_eip) *      int             next_eip)
+     */
+
+    /* 5. restore native context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    /* 6. disable EIP update in the later jmp */
+    td->ignore_eip_update = 1;
+}
+
+static void latxs_translate_call_far_mem(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    /* 1. prepare the values for parameters */
+
+    /* 1.1 prepare parameter new_cs and new_eip */
+    IR2_OPND selector_opnd = latxs_ra_alloc_itemp();
+    IR2_OPND offset_opnd   = latxs_ra_alloc_itemp();
+    /*
+     * -------------------------------------------
+     *  opndtype |      opnd[0]    |     opnd[1]
+     * -------------------------------------------
+     *    m16:16 |   mem  size = 4 |       --
+     *    m16:32 |   mem  size = 6 |       --
+     * -------------------------------------------
+     */
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd0, -1);
+
+    /* offset at MEM(address) : size = data_size */
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+    if (data_size == 32) {
+        gen_ldst_softmmu_helper(LISA_LD_WU, &offset_opnd, &mem_opnd, 1);
+    } else {
+        gen_ldst_softmmu_helper(LISA_LD_HU, &offset_opnd, &mem_opnd, 1);
+    }
+
+    /* selector at MEM(address + 2 or 4 ) : size = 16-bits */
+    if (data_size == 32) {
+        IR2_OPND mem_opnd_adjusted
+            = latxs_convert_mem_ir2_opnd_plus_4(&mem_opnd);
+        gen_ldst_softmmu_helper(LISA_LD_HU,
+                &selector_opnd, &mem_opnd_adjusted, 1);
+    } else {
+        IR2_OPND mem_opnd_adjusted
+            = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+        gen_ldst_softmmu_helper(LISA_LD_HU,
+                &selector_opnd, &mem_opnd_adjusted, 1);
+    }
+
+    /* 1.2 prepare parameter next_eip */
+    ADDRX next_eip = ir1_addr_next(pir1);
+
+    /*
+     * 1.3 prepare shift: data size
+     *     16-bit: shift = 0
+     *     32-bit: shift = 1
+     */
+    int shift = (data_size >> 4) - 1;
+
+    /* 2. save native context */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /*
+     *  far call in protected mode    * far call in real-mode or vm86 mode
+     *  > complete cpustate is used   *  > SS and ESP (mapping) is used
+     *  > CS and EIP is updated       *  > CS and EIP is updated
+     *  > might generate exception    *  > might generate exception
+     *
+     * target/i386/seg_helper.c       * target/i386/seg_helper.c
+     * void helper_lcall_protected(   * void helper_lcall_real(
+     *      CPUX86State     *env,     *      CPUX86State     *env,
+     *      int             new_cs,   *      int             new_cs,
+     *      target_ulong    new_eip,  *      target_ulong    new_eip1,
+     *      int             shift,    *      int             shift,
+     *      target_ulong    next_eip) *      int             next_eip)
+     */
+
+    IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
+    IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
+    IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
+    IR2_OPND *arg3 = &latxs_arg3_ir2_opnd;
+    IR2_OPND *arg4 = &latxs_arg4_ir2_opnd;
+
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    /* 3.1 arg1 : selector */
+    /* 3.2 arg2 : offset   */
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd3(LISA_OR, &tmp, &offset_opnd, zero);
+    latxs_append_ir2_opnd3(LISA_OR, arg1, &selector_opnd, zero);
+    latxs_append_ir2_opnd3(LISA_OR, arg2, &tmp, zero);
+    /* 3.3 arg3 : shift according to data size */
+    latxs_append_ir2_opnd2i(LISA_ORI, arg3, zero, shift);
+    /* 3.4 arg4 : next eip */
+    latxs_load_imm32_to_ir2(arg4, next_eip, EXMode_Z);
+    /* 3.5 arg0 : env */
+    latxs_append_ir2_opnd3(LISA_OR, arg0, &latxs_env_ir2_opnd, zero);
+
+    /* 4. call the helper */
+    if (td->sys.pe && !td->sys.vm86) {
+        latxs_tr_gen_call_to_helper((ADDR)helper_lcall_protected);
+    } else {
+        latxs_tr_gen_call_to_helper((ADDR)helper_lcall_real);
+    }
+
+    /* 5. restore native context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    /* 6. disable EIP update in the later jmp */
+    td->ignore_eip_update = 1;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_lcall(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+
+    if (ir1_opnd_is_imm(opnd0)) {
+        latxs_translate_call_far_imm(pir1);
+    } else {
+        lsassertm_illop(ir1_addr(pir1), ir1_opnd_is_mem(opnd0),
+                "not a valid call far: pir1 = %p\n", (void *)pir1);
+        latxs_translate_call_far_mem(pir1);
+    }
+
     return true;
 }

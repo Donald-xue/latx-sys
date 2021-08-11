@@ -1458,6 +1458,7 @@ bool latxs_translate_cpuid(IR1_INST *pir1);
 bool latxs_translate_call(IR1_INST *pir1);
 bool latxs_translate_callnext(IR1_INST *pir1);
 bool latxs_translate_callin(IR1_INST *pir1);
+bool latxs_translate_lcall(IR1_INST *pir1);
 bool latxs_translate_ret(IR1_INST *pir1);
 bool latxs_translate_iret(IR1_INST *pir1);
 bool latxs_translate_retf(IR1_INST *pir1);
