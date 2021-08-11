@@ -997,7 +997,15 @@ bool translate_leave(IR1_INST *pir1)
         la_append_ir2_opnd3_em(LISA_ADD_ADDR, rbp_opnd, rsp_opnd, gbase);
         ir2_opnd_set_em(&rbp_opnd, EM_MIPS_ADDRESS, 32);
     }
-    la_append_ir2_opnd2i_em(LISA_LOAD_ADDRX, rbp_opnd, rbp_opnd, 0);
+    /*
+     * NOTE: if previous insn as below
+     * add        ebp, 0x5c
+     * Once result of ebp is sign-extension, that will cause segv.
+     * To avoid this, invoke esp instead of ebp because ebp is equal to
+     * esp with zero extension.
+     * This change is win-win because there is no insn increasement.
+     */
+    la_append_ir2_opnd2i_em(LISA_LOAD_ADDRX, rbp_opnd, rsp_opnd, 0);
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, rsp_opnd, rsp_opnd, 4);
 
     return true;
