@@ -237,7 +237,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* invlpga, */         //X86_INS_INVLPGA,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_INVPCID,
     {0, 0, 0},                                       /* invvpid */          //X86_INS_INVVPID,
-    {__INVALID, __INVALID, __INVALID},                                 /* iret */                   //X86_INS_IRET,
+    {0, 0, 0},                                      /* X86_INS_IRET, */
     {0, __ALL_EFLAGS, __ALL_EFLAGS},                //X86_INS_IRETD,
     {0, __ALL_EFLAGS, __ALL_EFLAGS},                //X86_INS_IRETQ,
     {0, 0, 0},                                       /* fisttp, */          //X86_INS_FISTTP,

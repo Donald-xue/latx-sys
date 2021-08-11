@@ -34,6 +34,8 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_WBINVD);
     latxs_register_ir1(X86_INS_NOP);
     latxs_register_ir1(X86_INS_PAUSE);
+    latxs_register_ir1(X86_INS_IRET);
+    latxs_register_ir1(X86_INS_IRETD);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1411,4 +1413,85 @@ bool latxs_translate_pause(IR1_INST *pir1)
     latxs_tr_gen_infinite_loop();
 
     return true;
+}
+
+static bool latxs_do_translate_iret(IR1_INST *pir1, int size)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_IRET(pir1);
+
+    /* only supported 16-bit and 32-bit now */
+    lsassert(size == 0 || size == 1);
+
+    /* 1. save complete context */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+    if (td->sys.pe && !td->sys.vm86) {
+        /*
+         * 2. protected mode iret
+         *
+         * target/i386/seg_helper.c
+         * void helper_iret_protected(
+         *      CPUX86State *env,
+         *      int shift,
+         *      int next_eip)
+         */
+        ADDRX next_eip = ir1_addr_next(pir1);
+        /* 2.1 arg2: next eip */
+        latxs_load_addrx_to_ir2(&latxs_arg2_ir2_opnd, next_eip);
+        /* 2.2 arg1: size */
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+                &latxs_zero_ir2_opnd, size);
+        /* 2.3 arg0: env */
+        latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+                &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+        /* 2.4 call helper_iret_protected : might generate exception  */
+        latxs_tr_gen_call_to_helper((ADDR)helper_iret_protected);
+    } else {
+        /*
+         * 2. real and vm86 mode iret
+         *
+         * target/i386/seg_helper.c
+         * void helper_iret_real(
+         *      CPUX86State *env,
+         *      int shift)
+         */
+        /* 2.1 arg0: env */
+        latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+                &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+        /* 2.2 arg1: size */
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+                &latxs_zero_ir2_opnd, size);
+        /* 2.3 call helper_iret_real : ESP is updated, */
+        /* so we must save all gpr */
+        latxs_tr_gen_call_to_helper((ADDR)helper_iret_real);
+    }
+
+    /* 3. restore native context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
+
+    /* 5. disable eip update, since the helper modify eip */
+    td->ignore_eip_update = 1;
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_iret(IR1_INST *pir1)
+{
+    IR1_OPCODE opc = ir1_opcode(pir1);
+
+    if (opc == X86_INS_IRET) {
+        /* 16-bit opnd size */
+        return latxs_do_translate_iret(pir1, 0);
+    } else if (opc == X86_INS_IRETD) {
+        /* 32-bit opnd size */
+        return latxs_do_translate_iret(pir1, 1);
+    } else {
+        lsassertm(0, "%s not implemented in sys.\n",
+                ir1_name(opc));
+    }
+
+    return false;
 }

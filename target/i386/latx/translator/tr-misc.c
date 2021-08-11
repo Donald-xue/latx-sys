@@ -799,6 +799,9 @@ bool translate_callin(IR1_INST *pir1)
 
 bool translate_iret(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_iret(pir1);
+#else
     /* 1. load ret_addr into $25 */
     IR1_OPND seg_opnd;
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
@@ -820,6 +823,7 @@ bool translate_iret(IR1_INST *pir1)
     tr_generate_exit_tb(pir1, 0);
 
     return true;
+#endif
 }
 
 bool translate_ret_without_ss_opt(IR1_INST *pir1)
