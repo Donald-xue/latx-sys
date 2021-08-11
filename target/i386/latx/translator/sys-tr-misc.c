@@ -26,6 +26,9 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_POP);
     latxs_register_ir1(X86_INS_RET);
     latxs_register_ir1(X86_INS_CPUID);
+    latxs_register_ir1(X86_INS_XCHG);
+    latxs_register_ir1(X86_INS_CMPXCHG);
+    latxs_register_ir1(X86_INS_CMPXCHG8B);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1131,6 +1134,163 @@ bool latxs_translate_cpuid(IR1_INST *pir1)
      */
     helper_cfg_t cfg = default_helper_cfg;
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_cpuid, cfg);
+
+    return true;
+}
+
+bool latxs_translate_xchg(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    /* if two src is the same reg, do nothing */
+    if (ir1_opnd_is_gpr(opnd0) && ir1_opnd_is_gpr(opnd1)) {
+        if ((ir1_opnd_size(opnd0) ==
+             ir1_opnd_size(opnd1)) &&
+            (ir1_opnd_base_reg_num(opnd0) ==
+             ir1_opnd_base_reg_num(opnd1)) &&
+            (ir1_opnd_base_reg_bits_start(opnd0) ==
+             ir1_opnd_base_reg_bits_start(opnd1))) {
+            return true;
+        }
+    }
+
+    IR2_OPND src_opnd_0 = latxs_ra_alloc_itemp();
+    IR2_OPND src_opnd_1 = latxs_ra_alloc_itemp();
+
+    latxs_load_ir1_to_ir2(&src_opnd_0, opnd0, EXMode_N, false);
+    latxs_load_ir1_to_ir2(&src_opnd_1, opnd1, EXMode_N, false);
+
+    /* Do memory access first for precise exception */
+    if (ir1_opnd_is_mem(opnd0)) {
+        latxs_store_ir2_to_ir1(&src_opnd_1, opnd0, false);
+        latxs_store_ir2_to_ir1(&src_opnd_0, opnd1, false);
+    } else {
+        latxs_store_ir2_to_ir1(&src_opnd_0, opnd1, false);
+        latxs_store_ir2_to_ir1(&src_opnd_1, opnd0, false);
+    }
+
+    return true;
+}
+
+bool latxs_translate_cmpxchg(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR1_OPND *reg_ir1 = NULL;
+
+    int opnd_size = ir1_opnd_size(opnd0);
+    switch (opnd_size) {
+    case 8:
+        reg_ir1 = &al_ir1_opnd;
+        break;
+    case 16:
+        reg_ir1 = &ax_ir1_opnd;
+        break;
+    case 32:
+        reg_ir1 = &eax_ir1_opnd;
+        break;
+    default:
+        lsassertm_illop(ir1_addr(pir1), 0,
+                "cmpxchg opnd size %d is unsupported.\n", opnd_size);
+        break;
+    }
+
+    IR2_OPND src_opnd_0 = latxs_ra_alloc_itemp();
+    IR2_OPND src_opnd_1 = latxs_ra_alloc_itemp();
+    IR2_OPND eax_opnd = latxs_ra_alloc_itemp();
+
+    latxs_load_ir1_to_ir2(&src_opnd_0, opnd0, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src_opnd_1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&eax_opnd, reg_ir1, EXMode_S, false);
+
+    IR2_OPND dest_opnd = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd3(LISA_SUB_D,
+            &dest_opnd, &eax_opnd, &src_opnd_0);
+
+    IR2_OPND label_unequal = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd3(LISA_BNE,
+            &src_opnd_0, &eax_opnd, &label_unequal);
+
+    /* equal */
+    latxs_store_ir2_to_ir1(&src_opnd_1, opnd0, false);
+    latxs_ra_free_temp(&src_opnd_1);
+
+    IR2_OPND label_exit = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+
+    /* unequal */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_unequal);
+    latxs_store_ir2_to_ir1_gpr(&src_opnd_0, reg_ir1);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+    /* calculate elfags after compare and exchange(store) */
+    latxs_generate_eflag_calculation(&dest_opnd,
+            &eax_opnd, &src_opnd_0, pir1, true);
+
+    latxs_ra_free_temp(&dest_opnd);
+
+    return true;
+}
+
+bool latxs_translate_cmpxchg8b(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_ARPL(pir1);
+
+    /* 1. check illegal operation exception */
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    lsassert_illop(ir1_addr(pir1), ir1_opnd_is_mem(opnd0));
+
+    /* 2. get memory address */
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd0, -1);
+    int mem_no_offset_new_tmp = 0;
+    IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(
+            &mem_opnd, &mem_no_offset_new_tmp);
+    IR2_OPND address = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
+    if (mem_no_offset_new_tmp) {
+        latxs_ra_free_temp(&mem_opnd);
+    }
+
+    /* 3. select helper function */
+    ADDR helper_addr = 0;
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+            td->sys.cflags & CF_PARALLEL) {
+        /*
+         * target/i386/mem_helper.c
+         * void helper_cmpxchg8b(
+         *      CPUX86State *env,
+         *      target_ulong a0)
+         * >> EAX, ECX is used
+         */
+        helper_addr = (ADDR)helper_cmpxchg8b;
+    } else {
+        /*
+         * target/i386/mem_helper.c
+         * void helper_cmpxchg8b_unlocked(
+         *      CPUX86State *env,
+         *      target_ulong a0)
+         * >> EAX, ECX is used
+         */
+        helper_addr = (ADDR)helper_cmpxchg8b_unlocked;
+    }
+
+    /* 4. call that helper */
+
+    /* 4.1 save context */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    /* 4.2 arg1: address */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd,
+                                      &address);
+    /* 4.3 arg0: env */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                                      &latxs_env_ir2_opnd);
+    /* 4.4 call helper */
+    latxs_tr_gen_call_to_helper(helper_addr);
+    /* 4.5 restore context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
 
     return true;
 }

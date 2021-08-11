@@ -1397,6 +1397,9 @@ bool translate_lea(IR1_INST *pir1)
 
 bool translate_xchg(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_xchg(pir1);
+#else
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
@@ -1472,10 +1475,14 @@ bool translate_xchg(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_cmpxchg(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmpxchg(pir1);
+#else
     IR1_OPND *reg_ir1 = NULL;
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32)
         reg_ir1 = &eax_ir1_opnd;
@@ -1523,12 +1530,16 @@ bool translate_cmpxchg(IR1_INST *pir1)
 
     ra_free_temp(t_dest_opnd);
     return true;
+#endif
 }
 /*
  * FIXME: This implementation is NOT thread safe.
  */
 bool translate_cmpxchg8b(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmpxchg8b(pir1);
+#else
     IR1_OPND *reg_eax = NULL, *reg_edx = NULL, *reg_ebx= NULL, *reg_ecx= NULL;
     lsassert(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64);
 
@@ -1602,6 +1613,7 @@ bool translate_cmpxchg8b(IR1_INST *pir1)
     tr_lat_spin_unlock(lat_lock_addr);
 
     return true;
+#endif
 }
 
 bool translate_movq(IR1_INST *pir1)
