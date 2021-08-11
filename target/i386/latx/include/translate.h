@@ -1489,6 +1489,11 @@ bool latxs_translate_wbinvd(IR1_INST *pir1);
 bool latxs_translate_nop(IR1_INST *pir1);
 bool latxs_translate_pause(IR1_INST *pir1);
 
+bool latxs_translate_int(IR1_INST *pir1);
+bool latxs_translate_int1(IR1_INST *pir1);
+bool latxs_translate_int_3(IR1_INST *pir1);
+bool latxs_translate_into(IR1_INST *pir1);
+
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
 void latxs_tr_gen_io_bpt(IR1_INST *, IR1_OPND *, int);

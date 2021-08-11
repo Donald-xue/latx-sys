@@ -21,14 +21,9 @@ bool translate_les(IR1_INST *pir1) { return false; }
 bool translate_lds(IR1_INST *pir1) { return false; }
 bool translate_enter(IR1_INST *pir1) { return false; }
 bool translate_retf(IR1_INST *pir1) { return false; }
-bool translate_int_3(IR1_INST *pir1) { return false; }
-bool translate_into(IR1_INST *pir1) { return false; }
-
 
 bool translate_salc(IR1_INST *pir1) { return false; }
 bool translate_xlat(IR1_INST *pir1) { return false; }
-
-bool translate_int1(IR1_INST *pir1) { return false; }
 
 bool translate_lar(IR1_INST *pir1) { return false; }
 bool translate_lsl(IR1_INST *pir1) { return false; }
@@ -1011,6 +1006,9 @@ bool translate_leave(IR1_INST *pir1)
 
 bool translate_int(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_int(pir1);
+#else
     /* save fcsr for native */
     IR2_OPND fcsr_value_opnd = ra_alloc_itemp();
     la_append_ir2_opnd2(LISA_MOVFCSR2GR, fcsr_value_opnd, fcsr_ir2_opnd);
@@ -1053,6 +1051,7 @@ bool translate_int(IR1_INST *pir1)
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr_value_opnd);
 
     return true;
+#endif
 }
 
 bool translate_hlt(IR1_INST *pir1)
@@ -1495,6 +1494,9 @@ bool translate_rsm(IR1_INST *pir1) { return false; }
 bool translate_wbinvd(IR1_INST *pir1) { return false; }
 bool translate_invd(IR1_INST *pir1) { return false; }
 bool translate_nop(IR1_INST *pir1) { return true; }
+bool translate_int1(IR1_INST *pir1) { return false; }
+bool translate_int_3(IR1_INST *pir1) { return false; }
+bool translate_into(IR1_INST *pir1) { return false; }
 
 #else
 
@@ -1512,5 +1514,8 @@ bool translate_rsm(IR1_INST *pir1) { return latxs_translate_rsm(pir1); }
 bool translate_wbinvd(IR1_INST *pir1) { return latxs_translate_wbinvd(pir1); }
 bool translate_invd(IR1_INST *pir1) { return latxs_translate_invd(pir1); }
 bool translate_nop(IR1_INST *pir1) { return latxs_translate_nop(pir1); }
+bool translate_int1(IR1_INST *pir1) { return latxs_translate_int1(pir1); }
+bool translate_int_3(IR1_INST *pir1) { return latxs_translate_int_3(pir1); }
+bool translate_into(IR1_INST *pir1) { return latxs_translate_into(pir1); }
 
 #endif

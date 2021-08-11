@@ -229,7 +229,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* X86_INS_INSW, */
     {0, 0, 0},                                 /* int, */                   //X86_INS_INT,
     {0, 0, 0},                                       /* int1, */            //X86_INS_INT1,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_INT3,
+    {0, 0, 0},                                 /* X86_INS_INT3, */
     {0, 0, 0},                                 /* into, */                  //X86_INS_INTO,
     {0, 0, 0},                                       /* invd, */            //X86_INS_INVD,
     {0, 0, 0},                                       /* invept */           //X86_INS_INVEPT,

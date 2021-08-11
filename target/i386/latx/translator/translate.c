@@ -749,7 +749,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_ins,       /* X86_INS_INSW, */
     translate_int,       //X86_INS_INT,
     translate_int1,      //X86_INS_INT1,
-    NULL,                //X86_INS_INT3,
+    translate_int_3,     /* X86_INS_INT3, */
     translate_into,      //X86_INS_INTO,
     translate_invd,      //X86_INS_INVD,
     translate_invept,    //X86_INS_INVEPT,

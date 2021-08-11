@@ -36,6 +36,10 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PAUSE);
     latxs_register_ir1(X86_INS_IRET);
     latxs_register_ir1(X86_INS_IRETD);
+    latxs_register_ir1(X86_INS_INT);
+    latxs_register_ir1(X86_INS_INT1);
+    latxs_register_ir1(X86_INS_INT3);
+    latxs_register_ir1(X86_INS_INTO);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1494,4 +1498,139 @@ bool latxs_translate_iret(IR1_INST *pir1)
     }
 
     return false;
+}
+
+bool latxs_translate_int(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_INT(pir1);
+
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* 1. save complete context */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+    /*
+     * 2. raise interrupt
+     *
+     *  target/i386/excp_helper.c
+     *  void helper_raise_interrupt(
+     *      CPUX86State *env,
+     *      int intno,
+     *      int next_eip_addend)
+     */
+
+    /* 2.1 arg1: intno */
+    IR1_OPND *opnd = ir1_get_opnd(pir1, 0);
+    int intno = ir1_opnd_simm(opnd);
+    latxs_load_imm32_to_ir2(&latxs_arg1_ir2_opnd, intno, EXMode_Z);
+    /* 2.2 arg2 : next eip addend : instruction size */
+    int size = latxs_ir1_inst_size(pir1);
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
+            &latxs_zero_ir2_opnd, size & 0xfff);
+    /* 2.3 arg0 : env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    /* 2.4 call helper_raise_interrupt: generate interrupt */
+    latxs_tr_gen_call_to_helper((ADDR)helper_raise_interrupt);
+
+    /* 3. This helper never return */
+    latxs_tr_gen_infinite_loop();
+
+    return true;
+}
+
+bool latxs_translate_int_3(IR1_INST *pir1)
+{
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* 1. save complete context */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+    /*
+     * 2. raise interrupt
+     *
+     *  target/i386/excp_helper.c
+     *  void helper_raise_interrupt(
+     *      CPUX86State *env,
+     *      int intno,
+     *      int next_eip_addend)
+     */
+
+    /* 2.1 arg1: intno = EXCP03_INT3 */
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+            &latxs_zero_ir2_opnd, EXCP03_INT3);
+    /* 2.2 arg2: next eip addend */
+    int size = latxs_ir1_inst_size(pir1);
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
+            &latxs_zero_ir2_opnd, size & 0xfff);
+    /* 2.3 arg0 : env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    /* 2.4 call helper_raise_interrupt: generate interrupt */
+    latxs_tr_gen_call_to_helper((ADDR)helper_raise_interrupt);
+
+    /* 3. This helper never return */
+    latxs_tr_gen_infinite_loop();
+
+    return true;
+}
+
+bool latxs_translate_into(IR1_INST *pir1)
+{
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* 1. save complete context */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+    /*
+     * 2. helper_into
+     *
+     *  target/i386/misc_helper.c
+     *  void helper_into(
+     *      CPUX86State *env,
+     *      int next_eip_addend)
+     */
+
+    /* 2.1 arg2: next eip addend */
+    int size = latxs_ir1_inst_size(pir1);
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+            &latxs_zero_ir2_opnd, size & 0xfff);
+    /* 2.2 arg0 : env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    /* 2.3 call helper_raise_interrupt: generate interrupt */
+    latxs_tr_gen_call_to_helper((ADDR)helper_into);
+
+    /* 3. restore context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
+
+    return true;
+}
+
+bool latxs_translate_int1(IR1_INST *pir1)
+{
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /*
+     * 1. helper_debug
+     *
+     * target/i386/misc_helper.c
+     * void helper_debug(
+     *      CPUX86State *env)
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_debug, cfg);
+
+    /* 2. helper debug never return */
+    latxs_tr_gen_infinite_loop();
+
+    return true;
 }
