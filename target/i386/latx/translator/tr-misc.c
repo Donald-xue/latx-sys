@@ -48,8 +48,6 @@ bool translate_vmresume(IR1_INST *pir1) { return false; }
 bool translate_vmxoff(IR1_INST *pir1) { return false; }
 bool translate_monitor(IR1_INST *pir1) { return false; }
 bool translate_mwait(IR1_INST *pir1) { return false; }
-bool translate_xgetbv(IR1_INST *pir1) { return false; }
-bool translate_xsetbv(IR1_INST *pir1) { return false; }
 bool translate_vmrun(IR1_INST *pir1) { return false; }
 bool translate_vmmcall(IR1_INST *pir1) { return false; }
 bool translate_vmload(IR1_INST *pir1) { return false; }
@@ -220,7 +218,6 @@ bool translate_lfence(IR1_INST *pir1)
     la_append_ir2_opnd0(LISA_DBAR);
     return true;
 }
-bool translate_xrstor(IR1_INST *pir1) { return false; }
 bool translate_mfence(IR1_INST *pir1)
 {
     la_append_ir2_opnd0(LISA_DBAR);
@@ -1271,6 +1268,9 @@ bool translate_cwde(IR1_INST *pir1)
 
 bool translate_fnsave(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fnsave(pir1);
+#else
     printf("FIXME:fnsave/fsave didn't verify in 100, please investigate this insn first if you are in trouble\n");
     /* store x87 state information */
     IR2_OPND value = ra_alloc_itemp();
@@ -1335,6 +1335,7 @@ bool translate_fnsave(IR1_INST *pir1)
     /* reset SR and CR */
     translate_fninit(pir1);
     return true;
+#endif
 }
 
 bool translate_fsave(IR1_INST *pir1)
@@ -1345,6 +1346,9 @@ bool translate_fsave(IR1_INST *pir1)
 
 bool translate_frstor(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_frstor(pir1);
+#else
     /*
     * Loads the FPU state (operating environment and register stack)
     * from the memory area specified with the source
@@ -1412,6 +1416,7 @@ bool translate_frstor(IR1_INST *pir1)
             st, mem_opnd, offset + 28 + 10 * i);
     }
     return true;
+#endif
 }
 
 bool translate_prefetcht0(IR1_INST *pir1)
@@ -1511,6 +1516,11 @@ bool translate_cwd(IR1_INST *pir1) { return false; }
 bool translate_call_far(IR1_INST *pir1) { return false; }
 bool translate_clac(IR1_INST *pir1) { return false; }
 bool translate_stac(IR1_INST *pir1) { return false; }
+bool translate_xgetbv(IR1_INST *pir1) { return false; }
+bool translate_xsetbv(IR1_INST *pir1) { return false; }
+bool translate_xsave(IR1_INST *pir1) { return false; }
+bool translate_xrstor(IR1_INST *pir1) { return false; }
+bool translate_xsaveopt(IR1_INST *pir1) { return false; }
 
 #else
 
@@ -1536,5 +1546,13 @@ bool translate_cwd(IR1_INST *pir1) { return latxs_translate_cwd(pir1); }
 bool translate_call_far(IR1_INST *pir1) { return latxs_translate_lcall(pir1); }
 bool translate_clac(IR1_INST *pir1) { return latxs_translate_clac(pir1); }
 bool translate_stac(IR1_INST *pir1) { return latxs_translate_stac(pir1); }
+bool translate_xgetbv(IR1_INST *pir1) { return latxs_translate_xgetbv(pir1); }
+bool translate_xsetbv(IR1_INST *pir1) { return latxs_translate_xsetbv(pir1); }
+bool translate_xsave(IR1_INST *pir1) { return latxs_translate_xsave(pir1); }
+bool translate_xrstor(IR1_INST *pir1) { return latxs_translate_xrstor(pir1); }
+bool translate_xsaveopt(IR1_INST *pir1)
+{
+    return latxs_translate_xsaveopt(pir1);
+}
 
 #endif

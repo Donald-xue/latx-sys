@@ -1841,11 +1841,11 @@ static bool (*translate_functions[])(IR1_INST *) = {
     NULL,                //X86_INS_XRSTOR64,
     NULL,                //X86_INS_XRSTORS,
     NULL,                //X86_INS_XRSTORS64,
-    NULL,                //X86_INS_XSAVE,
+    translate_xsave,      /* X86_INS_XSAVE, */
     NULL,                //X86_INS_XSAVE64,
     NULL,                //X86_INS_XSAVEC,
     NULL,                //X86_INS_XSAVEC64,
-    NULL,                //X86_INS_XSAVEOPT,
+    translate_xsaveopt,  /* X86_INS_XSAVEOPT, */
     NULL,                //X86_INS_XSAVEOPT64,
     NULL,                //X86_INS_XSAVES,
     NULL,                //X86_INS_XSAVES64,

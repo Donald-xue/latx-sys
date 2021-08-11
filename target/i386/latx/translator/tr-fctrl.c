@@ -556,6 +556,9 @@ bool translate_ud2(IR1_INST *pir1)
 
 bool translate_ffree(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_ffree(pir1);
+#else
     /* 根据 status_word 的 TOP bits 处理 tag word: mark the ST(i) register as */
     /* empty */
     /* TODO:r */
@@ -581,10 +584,14 @@ bool translate_ffree(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_ST_H, value_tag, env_ir2_opnd, tag_offset);
 
     return true;
+#endif
 }
 
 bool translate_fldenv(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldenv(pir1);
+#else
     IR2_OPND value = ra_alloc_itemp();
 
     /* mem_opnd is not supported in ir2 assemble */
@@ -663,10 +670,14 @@ bool translate_fldenv(IR1_INST *pir1)
     /* value, env_ir2_opnd, lsenv_offset_of_selector_opcode(lsenv)); // */
     ra_free_temp(value);
     return true;
+#endif
 }
 
 bool translate_fnstenv(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fnstenv(pir1);
+#else
     IR2_OPND value = ra_alloc_itemp();
     IR2_OPND temp = ra_alloc_itemp();
     load_ireg_from_imm32(temp, 0xffff0000ULL, UNKNOWN_EXTENSION);
@@ -739,6 +750,7 @@ bool translate_fnstenv(IR1_INST *pir1)
 
     ra_free_temp(value);
     return true;
+#endif
 }
 
 static float float_max = FLT_MAX;
@@ -749,6 +761,9 @@ static float float_3 = 3.0f;
 
 bool translate_wait(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_wait(pir1);
+#else
     IR2_OPND temp = ra_alloc_itemp();
     IR2_OPND sw_opnd = ra_alloc_itemp();
     IR2_OPND ftemp1_opnd = ra_alloc_ftemp();
@@ -806,6 +821,7 @@ bool translate_wait(IR1_INST *pir1)
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
 
     return true;
+#endif
 }
 
 bool translate_fnclex(IR1_INST *pir1) {
@@ -832,6 +848,9 @@ bool translate_finit(IR1_INST *pir1)
 }
 
 bool translate_fninit(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fninit(pir1);
+#else
     IR2_OPND temp = ra_alloc_itemp();
     IR2_OPND fcsr0 = ra_alloc_itemp();
     int offset;
@@ -868,4 +887,5 @@ bool translate_fninit(IR1_INST *pir1) {
     la_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr_ir2_opnd, fcsr0);
 
     return true;
+#endif
 }

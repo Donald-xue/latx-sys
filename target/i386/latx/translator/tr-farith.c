@@ -511,6 +511,9 @@ bool translate_fchs(IR1_INST *pir1)
 
 bool translate_fdecstp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fdecstp(pir1);
+#else
     tr_fpu_dec();
 
     /* decrements the top-of-stack pointer */
@@ -536,10 +539,14 @@ bool translate_fdecstp(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_ST_H, value_status, env_ir2_opnd,
                       lsenv_offset_of_status_word(lsenv)); /* status_word */
     return true;
+#endif
 }
 
 bool translate_fincstp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fincstp(pir1);
+#else
     tr_fpu_inc();
 
     /* increments the top-of-stack pointer */
@@ -565,6 +572,7 @@ bool translate_fincstp(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_ST_H, value_status, env_ir2_opnd,
                       lsenv_offset_of_status_word(lsenv)); /* status_word */
     return true;
+#endif
 }
 
 bool translate_fsin(IR1_INST *pir1)
@@ -1295,8 +1303,12 @@ bool translate_fedisi(IR1_INST *pir1)
 }
 bool translate_fsetpm(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsetpm(pir1);
+#else
     fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
     return false;
+#endif
 }
 bool translate_fbld(IR1_INST *pir1)
 {
@@ -1316,17 +1328,25 @@ bool translate_fbstp(IR1_INST *pir1)
  */
 bool translate_fxsave(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fxsave(pir1);
+#else
     IR2_OPND dest_opnd =
         mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
 
     tr_gen_call_to_helper2((ADDR)helper_fxsave, dest_opnd, 0);
     return true;
+#endif
 }
 bool translate_fxrstor(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fxrstor(pir1);
+#else
     IR2_OPND dest_opnd =
           mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
 
     tr_gen_call_to_helper2((ADDR)helper_fxrstor, dest_opnd, 0);
     return true;
+#endif
 }

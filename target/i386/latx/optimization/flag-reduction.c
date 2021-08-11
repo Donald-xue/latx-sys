@@ -1321,11 +1321,11 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XRSTOR64,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XRSTORS,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XRSTORS64,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVE,
+    {0, 0, 0},                                        /* X86_INS_XSAVE, */
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVE64,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVEC,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVEC64,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVEOPT,
+    {0, 0, 0},                                        /* X86_INS_XSAVEOPT, */
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVEOPT64,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVES,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_XSAVES64,
