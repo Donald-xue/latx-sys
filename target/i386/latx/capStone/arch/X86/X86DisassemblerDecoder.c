@@ -30,6 +30,8 @@
 
 #include "X86DisassemblerDecoder.h"
 
+#include "../../../include/error.h"
+
 /// Specifies whether a ModR/M byte is needed and (if so) which
 /// instruction each possible value of the ModR/M byte corresponds to.  Once
 /// this information is known, we have narrowed down to a single instruction.
@@ -439,7 +441,14 @@ static bool isPrefixAtLocation(struct InternalInstruction *insn, uint8_t prefix,
 			return true;
 		break;
 	case 0x66:
-		if (insn->isPrefix66 && insn->prefix66 == location)
+		/*
+		 * As we see, the prefix 0x66 can be not only the first prefix,
+		 * but also the second one, so we need to traverse all the prefixes
+		 * to make sure we didn't miss 0x66. By the way we haven't met
+		 * the situations with more than 2 prefixes.
+		 */
+		if ((insn->isPrefix66 && insn->prefix66 == location) ||
+			(insn->isPrefix66 && insn->prefix66 == (location + 1)))
 			return true;
 		break;
 	case 0x67:
@@ -482,9 +491,11 @@ static int readPrefixes(struct InternalInstruction *insn)
 	bool hasAdSize = false;
 	bool hasOpSize = false;
 
+	int prefix_count = 0;
 	//initialize to an impossible value
 	insn->necessaryPrefixLocation = insn->readerCursor - 1;
 	while (isPrefix) {
+		prefix_count++;
 		if (insn->mode == MODE_64BIT) {
 			// eliminate consecutive redundant REX bytes in front
 			if (consumeByte(insn, &byte))
@@ -675,6 +686,7 @@ static int readPrefixes(struct InternalInstruction *insn)
 		//	dbgprintf(insn, "Found prefix 0x%hhx", byte);
 	}
 
+	prefix_count--;
 	insn->vectorExtensionType = TYPE_NO_VEX_XOP;
 
 
@@ -876,7 +888,20 @@ static int readPrefixes(struct InternalInstruction *insn)
 			}
 		} else {
 			unconsumeByte(insn);
-			insn->necessaryPrefixLocation = insn->readerCursor - 1;
+			switch (prefix_count) {
+				case 0:
+				case 1:
+					insn->necessaryPrefixLocation = insn->readerCursor - 1;
+					break;
+				case 2:
+					insn->necessaryPrefixLocation = insn->readerCursor - 2;
+					break;
+				default:
+					lsassertm(prefix_count > 2,
+					"we meet the situation that with %d prefixs, needs fix\n",
+						prefix_count);
+					break;
+			}
 		}
 	}
 
