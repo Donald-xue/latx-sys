@@ -222,11 +222,11 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, __ALL_EFLAGS,__SF | __ZF | __AF | __PF},                        /* imul, *///X86_INS_IMUL,
     {0, 0, 0},            /* in, */                                         //X86_INS_IN,
     {0, __OF | __SF | __ZF | __AF | __PF, 0}, /* inc, */                    //X86_INS_INC,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_INSB,
+    {0, 0, 0},                                       /* X86_INS_INSB, */
     {0, 0, 0},                                       /* insertps */         //X86_INS_INSERTPS,
     {0, 0, 0},                                       /* insertq */          //X86_INS_INSERTQ,
-    {0, 0, 0},                //X86_INS_INSD,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_INSW,
+    {0, 0, 0},                                       /* X86_INS_INSD, */
+    {0, 0, 0},                                       /* X86_INS_INSW, */
     {0, 0, 0},                                 /* int, */                   //X86_INS_INT,
     {0, 0, 0},                                       /* int1, */            //X86_INS_INT1,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_INT3,
@@ -503,9 +503,9 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* nop, */             //X86_INS_NOP,
     {0, 0, 0},                                       /* not, */             //X86_INS_NOT,
     {0, 0, 0},            /* out, */                                        //X86_INS_OUT,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_OUTSB,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_OUTSD,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_OUTSW,
+    {0, 0, 0},                                       /* X86_INS_OUTSB, */
+    {0, 0, 0},                                       /* X86_INS_OUTSD, */
+    {0, 0, 0},                                       /* X86_INS_OUTSW, */
     {0, 0, 0},                                       /* packusdw, */        //X86_INS_PACKUSDW,
     {0, 0, 0},                                       /* pause, */           //X86_INS_PAUSE,
     {0, 0, 0},                                       /* pavgusb, */         //X86_INS_PAVGUSB,

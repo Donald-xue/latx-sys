@@ -12,7 +12,6 @@ bool translate_endbr32(IR1_INST *pir1) { return true; }
 
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
-bool translate_outs(IR1_INST *pir1) { return false; }
 bool translate_cdqe(IR1_INST *pir1) { return false; }
 bool translate_cwd(IR1_INST *pir1) { return false; }
 
@@ -587,8 +586,12 @@ static inline void set_CPUX86State_error_code(ENV *lsenv, int error_code)
 }
 
 bool translate_ins(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_ins(pir1);
+#else
     printf("FIXME: the instruction INSD is used, but LATX do not support it.\n");
     return true;
+#endif
 }
 
 static inline void set_CPUX86State_exception_is_int(ENV *lsenv, int exception_is_int)
@@ -1487,6 +1490,8 @@ bool translate_sldt(IR1_INST *pir1) { return false; }
 bool translate_ltr(IR1_INST *pir1) { return false; }
 bool translate_str(IR1_INST *pir1) { return false; }
 
+bool translate_outs(IR1_INST *pir1) { return false; }
+
 #else
 
 bool translate_lidt(IR1_INST *pir1) { return latxs_translate_lidt(pir1); }
@@ -1497,5 +1502,7 @@ bool translate_lldt(IR1_INST *pir1) { return latxs_translate_lldt(pir1); }
 bool translate_sldt(IR1_INST *pir1) { return latxs_translate_sldt(pir1); }
 bool translate_ltr(IR1_INST *pir1) { return latxs_translate_ltr(pir1); }
 bool translate_str(IR1_INST *pir1) { return latxs_translate_str(pir1); }
+
+bool translate_outs(IR1_INST *pir1) { return latxs_translate_outs(pir1); }
 
 #endif

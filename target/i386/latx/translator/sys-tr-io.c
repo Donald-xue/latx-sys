@@ -13,10 +13,8 @@ void latxs_sys_io_register_ir1(void)
     latxs_register_ir1(X86_INS_OUT);
 }
 
-static void latxs_tr_gen_io_check(
-        IR1_INST *ir1,
-        IR1_OPND *opnd_io,
-        int data_size)
+void latxs_tr_gen_io_check(IR1_INST *ir1,
+        IR1_OPND *opnd_io, int data_size)
 {
     int need_check = 0;
 
@@ -85,10 +83,8 @@ static void latxs_tr_gen_io_check(
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
 
-static void latxs_tr_gen_io_bpt(
-        IR1_INST *ir1,
-        IR1_OPND *port,
-        int size)
+void latxs_tr_gen_io_bpt(IR1_INST *ir1,
+        IR1_OPND *port, int size)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
 

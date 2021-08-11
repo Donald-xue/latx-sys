@@ -238,6 +238,9 @@ static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
 
 bool translate_movs(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movs(pir1);
+#else
     BITS_SET(pir1->flags, FI_MDA);
 
     /* 1. exit when initial count is zero */
@@ -280,10 +283,14 @@ bool translate_movs(IR1_INST *pir1)
 
     ra_free_temp(step_opnd);
     return true;
+#endif
 }
 
 bool translate_stos(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_stos(pir1);
+#else
 
     BITS_SET(pir1->flags, FI_MDA);
 
@@ -325,10 +332,14 @@ bool translate_stos(IR1_INST *pir1)
 
     ra_free_temp(step_opnd);
     return true;
+#endif
 }
 
 bool translate_lods(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_lods(pir1);
+#else
     BITS_SET(pir1->flags, FI_MDA);
 
     /* 1. exit when initial count is zero */
@@ -372,10 +383,14 @@ bool translate_lods(IR1_INST *pir1)
 
     ra_free_temp(step_opnd);
     return true;
+#endif
 }
 
 bool translate_cmps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmps(pir1);
+#else
     BITS_SET(pir1->flags, FI_MDA);
 
     /* 1. exit when initial count is zero */
@@ -451,10 +466,14 @@ bool translate_cmps(IR1_INST *pir1)
     ra_free_temp(edi_mem_value);
     ra_free_temp(cmp_result);
     return true;
+#endif
 }
 
 bool translate_scas(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_scas(pir1);
+#else
     BITS_SET(pir1->flags, FI_MDA);
 
     /* 1. exit when initial count is zero */
@@ -526,6 +545,7 @@ bool translate_scas(IR1_INST *pir1)
     ra_free_temp(edi_mem_value);
     ra_free_temp(cmp_result);
     return true;
+#endif
 }
 
 bool translate_cmovo(IR1_INST *pir1)

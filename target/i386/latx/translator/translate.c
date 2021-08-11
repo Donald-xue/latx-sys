@@ -622,9 +622,9 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_fcmovu,    //X86_INS_FCMOVU,
     translate_cmovs,     //X86_INS_CMOVS,
     translate_cmp,       //X86_INS_CMP,
-    translate_cmps,      //X86_INS_CMPSB,
+    translate_cmps,      /* X86_INS_CMPSB, */
     NULL,                //X86_INS_CMPSQ,
-    translate_cmps,                //X86_INS_CMPSW,
+    translate_cmps,      /* X86_INS_CMPSW, */
     translate_cmpxchg16b,//X86_INS_CMPXCHG16B,
     translate_cmpxchg,   //X86_INS_CMPXCHG,
     translate_cmpxchg8b, //X86_INS_CMPXCHG8B,
@@ -742,11 +742,11 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_imul,      //X86_INS_IMUL,
     translate_in,        //X86_INS_IN,
     translate_inc,       //X86_INS_INC,
-    NULL,                //X86_INS_INSB,
+    translate_ins,       /* X86_INS_INSB, */
     translate_insertps,  //X86_INS_INSERTPS,
     translate_insertq,   //X86_INS_INSERTQ,
-    translate_ins,       //X86_INS_INSD,
-    NULL,                //X86_INS_INSW,
+    translate_ins,       /* X86_INS_INSD, */
+    translate_ins,       /* X86_INS_INSW, */
     translate_int,       //X86_INS_INT,
     translate_int1,      //X86_INS_INT1,
     NULL,                //X86_INS_INT3,
@@ -861,10 +861,10 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_or,        //X86_INS_OR,
     translate_sub,       //X86_INS_SUB,
     translate_xor,       //X86_INS_XOR,
-    translate_lods,                //X86_INS_LODSB,
-    translate_lods,                //X86_INS_LODSD,
+    translate_lods,      /* X86_INS_LODSB, */
+    translate_lods,      /* X86_INS_LODSD, */
     NULL,                //X86_INS_LODSQ,
-    translate_lods,                //X86_INS_LODSW,
+    translate_lods,      /* X86_INS_LODSW, */
     translate_loop,      //X86_INS_LOOP,
     translate_loopz,     //X86_INS_LOOPE,
     translate_loopnz,    //X86_INS_LOOPNE,
@@ -996,13 +996,13 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_movntps,   //X86_INS_MOVNTPS,
     translate_movntsd,   //X86_INS_MOVNTSD,
     translate_movntss,   //X86_INS_MOVNTSS,
-    translate_movs,                //X86_INS_MOVSB,
-    NULL,     //X86_INS_MOVSD,
+    translate_movs,      /* X86_INS_MOVSB, */
+    translate_movs,      /* X86_INS_MOVSD, */
     translate_movshdup,  //X86_INS_MOVSHDUP,
     translate_movsldup,  //X86_INS_MOVSLDUP,
     NULL,                //X86_INS_MOVSQ,
     translate_movss,     //X86_INS_MOVSS,
-    translate_movs,                //X86_INS_MOVSW,
+    translate_movs,      /* X86_INS_MOVSW, */
     translate_movsx,     //X86_INS_MOVSX,
     translate_movsxd,    //X86_INS_MOVSXD,
     translate_movupd,    //X86_INS_MOVUPD,
@@ -1023,9 +1023,9 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_nop,       //X86_INS_NOP,
     translate_not,       //X86_INS_NOT,
     translate_out,       //X86_INS_OUT,
-    NULL,                //X86_INS_OUTSB,
-    NULL,                //X86_INS_OUTSD,
-    NULL,                //X86_INS_OUTSW,
+    translate_outs,      /* X86_INS_OUTSB, */
+    translate_outs,      /* X86_INS_OUTSD, */
+    translate_outs,      /* X86_INS_OUTSW, */
     translate_packusdw,  //X86_INS_PACKUSDW,
     translate_pause,     //X86_INS_PAUSE,
     translate_pavgusb,   //X86_INS_PAVGUSB,
@@ -1148,10 +1148,10 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_sar,       //X86_INS_SAR,
     NULL,                //X86_INS_SARX,
     translate_sbb,       //X86_INS_SBB,
-    translate_scas,      //X86_INS_SCASB,
+    translate_scas,      /* X86_INS_SCASB, */
     translate_scas,      //X86_INS_SCASD,
-    translate_scas,      //X86_INS_SCASQ,
-    translate_scas,      //X86_INS_SCASW,
+    translate_scas,      /* X86_INS_SCASQ, */
+    translate_scas,      /* X86_INS_SCASW, */
     translate_setae,     //X86_INS_SETAE,
     translate_seta,      //X86_INS_SETA,
     translate_setbe,     //X86_INS_SETBE,
@@ -1201,10 +1201,10 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_stgi,      //X86_INS_STGI,
     translate_sti,       //X86_INS_STI,
     translate_stmxcsr,   //X86_INS_STMXCSR,
-    translate_stos,      //X86_INS_STOSB,
-    translate_stos,      //X86_INS_STOSD,
+    translate_stos,      /* X86_INS_STOSB, */
+    translate_stos,      /* X86_INS_STOSD, */
     translate_stos,      //X86_INS_STOSQ,
-    translate_stos,      //X86_INS_STOSW,
+    translate_stos,      /* X86_INS_STOSW, */
     translate_str,       //X86_INS_STR,
     translate_fst,       //X86_INS_FST,
     translate_fstp,      //X86_INS_FSTP,
@@ -1865,7 +1865,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_cmpnltss,  //X86_INS_CMPNLTSS,
     translate_cmpnless,  //X86_INS_CMPNLESS,
     translate_cmpordss,  //X86_INS_CMPORDSS,
-    translate_cmps,      //X86_INS_CMPSD,
+    translate_cmps,      /* X86_INS_CMPSD, */
     translate_cmpeqsd,   //X86_INS_CMPEQSD,
     translate_cmpltsd,   //X86_INS_CMPLTSD,
     translate_cmplesd,   //X86_INS_CMPLESD,

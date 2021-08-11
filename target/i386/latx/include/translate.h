@@ -1449,6 +1449,7 @@ void latxs_sys_logic_register_ir1(void);
 void latxs_sys_mov_register_ir1(void);
 void latxs_sys_eflags_register_ir1(void);
 void latxs_sys_setcc_register_ir1(void);
+void latxs_sys_string_register_ir1(void);
 
 /* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
@@ -1478,6 +1479,8 @@ bool latxs_translate_pop(IR1_INST *pir1);
 bool latxs_translate_push(IR1_INST *pir1);
 
 /* sys-io */
+void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
+void latxs_tr_gen_io_bpt(IR1_INST *, IR1_OPND *, int);
 bool latxs_translate_in(IR1_INST *pir1);
 bool latxs_translate_out(IR1_INST *pir1);
 
@@ -1597,6 +1600,15 @@ bool latxs_translate_setg(IR1_INST *pir1);
 bool latxs_translate_bsf(IR1_INST *pir1);
 bool latxs_translate_bsr(IR1_INST *pir1);
 bool latxs_translate_btx(IR1_INST *pir1);
+
+/* sys-string */
+bool latxs_translate_ins(IR1_INST *pir1);
+bool latxs_translate_outs(IR1_INST *pir1);
+bool latxs_translate_movs(IR1_INST *pir1);
+bool latxs_translate_scas(IR1_INST *pir1);
+bool latxs_translate_cmps(IR1_INST *pir1);
+bool latxs_translate_lods(IR1_INST *pir1);
+bool latxs_translate_stos(IR1_INST *pir1);
 
 #endif
 
