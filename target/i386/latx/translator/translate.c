@@ -1093,7 +1093,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_pmulhrw,   //X86_INS_PMULHRW,
     translate_pmulld,    //X86_INS_PMULLD,
     translate_pop,       //X86_INS_POP,
-    NULL,                //X86_INS_POPAW,
+    translate_popa,      /* X86_INS_POPAW, */
     translate_popa,      //X86_INS_POPAL,
     translate_popcnt,    //X86_INS_POPCNT,
     translate_popf,      //X86_INS_POPF,
@@ -1115,7 +1115,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_punpckhqdq,//X86_INS_PUNPCKHQDQ,
     translate_punpcklqdq,//X86_INS_PUNPCKLQDQ,
     translate_push,      //X86_INS_PUSH,
-    NULL,                //X86_INS_PUSHAW,
+    translate_pusha,     /* X86_INS_PUSHAW, */
     translate_pusha,     //X86_INS_PUSHAL,
     translate_pushf,     //X86_INS_PUSHF,
     translate_pushf,                //X86_INS_PUSHFD,

@@ -573,7 +573,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* pmulhrw, */         //X86_INS_PMULHRW,
     {0, 0, 0},                                       /* pmulld */           //X86_INS_PMULLD,
     {0, 0, 0},                                       /* pop, */             //X86_INS_POP,
-    {__INVALID, __INVALID, __INVALID},                                      //X86_INS_POPAW,
+    {0, 0, 0},                                       /* X86_INS_POPAW, */
     {0, 0, 0},                                                              //X86_INS_POPAL,
     {0, 0, 0},                                       /* popcnt */           //X86_INS_POPCNT,
     {0, __ALL_EFLAGS | __DF, 0},                     /* popf */             //X86_INS_POPF,
@@ -595,7 +595,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* punpckhqdq, */      //X86_INS_PUNPCKHQDQ,
     {0, 0, 0},                                       /* punpcklqdq, */      //X86_INS_PUNPCKLQDQ,
     {0, 0, 0},                                       /* push, */            //X86_INS_PUSH,
-    {__INVALID, __INVALID, __INVALID},                                      //X86_INS_PUSHAW,
+    {0, 0, 0},                                      /* X86_INS_PUSHAW, */
     {0, 0, 0},                                                              //X86_INS_PUSHAL,
     {__ALL_EFLAGS | __DF, 0, 0},                     /* pushf */            //X86_INS_PUSHF,
     {__ALL_EFLAGS | __DF, 0, 0},                     /* pushf */            //X86_INS_PUSHFD,

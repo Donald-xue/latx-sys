@@ -46,6 +46,10 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_CWDE);
     latxs_register_ir1(X86_INS_CBW);
     latxs_register_ir1(X86_INS_LCALL);
+    latxs_register_ir1(X86_INS_POPAW);
+    latxs_register_ir1(X86_INS_POPAL);
+    latxs_register_ir1(X86_INS_PUSHAW);
+    latxs_register_ir1(X86_INS_PUSHAL);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2036,4 +2040,242 @@ bool latxs_translate_lcall(IR1_INST *pir1)
     }
 
     return true;
+}
+
+static IR1_OPND latxs_pa_get_gpr(int id, int size)
+{
+    lsassert(size == 2 || size == 4);
+    switch (id) {
+    case 0:
+        return size == 2 ? ax_ir1_opnd : eax_ir1_opnd;
+    case 1:
+        return size == 2 ? cx_ir1_opnd : ecx_ir1_opnd;
+    case 2:
+        return size == 2 ? dx_ir1_opnd : edx_ir1_opnd;
+    case 3:
+        return size == 2 ? bx_ir1_opnd : ebx_ir1_opnd;
+    case 4:
+        return size == 2 ? sp_ir1_opnd : esp_ir1_opnd;
+    case 5:
+        return size == 2 ? bp_ir1_opnd : ebp_ir1_opnd;
+    case 6:
+        return size == 2 ? si_ir1_opnd : esi_ir1_opnd;
+    case 7:
+        return size == 2 ? di_ir1_opnd : edi_ir1_opnd;
+    default:
+        lsassert(0);
+        break;
+    }
+}
+
+static bool latxs_do_translate_pusha(IR1_INST *pir1, int size)
+{
+    lsassert(size == 2 || size == 4);
+
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(size == (data_size >> 3));
+
+    /*
+     * 1. pusha: push all 8 GRP to stack
+     *
+     * ===== pushal =======|====== pushaw =====
+     *                     |
+     * ESP      -> ------- | ESP      -> ------
+     *             | EAX | |             | AX |
+     * ESP - 4  -> ------- | ESP - 2  -> ------
+     *             | ECX | |             | CX |
+     * ESP - 8  -> ------- | ESP - 4  -> ------
+     *             | EDX | |             | DX |
+     * ESP - 12 -> ------- | ESP - 6  -> ------
+     *             | EBX | |             | BX |
+     * ESP - 16 -> ------- | ESP - 8  -> ------ push stack
+     *             | ESP | |             | SP | pointer value
+     * ESP - 20 -> ------- | ESP - 10 -> ------ before updating
+     *             | EBP | |             | BP |
+     * ESP - 24 -> ------- | ESP - 12 -> ------
+     *             | ESI | |             | SI |
+     * ESP - 28 -> ------- | ESP - 14 -> ------
+     *             | EDI | |             | DI |
+     * ESP - 32 -> ------- | ESP - 16 -> ------
+     */
+
+    IR1_OPND mem_ir1_opnd;
+    IR2_OPND gpr_value = latxs_ra_alloc_itemp();
+    int esp_dec = 0;
+    int esp_dec_step = 0 - size;
+    int i = 0;
+
+    /* 2.1 build IR2 opnd for MEM(SS:ESP) */
+    IR2_OPND mem_opnd;
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+
+    IR2_OPCODE st_ir2_op = size == 2 ? LISA_ST_H : LISA_ST_W ;
+
+    int save_temp = 1;
+    for (i = 0; i < 8; ++i) {
+        /*
+         * 2.2 adjust ESP
+         *     i = 0 : esp_inc =  -4 or  -2
+         *     i = 1 : esp_inc =  -8 or  -4
+         *
+         *     i = 7 : esp_inc = -32 or -16
+         */
+        esp_dec = esp_dec + esp_dec_step;
+        /* 2.3 load GPR value from ENV */
+        IR1_OPND gpr = latxs_pa_get_gpr(i, size);
+        latxs_load_ir1_gpr_to_ir2(&gpr_value, &gpr, EXMode_Z);
+        /* 2.4 update mem offset */
+        latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+                X86_REG_SS, X86_REG_ESP, esp_dec, 0, 0);
+        latxs_convert_mem_opnd(&mem_opnd, &mem_ir1_opnd, ss_addr_size);
+        /* 2.5 store into stack */
+        gen_ldst_softmmu_helper(st_ir2_op, &gpr_value, &mem_opnd, save_temp);
+        latxs_ra_free_temp(&mem_opnd);
+    }
+    latxs_ra_free_temp(&gpr_value);
+
+    /* 3. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (lsenv->tr_data->sys.ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd, &esp_opnd, -8 * size);
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, &esp_opnd, -8 * size);
+        latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    return true;
+}
+
+static bool latxs_do_translate_popa(IR1_INST *pir1, int size)
+{
+    lsassert(size == 2 || size == 4);
+
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(size == (data_size >> 3));
+
+    /*
+     * 1. popa: pop all 8 GRP to stack
+     *
+     * ===== popal ========|====== popaw ======
+     *                     |
+     * ESP + 32 -> ------- | ESP + 16 -> ------
+     *             | EAX | |             | AX |
+     * ESP + 28 -> ------- | ESP + 14 -> ------
+     *             | ECX | |             | CX |
+     * ESP + 24 -> ------- | ESP + 12 -> ------
+     *             | EDX | |             | DX |
+     * ESP + 20 -> ------- | ESP + 10 -> ------
+     *             | EBX | |             | BX |
+     * ESP + 16 -> ------- | ESP + 8  -> ------ NOT pop
+     *             | ESP | |             | SP | stack pointer
+     * ESP + 12 -> ------- | ESP + 6  -> ------
+     *             | EBP | |             | BP |
+     * ESP + 8  -> ------- | ESP + 4  -> ------
+     *             | ESI | |             | SI |
+     * ESP + 4  -> ------- | ESP + 2  -> ------
+     *             | EDI | |             | DI |
+     * ESP      -> ------- | ESP      -> ------
+     */
+
+    IR1_OPND mem_ir1_opnd;
+    IR2_OPND gpr_value = latxs_ra_alloc_itemp();
+    int esp_inc = 8 * size;
+    int esp_inc_step = 0 - size;
+    int i = 0;
+
+    /* 2.1 build IR2 opnd for MEM(SS:ESP) */
+    IR2_OPND mem_opnd;
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+
+    lsassert(size == 2 || size == 4);
+    IR2_OPCODE ld_ir2_op = size == 2 ? LISA_LD_HU : LISA_LD_WU;
+
+    int save_temp = 1;
+    for (i = 0; i < 8; ++i) {
+        /*
+         * 2.2 adjust ESP
+         *     i = 0 : esp_inc = 28 or 14
+         *     i = 1 : esp_inc = 24 or 12
+         *
+         *     i = 7 : esp_inc = 0
+         */
+        esp_inc = esp_inc + esp_inc_step;
+        /* 2.3 ignore ESP pop */
+        if (i == esp_index) {
+            continue;
+        }
+        /* 2.4 update mem offset */
+        latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+                X86_REG_SS, X86_REG_ESP, esp_inc, 0, 0);
+        latxs_convert_mem_opnd(&mem_opnd, &mem_ir1_opnd, ss_addr_size);
+        /* 2.5 load from stack */
+        gen_ldst_softmmu_helper(ld_ir2_op, &gpr_value, &mem_opnd, save_temp);
+        latxs_ra_free_temp(&mem_opnd);
+        /* 2.6 write poped GPR value to ENV */
+        IR1_OPND gpr = latxs_pa_get_gpr(i, size);
+        latxs_store_ir2_to_ir1_gpr(&gpr_value, &gpr);
+    }
+    latxs_ra_free_temp(&gpr_value);
+
+    /* 4. update ESP */
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (lsenv->tr_data->sys.ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd, &esp_opnd, 8 * size);
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, &esp_opnd, 8 * size);
+        latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    return true;
+}
+
+static bool latxs_translate_pushaw(IR1_INST *pir1)
+{
+    return latxs_do_translate_pusha(pir1, 2); /* 16-bit */
+}
+static bool latxs_translate_pushal(IR1_INST *pir1)
+{
+    return latxs_do_translate_pusha(pir1, 4); /* 32-bit */
+}
+static bool latxs_translate_popaw(IR1_INST *pir1)
+{
+    return latxs_do_translate_popa(pir1, 2);  /* 16-bit */
+}
+static bool latxs_translate_popal(IR1_INST *pir1)
+{
+    return latxs_do_translate_popa(pir1, 4);  /* 32-bit */
+}
+
+bool latxs_translate_pusha(IR1_INST *pir1)
+{
+    IR1_OPCODE opc = ir1_opcode(pir1);
+    if (opc == X86_INS_PUSHAL) {
+        return latxs_translate_pushal(pir1);
+    } else if (opc == X86_INS_PUSHAW) {
+        return latxs_translate_pushaw(pir1);
+    } else {
+        return false;
+    }
+}
+
+bool latxs_translate_popa(IR1_INST *pir1)
+{
+    IR1_OPCODE opc = ir1_opcode(pir1);
+    if (opc == X86_INS_POPAL) {
+        return latxs_translate_popal(pir1);
+    } else if (opc == X86_INS_POPAW) {
+        return latxs_translate_popaw(pir1);
+    } else {
+        return false;
+    }
 }

@@ -1480,6 +1480,8 @@ bool latxs_translate_str(IR1_INST *pir1);
 
 bool latxs_translate_pop(IR1_INST *pir1);
 bool latxs_translate_push(IR1_INST *pir1);
+bool latxs_translate_popa(IR1_INST *pir1);
+bool latxs_translate_pusha(IR1_INST *pir1);
 
 bool latxs_translate_xchg(IR1_INST *pir1);
 bool latxs_translate_cmpxchg(IR1_INST *pir1);

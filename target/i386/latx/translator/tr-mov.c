@@ -1716,6 +1716,9 @@ bool translate_movd(IR1_INST *pir1)
 #endif
 }
 bool translate_pusha(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pusha(pir1);
+#else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
                               -lsenv->tr_data->curr_esp_need_decrease);
@@ -1735,8 +1738,12 @@ bool translate_pusha(IR1_INST *pir1) {
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, -esp_decrement * 8);
 
     return true;
+#endif
 }
 bool translate_popa(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_popa(pir1);
+#else
     IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd,
                               -lsenv->tr_data->curr_esp_need_decrease);
@@ -1764,4 +1771,5 @@ bool translate_popa(IR1_INST *pir1) {
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, esp_opnd, esp_opnd, esp_increment * 8);
 
     return true;
+#endif
 }
