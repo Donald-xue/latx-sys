@@ -1468,4 +1468,11 @@ bool translate_sqrtss(IR1_INST *pir1)
     return true;
 }
 
-bool translate_pause(IR1_INST *pir1) { return true; }
+bool translate_pause(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pause(pir1);
+#else
+    return true;
+#endif
+}

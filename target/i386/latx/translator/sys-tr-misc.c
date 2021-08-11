@@ -30,6 +30,10 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_CMPXCHG);
     latxs_register_ir1(X86_INS_CMPXCHG8B);
     latxs_register_ir1(X86_INS_RSM);
+    latxs_register_ir1(X86_INS_INVD);
+    latxs_register_ir1(X86_INS_WBINVD);
+    latxs_register_ir1(X86_INS_NOP);
+    latxs_register_ir1(X86_INS_PAUSE);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1316,6 +1320,95 @@ bool latxs_translate_rsm(IR1_INST *pir1)
 
     /* the eip is already updated in helper_rsm */
     lsenv->tr_data->ignore_eip_update = 1;
+
+    return true;
+}
+
+bool latxs_translate_invd(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_INVD(pir1);
+    /* nothing to do */
+    return true;
+}
+
+bool latxs_translate_wbinvd(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_WBINVD(pir1);
+    /* nothing to do */
+    return true;
+}
+
+/* End of TB in system-mode : reps nop */
+bool latxs_translate_nop(IR1_INST *pir1)
+{
+    if (latxs_ir1_is_repz_nop(pir1)) {
+
+        /* 1. save full context */
+        helper_cfg_t cfg = default_helper_cfg;
+        latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+        /*
+         * 2. call helper_pause
+         *
+         * target/i386/misc_helper.c
+         * void helper_pause(
+         *      CPUX86State *env,
+         *      int next_eip_addend)
+         */
+
+        /* 2.1 arg0: env */
+        latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+                &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+        /* 2.2 arg1: this inst's size, 12-bit is enough */
+        int size = latxs_ir1_inst_size(pir1);
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+                &latxs_zero_ir2_opnd, size & 0xfff);
+        /* 2.3 call helper pause */
+        latxs_tr_gen_call_to_helper((ADDR)helper_pause);
+
+        /* 3. This helper never return */
+        latxs_tr_gen_infinite_loop();
+
+    } else {
+        /* nothing to do */
+    }
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_pause(IR1_INST *pir1)
+{
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* 1. save full context */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+    /*
+     * 2. call helper_pause
+     *
+     * target/i386/misc_helper.c
+     * void helper_pause(
+     *      CPUX86State *env,
+     *      int next_eip_addend)
+     */
+
+    /* 2.1 arg0: env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    /* 2.2 arg1: this inst's size, 16-bit is enough */
+    int size = latxs_ir1_inst_size(pir1);
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+            &latxs_zero_ir2_opnd, size & 0xfff);
+    /* 2.3 call helper pause */
+    latxs_tr_gen_call_to_helper((ADDR)helper_pause);
+
+    /* 3. This helper never return */
+    latxs_tr_gen_infinite_loop();
 
     return true;
 }

@@ -7,7 +7,6 @@
 #include "flag-lbt.h"
 #include "translate.h"
 
-bool translate_nop(IR1_INST *pir1) { return true; }
 bool translate_endbr32(IR1_INST *pir1) { return true; }
 
 bool translate_bound(IR1_INST *pir1) { return false; }
@@ -36,8 +35,6 @@ bool translate_lsl(IR1_INST *pir1) { return false; }
 bool translate_syscall(IR1_INST *pir1) { return false; }
 bool translate_clts(IR1_INST *pir1) { return false; }
 bool translate_sysret(IR1_INST *pir1) { return false; }
-bool translate_invd(IR1_INST *pir1) { return false; }
-bool translate_wbinvd(IR1_INST *pir1) { return false; }
 bool translate_femms(IR1_INST *pir1) { return false; }
 bool translate_wrmsr(IR1_INST *pir1) { return false; }
 bool translate_rdmsr(IR1_INST *pir1) { return false; }
@@ -1491,6 +1488,9 @@ bool translate_str(IR1_INST *pir1) { return false; }
 
 bool translate_outs(IR1_INST *pir1) { return false; }
 bool translate_rsm(IR1_INST *pir1) { return false; }
+bool translate_wbinvd(IR1_INST *pir1) { return false; }
+bool translate_invd(IR1_INST *pir1) { return false; }
+bool translate_nop(IR1_INST *pir1) { return true; }
 
 #else
 
@@ -1505,5 +1505,8 @@ bool translate_str(IR1_INST *pir1) { return latxs_translate_str(pir1); }
 
 bool translate_outs(IR1_INST *pir1) { return latxs_translate_outs(pir1); }
 bool translate_rsm(IR1_INST *pir1) { return latxs_translate_rsm(pir1); }
+bool translate_wbinvd(IR1_INST *pir1) { return latxs_translate_wbinvd(pir1); }
+bool translate_invd(IR1_INST *pir1) { return latxs_translate_invd(pir1); }
+bool translate_nop(IR1_INST *pir1) { return latxs_translate_nop(pir1); }
 
 #endif
