@@ -1525,6 +1525,13 @@ bool latxs_translate_idiv(IR1_INST *pir1);
 
 void latxs_tr_gen_div_result_check(IR1_INST *, IR2_OPND, int s, int);
 
+bool latxs_translate_aaa(IR1_INST *pir1);
+bool latxs_translate_aad(IR1_INST *pir1);
+bool latxs_translate_aam(IR1_INST *pir1);
+bool latxs_translate_aas(IR1_INST *pir1);
+bool latxs_translate_daa(IR1_INST *pir1);
+bool latxs_translate_das(IR1_INST *pir1);
+
 /* sys-tr-branch */
 bool latxs_translate_jz(IR1_INST *pir1);
 bool latxs_translate_jnz(IR1_INST *pir1);

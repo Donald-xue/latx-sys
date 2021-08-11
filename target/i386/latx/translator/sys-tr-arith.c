@@ -21,6 +21,13 @@ void latxs_sys_arith_register_ir1(void)
     latxs_register_ir1(X86_INS_IMUL);
     latxs_register_ir1(X86_INS_DIV);
     latxs_register_ir1(X86_INS_IDIV);
+
+    latxs_register_ir1(X86_INS_AAA);
+    latxs_register_ir1(X86_INS_AAD);
+    latxs_register_ir1(X86_INS_AAM);
+    latxs_register_ir1(X86_INS_AAS);
+    latxs_register_ir1(X86_INS_DAA);
+    latxs_register_ir1(X86_INS_DAS);
 }
 
 bool latxs_translate_add(IR1_INST *pir1)
@@ -669,4 +676,90 @@ bool latxs_translate_idiv(IR1_INST *pir1)
 
     latxs_ra_free_temp(&div_res);
     return true;
+}
+
+static bool latxs_do_translate_bcd(IR1_INST *pir1, int val)
+{
+    /* 1. only need to save eflags */
+    helper_cfg_t cfg = default_helper_cfg;
+    cfg.sv_eflags = 1;
+
+    /*
+     * 2. call helper and sync the eflags
+     *    > EAX is used (caller-saved, always saved)
+     *    > eflags is used and updated
+     *
+     * target/i386/int_helper.c
+     * void helper_daa(CPUX86State *env)
+     * void helper_das(CPUX86State *env)
+     * void helper_aaa(CPUX86State *env)
+     * void helper_aas(CPUX86State *env)
+     * void helper_aam(CPUX86State *env, int base)
+     * void helper_aad(CPUX86State *env, int base)
+     */
+    switch (ir1_opcode(pir1)) {
+    case X86_INS_DAA:
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_daa, cfg);
+        break;
+    case X86_INS_DAS:
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_das, cfg);
+        break;
+    case X86_INS_AAA:
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_aaa, cfg);
+        break;
+    case X86_INS_AAS:
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_aas, cfg);
+        break;
+    case X86_INS_AAM:
+        latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_aam, val, cfg);
+        break;
+    case X86_INS_AAD:
+        latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_aad, val, cfg);
+        break;
+    default:
+        lsassertm_illop(ir1_addr(pir1), 0,
+                "unknown bcd instruction.\n");
+        break;
+    }
+
+    return true;
+}
+
+bool latxs_translate_aaa(IR1_INST *pir1)
+{
+    return latxs_do_translate_bcd(pir1, 1);
+}
+bool latxs_translate_aad(IR1_INST *pir1)
+{
+    int val;
+    if (!ir1_opnd_num(pir1)) {
+        val = 0x0A;
+    } else {
+        val = ir1_opnd_uimm(ir1_get_opnd(pir1, 0));
+    }
+
+    return latxs_do_translate_bcd(pir1, val);
+}
+bool latxs_translate_aam(IR1_INST *pir1)
+{
+    int val;
+    if (!ir1_opnd_num(pir1)) {
+        val = 0x0A;
+    } else {
+        val = ir1_opnd_uimm(ir1_get_opnd(pir1, 0));
+    }
+
+    return latxs_do_translate_bcd(pir1, val);
+}
+bool latxs_translate_aas(IR1_INST *pir1)
+{
+    return latxs_do_translate_bcd(pir1, 1);
+}
+bool latxs_translate_daa(IR1_INST *pir1)
+{
+    return latxs_do_translate_bcd(pir1, 1);
+}
+bool latxs_translate_das(IR1_INST *pir1)
+{
+    return latxs_do_translate_bcd(pir1, 1);
 }

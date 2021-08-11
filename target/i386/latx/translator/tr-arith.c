@@ -6,6 +6,9 @@
 
 bool translate_das(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_das(pir1);
+#else
     IR1_OPND *reg_al = &al_ir1_opnd;
     IR2_OPND old_al = load_ireg_from_ir1(reg_al, ZERO_EXTENSION, false);
     IR2_OPND new_al = ra_alloc_itemp();
@@ -66,10 +69,14 @@ bool translate_das(IR1_INST *pir1)
 
 
     return true;
+#endif
 }
 
 bool translate_aam(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_aam(pir1);
+#else
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *reg_ah = &ah_ir1_opnd;
     IR1_OPND *reg_al = &al_ir1_opnd;
@@ -87,10 +94,14 @@ bool translate_aam(IR1_INST *pir1)
     generate_eflag_calculation(al, old_al, imm_opnd, pir1, true);
 
     return true;
+#endif
 }
 
 bool translate_aaa(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_aaa(pir1);
+#else
     IR1_OPND *reg_ax = &ax_ir1_opnd;
     IR1_OPND *reg_al = &al_ir1_opnd;
     IR2_OPND temp_opnd = ra_alloc_itemp();
@@ -122,10 +133,14 @@ bool translate_aaa(IR1_INST *pir1)
     store_ireg_to_ir1(temp_opnd, reg_al, false);
 
     return true;
+#endif
 }
 
 bool translate_aas(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_aas(pir1);
+#else
     IR1_OPND *reg_ax = &ax_ir1_opnd;
     IR1_OPND *reg_al = &al_ir1_opnd;
     IR1_OPND *reg_ah = &ah_ir1_opnd;
@@ -166,10 +181,14 @@ bool translate_aas(IR1_INST *pir1)
     store_ireg_to_ir1(al_ir2, reg_al, false);
     store_ireg_to_ir1(ah_ir2, reg_ah, false);
     return true;
+#endif
 }
 
 bool translate_aad(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_aad(pir1);
+#else
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *reg_ah = &ah_ir1_opnd;
     IR1_OPND *reg_al = &al_ir1_opnd;
@@ -195,10 +214,14 @@ bool translate_aad(IR1_INST *pir1)
 
     generate_eflag_calculation(al, old_al, imm_opnd, pir1, true);
     return true;
+#endif
 }
 
 bool translate_daa(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_daa(pir1);
+#else
     IR1_OPND *reg_al = &al_ir1_opnd;
     IR2_OPND temp_opnd = ra_alloc_itemp();
     IR2_OPND imm_opnd = ra_alloc_itemp();
@@ -260,6 +283,7 @@ bool translate_daa(IR1_INST *pir1)
     generate_eflag_calculation(new_eax, old_eax, old_eax, pir1, true);
 
     return true;
+#endif
 }
 
 bool translate_add(IR1_INST *pir1)
