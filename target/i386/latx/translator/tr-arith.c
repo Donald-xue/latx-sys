@@ -291,32 +291,46 @@ bool translate_add(IR1_INST *pir1)
 #ifdef CONFIG_SOFTMMU
     return latxs_translate_add(pir1);
 #else
-    IR2_OPND src_opnd_1 =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, SIGN_EXTENSION, false);
-    IR2_OPND dest_opnd = ra_alloc_itemp();
-    IR2_OPND lat_lock_addr;
-        
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src_opnd0;
+    IR2_OPND src_opnd1 = load_ireg_from_ir1(opnd1, SIGN_EXTENSION, false);
+
     if (ir1_is_prefix_lock(pir1)) {
-        IR2_OPND mem_opnd = mem_ir1_to_ir2_opnd(ir1_get_opnd(pir1, 0), false);
+        /* lock add m, imm/r */
+        IR2_OPND lat_lock_addr;
+        IR2_OPND dest_opnd = ra_alloc_itemp();
+        IR2_OPND mem_opnd = mem_ir1_to_ir2_opnd(opnd0, false);
         int imm = ir2_opnd_imm(&mem_opnd);
         mem_opnd._type = IR2_OPND_IREG;
         lat_lock_addr = tr_lat_spin_lock(mem_opnd, imm);
-	}
-
-    IR2_OPND src_opnd_0 =
-        load_ireg_from_ir1(ir1_get_opnd(pir1, 0), SIGN_EXTENSION, false);
-    la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd_0, src_opnd_1);
+        src_opnd0 = load_ireg_from_ir1(opnd0, SIGN_EXTENSION, false);
+        la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd0, src_opnd1);
 #ifdef CONFIG_LATX_FLAG_PATTERN
-    fp_save_src_opnd(pir1, src_opnd_0, src_opnd_1);
+        fp_save_src_opnd(pir1, src_opnd0, src_opnd1);
 #endif
-    generate_eflag_calculation(dest_opnd, src_opnd_0, src_opnd_1, pir1, true);
-    store_ireg_to_ir1(dest_opnd, ir1_get_opnd(pir1, 0), false);
-
-    if (ir1_is_prefix_lock(pir1)) {
+        generate_eflag_calculation(dest_opnd, src_opnd0, src_opnd1, pir1, true);
+        store_ireg_to_ir1(dest_opnd, opnd0, false);
         tr_lat_spin_unlock(lat_lock_addr);
+        ra_free_temp(dest_opnd);
+    } else if (ir1_opnd_is_gpr(opnd0) && ir1_opnd_size(opnd0) == 32) {
+        /* lock add gpr32, imm/r/m */
+        int opnd0_gpr_num = ir1_opnd_base_reg_num(opnd0);
+        src_opnd0 = ra_alloc_gpr(opnd0_gpr_num);
+        generate_eflag_calculation(src_opnd0, src_opnd0, src_opnd1, pir1, true);
+        la_append_ir2_opnd3(LISA_ADD_W, src_opnd0, src_opnd0, src_opnd1);
+        ir2_opnd_set_em(&src_opnd0, SIGN_EXTENSION, 32);
+    } else {
+        IR2_OPND dest_opnd = ra_alloc_itemp();
+        src_opnd0 = load_ireg_from_ir1(opnd0, SIGN_EXTENSION, false);
+        la_append_ir2_opnd3_em(LISA_ADD_W, dest_opnd, src_opnd0, src_opnd1);
+#ifdef CONFIG_LATX_FLAG_PATTERN
+        fp_save_src_opnd(pir1, src_opnd0, src_opnd1);
+#endif
+        generate_eflag_calculation(dest_opnd, src_opnd0, src_opnd1, pir1, true);
+        store_ireg_to_ir1(dest_opnd, opnd0, false);
+        ra_free_temp(dest_opnd);
     }
-
-    ra_free_temp(dest_opnd);
 
     return true;
 #endif
