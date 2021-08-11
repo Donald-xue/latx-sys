@@ -29,6 +29,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_XCHG);
     latxs_register_ir1(X86_INS_CMPXCHG);
     latxs_register_ir1(X86_INS_CMPXCHG8B);
+    latxs_register_ir1(X86_INS_RSM);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1291,6 +1292,30 @@ bool latxs_translate_cmpxchg8b(IR1_INST *pir1)
     latxs_tr_gen_call_to_helper(helper_addr);
     /* 4.5 restore context */
     latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_rsm(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_RSM(pir1);
+
+    /* 1. save next instruciton's EIP to env */
+    latxs_tr_gen_save_next_eip();
+
+    /*
+     * 2. helper_rsm
+     *
+     * target/i386/smm_helper.c
+     * void helper_rsm(
+     *      CPUX86State *env)
+     */
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rsm, default_helper_cfg);
+
+    /* the eip is already updated in helper_rsm */
+    lsenv->tr_data->ignore_eip_update = 1;
 
     return true;
 }

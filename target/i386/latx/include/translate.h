@@ -1482,6 +1482,8 @@ bool latxs_translate_xchg(IR1_INST *pir1);
 bool latxs_translate_cmpxchg(IR1_INST *pir1);
 bool latxs_translate_cmpxchg8b(IR1_INST *pir1);
 
+bool latxs_translate_rsm(IR1_INST *pir1);
+
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
 void latxs_tr_gen_io_bpt(IR1_INST *, IR1_OPND *, int);
