@@ -41,6 +41,10 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_INT3);
     latxs_register_ir1(X86_INS_INTO);
     latxs_register_ir1(X86_INS_RETF);
+    latxs_register_ir1(X86_INS_CDQ);
+    latxs_register_ir1(X86_INS_CWD);
+    latxs_register_ir1(X86_INS_CWDE);
+    latxs_register_ir1(X86_INS_CBW);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1762,4 +1766,65 @@ bool latxs_translate_retf(IR1_INST *pir1)
         /* 32-bit opnd size */
         return latxs_do_translate_ret_far(pir1, 1, 32);
     }
+}
+
+bool latxs_translate_cwd(IR1_INST *pir1)
+{
+    IR2_OPND val = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&val, &ax_ir1_opnd, EXMode_S, false);
+    latxs_append_ir2_opnd2i(LISA_SRAI_W, &val, &val, 15);
+    latxs_store_ir2_to_ir1(&val, &dx_ir1_opnd, false);
+    latxs_ra_free_temp(&val);
+    return true;
+}
+
+bool latxs_translate_cdq(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    if (latxs_ir1_data_size(pir1) == 16) {
+        return latxs_translate_cwd(pir1);
+    }
+#endif
+
+    IR2_OPND eax = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&eax, &eax_ir1_opnd, EXMode_S, false);
+    IR2_OPND edx = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2_(lisa_mov32s, &edx, &eax);
+    latxs_append_ir2_opnd2i(LISA_SRAI_W, &edx, &edx, 31);
+    latxs_store_ir2_to_ir1(&edx, &edx_ir1_opnd, false);
+    latxs_ra_free_temp(&eax);
+    latxs_ra_free_temp(&edx);
+    return true;
+}
+
+bool latxs_translate_cwde(IR1_INST *pir1)
+{
+    /*
+     * In system-mode, since the capstone will always
+     * generate CWDE ignoring the opnd size.
+     * so we must do it by ourself.
+     */
+    int data_size = latxs_ir1_data_size(pir1);
+    if (data_size == 16) {
+        /* AX = signed extension(al) */
+        IR2_OPND al_opnd = latxs_ra_alloc_itemp();
+        latxs_load_ir1_gpr_to_ir2(&al_opnd, &al_ir1_opnd, EXMode_S);
+        latxs_store_ir2_to_ir1(&al_opnd, &ax_ir1_opnd, false);
+    } else if (data_size == 32) {
+        /* EAX = signed extension(ax) */
+        IR2_OPND eax_opnd = latxs_ra_alloc_gpr(eax_index);
+        latxs_append_ir2_opnd2_(lisa_mov16s, &eax_opnd, &eax_opnd);
+    } else {
+        lsassertm(0, "unknown data size of cwde.\n");
+    }
+
+    return true;
+}
+
+bool latxs_translate_cbw(IR1_INST *pir1)
+{
+    IR2_OPND val = latxs_ra_alloc_itemp();
+    latxs_load_ir1_gpr_to_ir2(&val, &al_ir1_opnd, EXMode_S);
+    latxs_store_ir2_to_ir1(&val, &ax_ir1_opnd, false);
+    return true;
 }

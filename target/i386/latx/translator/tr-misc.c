@@ -12,7 +12,6 @@ bool translate_endbr32(IR1_INST *pir1) { return true; }
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
 bool translate_cdqe(IR1_INST *pir1) { return false; }
-bool translate_cwd(IR1_INST *pir1) { return false; }
 
 bool translate_cqo(IR1_INST *pir1) { return false; }
 bool translate_call_far(IR1_INST *pir1) { return false; }
@@ -1109,6 +1108,9 @@ bool translate_cpuid(IR1_INST *pir1)
 
 bool translate_cdq(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cdq(pir1);
+#else
     IR2_OPND eax = ra_alloc_itemp();
     load_ireg_from_ir1_2(eax, &eax_ir1_opnd, SIGN_EXTENSION, false);
     IR2_OPND edx = ra_alloc_itemp();
@@ -1118,6 +1120,7 @@ bool translate_cdq(IR1_INST *pir1)
     ra_free_temp(eax);
     ra_free_temp(edx);
     return true;
+#endif
 }
 
 bool translate_sahf(IR1_INST *pir1)
@@ -1241,15 +1244,22 @@ bool translate_cmc(IR1_INST *pir1)
 
 bool translate_cbw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cbw(pir1);
+#else
     IR2_OPND value_opnd =
         load_ireg_from_ir1(&al_ir1_opnd, SIGN_EXTENSION, false);
     store_ireg_to_ir1(value_opnd, &ax_ir1_opnd, false);
 
     return true;
+#endif
 }
 
 bool translate_cwde(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cwde(pir1);
+#else
     IR2_OPND eax_opnd = ra_alloc_gpr(eax_index);
     if (!ir2_opnd_is_sx(&eax_opnd, 16)) {
         la_append_ir2_opnd2i_em(LISA_SLLI_W, eax_opnd, eax_opnd, 16);
@@ -1257,6 +1267,7 @@ bool translate_cwde(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_fnsave(IR1_INST *pir1)
@@ -1497,6 +1508,7 @@ bool translate_int1(IR1_INST *pir1) { return false; }
 bool translate_int_3(IR1_INST *pir1) { return false; }
 bool translate_into(IR1_INST *pir1) { return false; }
 bool translate_retf(IR1_INST *pir1) { return false; }
+bool translate_cwd(IR1_INST *pir1) { return false; }
 
 #else
 
@@ -1518,5 +1530,6 @@ bool translate_int1(IR1_INST *pir1) { return latxs_translate_int1(pir1); }
 bool translate_int_3(IR1_INST *pir1) { return latxs_translate_int_3(pir1); }
 bool translate_into(IR1_INST *pir1) { return latxs_translate_into(pir1); }
 bool translate_retf(IR1_INST *pir1) { return latxs_translate_retf(pir1); }
+bool translate_cwd(IR1_INST *pir1) { return latxs_translate_cwd(pir1); }
 
 #endif
