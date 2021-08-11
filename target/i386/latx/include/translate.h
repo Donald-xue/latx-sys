@@ -1460,6 +1460,7 @@ bool latxs_translate_callnext(IR1_INST *pir1);
 bool latxs_translate_callin(IR1_INST *pir1);
 bool latxs_translate_ret(IR1_INST *pir1);
 bool latxs_translate_iret(IR1_INST *pir1);
+bool latxs_translate_retf(IR1_INST *pir1);
 
 bool latxs_translate_jmp(IR1_INST *pir1);
 bool latxs_translate_jmpin(IR1_INST *pir1);

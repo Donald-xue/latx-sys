@@ -40,6 +40,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_INT1);
     latxs_register_ir1(X86_INS_INT3);
     latxs_register_ir1(X86_INS_INTO);
+    latxs_register_ir1(X86_INS_RETF);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -1633,4 +1634,132 @@ bool latxs_translate_int1(IR1_INST *pir1)
     latxs_tr_gen_infinite_loop();
 
     return true;
+}
+
+static void latxs_do_translate_ret_far_pe(
+        IR1_INST *pir1, int size, int esp_inc)
+{
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* 1. save complete context */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    /* 2. prepare arguments */
+
+    /* arg0 : env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+    /* arg1 : shift = opnd size (32-bit:1 ; 16-bit:0)*/
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+            &latxs_zero_ir2_opnd, size);
+    /* arg2 : addend to esp: esp inc */
+    latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
+            &latxs_zero_ir2_opnd, esp_inc);
+
+    /*
+     * 3. call helper_lret_protected
+     *    > might genrate exception
+     *    > eflags is updated in helper
+     *    > EIP is updated in helper
+     */
+    latxs_tr_gen_call_to_helper((ADDR)helper_lret_protected);
+    /*
+     * > protected mode
+     *
+     * target/i386/seg_helper.c
+     * void helper_lret_protected(
+     *      CPUX86State *env,
+     *      int shift,
+     *      int addend)
+     */
+
+    /* 4. restore context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    /* 5. disable eip update in context switch */
+    lsenv->tr_data->ignore_eip_update = 1;
+}
+
+static void latxs_do_translate_ret_far_real(
+        IR1_INST *pir1, int opnd_size, int esp_inc)
+{
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+    /* 1. build MEM(SS:ESP) */
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
+            X86_REG_SS, X86_REG_ESP, 0, 0, 0);
+
+    /* 2. load new EIP from MEM(SS:ESP) */
+    IR2_OPND tmp_new_eip = latxs_ra_alloc_itemp();
+    latxs_load_ir1_mem_to_ir2(&tmp_new_eip,
+            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+
+    /* 3. load new CS from MEM(SS:ESP + 2/4) */
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
+            X86_REG_SS, X86_REG_ESP, (opnd_size >> 3), 0, 0);
+    IR2_OPND tmp_new_cs = latxs_ra_alloc_itemp();
+    latxs_load_ir1_mem_to_ir2(&tmp_new_cs,
+            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+
+    /* 4. update env->eip */
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp_new_eip, &latxs_env_ir2_opnd,
+            lsenv_offset_of_eip(lsenv));
+    /* 5. update env->cs.base, env->cs.selector */
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp_new_cs, &latxs_env_ir2_opnd,
+            lsenv_offset_of_seg_selector(lsenv, cs_index));
+    latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp_new_cs, &tmp_new_cs, 0x4);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp_new_cs, &latxs_env_ir2_opnd,
+            lsenv_offset_of_seg_base(lsenv, cs_index));
+
+    /* 6. update esp */
+    esp_inc += opnd_size >> 2; /* (opnd_size >> 3) << 1 */
+
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    if (lsenv->tr_data->sys.ss32) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd, esp_inc);
+    } else {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, &esp_opnd, esp_inc);
+        latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
+        latxs_ra_free_temp(&tmp);
+    }
+
+    /* 7. disable eip update in context switch */
+    /*    Since we already update eip here */
+    lsenv->tr_data->ignore_eip_update = 1;
+}
+
+static bool latxs_do_translate_ret_far(
+        IR1_INST *pir1, int size, int opnd_size)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    int esp_inc = 0;
+    if (ir1_opnd_num(pir1)) {
+        IR1_OPND *opnd = ir1_get_opnd(pir1, 0);
+        esp_inc = ir1_opnd_simm(opnd);
+    }
+
+    if (td->sys.pe && !td->sys.vm86) {
+        latxs_do_translate_ret_far_pe(pir1, size, esp_inc);
+    } else {
+    /* > real mode or vm86 */
+        latxs_do_translate_ret_far_real(pir1, opnd_size, esp_inc);
+    }
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_retf(IR1_INST *pir1)
+{
+    int data_size = latxs_ir1_data_size(pir1);
+    if (data_size == 16) {
+        /* 16-bit opnd size */
+        return latxs_do_translate_ret_far(pir1, 0, 16);
+    } else {
+        /* 32-bit opnd size */
+        return latxs_do_translate_ret_far(pir1, 1, 32);
+    }
 }
