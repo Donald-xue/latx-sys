@@ -919,9 +919,9 @@ size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64
 			// encounter a broken instruction
 
 			// free memory of @detail pointer
-			if (handle->detail) {
-				cs_mem_free(insn_cache->detail);
-			}
+            /* if (handle->detail) { */
+                /* cs_mem_free(insn_cache->detail); */
+            /* } */
 
 			// if there is no request to skip data, or remaining data is too small,
 			// then bail out
@@ -1002,7 +1002,7 @@ size_t CAPSTONE_API cs_disasm(csh ud, const uint8_t *buffer, size_t size, uint64
 
 	if (!c) {
 		// we did not disassemble any instruction
-		cs_mem_free(total);
+        /* cs_mem_free(total); */
 		total = NULL;
 	} else if (f != cache_size) {
 		// total did not fully use the last cache, so downsize it
