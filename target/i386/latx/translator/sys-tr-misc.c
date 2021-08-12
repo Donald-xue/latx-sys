@@ -63,6 +63,8 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_HLT);
     latxs_register_ir1(X86_INS_RDMSR);
     latxs_register_ir1(X86_INS_WRMSR);
+    latxs_register_ir1(X86_INS_INVLPG);
+    latxs_register_ir1(X86_INS_INVLPGA);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2642,6 +2644,90 @@ bool latxs_translate_rdmsr(IR1_INST *pir1)
      */
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdmsr,
             default_helper_cfg);
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_invlpg(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_excp_check(pir1)) {
+        return true;
+    }
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    lsassert(ir1_opnd_is_mem(opnd0));
+
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* 1. get mem address */
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd0, -1);
+
+    int mem_no_offset_new_tmp = 0;
+    IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(
+            &mem_opnd, &mem_no_offset_new_tmp);
+    if (mem_no_offset_new_tmp) {
+        latxs_ra_free_temp(&mem_opnd);
+    }
+    IR2_OPND addr_opnd = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
+
+    /*
+     * 2. helper_invlpg
+     * target/i386/misc_helper.c
+     * void helper_invlpg(
+     *      CPUX86State *env,
+     *      target_ulong addr)
+     */
+
+    /* 2.0 save context */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+
+    /* 2.1 arg1: address */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd,
+            &addr_opnd, &latxs_zero_ir2_opnd);
+    latxs_ra_free_temp(&addr_opnd);
+    /* 2.2 arg0: env */
+    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
+            &latxs_env_ir2_opnd, &latxs_zero_ir2_opnd);
+
+    /* 2.3 call helper_invlpg */
+    latxs_tr_gen_call_to_helper((ADDR)helper_invlpg);
+
+    /* 2.4 restore context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
+
+    return true;
+}
+
+bool latxs_translate_invlpga(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_excp_check(pir1)) {
+        return true;
+    }
+
+    int addr_size = latxs_ir1_addr_size(pir1);
+    lsassert(addr_size == 2 || addr_size == 4);
+
+    /* 0. save current instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /*
+     * 1. helper_invlpga
+     * target/i386/svm_helper.c
+     * void helper_invlpga(
+     *      CPUX86State *env,
+     *      int         aflag)
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+
+    /* 1.1 aflag */
+    int aflag = addr_size == 2 ? 0 : 1;
+
+    /* 1.2 call helper_invlpga */
+    latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_invlpga, aflag, cfg);
 
     return true;
 }

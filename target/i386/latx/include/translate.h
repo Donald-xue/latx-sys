@@ -1525,6 +1525,8 @@ bool latxs_translate_rdpmc(IR1_INST *pir1);
 bool latxs_translate_hlt(IR1_INST *pir1);
 bool latxs_translate_rdmsr(IR1_INST *pir1);
 bool latxs_translate_wrmsr(IR1_INST *pir1);
+bool latxs_translate_invlpg(IR1_INST *pir1);
+bool latxs_translate_invlpga(IR1_INST *pir1);
 
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
