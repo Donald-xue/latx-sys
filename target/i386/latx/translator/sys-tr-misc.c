@@ -55,6 +55,8 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_LFS);
     latxs_register_ir1(X86_INS_LGS);
     latxs_register_ir1(X86_INS_LSS);
+    latxs_register_ir1(X86_INS_ENTER);
+    latxs_register_ir1(X86_INS_LEAVE);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2389,4 +2391,123 @@ bool latxs_translate_lss(IR1_INST *pir1)
     IR1_OPND seg_ir1_opnd;
     ir1_opnd_build_reg(&seg_ir1_opnd, 16, X86_REG_SS);
     return latxs_do_translate_lxx(pir1, &seg_ir1_opnd);
+}
+
+bool latxs_translate_enter(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* esp_addend */
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* level */
+    int esp_addend  = ir1_opnd_uimm(opnd0);
+    int level       = ir1_opnd_uimm(opnd1);
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    int data_size = latxs_ir1_data_size(pir1);
+
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    IR2_OPND ebp_opnd = latxs_ra_alloc_gpr(ebp_index);
+
+    IR2_OPND frametemp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &frametemp,
+            &esp_opnd, 0 - (data_size >> 3));
+
+    /* 1. push EBP into stack MEM(SS:ESP-d)*/
+    IR1_OPND mem_ir1_opnd;
+    /* 1.1 build MEM(SS:ESP-d) */
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+            X86_REG_SS, X86_REG_ESP, 0 - (data_size >> 3), 0, 0);
+    /* 1.2 store */
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+    latxs_store_ir2_to_ir1_mem(&ebp_opnd,
+            &mem_ir1_opnd, false, ss_addr_size);
+
+    level &= 31;
+    if (level) {
+        int i;
+        /* copy level-1 pointers from the previous frame */
+        for (i = 1; i < level; ++i) {
+            latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+                    X86_REG_SS, X86_REG_EBP, 0 - (data_size >> 3) * i, 0, 0);
+            IR2_OPND value = latxs_ra_alloc_itemp();
+            latxs_load_ir1_mem_to_ir2(&value,
+                    &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+
+            latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+                    X86_REG_SS, X86_REG_ESP,
+                    0 - (data_size >> 3) * (i + 1), 0, 0);
+            latxs_store_ir2_to_ir1_mem(&value,
+                    &mem_ir1_opnd, false, ss_addr_size);
+        }
+        /* push current FrameTemp as the last level */
+        latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+                X86_REG_SS, X86_REG_ESP,
+                0 - (data_size >> 3) * (level + 1), 0, 0);
+        latxs_store_ir2_to_ir1_mem(&frametemp,
+                &mem_ir1_opnd, false, ss_addr_size);
+    }
+
+    /* copy FrameTemp vlaue to EBP */
+    if (td->sys.ss32) {
+        latxs_store_ir2_to_ir1_gpr(&frametemp, &ebp_ir1_opnd);
+    } else {
+        latxs_store_ir2_to_ir1_gpr(&frametemp, &bp_ir1_opnd);
+    }
+
+    /* compute final value of ESP */
+    IR2_OPND final_esp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &final_esp,
+            &frametemp, -(esp_addend + (data_size >> 3) * level));
+
+    latxs_ra_free_temp(&frametemp);
+    if (td->sys.ss32) {
+        latxs_store_ir2_to_ir1_gpr(&final_esp, &esp_ir1_opnd);
+    } else {
+        latxs_store_ir2_to_ir1_gpr(&final_esp, &sp_ir1_opnd);
+    }
+    latxs_ra_free_temp(&final_esp);
+
+    return true;
+}
+
+bool latxs_translate_leave(IR1_INST *pir1)
+{
+    IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+    IR2_OPND ebp_opnd = latxs_ra_alloc_gpr(ebp_index);
+
+    int ss_addr_size = latxs_get_sys_stack_addr_size();
+    int data_size = latxs_ir1_data_size(pir1);
+
+    /* 1. load value from MEM(SS:EBP) */
+    IR1_OPND mem_ir1_opnd;
+    latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
+            X86_REG_SS, X86_REG_EBP, 0, 0, 0);
+
+    IR2_OPND new_ebp = latxs_ra_alloc_itemp();
+    latxs_load_ir1_mem_to_ir2(&new_ebp, &mem_ir1_opnd,
+            EXMode_Z, false, ss_addr_size);
+
+    IR2_OPND new_esp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ADDI_W, &new_esp, &ebp_opnd, data_size >> 3);
+
+    /* 2. update EBP according to data_size */
+    if (data_size == 32) {
+        latxs_append_ir2_opnd2_(lisa_mov, &ebp_opnd, &new_ebp);
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&ebp_opnd, EXMode_Z, 32);
+        }
+    } else if (data_size == 16) {
+        latxs_store_ir2_to_ir1_gpr(&new_ebp, &bp_ir1_opnd);
+    }
+
+    /* 3. update ESP according to ss_addr_size */
+    if (ss_addr_size == 4) {
+        latxs_append_ir2_opnd2_(lisa_mov, &esp_opnd, &new_esp);
+        if (option_by_hand) {
+            latxs_ir2_opnd_set_emb(&esp_opnd, EXMode_S, 32);
+        }
+    } else {
+        latxs_store_ir2_to_ir1_gpr(&new_esp, &sp_ir1_opnd);
+    }
+
+    return true;
 }

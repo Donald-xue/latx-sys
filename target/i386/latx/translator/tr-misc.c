@@ -15,8 +15,6 @@ bool translate_cdqe(IR1_INST *pir1) { return false; }
 
 bool translate_cqo(IR1_INST *pir1) { return false; }
 
-bool translate_enter(IR1_INST *pir1) { return false; }
-
 bool translate_salc(IR1_INST *pir1) { return false; }
 bool translate_xlat(IR1_INST *pir1) { return false; }
 
@@ -974,6 +972,9 @@ bool translate_jmpin(IR1_INST *pir1)
 
 bool translate_leave(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_leave(pir1);
+#else
     IR2_OPND rsp_opnd = ra_alloc_gpr(4);
     IR2_OPND rbp_opnd = ra_alloc_gpr(5);
 
@@ -990,6 +991,7 @@ bool translate_leave(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ADDI_ADDRX, rsp_opnd, rsp_opnd, 4);
 
     return true;
+#endif
 }
 
 bool translate_int(IR1_INST *pir1)
@@ -1522,6 +1524,7 @@ bool translate_lfs(IR1_INST *pir1) { return false; }
 bool translate_lgs(IR1_INST *pir1) { return false; }
 bool translate_lss(IR1_INST *pir1) { return false; }
 bool translate_clts(IR1_INST *pir1) { return false; }
+bool translate_enter(IR1_INST *pir1) { return false; }
 
 #else
 
@@ -1562,5 +1565,6 @@ bool translate_lfs(IR1_INST *pir1) { return latxs_translate_lfs(pir1); }
 bool translate_lgs(IR1_INST *pir1) { return latxs_translate_lgs(pir1); }
 bool translate_lss(IR1_INST *pir1) { return latxs_translate_lss(pir1); }
 bool translate_clts(IR1_INST *pir1) { return latxs_translate_clts(pir1); }
+bool translate_enter(IR1_INST *pir1) { return latxs_translate_enter(pir1); }
 
 #endif
