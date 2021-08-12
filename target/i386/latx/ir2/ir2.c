@@ -4851,6 +4851,10 @@ IR2_INST *la_append_ir2_opnd1i_em(IR2_OPCODE opcode, IR2_OPND op0, int imm) {
     case LISA_LU32I_D:
         ir2_opnd_set_em(&op0, SIGN_EXTENSION, 52);
         break;
+    default:
+        lsassertm(0, "cannot handle %s. add more cases if you are sure.",
+                    ir2_name(opcode));
+        break;
     }
 
     lsassertm(ir2_op_check(pir2), "Maybe you should check the type of operand");
