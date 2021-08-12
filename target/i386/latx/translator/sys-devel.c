@@ -45,4 +45,5 @@ static void __attribute__((__constructor__)) sys_devel_init(void)
     latxs_sys_fp_register_ir1();
     latxs_sys_fctrl_register_ir1();
     latxs_sys_farith_register_ir1();
+    latxs_sys_fldst_register_ir1();
 }

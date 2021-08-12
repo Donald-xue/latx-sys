@@ -16,6 +16,9 @@
 
 bool translate_fld(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fld(pir1);
+#else
     /* TODO: long_double */
     /* if(is_long_double_ir1_opnd(ir1_get_opnd(pir1, 0))){ */
     /*     fprintf(stderr, "Long double for %s not implemented. translation */
@@ -32,10 +35,14 @@ bool translate_fld(IR1_INST *pir1)
     tr_fpu_push();
 
     return true;
+#endif
 }
 
 bool translate_fldz(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldz(pir1);
+#else
     /* 1. the position to be overwritten is st(0) */
     tr_fpu_push();
     IR2_OPND dest_opnd = ra_alloc_st(0);
@@ -46,10 +53,14 @@ bool translate_fldz(IR1_INST *pir1)
     la_append_ir2_opnd2_em(LISA_FFINT_D_W, dest_opnd, dest_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fld1(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fld1(pir1);
+#else
     /* 1. the position to be overwritten is st(0) */
     tr_fpu_push();
     IR2_OPND dest_opnd = ra_alloc_st(0);
@@ -62,11 +73,15 @@ bool translate_fld1(IR1_INST *pir1)
 
     ra_free_temp(itemp_1);
     return true;
+#endif
 }
 
 static double l2e;
 bool translate_fldl2e(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldl2e(pir1);
+#else
     l2e = 1 / log(2.0);
     /* 1. the position to be overwritten is st(0) */
     tr_fpu_push();
@@ -77,11 +92,15 @@ bool translate_fldl2e(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_FLD_D, dest_opnd, value_addr_opnd, 0);
 
     return true;
+#endif
 }
 
 static double l2t;
 bool translate_fldl2t(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldl2t(pir1);
+#else
     l2t = 1 / log10(2.0);
 
     /* 1. the position to be overwritten is st(0) */
@@ -93,11 +112,15 @@ bool translate_fldl2t(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_FLD_D, dest_opnd, value_addr_opnd, 0);
 
     return true;
+#endif
 }
 
 static double lg2;
 bool translate_fldlg2(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldlg2(pir1);
+#else
     lg2 = log10(2.0);
 
     /* 1. the position to be overwritten is st(0) */
@@ -109,11 +132,15 @@ bool translate_fldlg2(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_FLD_D, dest_opnd, value_addr_opnd, 0);
 
     return true;
+#endif
 }
 
 static double ln2;
 bool translate_fldln2(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldln2(pir1);
+#else
     ln2 = log(2.0);
 
     /* 1. the position to be overwritten is st(0) */
@@ -125,11 +152,15 @@ bool translate_fldln2(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_FLD_D, dest_opnd, value_addr_opnd, 0);
 
     return true;
+#endif
 }
 
 static double pi = M_PI;
 bool translate_fldpi(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fldpi(pir1);
+#else
     /* 1. the position to be overwritten is st(0) */
     tr_fpu_push();
     IR2_OPND dest_opnd = ra_alloc_st(0);
@@ -139,10 +170,14 @@ bool translate_fldpi(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_FLD_D, dest_opnd, value_addr_opnd, 0);
 
     return true;
+#endif
 }
 
 bool translate_fstp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fstp(pir1);
+#else
     /* TODO: long_double */
     /* if(is_long_double_ir1_opnd(ir1_get_opnd(pir1, 0))){ */
     /*     fprintf(stderr, "Long double for %s not implemented. translation */
@@ -159,10 +194,14 @@ bool translate_fstp(IR1_INST *pir1)
     tr_fpu_pop();
 
     return true;
+#endif
 }
 
 bool translate_fst(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fst(pir1);
+#else
     /* if(is_long_double_ir1_opnd(ir1_get_opnd(pir1, 0))){ */
     /*     fprintf(stderr, "Long double for %s not implemented. translation */
     /*     failed.\n", __FUNCTION__); return false; */
@@ -175,10 +214,14 @@ bool translate_fst(IR1_INST *pir1)
     store_freg_to_ir1(src_opnd, ir1_get_opnd(pir1, 0), false, true);
 
     return true;
+#endif
 }
 
 bool translate_fild(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fild(pir1);
+#else
     lsassert(ir1_get_opnd_num(pir1) == 1);
 
     tr_fpu_push();
@@ -194,10 +237,14 @@ bool translate_fild(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_fist(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fist(pir1);
+#else
     /* 1. load rounding_mode from x86_control_word to mips_fcsr */
     IR2_OPND tmp_fcsr = ra_alloc_itemp();
     la_append_ir2_opnd2(LISA_MOVFCSR2GR, tmp_fcsr, fcsr_ir2_opnd);
@@ -294,13 +341,18 @@ bool translate_fist(IR1_INST *pir1)
     ra_free_temp(tmp_fcsr);
 
     return true;
+#endif
 }
 
 bool translate_fistp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fistp(pir1);
+#else
     translate_fist(pir1);
     tr_fpu_pop();
     return true;
+#endif
 }
 
 bool translate_fnstsw(IR1_INST *pir1)
