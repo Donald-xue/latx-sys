@@ -68,6 +68,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_LFENCE);
     latxs_register_ir1(X86_INS_MFENCE);
     latxs_register_ir1(X86_INS_SFENCE);
+    latxs_register_ir1(X86_INS_PREFETCHNTA);
 }
 
 int latxs_get_sys_stack_addr_size(void)
