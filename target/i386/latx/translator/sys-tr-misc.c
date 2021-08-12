@@ -50,6 +50,11 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_POPAL);
     latxs_register_ir1(X86_INS_PUSHAW);
     latxs_register_ir1(X86_INS_PUSHAL);
+    latxs_register_ir1(X86_INS_LDS);
+    latxs_register_ir1(X86_INS_LES);
+    latxs_register_ir1(X86_INS_LFS);
+    latxs_register_ir1(X86_INS_LGS);
+    latxs_register_ir1(X86_INS_LSS);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2278,4 +2283,110 @@ bool latxs_translate_popa(IR1_INST *pir1)
     } else {
         return false;
     }
+}
+
+static bool latxs_do_translate_lxx(
+        IR1_INST *pir1, IR1_OPND *seg_ir1_opnd)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* dest: GPR */
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* src : MEM */
+
+    /*
+     *      data size | 16 | 32 | mem opnd
+     * -------------------------------------
+     *    offset size | 16 | 32 |  m16:16
+     *  selector size | 16 | 16 |  m16:32
+     */
+
+    int opnd_size = ir1_opnd_size(opnd0);
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+    lsassert(opnd_size == data_size);
+
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd1, -1);
+    int save_temp = 1;
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    /* 1. load offset at MEM */
+    IR2_OPND offset_opnd = latxs_ra_alloc_itemp();
+    IR2_OPCODE opc = data_size == 16 ? LISA_LD_HU : LISA_LD_WU;
+    gen_ldst_softmmu_helper(opc, &offset_opnd, &mem_opnd, save_temp);
+    /* 1.1 save offset to not be ruined by store_ir2_to_ir1_seg */
+    if (td->sys.pe && !td->sys.vm86) {
+        latxs_append_ir2_opnd2i(LISA_ST_D, &offset_opnd,
+                &latxs_env_ir2_opnd,
+                lsenv_offset_of_mips_regs(lsenv, 0));
+    }
+
+    /* 2. load selector at MEM + 2 or 4 */
+    IR2_OPND mem;
+    switch (data_size >> 3) {
+    case 2:
+        mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+        break;
+    case 4:
+        mem = latxs_convert_mem_ir2_opnd_plus_4(&mem_opnd);
+        break;
+    default:
+        break;
+    }
+    IR2_OPND selector_opnd = latxs_ra_alloc_itemp();
+    gen_ldst_softmmu_helper(LISA_LD_HU, &selector_opnd, &mem, save_temp);
+
+    /* 3. store selector to segment register */
+    latxs_store_ir2_to_ir1_seg(&selector_opnd, seg_ir1_opnd);
+    latxs_ra_free_temp(&selector_opnd);
+
+    /* 4.0 load offset if it is saved */
+    if (td->sys.pe && !td->sys.vm86) {
+        latxs_append_ir2_opnd2i(LISA_LD_D, &offset_opnd,
+                &latxs_env_ir2_opnd,
+                lsenv_offset_of_mips_regs(lsenv, 0));
+    }
+
+    /* 4. move offset into GPR.                     */
+    /*    Do this at the end for precise exception. */
+    latxs_store_ir2_to_ir1_gpr(&offset_opnd, opnd0);
+    latxs_ra_free_temp(&offset_opnd);
+
+    /* 5. no inhibit irq from store_ir2_to_ir1_seg */
+    td->inhibit_irq = 0;
+
+    return true;
+}
+
+/* End of TB in system-mode : PE & !vm86 & code32 */
+bool latxs_translate_lds(IR1_INST *pir1)
+{
+    IR1_OPND seg_ir1_opnd;
+    ir1_opnd_build_reg(&seg_ir1_opnd, 16, X86_REG_DS);
+    return latxs_do_translate_lxx(pir1, &seg_ir1_opnd);
+}
+/* End of TB in system-mode : PE & !vm86 & code32*/
+bool latxs_translate_les(IR1_INST *pir1)
+{
+    IR1_OPND seg_ir1_opnd;
+    ir1_opnd_build_reg(&seg_ir1_opnd, 16, X86_REG_ES);
+    return latxs_do_translate_lxx(pir1, &seg_ir1_opnd);
+}
+bool latxs_translate_lfs(IR1_INST *pir1)
+{
+    IR1_OPND seg_ir1_opnd;
+    ir1_opnd_build_reg(&seg_ir1_opnd, 16, X86_REG_FS);
+    return latxs_do_translate_lxx(pir1, &seg_ir1_opnd);
+}
+bool latxs_translate_lgs(IR1_INST *pir1)
+{
+    IR1_OPND seg_ir1_opnd;
+    ir1_opnd_build_reg(&seg_ir1_opnd, 16, X86_REG_GS);
+    return latxs_do_translate_lxx(pir1, &seg_ir1_opnd);
+}
+/* End of TB in system-mode */
+bool latxs_translate_lss(IR1_INST *pir1)
+{
+    IR1_OPND seg_ir1_opnd;
+    ir1_opnd_build_reg(&seg_ir1_opnd, 16, X86_REG_SS);
+    return latxs_do_translate_lxx(pir1, &seg_ir1_opnd);
 }

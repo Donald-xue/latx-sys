@@ -15,8 +15,6 @@ bool translate_cdqe(IR1_INST *pir1) { return false; }
 
 bool translate_cqo(IR1_INST *pir1) { return false; }
 
-bool translate_les(IR1_INST *pir1) { return false; }
-bool translate_lds(IR1_INST *pir1) { return false; }
 bool translate_enter(IR1_INST *pir1) { return false; }
 
 bool translate_salc(IR1_INST *pir1) { return false; }
@@ -34,9 +32,6 @@ bool translate_rdpmc(IR1_INST *pir1) { return false; }
 bool translate_sysenter(IR1_INST *pir1) { return false; }
 bool translate_sysexit(IR1_INST *pir1) { return false; }
 bool translate_getsec(IR1_INST *pir1) { return false; }
-bool translate_lss(IR1_INST *pir1) { return false; }
-bool translate_lfs(IR1_INST *pir1) { return false; }
-bool translate_lgs(IR1_INST *pir1) { return false; }
 bool translate_verr(IR1_INST *pir1) { return false; }
 bool translate_verw(IR1_INST *pir1) { return false; }
 bool translate_smsw(IR1_INST *pir1) { return false; }
@@ -1522,6 +1517,12 @@ bool translate_xsave(IR1_INST *pir1) { return false; }
 bool translate_xrstor(IR1_INST *pir1) { return false; }
 bool translate_xsaveopt(IR1_INST *pir1) { return false; }
 
+bool translate_lds(IR1_INST *pir1) { return false; }
+bool translate_les(IR1_INST *pir1) { return false; }
+bool translate_lfs(IR1_INST *pir1) { return false; }
+bool translate_lgs(IR1_INST *pir1) { return false; }
+bool translate_lss(IR1_INST *pir1) { return false; }
+
 #else
 
 bool translate_lidt(IR1_INST *pir1) { return latxs_translate_lidt(pir1); }
@@ -1554,5 +1555,11 @@ bool translate_xsaveopt(IR1_INST *pir1)
 {
     return latxs_translate_xsaveopt(pir1);
 }
+
+bool translate_lds(IR1_INST *pir1) { return latxs_translate_lds(pir1); }
+bool translate_les(IR1_INST *pir1) { return latxs_translate_les(pir1); }
+bool translate_lfs(IR1_INST *pir1) { return latxs_translate_lfs(pir1); }
+bool translate_lgs(IR1_INST *pir1) { return latxs_translate_lgs(pir1); }
+bool translate_lss(IR1_INST *pir1) { return latxs_translate_lss(pir1); }
 
 #endif
