@@ -127,11 +127,13 @@ IR2_OPND ra_alloc_xmm(int num) {
 
 IR2_OPND ra_alloc_itemp(void)
 {
+#if defined(CONFIG_LATX_DEBUG)
     int itemp_index = (lsenv->tr_data->itemp_num)++;
+#endif
     IR2_OPND ir2_opnd;
-
+#if defined(CONFIG_LATX_DEBUG)
     lsassert(itemp_index < itemp_status_num);
-
+#endif
     int itemp_num = -1;
     for (int i = 0; i < itemp_status_num; ++i) {
         if (!lsenv->tr_data->itemp_status[i].is_used) {
@@ -151,10 +153,10 @@ IR2_OPND ra_alloc_itemp(void)
 
 IR2_OPND ra_alloc_ftemp(void)
 {
+#if defined(CONFIG_LATX_DEBUG)
     int ftemp_index = (lsenv->tr_data->ftemp_num)++;
-
     lsassert(ftemp_index < ftemp_status_num);
-
+#endif
     int ftemp_num = -1;
     for (int i = 0; i < ftemp_status_num; ++i) {
         if (!lsenv->tr_data->ftemp_status[i].is_used) {
@@ -195,34 +197,46 @@ void ra_free_all_internal_temp(void)
 
 void ra_free_itemp(int phy_id)
 {
+#if defined(CONFIG_LATX_DEBUG)
     bool freed = false;
+#endif
     for (int i = 0; i < itemp_status_num; ++i) {
         if (lsenv->tr_data->itemp_status[i].physical_id == phy_id) {
             lsassertm(lsenv->tr_data->itemp_status[i].is_used,
                       "attempt to free a unallocated itemp register %d", phy_id);
             lsenv->tr_data->itemp_status[i].is_used = false;
             lsenv->tr_data->itemp_num--;
+#if defined(CONFIG_LATX_DEBUG)
             freed = true;
+#endif
             break;
         }
     }
+#if defined(CONFIG_LATX_DEBUG)
     lsassertm(freed, "ra_free_itemp failed");
+#endif
 }
 
 void ra_free_ftemp(int phy_id)
 {
+#if defined(CONFIG_LATX_DEBUG)
     bool freed = false;
+#endif
     for (int i = 0; i < ftemp_status_num; ++i) {
         if (lsenv->tr_data->ftemp_status[i].physical_id == phy_id) {
             lsassertm(lsenv->tr_data->ftemp_status[i].is_used,
                       "attempt to free a unallocated ftemp register %d", phy_id);
             lsenv->tr_data->ftemp_status[i].is_used = false;
             lsenv->tr_data->ftemp_num--;
+#if defined(CONFIG_LATX_DEBUG)
             freed = true;
+#endif
             break;
         }
     }
+#if defined(CONFIG_LATX_DEBUG)
     lsassertm(freed, "ra_free_ftemp failed");
+#endif
 }
 
 EXTENSION_MODE ir2_opnd_default_em(IR2_OPND *opnd)

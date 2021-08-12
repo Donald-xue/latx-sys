@@ -910,7 +910,9 @@ bool translate_fnclex(IR1_INST *pir1) {
 
 bool translate_finit(IR1_INST *pir1)
 {
-    #warning: checking for pending unmasked exceptions?
+   /*
+    * FIXME: checking for pending unmasked exceptions?
+    */
     translate_fninit(pir1);
     return true;
 }

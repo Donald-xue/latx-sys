@@ -1369,7 +1369,9 @@ bool translate_fnsave(IR1_INST *pir1)
 
 bool translate_fsave(IR1_INST *pir1)
 {
-    #warning: checking for pending unmasked exceptions?
+    /*
+    * FIXME: checking for pending unmasked exceptions?
+    */
     return translate_fnsave(pir1);
 }
 
