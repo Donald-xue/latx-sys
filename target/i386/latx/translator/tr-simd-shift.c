@@ -532,3 +532,24 @@ bool translate_addsubpd(IR1_INST *pir1)
 
     return true;
 }
+
+bool translate_addsubps(IR1_INST *pir1)
+{
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)) ||
+             ir1_opnd_is_mem(ir1_get_opnd(pir1, 1)));
+    IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
+    IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
+    IR2_OPND temp_sub = ra_alloc_ftemp();
+
+    la_append_ir2_opnd3(LISA_VFSUB_S, temp_sub, dest, src);
+    la_append_ir2_opnd3(LISA_VFADD_S, dest, dest, src);
+
+   /*
+    * Pick temp_sub data to [0:31] [64:95]
+    */
+    la_append_ir2_opnd2i(LISA_XVINSVE0_W, dest, temp_sub, 0);
+    la_append_ir2_opnd2i(LISA_VBSRL_V, temp_sub, temp_sub, 8);
+    la_append_ir2_opnd2i(LISA_XVINSVE0_W, dest, temp_sub, 2);
+    return true;
+}
