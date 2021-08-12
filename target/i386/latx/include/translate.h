@@ -1458,6 +1458,7 @@ void latxs_sys_setcc_register_ir1(void);
 void latxs_sys_string_register_ir1(void);
 void latxs_sys_fp_register_ir1(void);
 void latxs_sys_fctrl_register_ir1(void);
+void latxs_sys_farith_register_ir1(void);
 
 /* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
@@ -1711,6 +1712,46 @@ bool latxs_translate_ficom(IR1_INST *pir1);
 bool latxs_translate_ficomp(IR1_INST *pir1);
 
 bool latxs_translate_fnclex(IR1_INST *pir1);
+
+/* sys-farith */
+bool latxs_translate_fadd(IR1_INST *pir1);
+bool latxs_translate_faddp(IR1_INST *pir1);
+bool latxs_translate_fiadd(IR1_INST *pir1);
+bool latxs_translate_fsub(IR1_INST *pir1);
+bool latxs_translate_fisub(IR1_INST *pir1);
+bool latxs_translate_fisubr(IR1_INST *pir1);
+bool latxs_translate_fsubr(IR1_INST *pir1);
+bool latxs_translate_fsubrp(IR1_INST *pir1);
+bool latxs_translate_fsubp(IR1_INST *pir1);
+bool latxs_translate_fmul(IR1_INST *pir1);
+bool latxs_translate_fimul(IR1_INST *pir1);
+bool latxs_translate_fmulp(IR1_INST *pir1);
+bool latxs_translate_fdiv(IR1_INST *pir1);
+bool latxs_translate_fdivr(IR1_INST *pir1);
+bool latxs_translate_fidiv(IR1_INST *pir1);
+bool latxs_translate_fidivr(IR1_INST *pir1);
+bool latxs_translate_fdivrp(IR1_INST *pir1);
+bool latxs_translate_fdivp(IR1_INST *pir1);
+bool latxs_translate_fnop(IR1_INST *pir1);
+bool latxs_translate_fsqrt(IR1_INST *pir1);
+bool latxs_translate_fabs(IR1_INST *pir1);
+bool latxs_translate_fchs(IR1_INST *pir1);
+bool latxs_translate_fsin(IR1_INST *pir1);
+bool latxs_translate_fcos(IR1_INST *pir1);
+bool latxs_translate_fpatan(IR1_INST *pir1);
+bool latxs_translate_fprem(IR1_INST *pir1);
+bool latxs_translate_fprem1(IR1_INST *pir1);
+bool latxs_translate_frndint(IR1_INST *pir1);
+bool latxs_translate_fscale(IR1_INST *pir1);
+bool latxs_translate_fxam(IR1_INST *pir1);
+bool latxs_translate_f2xm1(IR1_INST *pir1);
+bool latxs_translate_fxtract(IR1_INST *pir1);
+bool latxs_translate_fyl2x(IR1_INST *pir1);
+bool latxs_translate_fyl2xp1(IR1_INST *pir1);
+bool latxs_translate_fsincos(IR1_INST *pir1);
+bool latxs_translate_fxch(IR1_INST *pir1);
+bool latxs_translate_ftst(IR1_INST *pir1);
+bool latxs_translate_fptan(IR1_INST *pir1);
 
 #endif
 

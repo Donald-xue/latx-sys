@@ -7,6 +7,9 @@
 
 bool translate_fadd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fadd(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1 || opnd_num == 2);
     if (opnd_num == 1) {
@@ -20,10 +23,14 @@ bool translate_fadd(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_faddp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_faddp(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     //lsassert(opnd_num == 0 || opnd_num == 2); //capstone may has only one opnd 0xde0xc1
 
@@ -45,10 +52,14 @@ bool translate_faddp(IR1_INST *pir1)
     tr_fpu_pop();
 
     return true;
+#endif
 }
 
 bool translate_fiadd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fiadd(pir1);
+#else
     lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
@@ -64,10 +75,14 @@ bool translate_fiadd(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FADD_D, st0, t_freg, st0);
     ra_free_temp(t_freg);
     return true;
+#endif
 }
 
 bool translate_fsub(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsub(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1 || opnd_num == 2);
 
@@ -82,10 +97,14 @@ bool translate_fsub(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_fisub(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fisub(pir1);
+#else
     lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
@@ -101,10 +120,14 @@ bool translate_fisub(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FSUB_D, st0, st0, t_freg);
     ra_free_temp(t_freg);
     return true;
+#endif
 }
 
 bool translate_fisubr(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fisubr(pir1);
+#else
     lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
@@ -120,10 +143,14 @@ bool translate_fisubr(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FSUB_D, st0, t_freg, st0);
     ra_free_temp(t_freg);
     return true;
+#endif
 }
 
 bool translate_fsubr(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsubr(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1 || opnd_num == 2);
 
@@ -138,10 +165,14 @@ bool translate_fsubr(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_fsubrp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsubrp(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     //lsassert(opnd_num == 0 || opnd_num == 2);
 
@@ -162,10 +193,14 @@ bool translate_fsubrp(IR1_INST *pir1)
     }
     tr_fpu_pop();
     return true;
+#endif
 }
 
 bool translate_fsubp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsubp(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
 //    lsassert(opnd_num == 0 || opnd_num == 2);
 
@@ -186,10 +221,14 @@ bool translate_fsubp(IR1_INST *pir1)
     }
     tr_fpu_pop();
     return true;
+#endif
 }
 
 bool translate_fmul(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fmul(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1 || opnd_num == 2);
 
@@ -204,10 +243,14 @@ bool translate_fmul(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_fimul(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fimul(pir1);
+#else
     lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
@@ -223,10 +266,14 @@ bool translate_fimul(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FMUL_D, st0, t_freg, st0);
     ra_free_temp(t_freg);
     return true;
+#endif
 }
 
 bool translate_fmulp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fmulp(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     //lsassert(opnd_num == 0 || opnd_num == 2);
 
@@ -248,10 +295,14 @@ bool translate_fmulp(IR1_INST *pir1)
     tr_fpu_pop();
 
     return true;
+#endif
 }
 
 bool translate_fdiv(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fdiv(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1 || opnd_num == 2);
 
@@ -293,9 +344,13 @@ bool translate_fdiv(IR1_INST *pir1)
                         lsenv_offset_of_status_word(lsenv));
 
     return true;
+#endif
 }
 bool translate_fdivr(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fdivr(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1 || opnd_num == 2);
 
@@ -337,10 +392,14 @@ bool translate_fdivr(IR1_INST *pir1)
                         lsenv_offset_of_status_word(lsenv));
 
     return true;
+#endif
 }
 
 bool translate_fidiv(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fidiv(pir1);
+#else
     lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
@@ -356,9 +415,13 @@ bool translate_fidiv(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FDIV_D, st0, st0, t_freg);
     ra_free_temp(t_freg);
     return true;
+#endif
 }
 bool translate_fidivr(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fidivr(pir1);
+#else
     lsassert(ir1_opnd_num(pir1) == 1);
 
     IR2_OPND st0 = ra_alloc_st(0);
@@ -374,10 +437,14 @@ bool translate_fidivr(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FDIV_D, st0, t_freg, st0);
     ra_free_temp(t_freg);
     return true;
+#endif
 }
 
 bool translate_fdivrp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fdivrp(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     //lsassert(opnd_num == 0 || opnd_num == 2);
 
@@ -426,9 +493,13 @@ bool translate_fdivrp(IR1_INST *pir1)
                         lsenv_offset_of_status_word(lsenv));
 
     return true;
+#endif
 }
 bool translate_fdivp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fdivp(pir1);
+#else
     int opnd_num = ir1_opnd_num(pir1);
     //lsassert(opnd_num == 0 || opnd_num == 2);
 
@@ -477,36 +548,53 @@ bool translate_fdivp(IR1_INST *pir1)
                         lsenv_offset_of_status_word(lsenv));
 
     return true;
+#endif
 }
 
 bool translate_fnop(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fnop(pir1);
+#else
     /* append_ir2_opnd0(mips_nop); */
     return true;
+#endif
 }
 
 bool translate_fsqrt(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsqrt(pir1);
+#else
     IR2_OPND st0_opnd = ra_alloc_st(0);
     la_append_ir2_opnd3(LISA_FSQRT_D, st0_opnd, st0_opnd, st0_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fabs(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fabs(pir1);
+#else
     IR2_OPND st0_opnd = ra_alloc_st(0);
     la_append_ir2_opnd3(LISA_FABS_D, st0_opnd, st0_opnd, st0_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fchs(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fchs(pir1);
+#else
     IR2_OPND st0_opnd = ra_alloc_st(0);
     la_append_ir2_opnd3(LISA_FNEG_D, st0_opnd, st0_opnd, st0_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fdecstp(IR1_INST *pir1)
@@ -577,6 +665,9 @@ bool translate_fincstp(IR1_INST *pir1)
 
 bool translate_fsin(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsin(pir1);
+#else
 #ifdef USE_FSIN_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fsin);
 #else
@@ -624,10 +715,14 @@ bool translate_fsin(IR1_INST *pir1)
     ra_free_temp(sw_value);
 #endif
     return true;
+#endif
 }
 
 bool translate_fcos(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcos(pir1);
+#else
 #ifdef USE_FCOS_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fcos);
 #else
@@ -674,12 +769,16 @@ bool translate_fcos(IR1_INST *pir1)
     ra_free_temp(sw_value);
 #endif
     return true;
+#endif
 }
 
 double pi = +3.141592653589793239;
 
 bool translate_fpatan(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fpatan(pir1);
+#else
 #ifdef USE_FPATAN_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fpatan, 1);
 
@@ -725,24 +824,36 @@ bool translate_fpatan(IR1_INST *pir1)
 
 #endif
     return true;
+#endif
 }
 
 bool translate_fprem(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fprem(pir1);
+#else
     tr_gen_call_to_helper1((ADDR)helper_fprem, 1);
 
     return true;
+#endif
 }
 
 bool translate_fprem1(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fprem1(pir1);
+#else
     tr_gen_call_to_helper1((ADDR)helper_fprem1, 1);
 
     return true;
+#endif
 }
 
 bool translate_frndint(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_frndint(pir1);
+#else
 #ifdef USE_HELPER_FRNDINT
     tr_gen_call_to_helper1((ADDR)helper_frndint, 1);
 #else
@@ -752,10 +863,14 @@ bool translate_frndint(IR1_INST *pir1)
 #endif
 
     return true;
+#endif
 }
 
 bool translate_fscale(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fscale(pir1);
+#else
     IR2_OPND st0_opnd = ra_alloc_st(0);
     IR2_OPND st1_opnd = ra_alloc_st(1);
     IR2_OPND ret_value = ra_alloc_ftemp();
@@ -763,10 +878,14 @@ bool translate_fscale(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_FSCALEB_D, st0_opnd, st0_opnd, ret_value);
 
     return true;
+#endif
 }
 
 bool translate_fxam(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fxam(pir1);
+#else
     if (!option_lsfpu) {
         tr_gen_call_to_helper1((ADDR)helper_fxam_ST0, 1);
     } else {
@@ -855,17 +974,25 @@ bool translate_fxam(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_f2xm1(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_f2xm1(pir1);
+#else
     tr_gen_call_to_helper1((ADDR)helper_f2xm1, 1);
 
     return true;
+#endif
 }
 
 bool translate_fxtract(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fxtract(pir1);
+#else
 #ifdef USE_FXTRACT_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fxtract, 1);
 
@@ -1011,10 +1138,14 @@ bool translate_fxtract(IR1_INST *pir1)
 #endif
 
     return true;
+#endif
 }
 
 bool translate_fyl2x(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fyl2x(pir1);
+#else
 #ifdef USE_FYL2X_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fyl2x);
 
@@ -1059,10 +1190,14 @@ bool translate_fyl2x(IR1_INST *pir1)
 #endif
 
     return true;
+#endif
 }
 
 bool translate_fyl2xp1(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fyl2xp1(pir1);
+#else
 #ifdef USE_FYL2XP1_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fyl2xp1);
 
@@ -1114,10 +1249,14 @@ bool translate_fyl2xp1(IR1_INST *pir1)
 #endif
 
     return true;
+#endif
 }
 
 bool translate_fsincos(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fsincos(pir1);
+#else
 #ifdef USE_FSINCOS_HELPER
     tr_gen_call_to_helper1((ADDR)helper_fsincos);
 
@@ -1190,10 +1329,14 @@ bool translate_fsincos(IR1_INST *pir1)
 #endif
 
     return true;
+#endif
 }
 
 bool translate_fxch(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fxch(pir1);
+#else
     IR2_OPND st0_opnd = ra_alloc_st(0);
     int opnd2_index;
     if (ir1_opnd_num(pir1) == 0) {
@@ -1208,9 +1351,13 @@ bool translate_fxch(IR1_INST *pir1)
     la_append_ir2_opnd2_em(LISA_FMOV_D, st0_opnd, tmp_opnd);
     ra_free_temp(tmp_opnd);
     return true;
+#endif
 }
 bool translate_ftst(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_ftst(pir1);
+#else
     IR2_OPND status_word = ra_alloc_itemp();
     IR2_OPND tmp_opnd = ra_alloc_itemp();
     /* load status_word */
@@ -1268,10 +1415,14 @@ bool translate_ftst(IR1_INST *pir1)
     ra_free_temp(status_word);
     ra_free_temp(f_zero);
     return true;
+#endif
 }
 
 bool translate_fptan(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fptan(pir1);
+#else
     tr_gen_call_to_helper1((ADDR)helper_fptan, 1);
 
     /* for software matained top we have a difficulty here:
@@ -1284,6 +1435,7 @@ bool translate_fptan(IR1_INST *pir1)
         tr_fpu_push();
 
     return true;
+#endif
 }
 
 bool translate_fisttp(IR1_INST *pir1)
