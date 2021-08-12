@@ -19,6 +19,8 @@ void latxs_sys_eflags_register_ir1(void)
     latxs_register_ir1(X86_INS_PUSHFD);
     latxs_register_ir1(X86_INS_POPF);
     latxs_register_ir1(X86_INS_POPFD);
+
+    latxs_register_ir1(X86_INS_CLTS);
 }
 
 /*
@@ -506,4 +508,40 @@ bool latxs_translate_pushf(IR1_INST *pir1)
     return true;
 }
 
+/* End of TB in system-mode */
+bool latxs_translate_clts(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_CLTS(pir1);
 
+    /* void helper_clts(CPUX86State  *env) */
+
+    IR2_OPND cr0 = latxs_ra_alloc_itemp();
+    IR2_OPND hf = latxs_ra_alloc_itemp();
+
+    int off_cr0 = lsenv_offset_of_cr(lsenv, 0);
+    int off_hf  = lsenv_offset_of_hflags(lsenv);
+
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &cr0, env, off_cr0);
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &hf, env, off_hf);
+
+    IR2_OPND mask = latxs_ra_alloc_itemp();
+
+    /*env->cr[0] &= ~CR0_TS_MASK;*/
+    latxs_append_ir2_opnd2i(LISA_ORI, &mask, zero, CR0_TS_MASK);
+    latxs_append_ir2_opnd3(LISA_NOR, &mask, zero, &mask);
+    latxs_append_ir2_opnd3(LISA_AND, &cr0, &cr0, &mask);
+
+    /*env->hflags &= ~HF_TS_MASK;*/
+    latxs_append_ir2_opnd2i(LISA_ORI, &mask, zero, HF_TS_MASK);
+    latxs_append_ir2_opnd3(LISA_NOR, &mask, zero, &mask);
+    latxs_append_ir2_opnd3(LISA_AND, &hf, &hf, &mask);
+
+    latxs_append_ir2_opnd2i(LISA_ST_W, &cr0, env, off_cr0);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &hf, env, off_hf);
+
+    return true;
+}

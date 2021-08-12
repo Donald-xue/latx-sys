@@ -23,7 +23,6 @@ bool translate_xlat(IR1_INST *pir1) { return false; }
 bool translate_lar(IR1_INST *pir1) { return false; }
 bool translate_lsl(IR1_INST *pir1) { return false; }
 bool translate_syscall(IR1_INST *pir1) { return false; }
-bool translate_clts(IR1_INST *pir1) { return false; }
 bool translate_sysret(IR1_INST *pir1) { return false; }
 bool translate_femms(IR1_INST *pir1) { return false; }
 bool translate_wrmsr(IR1_INST *pir1) { return false; }
@@ -1522,6 +1521,7 @@ bool translate_les(IR1_INST *pir1) { return false; }
 bool translate_lfs(IR1_INST *pir1) { return false; }
 bool translate_lgs(IR1_INST *pir1) { return false; }
 bool translate_lss(IR1_INST *pir1) { return false; }
+bool translate_clts(IR1_INST *pir1) { return false; }
 
 #else
 
@@ -1561,5 +1561,6 @@ bool translate_les(IR1_INST *pir1) { return latxs_translate_les(pir1); }
 bool translate_lfs(IR1_INST *pir1) { return latxs_translate_lfs(pir1); }
 bool translate_lgs(IR1_INST *pir1) { return latxs_translate_lgs(pir1); }
 bool translate_lss(IR1_INST *pir1) { return latxs_translate_lss(pir1); }
+bool translate_clts(IR1_INST *pir1) { return latxs_translate_clts(pir1); }
 
 #endif

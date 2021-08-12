@@ -334,4 +334,10 @@ static inline int lsenv_offset_of_tr_selector(ENV *lsenv)
     return offsetof(CPUX86State, tr.selector);
 }
 
+static inline int lsenv_offset_of_cr(ENV *lsenv, int i)
+{
+    CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
+    return (int)((ADDR)(&cpu->cr[i]) - (ADDR)cpu);
+}
+
 #endif
