@@ -2261,7 +2261,7 @@ foreach target : target_dirs
     endif
   else
     execs = [{
-      'name': 'qemu-' + target_name,
+      'name': 'latx-' + target_name,
       'gui': false,
       'sources': [],
       'dependencies': []

@@ -236,7 +236,7 @@ fi
 # default parameters
 cpu=""
 iasl="iasl"
-interp_prefix="/usr/gnemul/qemu-%M"
+interp_prefix="/usr/gnemul/latx-%M"
 static="no"
 cross_compile="no"
 cross_prefix=""
