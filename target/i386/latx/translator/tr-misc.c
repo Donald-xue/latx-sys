@@ -202,18 +202,30 @@ bool translate_vhsubps(IR1_INST *pir1) { return false; }
 bool translate_xave(IR1_INST *pir1) { return false; }
 bool translate_lfence(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_lfence(pir1);
+#else
     la_append_ir2_opnd0(LISA_DBAR);
     return true;
+#endif
 }
 bool translate_mfence(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_mfence(pir1);
+#else
     la_append_ir2_opnd0(LISA_DBAR);
     return true;
+#endif
 }
 bool translate_sfence(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sfence(pir1);
+#else
     la_append_ir2_opnd0(LISA_DBAR);
     return true;
+#endif
 }
 bool translate_clflush(IR1_INST *pir1) { return false; }
 bool translate_popcnt(IR1_INST *pir1) { return false; }

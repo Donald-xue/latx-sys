@@ -65,6 +65,9 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_WRMSR);
     latxs_register_ir1(X86_INS_INVLPG);
     latxs_register_ir1(X86_INS_INVLPGA);
+    latxs_register_ir1(X86_INS_LFENCE);
+    latxs_register_ir1(X86_INS_MFENCE);
+    latxs_register_ir1(X86_INS_SFENCE);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2728,6 +2731,45 @@ bool latxs_translate_invlpga(IR1_INST *pir1)
 
     /* 1.2 call helper_invlpga */
     latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_invlpga, aflag, cfg);
+
+    return true;
+}
+
+bool latxs_translate_lfence(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_excp_check(pir1)) {
+        return true;
+    }
+
+    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+    /* if (td->sys.cflags & CF_PARALLEL) { */
+        /* TODO: MTTCG */
+    /* } */
+    return true;
+}
+bool latxs_translate_mfence(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_excp_check(pir1)) {
+        return true;
+    }
+
+    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+    /* if (td->sys.cflags & CF_PARALLEL) { */
+        /* TODO: MTTCG */
+    /* } */
+
+    return true;
+}
+bool latxs_translate_sfence(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_excp_check(pir1)) {
+        return true;
+    }
+
+    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+    /* if (td->sys.cflags & CF_PARALLEL) { */
+        /* TODO: MTTCG */
+    /* } */
 
     return true;
 }
