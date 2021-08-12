@@ -1457,6 +1457,7 @@ void latxs_sys_eflags_register_ir1(void);
 void latxs_sys_setcc_register_ir1(void);
 void latxs_sys_string_register_ir1(void);
 void latxs_sys_fp_register_ir1(void);
+void latxs_sys_fctrl_register_ir1(void);
 
 /* sys-misc */
 bool latxs_translate_jmp_far(IR1_INST *pir1);
@@ -1668,6 +1669,31 @@ bool latxs_translate_xsaveopt(IR1_INST *pir1);
 
 bool latxs_translate_xgetbv(IR1_INST *pir1);
 bool latxs_translate_xsetbv(IR1_INST *pir1);
+
+/* sys-fctrl */
+
+bool latxs_translate_fnstcw(IR1_INST *pir1);
+bool latxs_translate_fldcw(IR1_INST *pir1);
+bool latxs_translate_fnstsw(IR1_INST *pir1);
+bool latxs_translate_stmxcsr(IR1_INST *pir1);
+bool latxs_translate_ldmxcsr(IR1_INST *pir1);
+
+bool latxs_translate_fcomi(IR1_INST *pir1);
+bool latxs_translate_fcomip(IR1_INST *pir1);
+bool latxs_translate_fucomi(IR1_INST *pir1);
+bool latxs_translate_fucomip(IR1_INST *pir1);
+
+bool latxs_translate_fcom(IR1_INST *pir1);
+bool latxs_translate_fcomp(IR1_INST *pir1);
+bool latxs_translate_fcompp(IR1_INST *pir1);
+bool latxs_translate_fucom(IR1_INST *pir1);
+bool latxs_translate_fucomp(IR1_INST *pir1);
+bool latxs_translate_fucompp(IR1_INST *pir1);
+
+bool latxs_translate_ficom(IR1_INST *pir1);
+bool latxs_translate_ficomp(IR1_INST *pir1);
+
+bool latxs_translate_fnclex(IR1_INST *pir1);
 
 #endif
 

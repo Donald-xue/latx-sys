@@ -305,6 +305,9 @@ bool translate_fistp(IR1_INST *pir1)
 
 bool translate_fnstsw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fnstsw(pir1);
+#else
     lsassert(ir1_get_opnd_num(pir1) == 1);
 
     IR2_OPND sw_value = ra_alloc_itemp();
@@ -331,6 +334,7 @@ bool translate_fnstsw(IR1_INST *pir1)
     ra_free_temp(sw_value);
 
     return true;
+#endif
 }
 
 bool translate_fstsw(IR1_INST *pir1) { return translate_fnstsw(pir1); }
