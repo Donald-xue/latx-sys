@@ -23,9 +23,6 @@ bool translate_lsl(IR1_INST *pir1) { return false; }
 bool translate_syscall(IR1_INST *pir1) { return false; }
 bool translate_sysret(IR1_INST *pir1) { return false; }
 bool translate_femms(IR1_INST *pir1) { return false; }
-bool translate_wrmsr(IR1_INST *pir1) { return false; }
-bool translate_rdmsr(IR1_INST *pir1) { return false; }
-bool translate_rdpmc(IR1_INST *pir1) { return false; }
 bool translate_sysenter(IR1_INST *pir1) { return false; }
 bool translate_sysexit(IR1_INST *pir1) { return false; }
 bool translate_getsec(IR1_INST *pir1) { return false; }
@@ -1046,11 +1043,18 @@ bool translate_int(IR1_INST *pir1)
 
 bool translate_hlt(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_hlt(pir1);
+#else
     la_append_ir2_opnd2i(LISA_ANDI, zero_ir2_opnd, zero_ir2_opnd, 0);
     return true;
+#endif
 }
 
 bool translate_rdtsc(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_rdtsc(pir1);
+#else
     IR2_OPND ir2_eax = ra_alloc_gpr(ir1_opnd_base_reg_num(&eax_ir1_opnd));
     IR2_OPND ir2_edx = ra_alloc_gpr(ir1_opnd_base_reg_num(&edx_ir1_opnd));
     la_append_ir2_opnd2(LISA_RDTIME_D, ir2_eax, zero_ir2_opnd);
@@ -1058,9 +1062,13 @@ bool translate_rdtsc(IR1_INST *pir1) {
     ir2_opnd_set_em(&ir2_eax, UNKNOWN_EXTENSION, 32);
     ir2_opnd_set_em(&ir2_edx, UNKNOWN_EXTENSION, 32);
     return true;
+#endif
 }
 
 bool translate_rdtscp(IR1_INST *pir1) {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_rdtscp(pir1);
+#else
     IR2_OPND ir2_eax = ra_alloc_gpr(ir1_opnd_base_reg_num(&eax_ir1_opnd));
     IR2_OPND ir2_ecx = ra_alloc_gpr(ir1_opnd_base_reg_num(&ecx_ir1_opnd));
     IR2_OPND ir2_edx = ra_alloc_gpr(ir1_opnd_base_reg_num(&edx_ir1_opnd));
@@ -1070,6 +1078,7 @@ bool translate_rdtscp(IR1_INST *pir1) {
     ir2_opnd_set_em(&ir2_ecx, UNKNOWN_EXTENSION, 32);
     ir2_opnd_set_em(&ir2_edx, UNKNOWN_EXTENSION, 32);
     return true;
+#endif
 }
 
 bool translate_cpuid(IR1_INST *pir1)
@@ -1525,6 +1534,9 @@ bool translate_lgs(IR1_INST *pir1) { return false; }
 bool translate_lss(IR1_INST *pir1) { return false; }
 bool translate_clts(IR1_INST *pir1) { return false; }
 bool translate_enter(IR1_INST *pir1) { return false; }
+bool translate_wrmsr(IR1_INST *pir1) { return false; }
+bool translate_rdmsr(IR1_INST *pir1) { return false; }
+bool translate_rdpmc(IR1_INST *pir1) { return false; }
 
 #else
 
@@ -1566,5 +1578,8 @@ bool translate_lgs(IR1_INST *pir1) { return latxs_translate_lgs(pir1); }
 bool translate_lss(IR1_INST *pir1) { return latxs_translate_lss(pir1); }
 bool translate_clts(IR1_INST *pir1) { return latxs_translate_clts(pir1); }
 bool translate_enter(IR1_INST *pir1) { return latxs_translate_enter(pir1); }
+bool translate_wrmsr(IR1_INST *pir1) { return latxs_translate_wrmsr(pir1); }
+bool translate_rdmsr(IR1_INST *pir1) { return latxs_translate_rdmsr(pir1); }
+bool translate_rdpmc(IR1_INST *pir1) { return latxs_translate_rdpmc(pir1); }
 
 #endif

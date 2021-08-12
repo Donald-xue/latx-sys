@@ -57,6 +57,12 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_LSS);
     latxs_register_ir1(X86_INS_ENTER);
     latxs_register_ir1(X86_INS_LEAVE);
+    latxs_register_ir1(X86_INS_RDTSC);
+    latxs_register_ir1(X86_INS_RDTSCP);
+    latxs_register_ir1(X86_INS_RDPMC);
+    latxs_register_ir1(X86_INS_HLT);
+    latxs_register_ir1(X86_INS_RDMSR);
+    latxs_register_ir1(X86_INS_WRMSR);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2508,6 +2514,134 @@ bool latxs_translate_leave(IR1_INST *pir1)
     } else {
         latxs_store_ir2_to_ir1_gpr(&new_esp, &sp_ir1_opnd);
     }
+
+    return true;
+}
+
+bool latxs_translate_rdtsc(IR1_INST *pir1)
+{
+    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+
+    /* 0. save next instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
+        /* TODO latxs_tr_gen_io_start(); */
+    /* } */
+
+    /*
+     * target/i386/misc_helper.c
+     * void helper_rdtsc(CPUX86State *env)
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdtsc, cfg);
+
+    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
+        /* TODO latxs_tr_gen_io_end(); */
+    /* } */
+
+    return true;
+}
+
+bool latxs_translate_rdtscp(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_excp_check(pir1)) {
+        return true;
+    }
+
+    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+
+    /* 0. save next instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
+        /* TODO latxs_tr_gen_io_start(); */
+    /* } */
+
+    /*
+     * target/i386/misc_helper.c
+     * void helper_rdtscp(CPUX86State *env)
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdtscp, cfg);
+
+    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
+        /* TODO latxs_tr_gen_io_end(); */
+    /* } */
+
+    return true;
+}
+
+bool latxs_translate_rdpmc(IR1_INST *pir1)
+{
+    /* 0. save next instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /*
+     * target/i386/misc_helper.c
+     * void helper_rdpmc(CPUX86State *env)
+     * >> exception might be generated
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdpmc, cfg);
+
+    return true;
+}
+
+bool latxs_translate_hlt(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_HLT(pir1);
+
+    /* 0. save next instruciton's EIP to env */
+    latxs_tr_gen_save_curr_eip();
+
+    /*
+     * target/i386/misc_helper.c
+     * void helper_hlt(
+     *      CPUX86State  *env,
+     *      int           next_eip_addend)
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+
+    int next_eip_addend = latxs_ir1_inst_size(pir1);
+    latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_hlt,
+            next_eip_addend, cfg);
+
+    /* 2. should nevet reach here */
+    latxs_tr_gen_infinite_loop();
+
+    return true;
+}
+
+bool latxs_translate_wrmsr(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_WRMSR(pir1);
+
+    /*
+     * target/i386/misc_helper.c
+     * void helper_wrmsr(CPUX86State *env)
+     * >> EAX, ECX, EDX are used
+     */
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_wrmsr,
+            default_helper_cfg);
+
+    return true;
+}
+
+bool latxs_translate_rdmsr(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_RDMSR(pir1);
+
+    /*
+     * target/i386/misc_helper.c
+     * void helper_rdmsr(CPUX86State *env)
+     * >> EAX, ECX, EDX are used
+     */
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdmsr,
+            default_helper_cfg);
 
     return true;
 }
