@@ -28,6 +28,8 @@ void latxs_sys_arith_register_ir1(void)
     latxs_register_ir1(X86_INS_AAS);
     latxs_register_ir1(X86_INS_DAA);
     latxs_register_ir1(X86_INS_DAS);
+
+    latxs_register_ir1(X86_INS_XADD);
 }
 
 bool latxs_translate_add(IR1_INST *pir1)
@@ -762,4 +764,48 @@ bool latxs_translate_daa(IR1_INST *pir1)
 bool latxs_translate_das(IR1_INST *pir1)
 {
     return latxs_do_translate_bcd(pir1, 1);
+}
+
+bool latxs_translate_xadd(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* dest: GPR/MEM */
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* src : GPR     */
+
+    IR2_OPND src0 = latxs_ra_alloc_itemp();
+    IR2_OPND src1 = latxs_ra_alloc_itemp();
+
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+
+    IR2_OPND sum = latxs_ra_alloc_itemp();
+
+    if (ir1_opnd_is_gpr(opnd0)) {
+        latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+        latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
+        latxs_store_ir2_to_ir1(&src0, opnd1, false);
+        latxs_store_ir2_to_ir1(&sum, opnd0, false);
+    } else {
+        if (latxs_ir1_has_prefix_lock(pir1) &&
+            td->sys.cflags & CF_PARALLEL) {
+            /*
+             * helper_atomic_fetch_addb
+             * helper_atomic_fetch_addw_le
+             * helper_atomic_fetch_addl_le
+             * helper_atomic_fetch_addq_le
+             */
+            lsassertm(0, "compile flag parallel not supported.\n");
+        } else {
+            latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+            latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
+            latxs_store_ir2_to_ir1(&sum, opnd0, false);
+        }
+        latxs_store_ir2_to_ir1(&src0, opnd1, false);
+    }
+
+    latxs_generate_eflag_calculation(&sum, &src0, &src1, pir1, true);
+
+    latxs_ra_free_temp(&sum);
+
+    return true;
 }

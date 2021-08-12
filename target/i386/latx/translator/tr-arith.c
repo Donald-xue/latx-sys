@@ -832,6 +832,9 @@ bool translate_idiv(IR1_INST *pir1)
 
 bool translate_xadd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_xadd(pir1);
+#else
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
     IR2_OPND src_opnd_1 =
@@ -867,4 +870,5 @@ bool translate_xadd(IR1_INST *pir1)
     ra_free_temp(dest_opnd);
 
     return true;
+#endif
 }
