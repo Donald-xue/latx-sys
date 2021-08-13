@@ -30,8 +30,6 @@
 
 #include "X86DisassemblerDecoder.h"
 
-#include "../../../include/error.h"
-
 /// Specifies whether a ModR/M byte is needed and (if so) which
 /// instruction each possible value of the ModR/M byte corresponds to.  Once
 /// this information is known, we have narrowed down to a single instruction.
@@ -897,9 +895,11 @@ static int readPrefixes(struct InternalInstruction *insn)
 					insn->necessaryPrefixLocation = insn->readerCursor - 2;
 					break;
 				default:
-					lsassertm(prefix_count > 2,
-					"we meet the situation that with %d prefixs, needs fix\n",
-						prefix_count);
+                    if (!(prefix_count > 2)) {
+                        fprintf(stderr,
+                                "capstone disasm with %d prefixs.\n",
+                                prefix_count);
+                    }
 					break;
 			}
 		}
