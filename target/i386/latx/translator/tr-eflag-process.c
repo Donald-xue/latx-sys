@@ -182,7 +182,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_dest_opnd, src0,
                               ir1_opnd_size(ir1_get_opnd(pir1, 0)) - count);
 
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         } else {
             lsassertm(ir2_opnd_is_zx(&src1,
@@ -196,7 +196,7 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             la_append_ir2_opnd3_em(LISA_SUB_D, t_dest_opnd, t_dest_opnd, src1);
             la_append_ir2_opnd3_em(LISA_SRL_D, t_dest_opnd, src0, t_dest_opnd);
 
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         }
         return;
@@ -210,14 +210,14 @@ static void generate_cf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             int count = src1._imm16 - 1;
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_dest_opnd, src0, count);
 
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         } else {
             IR2_OPND t_dest_opnd = ra_alloc_itemp();
             la_append_ir2_opnd2i_em(LISA_ADDI_D, t_dest_opnd, src1, -1);
             la_append_ir2_opnd3_em(LISA_SRL_D, t_dest_opnd, src0, t_dest_opnd);
 
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_dest_opnd, 0x1);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, t_dest_opnd, 0x1);
             ra_free_temp(t_dest_opnd);
         }
         return;
@@ -312,7 +312,7 @@ static void generate_pf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd2i_em(LISA_ANDI, low_byte, dest, 0xff);
     la_append_ir2_opnd3_em(LISA_ADD_ADDR, low_byte, pf_opnd, low_byte);
     la_append_ir2_opnd2i_em(LISA_LD_BU, pf_opnd, low_byte, 0);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, pf_opnd, 0x2);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, pf_opnd, 0x2);
     ra_free_temp(pf_opnd);
     ra_free_temp(low_byte);
 }
@@ -327,7 +327,7 @@ static void generate_af(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
         la_append_ir2_opnd3_em(LISA_XOR, af_opnd, src0, src1);
     la_append_ir2_opnd3_em(LISA_XOR, af_opnd, af_opnd, dest);
     la_append_ir2_opnd2i_em(LISA_ANDI, af_opnd, af_opnd, 0x10);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, af_opnd, 0x4);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, af_opnd, 0x4);
     ra_free_temp(af_opnd);
 
 }
@@ -377,7 +377,7 @@ static void generate_zf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     la_append_ir2_opnd3_em(LISA_OR, temp_eflags, zero_ir2_opnd, zero_ir2_opnd);
     la_append_ir2_opnd1(LISA_LABEL, is_zero);
 
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, temp_eflags, 0x8);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, temp_eflags, 0x8);
     if (!extended_dest_opnd_freed) {
         ra_free_temp(extended_dest_opnd);
     }
@@ -395,7 +395,7 @@ static void generate_sf(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
     } else
         la_append_ir2_opnd2i_em(LISA_ANDI, sf_opnd, dest, 0x80);
 
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, sf_opnd, 0x10);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, sf_opnd, 0x10);
     ra_free_temp(sf_opnd);
 }
 
@@ -766,7 +766,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_of_opnd, t_of_opnd,
                             ir1_opnd_size(ir1_get_opnd(pir1, 0)) - OF_BIT_INDEX - 1);
 
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_of_opnd, 0x20);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, t_of_opnd, 0x20);
             ra_free_temp(t_of_opnd);
         } else {
             lsassertm(ir2_opnd_is_zx(&src1,
@@ -782,7 +782,7 @@ static void generate_of(IR2_OPND dest, IR2_OPND src0, IR2_OPND src1)
             la_append_ir2_opnd2i_em(LISA_SRLI_D, t_of_opnd, t_of_opnd,
                               ir1_opnd_size(ir1_get_opnd(pir1, 0)) - OF_BIT_INDEX - 1);
 
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, t_of_opnd, 0x20);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, t_of_opnd, 0x20);
             la_append_ir2_opnd1(LISA_LABEL, label_temp);
             ra_free_temp(t_of_opnd);
         }

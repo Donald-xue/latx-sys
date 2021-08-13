@@ -291,7 +291,7 @@ static bool translate_fcomi_internal(IR1_INST *pir1, bool unordered)
         IR2_OPND eflags_temp;
         if (is_osa_def || is_zpc_def) {
             eflags_temp = ra_alloc_itemp();
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x3f);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x3f);
         }
 
         /* calculate ZF, PF, CF */
@@ -312,7 +312,7 @@ static bool translate_fcomi_internal(IR1_INST *pir1, bool unordered)
             else
                 la_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0_ir2_opnd, sti, st0, FCMP_COND_SUN);
             la_append_ir2_opnd2(LISA_BCEQZ, fcc0_ir2_opnd, label_for_not_unordered);
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, eflags_temp, 0xb);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_temp, 0xb);
             la_append_ir2_opnd1(LISA_B, label_for_exit);
 
             /* LABEL: label_for_not_unordered, if(st0>=sti) then jmp to label_for_sti_cle_st0 */
@@ -321,7 +321,7 @@ static bool translate_fcomi_internal(IR1_INST *pir1, bool unordered)
             la_append_ir2_opnd2(LISA_BCNEZ, fcc0_ir2_opnd, label_for_sti_cle_st0);
 
             /* else if (st0<st1), set CF and exit*/
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, eflags_temp, 0x1);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_temp, 0x1);
             la_append_ir2_opnd1(LISA_B, label_for_exit);
 
             /* LABEL: label_for_sti_cle_st0 if(st0 == sti), set fcc0 then jmp to label label_for_sti_ceq_st0*/
@@ -334,7 +334,7 @@ static bool translate_fcomi_internal(IR1_INST *pir1, bool unordered)
 
             /* LABEL: label_for_sti_ceq_st0, set ZF if (st0 == sti) and exit*/
             la_append_ir2_opnd1(LISA_LABEL, label_for_sti_ceq_st0);
-            la_append_ir2_opnd1i_em(LISA_X86MTFLAG, eflags_temp, 0x8);
+            la_append_ir2_opnd1i(LISA_X86MTFLAG, eflags_temp, 0x8);
 
             la_append_ir2_opnd1(LISA_LABEL, label_for_exit);
             ra_free_temp(eflags_temp);

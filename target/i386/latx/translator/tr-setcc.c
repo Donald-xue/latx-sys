@@ -599,7 +599,7 @@ bool translate_bsf(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     //set zf
     if (ir1_is_zf_def(pir1)) {
-        la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
     }
     la_append_ir2_opnd3(LISA_BEQ, src_opnd, zero_ir2_opnd, label_exit);
 
@@ -619,7 +619,7 @@ bool translate_bsf(IR1_INST *pir1)
     la_append_ir2_opnd1(LISA_LABEL, label_2);
     store_ireg_to_ir1(count, ir1_get_opnd(pir1, 0), false); 
     if (ir1_is_zf_def(pir1)) {
-        la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
     }
     
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
@@ -643,7 +643,7 @@ bool translate_bsr(IR1_INST *pir1)
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
     //set zf
     if (ir1_is_zf_def(pir1)) {
-        la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
     }
 
     la_append_ir2_opnd3(LISA_BEQ, src_opnd, zero_ir2_opnd, label_exit);
@@ -666,7 +666,7 @@ bool translate_bsr(IR1_INST *pir1)
     la_append_ir2_opnd1(LISA_LABEL, label_2);
     store_ireg_to_ir1(count, ir1_get_opnd(pir1, 0), false); 
     if (ir1_is_zf_def(pir1)) {
-        la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
+        la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
     }
 
     /* label_exit */
@@ -746,7 +746,7 @@ bool translate_btx(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ANDI, eflag_opnd, eflag_opnd, 1);
     la_append_ir2_opnd1i_em(LISA_X86MFFLAG, zf_opnd, 0x8);
     la_append_ir2_opnd3_em(LISA_OR, eflag_opnd, eflag_opnd, zf_opnd);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, eflag_opnd, 0x3f);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, eflag_opnd, 0x3f);
 
     if (ir1_is_prefix_lock(pir1)) {
         tr_lat_spin_unlock(lat_lock_addr);

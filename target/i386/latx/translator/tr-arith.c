@@ -33,14 +33,14 @@ bool translate_das(IR1_INST *pir1)
     la_append_ir2_opnd3_em(LISA_OR, new_al, zero_ir2_opnd, old_al);
     la_append_ir2_opnd3(LISA_BLT, temp_opnd, imm_opnd, label_next);
     /* al = (al - 0x6) & 0xff and set af */
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x4);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x4);
     la_append_ir2_opnd1(LISA_LABEL, label_al_sub_6);
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0x6);
     la_append_ir2_opnd3_em(LISA_SUB_W, new_al, old_al, imm_opnd);
     la_append_ir2_opnd2i_em(LISA_ANDI, new_al, new_al, 0xff);
     /* old_al < 6 ? */
     la_append_ir2_opnd3(LISA_BGE, old_al, imm_opnd, label_next);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
 
     /* cf == 1 ? */
     la_append_ir2_opnd1(LISA_LABEL, label_next);
@@ -49,7 +49,7 @@ bool translate_das(IR1_INST *pir1)
     /* old_AL > 99H ? */
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0x9a);
     la_append_ir2_opnd3(LISA_BLT, old_al, imm_opnd, label_zf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
     /* al = (al - 0x60) & 0xff */
     la_append_ir2_opnd1(LISA_LABEL, label_al_sub_60);
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0x60);
@@ -58,10 +58,10 @@ bool translate_das(IR1_INST *pir1)
     /* zf */
     la_append_ir2_opnd1(LISA_LABEL, label_zf);
     la_append_ir2_opnd3(LISA_BNE, new_al, zero_ir2_opnd, label_clear_zf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
     la_append_ir2_opnd1(LISA_B, label_exit);
     la_append_ir2_opnd1(LISA_LABEL, label_clear_zf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
     /* exit */
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
     store_ireg_to_ir1(new_al, reg_al, false);
@@ -120,11 +120,11 @@ bool translate_aaa(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0xa);
     la_append_ir2_opnd3(LISA_BGE, temp_opnd, imm_opnd, set_af_cf);
     /* clear af and cf*/
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x5);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x5);
     la_append_ir2_opnd1(LISA_B, label_exit);
     /* set clear af and cf*/
     la_append_ir2_opnd1(LISA_LABEL, set_af_cf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x5);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x5);
     la_append_ir2_opnd2i_em(LISA_ADDI_D, ax, ax, 0x106);
     /* exit */
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
@@ -162,7 +162,7 @@ bool translate_aas(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0xa);
     la_append_ir2_opnd3(LISA_BGE, temp_opnd, imm_opnd, label_set_af_cf);
     /* check eflags */
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x5);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x5);
     la_append_ir2_opnd1(LISA_B, label_exit);
     /* check if need sub carry */
     la_append_ir2_opnd1(LISA_LABEL, label_set_af_cf);
@@ -175,7 +175,7 @@ bool translate_aas(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ADDI_W, ax_ir2, ax_ir2, -6);
     la_append_ir2_opnd2i_em(LISA_ADDI_W, ah_ir2, ah_ir2, -1);
     /* set EFLAGS AF and CF flags */
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x5);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x5);
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
     la_append_ir2_opnd2i_em(LISA_ANDI, al_ir2, ax_ir2, 0xf);
     store_ireg_to_ir1(al_ir2, reg_al, false);
@@ -244,12 +244,12 @@ bool translate_daa(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0xa);
     la_append_ir2_opnd3(LISA_BGE, temp_opnd, imm_opnd, not_clear_af);
     /* clear af */
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x4);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x4);
     la_append_ir2_opnd3_em(LISA_OR, new_eax, zero_ir2_opnd, old_eax);
     la_append_ir2_opnd1(LISA_B, label_cf);
     /* not clear af */
     la_append_ir2_opnd1(LISA_LABEL, not_clear_af);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x4);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x4);
     la_append_ir2_opnd2i_em(LISA_ADDI_W, new_eax, old_eax, 0x6);
 
     /* cf */
@@ -262,21 +262,21 @@ bool translate_daa(IR1_INST *pir1)
     la_append_ir2_opnd2i_em(LISA_ORI, imm_opnd, zero_ir2_opnd, 0x9a);
     la_append_ir2_opnd3(LISA_BGE, old_eax, imm_opnd, not_clear_cf);
     /* clear cf */
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x1);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x1);
     la_append_ir2_opnd1(LISA_B, label_zf);
     /* not clear cf */
     la_append_ir2_opnd1(LISA_LABEL, not_clear_cf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x1);
     la_append_ir2_opnd2i_em(LISA_ADDI_W, new_eax, new_eax, 0x60);
     /* zf */
     la_append_ir2_opnd1(LISA_LABEL, label_zf);
     load_ireg_from_imm32(temp_opnd, 0xffff, ZERO_EXTENSION);
     la_append_ir2_opnd3_em(LISA_AND, temp_opnd, temp_opnd, new_eax);
     la_append_ir2_opnd3(LISA_BNE, temp_opnd, zero_ir2_opnd, label_clear_zf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, n1_ir2_opnd, 0x8);
     la_append_ir2_opnd1(LISA_B, label_exit);
     la_append_ir2_opnd1(LISA_LABEL, label_clear_zf);
-    la_append_ir2_opnd1i_em(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
+    la_append_ir2_opnd1i(LISA_X86MTFLAG, zero_ir2_opnd, 0x8);
     /* exit */
     la_append_ir2_opnd1(LISA_LABEL, label_exit);
     store_ireg_to_ir1(new_eax, reg_al, false);
