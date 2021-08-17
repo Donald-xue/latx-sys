@@ -2690,8 +2690,10 @@ bool latxs_translate_invlpg(IR1_INST *pir1)
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
     /* 2.1 arg1: address */
-    latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd,
-            &addr_opnd, &latxs_zero_ir2_opnd);
+    /* latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd, */
+            /* &addr_opnd, &latxs_zero_ir2_opnd); */
+    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd,
+                                         &addr_opnd);
     latxs_ra_free_temp(&addr_opnd);
     /* 2.2 arg0: env */
     latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,

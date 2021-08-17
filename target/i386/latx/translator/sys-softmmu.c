@@ -398,7 +398,8 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     TCGMemOpIdx memopidx = (memop << 4) | sp->mmu_index;
 
     /* 3.1 arg1: mem address */
-    latxs_append_ir2_opnd2_(lisa_mov, arg1, &mem);
+    /* latxs_append_ir2_opnd2_(lisa_mov, arg1, &mem); */
+    latxs_append_ir2_opnd2_(lisa_mov32s, arg1, &mem);
     if (mem_no_offset_new_tmp) {
         latxs_ra_free_temp(&mem_no_offset);
     }
