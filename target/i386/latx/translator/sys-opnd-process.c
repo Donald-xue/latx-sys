@@ -400,7 +400,24 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
         ea_base_only = 0;
     }
 
-    /* 2. apply segment base and address size */
+    /* 2.0 apply address size */
+    switch (addr_size) {
+    case 2:
+        latxs_append_ir2_opnd2_(lisa_mov16z, &ea,
+                ea_base_only ? &ea_base : &ea);
+        break;
+    case 4:
+        latxs_append_ir2_opnd2_(lisa_mov32z, &ea,
+                ea_base_only ? &ea_base : &ea);
+        break;
+    default:
+        lsassertm(0, "unknown addr size %d in %s.\n",
+                addr_size, __func__);
+        break;
+    }
+    ea_base_only = 0;
+
+    /* 2.1 apply segment base */
     int seg_num = -1;
     if (ir1_opnd_has_seg(opnd1)) {
         seg_num = ir1_opnd_get_seg_index(opnd1);
@@ -417,27 +434,10 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
                 &latxs_env_ir2_opnd,
                 lsenv_offset_of_seg_base(lsenv, seg_reg));
 
-        latxs_append_ir2_opnd3(LISA_ADD_D, &ea,
-                ea_base_only ? &ea_base : &ea, &seg_base);
+        latxs_append_ir2_opnd3(LISA_ADD_D, &ea, &ea, &seg_base);
         latxs_ra_free_temp(&seg_base);
 
         latxs_append_ir2_opnd2_(lisa_mov32z, &ea, &ea);
-    } else {
-        /* 2.2 no segment base */
-        IR2_OPND *__ea = ea_base_only ? &ea_base : &ea;
-
-        switch (addr_size) {
-        case 2:
-            latxs_append_ir2_opnd2_(lisa_mov16z, &ea, __ea);
-            break;
-        case 4:
-            latxs_append_ir2_opnd2_(lisa_mov32z, &ea, __ea);
-            break;
-        default:
-            lsassertm(0, "unknown addr size %d in %s.\n",
-                    addr_size, __func__);
-            break;
-        }
     }
 
     /* 3. construct IR2_OPND_MEM */
