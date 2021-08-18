@@ -1536,6 +1536,9 @@ bool latxs_translate_lfence(IR1_INST *pir1);
 bool latxs_translate_mfence(IR1_INST *pir1);
 bool latxs_translate_sfence(IR1_INST *pir1);
 
+bool latxs_translate_sysenter(IR1_INST *pir1);
+bool latxs_translate_sysexit(IR1_INST *pir1);
+
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
 void latxs_tr_gen_io_bpt(IR1_INST *, IR1_OPND *, int);

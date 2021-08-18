@@ -69,6 +69,8 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_MFENCE);
     latxs_register_ir1(X86_INS_SFENCE);
     latxs_register_ir1(X86_INS_PREFETCHNTA);
+    latxs_register_ir1(X86_INS_SYSENTER);
+    latxs_register_ir1(X86_INS_SYSEXIT);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2776,3 +2778,56 @@ bool latxs_translate_sfence(IR1_INST *pir1)
 
     return true;
 }
+
+/* End of TB in system-mode */
+bool latxs_translate_sysenter(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_SYSENTER(pir1);
+
+    /*
+     * target/i386/seg_helper.c
+     * void helper_sysenter(CPUX86State *env)
+     * >> EIP is updated
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_sysenter, cfg);
+
+    /* 2. disable EIP update in the added jmp */
+    td->ignore_eip_update = 1;
+
+    return true;
+}
+
+/* End of TB in system-mode */
+bool latxs_translate_sysexit(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_SYSEXIT(pir1);
+
+    int data_size = latxs_ir1_data_size(pir1);
+    lsassert(data_size == 16 || data_size == 32);
+
+    /*
+     * target/i386/seg_helper.c
+     * void helper_sysexit(
+     *      CPUX86State *env,
+     *      int dflag)
+     */
+    helper_cfg_t cfg = default_helper_cfg;
+
+    /* 1.1 dflag = 0 : 16-bit */
+    /*     dflag = 1 : 32-bit */
+    int dflag = (data_size >> 4) - 1;
+    lsassert(!(dflag >> 1));
+
+    /* 1.2 call helper_sysexit*/
+    latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_sysexit, dflag, cfg);
+
+    /* 2. disable EIP update in the added jmp */
+    td->ignore_eip_update = 1;
+
+    return true;
+}
+
+
