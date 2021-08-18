@@ -277,6 +277,10 @@ bool latxs_translate_setg(IR1_INST *pir1)
 
 bool latxs_translate_bsf(IR1_INST *pir1)
 {
+    if (ir1_opcode(pir1) == X86_INS_TZCNT) {
+        return latxs_translate_tzcnt(pir1);
+    }
+
     IR2_OPND count = latxs_ra_alloc_itemp();
     IR2_OPND t_opnd = latxs_ra_alloc_itemp();
     IR2_OPND src_opnd = latxs_ra_alloc_itemp();

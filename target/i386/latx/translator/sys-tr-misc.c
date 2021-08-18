@@ -76,6 +76,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PREFETCHT2);
     latxs_register_ir1(X86_INS_PREFETCHW);
     latxs_register_ir1(X86_INS_PREFETCH);
+    latxs_register_ir1(X86_INS_TZCNT);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2841,3 +2842,102 @@ bool latxs_translate_prefetcht1(IR1_INST *pir1) { return true; }
 bool latxs_translate_prefetcht2(IR1_INST *pir1) { return true; }
 bool latxs_translate_prefetchw(IR1_INST *pir1) { return true; }
 bool latxs_translate_prefetch(IR1_INST *pir1) { return true; }
+
+bool latxs_translate_tzcnt(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    if (!latxs_ir1_has_prefix_repe(pir1) ||
+        td->sys.cpuid_ext3_features & CPUID_EXT3_ABM) {
+        pir1->info->id = X86_INS_BSF;
+        return latxs_translate_bsf(pir1);
+    }
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* r16,   r32   */
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 2); /* r/m16, r/m32 */
+
+    int opnd_size = ir1_opnd_size(opnd0);
+    lsassertm_illop(ir1_addr(pir1), opnd_size == 16 || opnd_size == 32,
+            "lzcnt with unsupported opnd size %d.\n", opnd_size);
+
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    /* 1. load source data */
+    IR2_OPND value = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&value, opnd1, EXMode_S, false);
+
+    /* 2. count tailing zero */
+    IR2_OPND tz_num = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2_(lisa_mov, &tz_num, zero);
+    /* 2.1 load loop cnt */
+    IR2_OPND cnt_opnd = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &cnt_opnd, zero, opnd_size);
+    /* 2.2 loop start */
+    IR2_OPND loop_label = latxs_ir2_opnd_new_label();
+    IR2_OPND loop_exit  = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_LABEL, &loop_label);
+    latxs_append_ir2_opnd3(LISA_BEQ, &cnt_opnd, zero, &loop_exit);
+    /*
+     * 2.3 compare the lease signifit bit and
+     *     shift the source and
+     *     minus the loop cnt
+     */
+    IR2_OPND bit = latxs_ra_alloc_itemp();
+    /* bit   = value &  1 */
+    latxs_append_ir2_opnd2i(LISA_ANDI, &bit, &value, 0x1);
+    /* value = value >> 1 */
+    latxs_append_ir2_opnd2i(LISA_SRAI_W, &value, &value, 0x1);
+    /* cnt   = cnt   -  1 */
+    latxs_append_ir2_opnd2i(LISA_ADDI_W, &cnt_opnd, &cnt_opnd, -1);
+    latxs_append_ir2_opnd3(LISA_BNE, &bit, zero, &loop_label);
+
+    latxs_ra_free_temp(&cnt_opnd);
+    latxs_ra_free_temp(&bit);
+    latxs_ra_free_temp(&value);
+    /* 2.4 not branch: tz_num += 1 */
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &tz_num, &tz_num, 0x1);
+    /* 2.5 next loop */
+    latxs_append_ir2_opnd1(LISA_B, &loop_label);
+    /* 2.6 loop exit */
+    latxs_append_ir2_opnd1(LISA_LABEL, &loop_exit);
+
+    /* 2.7 store into dest */
+    latxs_store_ir2_to_ir1_gpr(&tz_num, opnd0);
+
+    IR2_OPND mask = latxs_ra_alloc_itemp();
+
+    /* 3. if tz_num == opnd_size : CF = 1 */
+    /*    else                   : CF = 0 */
+    /* 3.1 prepare label and CF mask */
+    latxs_append_ir2_opnd2i(LISA_ORI, &mask, zero, CF_BIT);
+    IR2_OPND label_cf = latxs_ir2_opnd_new_label();
+    /* 3.2 set CF = 1 */
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &mask, 0x1);
+    /* 3.3 branch if opnd_size == tz_num */
+    IR2_OPND size_opnd = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &size_opnd, zero, opnd_size);
+    latxs_append_ir2_opnd3(LISA_BEQ, &tz_num, &size_opnd, &label_cf);
+    latxs_ra_free_temp(&size_opnd);
+    /* 3.4 not branch: set CF = 0 */
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &zero_ir2_opnd, 0x1);
+    /* 3.5 branch : CF = 1 */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_cf);
+
+    /* 4. if tz_num == 0 : ZF = 1 */
+    /*    else           : ZF = 0 */
+    /* 4.1 prepare label and ZF mask */
+    latxs_append_ir2_opnd2i(LISA_ORI, &mask, zero, ZF_BIT);
+    IR2_OPND label_zf = latxs_ir2_opnd_new_label();
+    /* 4.2 set ZF = 1 */
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &mask, 0x8);
+    /* 4.3 branch if opnd_size == 0 */
+    latxs_append_ir2_opnd3(LISA_BEQ, &tz_num, zero, &label_zf);
+    latxs_ra_free_temp(&tz_num);
+    /* 4.4 not branch: set ZF = 0 */
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x8);
+    latxs_ra_free_temp(&mask);
+    /* 4.5 branch : CF = 1 */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_zf);
+
+    return true;
+}
