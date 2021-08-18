@@ -138,3 +138,49 @@ void latxs_fpu_fix_cpu_loop_exit(void)
         rotate_fpu_to_bias(0);
     }
 }
+
+void latxs_set_fpu_fcsr(IR2_OPND *new_fcsr)
+{
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr_ir2_opnd, new_fcsr);
+}
+
+IR2_OPND latxs_set_fpu_fcsr_rounding_field_by_x86(void)
+{
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+
+    IR2_OPND temp_fcsr = latxs_ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &temp_fcsr, fcsr);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &temp_fcsr, zero, 9, 8);
+
+    /* save fscr in fcsr_opnd for reload */
+    IR2_OPND fcsr_opnd = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd3(LISA_OR, &fcsr_opnd, &temp_fcsr, zero);
+
+    /* set fcsr according to x86 MXCSR register */
+    IR2_OPND temp_mxcsr = ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &temp_mxcsr,
+            &latxs_env_ir2_opnd,
+            lsenv_offset_of_mxcsr(lsenv));
+    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp_mxcsr,
+                                              &temp_mxcsr, 14, 13);
+
+    IR2_OPND temp_int = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ANDI, &temp_int, &temp_mxcsr, 0x1);
+
+    IR2_OPND label1 = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd3(LISA_BEQ, &temp_int, zero, &label1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp_mxcsr, &temp_mxcsr, 0x2);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label1);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &temp_fcsr, &temp_mxcsr, 9, 8);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &temp_fcsr);
+
+    latxs_ra_free_temp(&temp_fcsr);
+    latxs_ra_free_temp(&temp_mxcsr);
+    latxs_ra_free_temp(&temp_int);
+
+    return fcsr_opnd;
+}
+
+

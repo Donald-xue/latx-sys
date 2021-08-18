@@ -27,6 +27,9 @@
 
 bool translate_cvtdq2pd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvtdq2pd(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND fcsr_opnd = set_fpu_fcsr_rounding_field_by_x86();
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
@@ -34,15 +37,20 @@ bool translate_cvtdq2pd(IR1_INST *pir1)
     la_append_ir2_opnd2(LISA_VFFINTL_D_W, dest, src);
     set_fpu_fcsr(fcsr_opnd);
     return true;
+#endif
 }
 
 bool translate_cvtdq2ps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvtdq2ps(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     la_append_ir2_opnd2(LISA_VFFINT_S_W, dest, src);
     return true;
+#endif
 }
 
 bool translate_cvtpd2dq(IR1_INST *pir1)
@@ -452,12 +460,16 @@ bool translate_cvtpd2pi(IR1_INST *pir1)
 
 bool translate_cvtpd2ps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvtpd2ps(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     la_append_ir2_opnd3(LISA_VFCVT_S_D, dest, dest, src);
     la_append_ir2_opnd2i(LISA_XVPICKVE_D, dest, dest, 0);
     return true;
+#endif
 }
 
 bool translate_cvtpi2ps(IR1_INST *pir1)
@@ -783,6 +795,9 @@ bool translate_cvtsd2si(IR1_INST *pir1)
 
 bool translate_cvtsd2ss(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvtsd2ss(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND fcsr_opnd = set_fpu_fcsr_rounding_field_by_x86();
     //TODO:simply
@@ -793,10 +808,14 @@ bool translate_cvtsd2ss(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_XVINSVE0_W, dest, temp, 0);
     set_fpu_fcsr(fcsr_opnd);
     return true;
+#endif
 }
 
 bool translate_cvtsi2sd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvtsi2sd(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND fcsr_opnd = set_fpu_fcsr_rounding_field_by_x86();
     //TODO:simply
@@ -812,6 +831,7 @@ bool translate_cvtsi2sd(IR1_INST *pir1)
     la_append_ir2_opnd2i(LISA_VEXTRINS_D, dest, temp_src, VEXTRINS_IMM_4_0(0, 0));
     set_fpu_fcsr(fcsr_opnd);
     return true;
+#endif
 }
 
 bool translate_cvtsi2ss(IR1_INST *pir1)
@@ -835,6 +855,9 @@ bool translate_cvtsi2ss(IR1_INST *pir1)
 
 bool translate_cvtss2sd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvtss2sd(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -842,6 +865,7 @@ bool translate_cvtss2sd(IR1_INST *pir1)
     la_append_ir2_opnd2(LISA_FCVT_D_S, temp, src);
     la_append_ir2_opnd2i(LISA_XVINSVE0_D, dest, temp, 0);
     return true;
+#endif
 }
 
 bool translate_cvtss2si(IR1_INST *pir1)
@@ -902,6 +926,9 @@ bool translate_cvtss2si(IR1_INST *pir1)
 
 bool translate_cvttss2si(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cvttss2si(pir1);
+#else
     IR2_OPND src_lo;                                         
     src_lo = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     IR2_OPND temp_src = ra_alloc_ftemp();
@@ -969,6 +996,7 @@ bool translate_cvttss2si(IR1_INST *pir1)
     ra_free_temp(ftemp_over_flow);
     ra_free_temp(ftemp_under_flow);
     return true;
+#endif
 }
 
 bool translate_cvtps2pd(IR1_INST *pir1)
