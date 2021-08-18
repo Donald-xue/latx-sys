@@ -4917,7 +4917,7 @@ LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_arg2_ir2_opnd,  6); /* a2 */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_arg3_ir2_opnd,  7); /* a3 */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_arg4_ir2_opnd,  8); /* a4/stmp1      */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_arg5_ir2_opnd,  9); /* a5/stmp2      */
-LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_argg_ir2_opnd, 10); /* a6/guest-base */
+LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_arg6_ir2_opnd, 10); /* a6/TB address */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_arg7_ir2_opnd, 11); /* a7/eip        */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_ret0_ir2_opnd,  4); /* v0 */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_ret1_ir2_opnd,  5); /* v1 */
