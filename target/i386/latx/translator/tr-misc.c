@@ -42,7 +42,6 @@ bool translate_stgi(IR1_INST *pir1) { return false; }
 bool translate_clgi(IR1_INST *pir1) { return false; }
 bool translate_skinit(IR1_INST *pir1) { return false; }
 bool translate_swapgs(IR1_INST *pir1) { return false; }
-bool translate_prefetch(IR1_INST *pir1) { return true; }
 bool translate_pi2fw(IR1_INST *pir1) { return false; }
 bool translate_pi2fd(IR1_INST *pir1) { return false; }
 bool translate_pf2iw(IR1_INST *pir1) { return false; }
@@ -87,10 +86,6 @@ bool translate_vmovlhps(IR1_INST *pir1) { return false; }
 bool translate_vmovhps(IR1_INST *pir1) { return false; }
 bool translate_vmovhpd(IR1_INST *pir1) { return false; }
 bool translate_vmovshdup(IR1_INST *pir1) { return false; }
-bool translate_prefetchnta(IR1_INST *pir1) { return true; }
-// bool translate_prefetcht0(IR1_INST *pir1) { return true; }
-bool translate_prefetcht1(IR1_INST *pir1) { return true; }
-bool translate_prefetcht2(IR1_INST *pir1) { return true; }
 bool translate_vmovaps(IR1_INST *pir1) { return false; }
 bool translate_vmovapd(IR1_INST *pir1) { return false; }
 bool translate_vcvtsi2ss(IR1_INST *pir1) { return false; }
@@ -1450,6 +1445,9 @@ bool translate_frstor(IR1_INST *pir1)
 
 bool translate_prefetcht0(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_prefetcht0(pir1);
+#else
     IR2_OPND mem = convert_mem_opnd(ir1_get_opnd(pir1, 0));
     mem._type = IR2_OPND_IREG;
     /* if the value of zero_imm_opnd is 0, it is load.
@@ -1461,13 +1459,18 @@ bool translate_prefetcht0(IR1_INST *pir1)
 
     la_append_ir2_opnd2i(LISA_PRELD, zero_imm_opnd , mem, mem._imm16);
     return true;
+#endif
 }
 
 bool translate_prefetchw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_prefetchw(pir1);
+#else
     IR2_OPND mem = convert_mem_opnd(ir1_get_opnd(pir1, 0));
     la_append_ir2_opnd1i(LISA_PRELDX, mem, 0);
     return true;
+#endif
 }
 
 bool translate_emms(IR1_INST *pir1)
@@ -1565,6 +1568,10 @@ bool translate_invlpg(IR1_INST *pir1) { return false; }
 bool translate_invlpga(IR1_INST *pir1) { return false; }
 bool translate_sysenter(IR1_INST *pir1) { return false; }
 bool translate_sysexit(IR1_INST *pir1) { return false; }
+bool translate_prefetchnta(IR1_INST *pir1) { return true; }
+bool translate_prefetcht1(IR1_INST *pir1) { return true; }
+bool translate_prefetcht2(IR1_INST *pir1) { return true; }
+bool translate_prefetch(IR1_INST *pir1) { return true; }
 
 #else
 
@@ -1618,6 +1625,22 @@ bool translate_sysenter(IR1_INST *pir1)
 bool translate_sysexit(IR1_INST *pir1)
 {
     return latxs_translate_sysexit(pir1);
+}
+bool translate_prefetchnta(IR1_INST *pir1)
+{
+    return latxs_translate_prefetchnta(pir1);
+}
+bool translate_prefetcht1(IR1_INST *pir1)
+{
+    return latxs_translate_prefetcht1(pir1);
+}
+bool translate_prefetcht2(IR1_INST *pir1)
+{
+    return latxs_translate_prefetcht2(pir1);
+}
+bool translate_prefetch(IR1_INST *pir1)
+{
+    return latxs_translate_prefetch(pir1);
 }
 
 #endif

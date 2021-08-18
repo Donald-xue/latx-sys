@@ -71,6 +71,11 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PREFETCHNTA);
     latxs_register_ir1(X86_INS_SYSENTER);
     latxs_register_ir1(X86_INS_SYSEXIT);
+    latxs_register_ir1(X86_INS_PREFETCHT0);
+    latxs_register_ir1(X86_INS_PREFETCHT1);
+    latxs_register_ir1(X86_INS_PREFETCHT2);
+    latxs_register_ir1(X86_INS_PREFETCHW);
+    latxs_register_ir1(X86_INS_PREFETCH);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2830,4 +2835,9 @@ bool latxs_translate_sysexit(IR1_INST *pir1)
     return true;
 }
 
-
+bool latxs_translate_prefetchnta(IR1_INST *pir1) { return true; }
+bool latxs_translate_prefetcht0(IR1_INST *pir1) { return true; }
+bool latxs_translate_prefetcht1(IR1_INST *pir1) { return true; }
+bool latxs_translate_prefetcht2(IR1_INST *pir1) { return true; }
+bool latxs_translate_prefetchw(IR1_INST *pir1) { return true; }
+bool latxs_translate_prefetch(IR1_INST *pir1) { return true; }

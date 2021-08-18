@@ -1543,6 +1543,12 @@ bool latxs_translate_sfence(IR1_INST *pir1);
 
 bool latxs_translate_sysenter(IR1_INST *pir1);
 bool latxs_translate_sysexit(IR1_INST *pir1);
+bool latxs_translate_prefetchnta(IR1_INST *pir1);
+bool latxs_translate_prefetcht0(IR1_INST *pir1);
+bool latxs_translate_prefetcht1(IR1_INST *pir1);
+bool latxs_translate_prefetcht2(IR1_INST *pir1);
+bool latxs_translate_prefetchw(IR1_INST *pir1);
+bool latxs_translate_prefetch(IR1_INST *pir1);
 
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
