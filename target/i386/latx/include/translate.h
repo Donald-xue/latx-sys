@@ -1200,6 +1200,9 @@ static inline ADDR cpu_get_guest_base(void)
 #include "env.h"
 
 extern ADDR latxs_sc_bpc;
+extern ADDR latxs_native_printer;
+
+#define LATXS_NP_TLBCMP     1
 
 /* main translation procees */
 uint8_t latxs_cpu_read_code_via_qemu(CPUX86State *env, ADDRX pc);

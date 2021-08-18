@@ -160,6 +160,30 @@ static void tr_gen_lookup_qemu_tlb(
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &cmp_opnd, zero,
             TARGET_PAGE_BITS - 1, align_bits);
 
+    /* 6.5 do something before tlb compare */
+    if (option_native_printer) {
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
+                zero, LATXS_NP_TLBCMP);
+
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
+                zero, latxs_ir2_opnd_reg(&cmp_opnd));
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
+                zero, latxs_ir2_opnd_reg(&tag_opnd));
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg4_ir2_opnd,
+                zero, latxs_ir2_opnd_reg(&mem));
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg5_ir2_opnd,
+                zero, mmu_index);
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg6_ir2_opnd,
+                zero, is_load);
+
+        TRANSLATION_DATA *td = lsenv->tr_data;
+        TranslationBlock *tb = td->curr_tb;
+        void *code_buf = tb->tc.ptr;
+        int offset = td->real_ir2_inst_num << 2;
+        latxs_append_ir2_opnda(LISA_BL, (latxs_native_printer -
+                 (ADDR)code_buf - offset) >> 2);
+    }
+
     /* 7. compare cmp and tag */
     if (!option_smmu_slow) {
         latxs_append_ir2_opnd3(LISA_BNE,

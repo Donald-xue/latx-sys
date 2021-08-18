@@ -22,6 +22,8 @@ ADDR latxs_sc_fcs_jmp_glue_fpu_1;
 ADDR latxs_sc_fcs_jmp_glue_xmm_0;
 ADDR latxs_sc_fcs_jmp_glue_xmm_1;
 
+ADDR latxs_native_printer;
+
 /*
  * For other static codes, we use the same entry with LATX-user.
  *
@@ -340,6 +342,89 @@ static int gen_latxs_sc_fpu_rotate(void *code_base)
     return code_nr_all;
 }
 
+static void latxs_native_printer_helper(CPUX86State *env,
+        int type, int r1, int r2, int r3, int r4, int r5)
+{
+    /* Up to now, only SoftTLB Compare is supported */
+    lsassert(type == LATXS_NP_TLBCMP);
+
+    /* r1: reg number of cmp_opnd */
+    uint64_t addr_cmp = env->mips_regs[r1];
+    /* r2: reg number of tag_opnd */
+    uint64_t addr_tag = env->mips_regs[r2];
+    /* r3: reg number of address */
+    uint64_t addr_x86 = env->mips_regs[r3];
+    /* r4: mmu index */
+    int mmu_index = r4;
+    /* r5: load or store */
+    int is_load = r5;
+
+    CPUState *cpu = env_cpu(env);
+    X86CPU *xcpu = (X86CPU *)cpu;
+
+    uint64_t mask = xcpu->neg.tlb.f[mmu_index].mask;
+    int tlb_index = (addr_x86 >> TARGET_PAGE_BITS) &
+                    (mask >> CPU_TLB_ENTRY_BITS);
+    CPUTLBEntry *tlb = &xcpu->neg.tlb.f[mmu_index].table[tlb_index];
+
+    int is_hit = addr_cmp == addr_tag;
+
+    if (is_load) {
+        fprintf(stderr,
+                "load  tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
+                addr_cmp, addr_tag, addr_x86, mmu_index,
+                tlb->addr_code, tlb->addr_read, tlb->addr_write,
+                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
+                         -1);
+        if (is_hit) {
+            fprintf(stderr, "tlb %p fast hit addend %x\n", tlb, tlb->addend);
+        }
+    } else {
+        fprintf(stderr,
+                "store tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
+                addr_cmp, addr_tag, addr_x86, mmu_index,
+                tlb->addr_code, tlb->addr_read, tlb->addr_write,
+                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
+                        -1);
+    }
+}
+
+static int gen_latxs_native_printer(void *code_ptr)
+{
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
+
+    IR2_OPND reg = latxs_zero_ir2_opnd;
+
+    int i = 0;
+
+    latxs_tr_init(NULL);
+
+    /* save all native registers */
+    for (i = 1; i < 32; ++i) {
+        reg = latxs_ir2_opnd_new(IR2_OPND_GPR, i);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &reg, env,
+                lsenv_offset_of_mips_regs(lsenv, i));
+    }
+
+    latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
+    latxs_tr_gen_call_to_helper((ADDR)latxs_native_printer_helper);
+
+    /* read all native registers */
+    reg = latxs_ir2_opnd_new(IR2_OPND_GPR, i);
+    for (i = 1; i < 32; ++i) {
+        reg = latxs_ir2_opnd_new(IR2_OPND_GPR, i);
+        latxs_append_ir2_opnd2i(LISA_LD_D, &reg, env,
+                lsenv_offset_of_mips_regs(lsenv, i));
+    }
+    latxs_append_ir2_opnd0_(lisa_return);
+
+    i = latxs_tr_ir2_assemble(code_ptr);
+    latxs_tr_fini();
+    return i;
+}
+
 int target_latxs_static_codes(void *code_base)
 {
     int code_nr = 0;
@@ -378,6 +463,15 @@ int target_latxs_static_codes(void *code_base)
     LATXS_DUMP_STATIC_CODES_INFO(
             "latxs BPC: break point code %p\n",
             (void *)latxs_sc_bpc);
+
+    /* do something */
+    if (option_native_printer) {
+        latxs_native_printer = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_native_printer, code_ptr);
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs do something %p\n",
+                (void *)latxs_native_printer);
+    }
 
     return code_nr_all;
 }

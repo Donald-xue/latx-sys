@@ -28,6 +28,7 @@ int option_smmu_slow;
 int option_break_point;
 unsigned long long option_break_point_addrx;
 unsigned long long option_break_point_count;
+int option_native_printer;
 
 /* For generate TB execution trace */
 int option_trace_simple;
@@ -229,6 +230,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_BOOL,
             .help = "use softmmu slow path only (debug)",
         }, {
+            .name = "np",
+            .type = QEMU_OPT_NUMBER,
+            .help = "enable print helper to be called from native codes",
+        }, {
             .name = "dump",
             .type = QEMU_OPT_STRING,
             .help = "dump flags for func,ir1,ir2,host",
@@ -294,6 +299,11 @@ void set_options(int index)
             option_cross_page_check = 1;  break;
     default: break;
     }
+}
+
+static void parse_options_native_printer(unsigned long long t)
+{
+    option_native_printer = t;
 }
 
 void latx_sys_parse_options(QemuOpts *opts)
@@ -368,6 +378,11 @@ void latx_sys_parse_options(QemuOpts *opts)
 
     opt = qemu_opt_find(opts, "cpc");
     if (opt) parse_options_bool(LATXS_OPT_cross_page_check, opt->value.boolean);
+
+    opt = qemu_opt_find(opts, "np");
+    if (opt) {
+        parse_options_native_printer(opt->value.uint);
+    }
 
     /* parse all optimizations as last! */
     if (!need_parse_optimizations) {
@@ -512,6 +527,8 @@ void latxs_options_init(void)
     option_break_point = 0;
     option_break_point_addrx = 0;
     option_break_point_count = 0;
+
+    option_native_printer = 0;
 
     option_trace_simple = 0;
     option_trace_start_nr = 0;
