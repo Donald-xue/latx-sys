@@ -1894,6 +1894,35 @@ bool latxs_translate_psrldq(IR1_INST *pir1);
 bool latxs_translate_psubq(IR1_INST *pir1);
 bool latxs_translate_ucomisd(IR1_INST *pir1);
 bool latxs_translate_ucomiss(IR1_INST *pir1);
+/* sse */
+bool latxs_translate_movupd(IR1_INST *pir1);
+bool latxs_translate_movdqa(IR1_INST *pir1);
+bool latxs_translate_movdqu(IR1_INST *pir1);
+bool latxs_translate_movups(IR1_INST *pir1);
+bool latxs_translate_movapd(IR1_INST *pir1);
+bool latxs_translate_movaps(IR1_INST *pir1);
+bool latxs_translate_movlhps(IR1_INST *pir1);
+bool latxs_translate_movsd(IR1_INST *pir1);
+bool latxs_translate_movss(IR1_INST *pir1);
+bool latxs_translate_movhpd(IR1_INST *pir1);
+bool latxs_translate_movhps(IR1_INST *pir1);
+bool latxs_translate_movlpd(IR1_INST *pir1);
+bool latxs_translate_movlps(IR1_INST *pir1);
+bool latxs_translate_addpd(IR1_INST *pir1);
+bool latxs_translate_andpd(IR1_INST *pir1);
+bool latxs_translate_unpcklpd(IR1_INST *pir1);
+bool latxs_translate_unpckhpd(IR1_INST *pir1);
+bool latxs_translate_xorps(IR1_INST *pir1);
+bool latxs_translate_xorpd(IR1_INST *pir1);
+bool latxs_translate_subss(IR1_INST *pir1);
+bool latxs_translate_subsd(IR1_INST *pir1);
+bool latxs_translate_subps(IR1_INST *pir1);
+bool latxs_translate_subpd(IR1_INST *pir1);
+bool latxs_translate_sqrtsd(IR1_INST *pir1);
+bool latxs_translate_sqrtss(IR1_INST *pir1);
+bool latxs_translate_cvtps2pd(IR1_INST *pir1);
+bool latxs_translate_cvttsd2si(IR1_INST *pir1);
+
 
 #endif
 

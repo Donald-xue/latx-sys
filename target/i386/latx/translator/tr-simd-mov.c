@@ -264,32 +264,52 @@ bool translate_maskmovdqu(IR1_INST *pir1)
 
 bool translate_movupd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movupd(pir1);
+#else
     translate_movaps(pir1);
     return true;
+#endif
 }
 
 bool translate_movdqa(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movdqa(pir1);
+#else
     translate_movaps(pir1);
     return true;
+#endif
 }
 
 bool translate_movdqu(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movdqu(pir1);
+#else
     translate_movaps(pir1);
     return true;
+#endif
 }
 
 bool translate_movups(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movups(pir1);
+#else
     translate_movaps(pir1);
     return true;
+#endif
 }
 
 bool translate_movapd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movapd(pir1);
+#else
     translate_movaps(pir1);
     return true;
+#endif
 }
 bool translate_lddqu(IR1_INST *pir1)
 {
@@ -298,6 +318,9 @@ bool translate_lddqu(IR1_INST *pir1)
 }
 bool translate_movaps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movaps(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
@@ -314,6 +337,7 @@ bool translate_movaps(IR1_INST *pir1)
         lsassert(0);
     }
     return true;
+#endif
 }
 
 bool translate_movhlps(IR1_INST *pir1)
@@ -339,16 +363,23 @@ bool translate_movshdup(IR1_INST *pir1)
 
 bool translate_movlhps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movlhps(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     la_append_ir2_opnd3(LISA_VILVL_D, dest, src, dest);
     return true;
+#endif
 }
 
 bool translate_movsd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movsd(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
@@ -365,10 +396,14 @@ bool translate_movsd(IR1_INST *pir1)
                           ra_alloc_xmm(ir1_opnd_base_reg_num(src)), 0);
     }
     return true;
+#endif
 }
 
 bool translate_movss(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movss(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
@@ -391,10 +426,14 @@ bool translate_movss(IR1_INST *pir1)
         lsassert(0);
     }
     return true;
+#endif
 }
 
 bool translate_movhpd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movhpd(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_mem(src) && ir1_opnd_is_xmm(dest)) {
@@ -411,16 +450,24 @@ bool translate_movhpd(IR1_INST *pir1)
         lsassert(0);
     }
     return true;
+#endif
 }
 
 bool translate_movhps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movhps(pir1);
+#else
     translate_movhpd(pir1);
     return true;
+#endif
 }
 
 bool translate_movlpd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movlpd(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_mem(src) && ir1_opnd_is_xmm(dest)) {
@@ -445,11 +492,16 @@ bool translate_movlpd(IR1_INST *pir1)
     }
 
     return true;
+#endif
 }
 
 bool translate_movlps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movlps(pir1);
+#else
     translate_movlpd(pir1);
     return true;
+#endif
 }
 
