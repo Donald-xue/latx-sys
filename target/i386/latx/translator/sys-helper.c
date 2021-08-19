@@ -124,19 +124,19 @@ void latxs_tr_cvt_fp80_to_64(void)
 void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 {
     /* Use static helper prologue for default */
-    /*
-     * TODO
-     * if (staticcs_enabled() &&
-     *     cmp_helper_cfg(cfg, default_helper_cfg))
-     * {
-     *      void *code_buf = lsenv->tr_data->curr_tb->tc.ptr;
-     *      int offset = lsenv->tr_data->real_ir2_inst_num << 2;
-     *      append_ir2_opnda(LISA_BL, (sys_helper_prologue_default
-     *                                 - (ADDR)code_buf - offset) >> 2);
-     *      if (!option_lsfpu) tr_gen_save_curr_top();
-     *      return;
-     * }
-     */
+    if (scs_enabled() && cmp_helper_cfg(cfg, default_helper_cfg)) {
+        TRANSLATION_DATA *td = lsenv->tr_data;
+        TranslationBlock *tb = td->curr_tb;
+        void *code_buf = tb->tc.ptr;
+        int offset = td->real_ir2_inst_num << 2;
+        latxs_append_ir2_opnda(LISA_BL,
+                (latxs_sc_scs_prologue - (ADDR)code_buf - offset) >> 2);
+        if (!option_lsfpu) {
+            latxs_tr_gen_save_curr_top();
+        }
+        return;
+    }
+
 
     if (likely(cfg.sv_allgpr)) {
         latxs_tr_save_registers_to_env(
@@ -173,19 +173,18 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     int fix_em = option_by_hand && !(td->in_gen_slow_path);
 
     /* Use static helper epilogue for default */
-    /*
-     * TODO
-     * if (staticcs_enabled() &&
-     *     cmp_helper_cfg(cfg, default_helper_cfg))
-     * {
-     *      void *code_buf = lsenv->tr_data->curr_tb->tc.ptr;
-     *      int offset = lsenv->tr_data->real_ir2_inst_num << 2;
-     *      append_ir2_opnda(LISA_BL, (sys_helper_epilogue_default
-     *      - (ADDR)code_buf - offset) >> 2);
-     *      if (fix_em) td_set_reg_extmb_after_cs(0xFF);
-     *      return;
-     * }
-     */
+    if (scs_enabled() && cmp_helper_cfg(cfg, default_helper_cfg)) {
+        TranslationBlock *tb = td->curr_tb;
+        void *code_buf = tb->tc.ptr;
+        int offset = td->real_ir2_inst_num << 2;
+        latxs_append_ir2_opnda(LISA_BL,
+                (latxs_sc_scs_epilogue - (ADDR)code_buf - offset) >> 2);
+        if (fix_em) {
+            latxs_td_set_reg_extmb_after_cs(0xFF);
+        }
+        return;
+    }
+
 
     if (unlikely(cfg.cvt_fp80)) {
         latxs_tr_cvt_fp80_to_64();

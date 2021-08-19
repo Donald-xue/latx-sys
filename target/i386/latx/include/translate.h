@@ -1930,6 +1930,16 @@ bool latxs_translate_sqrtss(IR1_INST *pir1);
 bool latxs_translate_cvtps2pd(IR1_INST *pir1);
 bool latxs_translate_cvttsd2si(IR1_INST *pir1);
 
+/* optimization */
+extern ADDR latxs_sc_scs_prologue;
+extern ADDR latxs_sc_scs_epilogue;
+int scs_enabled(void);
+int gen_latxs_scs_prologue_cfg(void *, helper_cfg_t);
+int gen_latxs_scs_epilogue_cfg(void *, helper_cfg_t);
+void latxs_tr_gen_static_save_registers_to_env(
+        uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
+void latxs_tr_gen_static_load_registers_from_env(
+        uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
 
 #endif
 

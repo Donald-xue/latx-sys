@@ -9,10 +9,6 @@
 /* BPC: Break Point Codes */
 ADDR latxs_sc_bpc;
 
-/* HPSCS: HelPer Static Context Swith */
-ADDR latxs_sc_hpscs_pro; /* save context before helper */
-ADDR latxs_sc_hpscs_epi; /* load context after  helper */
-
 /* NJC: Native Jmp Cache lookup */
 ADDR latxs_sc_njc;
 
@@ -23,6 +19,10 @@ ADDR latxs_sc_fcs_jmp_glue_xmm_0;
 ADDR latxs_sc_fcs_jmp_glue_xmm_1;
 
 ADDR latxs_native_printer;
+
+/* SCS: Static Context Switch */
+ADDR latxs_sc_scs_prologue;
+ADDR latxs_sc_scs_epilogue;
 
 /*
  * For other static codes, we use the same entry with LATX-user.
@@ -425,6 +425,178 @@ static int gen_latxs_native_printer(void *code_ptr)
     return i;
 }
 
+static int __gen_latxs_jmp_glue(void *code_ptr, int n)
+{
+    int code_nr = 0;
+
+    latxs_tr_init(NULL);
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    int start = (td->real_ir2_inst_num << 2);
+    int offset = 0;
+
+    IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env  = &latxs_env_ir2_opnd;
+
+    IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
+    IR2_OPND *ra = &latxs_ra_ir2_opnd;
+
+    IR2_OPND tb  = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
+    IR2_OPND eip = latxs_ra_alloc_dbt_arg2(); /* $11 a7 */
+
+    IR2_OPND tmp    = latxs_ra_alloc_itemp();
+    IR2_OPND param0 = latxs_ra_alloc_itemp();
+    IR2_OPND param1 = latxs_ra_alloc_itemp();
+
+    /*
+     * arguments passed to native rotate FPU
+     * DBT arg 1 : FPU rotate step
+     * DBT arg 2 : next TB's native codes
+     */
+    IR2_OPND step_opnd = latxs_ra_alloc_dbt_arg1();
+    IR2_OPND tb_nc_opnd = latxs_ra_alloc_dbt_arg2();
+
+    if (n == 0 || n == 1) {
+        /* load tb->next_tb[n] into a0/v0 */
+        latxs_append_ir2_opnd2i(LISA_LD_D, ret0, &tb,
+                offsetof(TranslationBlock, next_tb) +
+                n * sizeof(void *));
+    } else {
+        /* Indirect jmp lookup TB */
+
+        IR2_OPND label_next_tb_exist = latxs_ir2_opnd_new_label();
+
+        /*
+         * $a6: prev TB           @tb         @step_opnd
+         * $a7: EIP for next TB   @eip
+         *
+         * tmp: free to use here  @param0
+         * tmp: free to use here  @param1
+         * tmp: free to use here  @tmp
+         *      > used to verify next TB
+         *      > used to record monitor data
+         *
+         * $a0/v0: next TB (lookup result)       @ret0
+         *         > valid after TB lookup
+         */
+
+        /* TODO : NJC Lookup TB */
+
+        /* LL: helper_lookup_tb */
+        if (option_lsfpu) {
+            latxs_tr_gen_save_curr_top();
+            latxs_tr_fpu_disable_top_mode();
+        }
+        latxs_tr_save_registers_to_env(0xff, 0xff, 0, 0xff, 0xff, 0x3);
+        latxs_tr_save_eflags();
+
+        latxs_load_addr_to_ir2(&tmp, (ADDR)helper_lookup_tb);
+        latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
+        latxs_append_ir2_opnd2i(LISA_JIRL, ra, &tmp, 0);
+
+        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x3);
+        latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
+
+        /* if next_tb == NULL, jump to epilogue */
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
+                lsenv_offset_of_eip(lsenv));
+        offset = (td->real_ir2_inst_num << 2) - start;
+        latxs_append_ir2_opnda(LISA_B,
+                (context_switch_native_to_bt_ret_0
+                 - (ADDR)code_ptr - offset) >> 2);
+
+        /* else compare tb->top_out and next_tb->top_in */
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_next_tb_exist);
+    }
+
+    if (!option_lsfpu) {
+        /* 1. tb->_top_out from @tb */
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, &tb,
+                offsetof(TranslationBlock, _top_out));
+        /* 2. next_tb->_top_in from @ret0 */
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
+                offsetof(TranslationBlock, _top_in));
+        /* 3. calculate top_bias, store rotate step in arg1 */
+        latxs_append_ir2_opnd3(LISA_SUB_D, &step_opnd, &param1, &param0);
+
+        /*
+         * For direct jmps, if no need to rotate,
+         * we will make direct link without this glue
+         *
+         * For indirect jmps, we will check step to
+         * decide wehter to rotate FPU or not
+         */
+        if (n == 2) {
+            IR2_OPND label_rotate = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd3(LISA_BNE, &step_opnd, zero,
+                    &label_rotate);
+            /* bias ==0, no need to ratate */
+            /* fetch native address of next_tb to arg2 */
+            latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
+                    offsetof(TranslationBlock, tc) +
+                    offsetof(struct tb_tc, ptr));
+            latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
+            latxs_append_ir2_opnd1(LISA_LABEL, &label_rotate);
+        }
+
+        /* top_bias != 0, need to rotate, step is in arg1 */
+        /* fetch native address of next_tb to arg2 */
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tb_nc_opnd, ret0,
+                offsetof(TranslationBlock, tc) +
+                offsetof(struct tb_tc, ptr));
+        offset = (lsenv->tr_data->real_ir2_inst_num << 2) - start;
+        latxs_append_ir2_opnda(LISA_B, (native_rotate_fpu_by
+                 - (ADDR)code_ptr - offset) >> 2);
+    } else {
+        /* With LSFPU enabled, we could jmp to next TB directly  */
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
+                offsetof(TranslationBlock, tc) +
+                offsetof(struct tb_tc, ptr));
+        latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
+    }
+
+    code_nr = latxs_tr_ir2_assemble(code_ptr);
+
+    latxs_tr_fini();
+
+    return code_nr;
+}
+
+static int gen_latxs_jmp_glue_all(void *code_base)
+{
+    int code_nr = 0;
+    int code_nr_all = 0;
+    void *code_ptr = code_base;
+
+    native_jmp_glue_0 = (ADDR)code_ptr;
+    code_nr = __gen_latxs_jmp_glue(code_ptr, 0);
+    code_nr_all += code_nr;
+    code_ptr += code_nr << 2;
+    LATXS_DUMP_STATIC_CODES_INFO(
+            "latxs TBLink : native jmp glue 0 at %p\n",
+            (void *)native_jmp_glue_0);
+
+    native_jmp_glue_1 = (ADDR)code_ptr;
+    code_nr = __gen_latxs_jmp_glue(code_ptr, 1);
+    code_nr_all += code_nr;
+    code_ptr += code_nr << 2;
+    LATXS_DUMP_STATIC_CODES_INFO(
+            "latxs TBLink : native jmp glue 1 at %p\n",
+            (void *)native_jmp_glue_1);
+
+    native_jmp_glue_2 = (ADDR)code_ptr;
+    code_nr = __gen_latxs_jmp_glue(code_ptr, 2);
+    code_nr_all += code_nr;
+    code_ptr += code_nr << 2;
+    LATXS_DUMP_STATIC_CODES_INFO(
+            "latxs TBLink : native jmp glue 2 at %p\n",
+            (void *)native_jmp_glue_2);
+
+    return code_nr_all;
+}
+
 int target_latxs_static_codes(void *code_base)
 {
     int code_nr = 0;
@@ -464,6 +636,22 @@ int target_latxs_static_codes(void *code_base)
             "latxs BPC: break point code %p\n",
             (void *)latxs_sc_bpc);
 
+    if (scs_enabled()) {
+        latxs_sc_scs_prologue = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_scs_prologue_cfg,
+                code_ptr, default_helper_cfg);
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs SCS: static CS prologue %p\n",
+                (void *)latxs_sc_scs_prologue);
+
+        latxs_sc_scs_epilogue = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_scs_epilogue_cfg,
+                code_ptr, default_helper_cfg);
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs SCS: static CS epilogue %p\n",
+                (void *)latxs_sc_scs_epilogue);
+    }
+
     /* do something */
     if (option_native_printer) {
         latxs_native_printer = (ADDR)code_ptr;
@@ -471,6 +659,11 @@ int target_latxs_static_codes(void *code_base)
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs do something %p\n",
                 (void *)latxs_native_printer);
+    }
+
+    /* jmp glue for tb-link */
+    if (option_tb_link) {
+        LATXS_GEN_STATIC_CODES(gen_latxs_jmp_glue_all, code_ptr);
     }
 
     return code_nr_all;
