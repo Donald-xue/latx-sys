@@ -96,7 +96,7 @@ void latxs_ir2_op_check_imm(IR2_OPND *opnd, GM_OPERAND_TYPE opnd_type)
         return;
     }
 
-    int32_t imm = ir2_opnd_imm(opnd);
+    int32_t imm = latxs_ir2_opnd_imm(opnd);
     switch (opnd_type) {
     case OPD_OFFS:
         lsassertm(int32_in_int16(imm), "IR2 check imm fail OPD_OFFS\n");
