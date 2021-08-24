@@ -369,7 +369,7 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
     fprintf(stderr, "[tracesp] ");
     fprintf(stderr, "PC=0x%x / ", tb->pc);
     fprintf(stderr, "CS=0x%x / ", tb->cs_base);
-    fprintf(stderr, "EF=0x%x / ", tb->flags);
+    fprintf(stderr, "EF=0x%x / ", eflags);
     switch (option_trace_simple) {
     case 2: /* Print with FPU state */
         fprintf(stderr, "TOP=%d / ",  env->fpstt);

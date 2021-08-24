@@ -80,7 +80,7 @@ void latxs_tr_fini(void)
     }
 }
 
-void latxs_label_dispose(void *code_buffer)
+void latxs_label_dispose(const void *code_buffer)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
     int label_nr = td->label_num;
@@ -171,7 +171,9 @@ void latxs_label_dispose(void *code_buffer)
     }
 }
 
-int latxs_tr_check_buffer_overflow(void *code_start, TRANSLATION_DATA *td)
+int latxs_tr_check_buffer_overflow(
+        const void *code_start,
+        TRANSLATION_DATA *td)
 {
     uint64_t code_highwater = (uint64_t)td->code_highwater;
     uint64_t code_tb_end = (uint64_t)code_start;
@@ -189,14 +191,14 @@ int latxs_tr_check_buffer_overflow(void *code_start, TRANSLATION_DATA *td)
     return 0;
 }
 
-int latxs_tr_ir2_assemble(void *code_base)
+int latxs_tr_ir2_assemble(const void *code_base)
 {
     /* 1. label dispose */
     latxs_label_dispose(code_base);
 
     /* 2. assemble */
     IR2_INST *pir2 = lsenv->tr_data->first_ir2;
-    void *code_ptr = code_base;
+    void *code_ptr = (void *)(ADDR)code_base;
     int code_nr = 0;
 
     TRANSLATION_DATA *td = lsenv->tr_data;
@@ -296,7 +298,7 @@ int latxs_tr_translate_tb(TranslationBlock *tb, int *search_size)
     }
 
     if (tb && !is_buffer_overflow) {
-        void *search_block = (ADDR)tb->tc.ptr + code_size;
+        void *search_block = (void *)(ADDR)tb->tc.ptr + code_size;
         *search_size = latxs_tb_encode_search(tb, search_block);
     }
 
@@ -464,10 +466,10 @@ void latxs_tr_gen_tb_end(void)
     latxs_append_ir2_opnd2i(LISA_ORI, &latxs_ret0_ir2_opnd,
             &tb_ptr_opnd, TB_EXIT_REQUESTED);
 
-    void *code_buf = tb->tc.ptr;
+    ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = td->real_ir2_inst_num << 2;
-    latxs_append_ir2_opnda(LISA_B, (context_switch_native_to_bt
-                - (ADDR)code_buf - offset) >> 2);
+    latxs_append_ir2_opnda(LISA_B,
+            (context_switch_native_to_bt - code_buf - offset) >> 2);
 }
 
 /* translate functions */

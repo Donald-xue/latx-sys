@@ -178,10 +178,10 @@ static void tr_gen_lookup_qemu_tlb(
 
         TRANSLATION_DATA *td = lsenv->tr_data;
         TranslationBlock *tb = td->curr_tb;
-        void *code_buf = tb->tc.ptr;
+        ADDR code_buf = (ADDR)tb->tc.ptr;
         int offset = td->real_ir2_inst_num << 2;
-        latxs_append_ir2_opnda(LISA_BL, (latxs_native_printer -
-                 (ADDR)code_buf - offset) >> 2);
+        latxs_append_ir2_opnda(LISA_BL,
+                (latxs_native_printer - code_buf - offset) >> 2);
     }
 
     /* 7. compare cmp and tag */

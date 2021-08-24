@@ -115,6 +115,7 @@ bool latxs_translate_fiadd(IR1_INST *pir1)
 
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1);
+    (void)opnd_num; /* to avoid compile warning */
 
     IR2_OPND st0    = latxs_ra_alloc_st(0);
     IR2_OPND t_freg = latxs_ra_alloc_ftemp();
@@ -169,6 +170,7 @@ bool latxs_translate_fisub(IR1_INST *pir1)
 
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1);
+    (void)opnd_num; /* to avoid compile warning */
 
     IR2_OPND st0    = latxs_ra_alloc_st(0);
     IR2_OPND t_freg = latxs_ra_alloc_ftemp();
@@ -196,6 +198,7 @@ bool latxs_translate_fisubr(IR1_INST *pir1)
 
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1);
+    (void)opnd_num; /* to avoid compile warning */
 
     IR2_OPND st0    = latxs_ra_alloc_st(0);
     IR2_OPND t_freg = latxs_ra_alloc_ftemp();
@@ -337,6 +340,7 @@ bool latxs_translate_fimul(IR1_INST *pir1)
 
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1);
+    (void)opnd_num; /* to avoid compile warning */
 
     IR2_OPND st0    = latxs_ra_alloc_st(0);
     IR2_OPND t_freg = latxs_ra_alloc_ftemp();
@@ -446,6 +450,7 @@ bool latxs_translate_fidiv(IR1_INST *pir1)
 
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1);
+    (void)opnd_num; /* to avoid compile warning */
 
     IR2_OPND st0    = latxs_ra_alloc_st(0);
     IR2_OPND t_freg = latxs_ra_alloc_ftemp();
@@ -472,6 +477,7 @@ bool latxs_translate_fidivr(IR1_INST *pir1)
 
     int opnd_num = ir1_opnd_num(pir1);
     lsassert(opnd_num == 1);
+    (void)opnd_num; /* to avoid compile warning */
 
     IR2_OPND st0    = latxs_ra_alloc_st(0);
     IR2_OPND t_freg = latxs_ra_alloc_ftemp();

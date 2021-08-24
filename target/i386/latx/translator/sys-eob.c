@@ -427,11 +427,11 @@ void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
 
-    void *code_buf = tb->tc.ptr;
+    ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = td->real_ir2_inst_num << 2;
 
-    latxs_append_ir2_opnda(LISA_B, (context_switch_native_to_bt
-                                    - (ADDR)code_buf - offset) >> 2);
+    latxs_append_ir2_opnda(LISA_B,
+            (context_switch_native_to_bt - code_buf - offset) >> 2);
 }
 
 /* Should always use TB-Link. */
@@ -663,10 +663,10 @@ indirect_jmp:
             latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd,
                     &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
 
-            void *code_buf = tb->tc.ptr;
+            ADDR code_buf = (ADDR)tb->tc.ptr;
             int offset = td->real_ir2_inst_num << 2;
-            latxs_append_ir2_opnda(LISA_B, (native_jmp_glue_2
-                                            - (ADDR)code_buf - offset) >> 2);
+            latxs_append_ir2_opnda(LISA_B,
+                    (native_jmp_glue_2 - code_buf - offset) >> 2);
 
         } else {
             latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);

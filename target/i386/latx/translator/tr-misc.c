@@ -569,6 +569,7 @@ bool translate_ins(IR1_INST *pir1) {
 #endif
 }
 
+#ifndef CONFIG_SOFTMMU
 static inline void set_CPUX86State_exception_is_int(ENV *lsenv, int exception_is_int)
 {
     CPUX86State *cpu = (CPUX86State *)lsenv->cpu_state;
@@ -608,6 +609,7 @@ static void helper_raise_int(void)
     set_CPUState_can_do_io(lsenv, 1);
     siglongjmp_cpu_jmp_env();
 }
+#endif
 
 void ss_gen_push(IR1_INST *pir1) {
     IR2_OPND ss_opnd = ra_alloc_ss();

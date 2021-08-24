@@ -611,6 +611,7 @@ bool translate_mul(IR1_INST *pir1)
 #endif
 }
 
+#ifndef CONFIG_SOFTMMU
 static bool translate_imul_1_opnd(IR1_INST *pir1)
 {
     IR2_OPND src_opnd_0 =
@@ -656,6 +657,7 @@ static bool translate_imul_1_opnd(IR1_INST *pir1)
     ra_free_temp(dest);
     return true;
 }
+#endif
 
 bool translate_imul(IR1_INST *pir1)
 {

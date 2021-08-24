@@ -4,6 +4,7 @@
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "translate.h"
+#include "flag-lbt.h"
 #include "sys-excp.h"
 #include <string.h>
 

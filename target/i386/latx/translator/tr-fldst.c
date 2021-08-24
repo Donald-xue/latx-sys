@@ -80,6 +80,7 @@ static double l2e;
 bool translate_fldl2e(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
+    (void)l2e; /* to avoid compile warning */
     return latxs_translate_fldl2e(pir1);
 #else
     l2e = 1 / log(2.0);
@@ -99,6 +100,7 @@ static double l2t;
 bool translate_fldl2t(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
+    (void)l2t; /* to avoid compile warning */
     return latxs_translate_fldl2t(pir1);
 #else
     l2t = 1 / log10(2.0);
@@ -119,6 +121,7 @@ static double lg2;
 bool translate_fldlg2(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
+    (void)lg2; /* to avoid compile warning */
     return latxs_translate_fldlg2(pir1);
 #else
     lg2 = log10(2.0);
@@ -139,6 +142,7 @@ static double ln2;
 bool translate_fldln2(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
+    (void)ln2; /* to avoid compile warning */
     return latxs_translate_fldln2(pir1);
 #else
     ln2 = log(2.0);
@@ -159,6 +163,7 @@ static double pi = M_PI;
 bool translate_fldpi(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
+    (void)pi; /* to avoid compile warning */
     return latxs_translate_fldpi(pir1);
 #else
     /* 1. the position to be overwritten is st(0) */

@@ -1211,12 +1211,13 @@ IR1_INST *latxs_get_ir1_list(TranslationBlock *, ADDRX, int *);
 
 void latxs_tr_sys_init(TranslationBlock *, int max, void *code_highwater);
 void latxs_tr_init(TranslationBlock *tb);
-int  latxs_tr_ir2_assemble(void *code_buffer);
+int  latxs_tr_ir2_assemble(const void *code_buffer);
 void latxs_tr_fini(void);
 
 int latxs_tr_translate_tb(TranslationBlock *tb, int *search_size);
 bool latxs_tr_ir2_generate(TranslationBlock *tb);
 void latxs_tr_init_translate_ir1(TranslationBlock *tb, int index);
+int latxs_tr_check_buffer_overflow(const void *, TRANSLATION_DATA *);
 
 void latxs_tr_gen_tb_start(void);
 void latxs_tr_gen_tb_end(void);
@@ -1227,7 +1228,7 @@ void latxs_tr_em_init(TRANSLATION_DATA *td);
 void latxs_tr_ir2_array_init(TRANSLATION_DATA *td);
 void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb);
 
-void latxs_label_dispose(void *code_buffer);
+void latxs_label_dispose(const void *code_buffer);
 
 /* translate functions */
 void latxs_tr_save_registers_to_env(
@@ -1580,6 +1581,8 @@ bool latxs_translate_aas(IR1_INST *pir1);
 bool latxs_translate_daa(IR1_INST *pir1);
 bool latxs_translate_das(IR1_INST *pir1);
 
+bool latxs_translate_xadd(IR1_INST *pir1);
+
 /* sys-tr-branch */
 bool latxs_translate_jz(IR1_INST *pir1);
 bool latxs_translate_jnz(IR1_INST *pir1);
@@ -1634,6 +1637,7 @@ bool latxs_translate_movsx(IR1_INST *pir1);
 
 bool latxs_translate_lea(IR1_INST *pir1);
 
+bool latxs_translate_movd(IR1_INST *pir1);
 bool latxs_translate_movq(IR1_INST *pir1);
 
 bool latxs_translate_cmovo(IR1_INST *pir1);
@@ -1709,6 +1713,11 @@ bool latxs_translate_xsaveopt(IR1_INST *pir1);
 
 bool latxs_translate_xgetbv(IR1_INST *pir1);
 bool latxs_translate_xsetbv(IR1_INST *pir1);
+
+bool latxs_translate_fninit(IR1_INST *pir1);
+bool latxs_translate_ffree(IR1_INST *pir1);
+bool latxs_translate_fincstp(IR1_INST *pir1);
+bool latxs_translate_fdecstp(IR1_INST *pir1);
 
 /* sys-fctrl */
 
@@ -1943,6 +1952,7 @@ void latxs_tr_gen_static_load_registers_from_env(
 
 extern ADDR latxs_sc_njc;
 int njc_enabled(void);
+int gen_latxs_njc_lookup_tb(void *code_ptr);
 
 #endif
 

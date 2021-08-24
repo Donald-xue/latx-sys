@@ -180,6 +180,7 @@ bool translate_movsx(IR1_INST *pir1)
 #endif
 }
 
+#ifndef CONFIG_SOFTMMU
 static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
 {
     IR2_OPND df_opnd = ra_alloc_itemp();
@@ -207,6 +208,7 @@ static void load_step_to_reg(IR2_OPND *p_step_opnd, IR1_INST *pir1)
     ra_free_temp(df_opnd);
     ra_free_temp(tmp_step);
 }
+#endif
 
 bool translate_movs(IR1_INST *pir1)
 {

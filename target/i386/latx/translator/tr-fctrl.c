@@ -277,6 +277,7 @@ bool translate_ldmxcsr(IR1_INST *pir1)
 #endif
 }
 
+#ifndef CONFIG_SOFTMMU
 /* FIXME: for now JUST use 3 (bcnez + b) to implement this inst,
  * maybe it will be optimized later.
  */
@@ -342,6 +343,7 @@ static bool translate_fcomi_internal(IR1_INST *pir1, bool unordered)
     }
     return true;
 }
+#endif
 
 bool translate_fucomi(IR1_INST *pir1)
 {
@@ -386,6 +388,7 @@ bool translate_fcomip(IR1_INST *pir1)
 #endif
 }
 
+#ifndef CONFIG_SOFTMMU
 static bool translate_fcom_internal(IR1_INST *pir1, bool unordered)
 {
 #define C0_BIT (8)
@@ -458,6 +461,7 @@ static bool translate_fcom_internal(IR1_INST *pir1, bool unordered)
 
     return true;
 }
+#endif
 
 bool translate_fcom(IR1_INST *pir1)
 {
@@ -826,6 +830,11 @@ static float float_3 = 3.0f;
 bool translate_wait(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU
+    (void)float_max; /* to avoid compile warning */
+    (void)float_min; /* to avoid compile warning */
+    (void)float_1e32; /* to avoid compile warning */
+    (void)float_2; /* to avoid compile warning */
+    (void)float_3; /* to avoid compile warning */
     return latxs_translate_wait(pir1);
 #else
     IR2_OPND temp = ra_alloc_itemp();

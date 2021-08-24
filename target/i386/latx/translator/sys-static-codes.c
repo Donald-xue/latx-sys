@@ -372,18 +372,27 @@ static void latxs_native_printer_helper(CPUX86State *env,
     if (is_load) {
         fprintf(stderr,
                 "load  tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
-                addr_cmp, addr_tag, addr_x86, mmu_index,
-                tlb->addr_code, tlb->addr_read, tlb->addr_write,
+                (unsigned int)addr_cmp, (unsigned int)addr_tag,
+                (unsigned int)addr_x86,
+                mmu_index,
+                (unsigned int)tlb->addr_code,
+                (unsigned int)tlb->addr_read,
+                (unsigned int)tlb->addr_write,
                 is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
                          -1);
         if (is_hit) {
-            fprintf(stderr, "tlb %p fast hit addend %x\n", tlb, tlb->addend);
+            fprintf(stderr, "tlb %p fast hit addend %x\n",
+                    (void *)tlb, (unsigned int)tlb->addend);
         }
     } else {
         fprintf(stderr,
                 "store tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
-                addr_cmp, addr_tag, addr_x86, mmu_index,
-                tlb->addr_code, tlb->addr_read, tlb->addr_write,
+                (unsigned int)addr_cmp, (unsigned int)addr_tag,
+                (unsigned int)addr_x86,
+                mmu_index,
+                (unsigned int)tlb->addr_code,
+                (unsigned int)tlb->addr_read,
+                (unsigned int)tlb->addr_write,
                 is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
                         -1);
     }
@@ -391,7 +400,7 @@ static void latxs_native_printer_helper(CPUX86State *env,
 
 static int gen_latxs_native_printer(void *code_ptr)
 {
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    /* IR2_OPND *zero = &latxs_zero_ir2_opnd; */
     IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
 

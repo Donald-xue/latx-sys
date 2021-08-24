@@ -347,6 +347,7 @@ bool latxs_translate_call(IR1_INST *pir1)
     int opnd_size = ir1_opnd_size(opnd0);
     lsassert(opnd_size == 16 || opnd_size == 32);
     lsassert(data_size == opnd_size);
+    (void)data_size; /* to avoid compile warning */
 
     int ss_addr_size = latxs_get_sys_stack_addr_size();
 
@@ -393,6 +394,7 @@ bool latxs_translate_callnext(IR1_INST *pir1)
     int opnd_size = ir1_opnd_size(opnd0);
     lsassert(opnd_size == 16 || opnd_size == 32);
     lsassert(data_size == opnd_size);
+    (void)data_size; /* to avoid compile warning */
 
     int ss_addr_size = latxs_get_sys_stack_addr_size();
 
@@ -438,6 +440,7 @@ bool latxs_translate_callin(IR1_INST *pir1)
     int opnd_size = ir1_opnd_size(opnd0);
     lsassert(opnd_size == 16 || opnd_size == 32);
     lsassert(data_size == opnd_size);
+    (void)data_size; /* to avoid compile warning */
 
     int ss_addr_size = latxs_get_sys_stack_addr_size();
 
@@ -937,6 +940,8 @@ bool latxs_translate_pop(IR1_INST *pir1)
     }
 
     lsassert(data_size >= opnd_size);
+    (void)data_size; /* to avoid compile warning */
+    (void)opnd_size; /* to avoid compile warning */
 
     /*
      * TODO
@@ -1038,6 +1043,8 @@ bool latxs_translate_push(IR1_INST *pir1)
     if (!ir1_opnd_is_seg(opnd0)) {
         lsassert(data_size == opnd_size);
     }
+
+    (void)opnd_size; /* to avoid compile warning */
 
     /*
      * TODO
@@ -2093,6 +2100,8 @@ static IR1_OPND latxs_pa_get_gpr(int id, int size)
         lsassert(0);
         break;
     }
+    /* should never reach here */
+    return eax_ir1_opnd;
 }
 
 static bool latxs_do_translate_pusha(IR1_INST *pir1, int size)
@@ -2324,6 +2333,7 @@ static bool latxs_do_translate_lxx(
     int data_size = latxs_ir1_data_size(pir1);
     lsassert(data_size == 16 || data_size == 32);
     lsassert(opnd_size == data_size);
+    (void)opnd_size; /* to avoid compile warning */
 
     IR2_OPND mem_opnd;
     latxs_convert_mem_opnd(&mem_opnd, opnd1, -1);

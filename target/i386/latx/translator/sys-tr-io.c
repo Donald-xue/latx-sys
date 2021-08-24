@@ -49,6 +49,7 @@ void latxs_tr_gen_io_check(IR1_INST *ir1,
         int port_reg_size = ir1_opnd_size(opnd_io);
         lsassertm(port_reg_num == edx_index && port_reg_size == 16,
                 "unknown GPR of IO_OPND in check io. IR1 = %p.\n", ir1);
+        (void)port_reg_size ; /* to avoid compile warning */
         IR2_OPND port_reg = latxs_ra_alloc_gpr(port_reg_num);
         latxs_append_ir2_opnd2_(lisa_mov16z, &latxs_arg1_ir2_opnd,
                                              &port_reg);
