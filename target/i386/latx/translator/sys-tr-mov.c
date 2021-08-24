@@ -44,9 +44,9 @@ bool latxs_translate_mov(IR1_INST *pir1)
         /* } */
     /* } */
 
-    /* if (option_by_hand) { TODO */
-        /* return translate_mov_byhand(pir1); */
-    /* } */
+    if (option_by_hand) {
+        return latxs_translate_mov_byhand(pir1);
+    }
 
     IR2_OPND src = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_N, false);
@@ -57,7 +57,9 @@ bool latxs_translate_mov(IR1_INST *pir1)
 
 bool latxs_translate_movzx(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_movzx_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_movzx_byhand(pir1);
+    }
 
     IR2_OPND src = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_Z, false);
@@ -67,7 +69,9 @@ bool latxs_translate_movzx(IR1_INST *pir1)
 
 bool latxs_translate_movsx(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_movsx_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_movsx_byhand(pir1);
+    }
 
     IR2_OPND src = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_S, false);

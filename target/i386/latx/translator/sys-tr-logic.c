@@ -34,7 +34,9 @@ void latxs_sys_logic_register_ir1(void)
 
 bool latxs_translate_xor(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_xor_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_xor_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -64,7 +66,9 @@ bool latxs_translate_xor(IR1_INST *pir1)
 
 bool latxs_translate_and(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_and_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_and_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -94,7 +98,9 @@ bool latxs_translate_and(IR1_INST *pir1)
 
 bool latxs_translate_test(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_test_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_test_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -117,7 +123,9 @@ bool latxs_translate_test(IR1_INST *pir1)
 
 bool latxs_translate_or(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_or_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_or_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -147,7 +155,9 @@ bool latxs_translate_or(IR1_INST *pir1)
 
 bool latxs_translate_not(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_not_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_not_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR2_OPND src0 = latxs_ra_alloc_itemp();
@@ -165,7 +175,9 @@ bool latxs_translate_not(IR1_INST *pir1)
 
 bool latxs_translate_shl(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_shl_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_shl_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -209,7 +221,9 @@ bool latxs_translate_shl(IR1_INST *pir1)
 
 bool latxs_translate_shr(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_shr_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_shr_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -263,7 +277,9 @@ bool latxs_translate_sal(IR1_INST *pir1)
 
 bool latxs_translate_sar(IR1_INST *pir1)
 {
-    /* if (option_by_hand) return translate_sar_byhand(pir1); */
+    if (option_by_hand) {
+        return latxs_translate_sar_byhand(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);

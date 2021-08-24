@@ -1572,6 +1572,19 @@ bool latxs_translate_imul(IR1_INST *pir1);
 bool latxs_translate_div(IR1_INST *pir1);
 bool latxs_translate_idiv(IR1_INST *pir1);
 
+bool latxs_translate_add_byhand(IR1_INST *pir1);
+bool latxs_translate_adc_byhand(IR1_INST *pir1);
+bool latxs_translate_sub_byhand(IR1_INST *pir1);
+bool latxs_translate_sbb_byhand(IR1_INST *pir1);
+bool latxs_translate_inc_byhand(IR1_INST *pir1);
+bool latxs_translate_dec_byhand(IR1_INST *pir1);
+bool latxs_translate_neg_byhand(IR1_INST *pir1);
+bool latxs_translate_cmp_byhand(IR1_INST *pir1);
+bool latxs_translate_mul_byhand(IR1_INST *pir1);
+bool latxs_translate_imul_byhand(IR1_INST *pir1);
+bool latxs_translate_div_byhand(IR1_INST *pir1);
+bool latxs_translate_idiv_byhand(IR1_INST *pir1);
+
 void latxs_tr_gen_div_result_check(IR1_INST *, IR2_OPND, int s, int);
 
 bool latxs_translate_aaa(IR1_INST *pir1);
@@ -1616,10 +1629,20 @@ bool latxs_translate_test(IR1_INST *pir1);
 bool latxs_translate_or(IR1_INST *pir1);
 bool latxs_translate_not(IR1_INST *pir1);
 
+bool latxs_translate_xor_byhand(IR1_INST *pir1);
+bool latxs_translate_and_byhand(IR1_INST *pir1);
+bool latxs_translate_test_byhand(IR1_INST *pir1);
+bool latxs_translate_or_byhand(IR1_INST *pir1);
+bool latxs_translate_not_byhand(IR1_INST *pir1);
+
 bool latxs_translate_shl(IR1_INST *pir1);
 bool latxs_translate_shr(IR1_INST *pir1);
 bool latxs_translate_sal(IR1_INST *pir1);
 bool latxs_translate_sar(IR1_INST *pir1);
+
+bool latxs_translate_shl_byhand(IR1_INST *pir1);
+bool latxs_translate_shr_byhand(IR1_INST *pir1);
+bool latxs_translate_sar_byhand(IR1_INST *pir1);
 
 bool latxs_translate_rol(IR1_INST *pir1);
 bool latxs_translate_ror(IR1_INST *pir1);
@@ -1634,6 +1657,10 @@ bool latxs_translate_bswap(IR1_INST *pir1);
 bool latxs_translate_mov(IR1_INST *pir1);
 bool latxs_translate_movzx(IR1_INST *pir1);
 bool latxs_translate_movsx(IR1_INST *pir1);
+
+bool latxs_translate_mov_byhand(IR1_INST *pir1);
+bool latxs_translate_movzx_byhand(IR1_INST *pir1);
+bool latxs_translate_movsx_byhand(IR1_INST *pir1);
 
 bool latxs_translate_lea(IR1_INST *pir1);
 

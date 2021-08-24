@@ -2039,6 +2039,7 @@ bool ir1_translate(IR1_INST *ir1)
     /* 2. call translate_xx function */
     int tr_func_idx = ir1_opcode(ir1) - X86_INS_INVALID;
 
+#ifndef CONFIG_SOFTMMU
     if (option_by_hand) {
       translate_functions[X86_INS_ADD - X86_INS_INVALID] = translate_add_byhand;
       translate_functions[X86_INS_ADC - X86_INS_INVALID] = translate_adc_byhand;
@@ -2067,6 +2068,7 @@ bool ir1_translate(IR1_INST *ir1)
       translate_functions[X86_INS_MUL - X86_INS_INVALID] = translate_mul_byhand;
       translate_functions[X86_INS_DIV - X86_INS_INVALID] = translate_div_byhand;
     }
+#endif
 
     bool translation_success = false;
 
