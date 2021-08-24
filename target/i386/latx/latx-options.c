@@ -246,11 +246,11 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "simple trace tb execution",
         }, {
-            .name = "tracestartnr",
+            .name = "tracestnr",
             .type = QEMU_OPT_NUMBER,
             .help = "start to print trace after @number of TB's execution",
         }, {
-            .name = "tracestarttb",
+            .name = "tracesttb",
             .type = QEMU_OPT_NUMBER,
             .help = "start to print trace after TB.PC",
         }, {

@@ -350,6 +350,20 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
         return;
     }
 
+    static int latxs_sttb;
+    if (option_trace_start_tb_set &&
+        !latxs_sttb &&
+        tb->pc != option_trace_start_tb) {
+        return;
+    }
+    latxs_sttb = 1;
+
+    static int latxs_stnr;
+    if (latxs_stnr < option_trace_start_nr) {
+        latxs_stnr += 1;
+        return;
+    }
+
     uint32_t eflags = helper_read_eflags(env);
 
     fprintf(stderr, "[tracesp] ");
