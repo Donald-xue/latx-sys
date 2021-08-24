@@ -439,6 +439,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
     IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env  = &latxs_env_ir2_opnd;
+    IR2_OPND *eflags = &latxs_eflags_ir2_opnd;
 
     IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
@@ -482,7 +483,61 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
          *         > valid after TB lookup
          */
 
-        /* TODO : NJC Lookup TB */
+        /* NJC Lookup TB */
+        IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
+        if (njc_enabled()) {
+            latxs_load_addr_to_ir2(&tmp, latxs_sc_njc);
+            latxs_append_ir2_opnd1_(lisa_call, &tmp);
+            latxs_append_ir2_opnd3(LISA_BEQ, ret0, zero,
+                                             &njc_miss);
+
+            /* check if PC == TB.PC */
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
+                    offsetof(TranslationBlock, pc));
+            latxs_append_ir2_opnd3(LISA_BNE, &param0, &eip, &njc_miss);
+
+            /*
+             * check next TB cflags CF_INVALID
+             *
+             * For normal indirect jmp, it can's modify cs_base, hflags, ...
+             * So we only check if TB is invalid
+             */
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
+                    offsetof(TranslationBlock, cflags));
+            latxs_append_ir2_opnd2i(LISA_SRAI_D, &param0, &param0, 16);
+            latxs_append_ir2_opnd2i(LISA_ANDI, &param0, &param0,
+                                               (CF_INVALID >> 16));
+            latxs_append_ir2_opnd3(LISA_BNE, &param0, zero, &njc_miss);
+
+            /* check next TB's CSBASE */
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
+                    offsetof(TranslationBlock, cs_base));
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &param1, env,
+                    offsetof(CPUX86State, segs[R_CS].base));
+            latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &njc_miss);
+
+            /* check next TB's flags */
+            /*
+             * *flags = env->hflags |
+             * (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK |
+             *                 VM_MASK | AC_MASK));
+             */
+            latxs_load_imm64_to_ir2(&param0, (IOPL_MASK | TF_MASK | RF_MASK |
+                                              VM_MASK | AC_MASK));
+            latxs_append_ir2_opnd3(LISA_AND, &param0, eflags, &param0);
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &param1, env,
+                    offsetof(CPUX86State, hflags));
+            latxs_append_ir2_opnd3(LISA_OR, &param1, &param1, &param0);
+            /* tb->flags */
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
+                    offsetof(TranslationBlock, flags));
+            latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &njc_miss);
+
+            /* NJC lookup success, finish lookup */
+            latxs_append_ir2_opnd1(LISA_B, &label_next_tb_exist);
+
+            latxs_append_ir2_opnd1(LISA_LABEL, &njc_miss);
+        }
 
         /* LL: helper_lookup_tb */
         if (option_lsfpu) {
@@ -659,6 +714,15 @@ int target_latxs_static_codes(void *code_base)
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs do something %p\n",
                 (void *)latxs_native_printer);
+    }
+
+    /* Native Jmp Cache Lookup */
+    if (njc_enabled()) {
+        latxs_sc_njc = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_njc_lookup_tb, code_ptr);
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs NJC : native jmp cache lookup %p\n",
+                (void *)latxs_sc_njc);
     }
 
     /* jmp glue for tb-link */

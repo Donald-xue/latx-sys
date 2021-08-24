@@ -1941,6 +1941,9 @@ void latxs_tr_gen_static_save_registers_to_env(
 void latxs_tr_gen_static_load_registers_from_env(
         uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
 
+extern ADDR latxs_sc_njc;
+int njc_enabled(void);
+
 #endif
 
 #endif
