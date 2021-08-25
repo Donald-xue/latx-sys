@@ -42,6 +42,7 @@ static void latxs_tr_gen_raise_exception(
     latxs_load_addrx_to_ir2(&eip_reg, ir1_eip);
     latxs_append_ir2_opnd2i(LISA_ST_W, &eip_reg,
             &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+    latxs_ra_free_temp(&eip_reg);
 
     /*
      * 2. target/i386/excp_helper.c
