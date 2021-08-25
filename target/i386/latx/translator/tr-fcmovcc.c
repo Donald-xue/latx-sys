@@ -4,6 +4,9 @@
 #include "translate.h"
 
 bool translate_fcmovb(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovb(pir1);
+#else
     IR2_OPND cf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -20,9 +23,13 @@ bool translate_fcmovb(IR1_INST *pir1){
     ra_free_temp(cf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmove(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmove(pir1);
+#else
     IR2_OPND zf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -39,9 +46,13 @@ bool translate_fcmove(IR1_INST *pir1){
     ra_free_temp(zf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmovbe(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovbe(pir1);
+#else
     IR2_OPND cfzf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -58,9 +69,13 @@ bool translate_fcmovbe(IR1_INST *pir1){
     ra_free_temp(cfzf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmovu(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovu(pir1);
+#else
     IR2_OPND pf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -77,9 +92,13 @@ bool translate_fcmovu(IR1_INST *pir1){
     ra_free_temp(pf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmovnb(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovnb(pir1);
+#else
     IR2_OPND cf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -96,9 +115,13 @@ bool translate_fcmovnb(IR1_INST *pir1){
     ra_free_temp(cf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmovne(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovne(pir1);
+#else
     IR2_OPND zf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -115,9 +138,13 @@ bool translate_fcmovne(IR1_INST *pir1){
     ra_free_temp(zf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmovnbe(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovnbe(pir1);
+#else
     IR2_OPND cfzf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -134,9 +161,13 @@ bool translate_fcmovnbe(IR1_INST *pir1){
     ra_free_temp(cfzf_opnd);
 
     return true;
+#endif
 }
 
 bool translate_fcmovnu(IR1_INST *pir1){
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fcmovnu(pir1);
+#else
     IR2_OPND pf_opnd = ra_alloc_itemp();
     IR2_OPND label_exit = ir2_opnd_new_type(IR2_OPND_LABEL);
 	
@@ -153,4 +184,5 @@ bool translate_fcmovnu(IR1_INST *pir1){
     ra_free_temp(pf_opnd);
 
     return true;
+#endif
 }

@@ -1471,6 +1471,7 @@ void latxs_sys_fp_register_ir1(void);
 void latxs_sys_fctrl_register_ir1(void);
 void latxs_sys_farith_register_ir1(void);
 void latxs_sys_fldst_register_ir1(void);
+void latxs_sys_fcmovcc_register_ir1(void);
 void latxs_sys_simd_register_ir1(void);
 
 /* sys-misc */
@@ -1834,6 +1835,16 @@ bool latxs_translate_fst(IR1_INST *pir1);
 bool latxs_translate_fild(IR1_INST *pir1);
 bool latxs_translate_fist(IR1_INST *pir1);
 bool latxs_translate_fistp(IR1_INST *pir1);
+
+/* sys-fcmovcc */
+bool latxs_translate_fcmovb(IR1_INST *pir1);
+bool latxs_translate_fcmove(IR1_INST *pir1);
+bool latxs_translate_fcmovbe(IR1_INST *pir1);
+bool latxs_translate_fcmovu(IR1_INST *pir1);
+bool latxs_translate_fcmovnb(IR1_INST *pir1);
+bool latxs_translate_fcmovne(IR1_INST *pir1);
+bool latxs_translate_fcmovnbe(IR1_INST *pir1);
+bool latxs_translate_fcmovnu(IR1_INST *pir1);
 
 /* sys-simd */
 bool latxs_translate_por(IR1_INST *pir1);
