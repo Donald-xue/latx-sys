@@ -117,6 +117,7 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_MINSD);
     latxs_register_ir1(X86_INS_MINSS);
 
+    latxs_register_ir1(X86_INS_MOVNTDQ);
     latxs_register_ir1(X86_INS_MOVNTPD);
     latxs_register_ir1(X86_INS_MOVNTPS);
     latxs_register_ir1(X86_INS_MOVNTQ);
@@ -2197,6 +2198,35 @@ bool latxs_translate_minss(IR1_INST *pir1)
     IR2_OPND temp = latxs_ra_alloc_ftemp();
     latxs_append_ir2_opnd3(LISA_VFMIN_S, &temp, &dest, &src);
     latxs_append_ir2_opnd2i(LISA_XVINSVE0_W, &dest, &temp, 0);
+    return true;
+}
+
+bool latxs_translate_movntdq(IR1_INST *pir1)
+{
+    if (latxs_tr_gen_sse_common_excp_check(pir1)) {
+        return true;
+    }
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    if (option_xmm128map) {
+        IR1_OPND *dest = opnd0;
+        IR1_OPND *src  = opnd1;
+
+        if (ir1_opnd_is_xmm(src)) {
+            IR2_OPND src_ir2 = latxs_ra_alloc_xmm(XMM_REG(src));
+            latxs_store_freg128_to_ir1_mem(&src_ir2, dest);
+            return true;
+        }
+    }
+
+    IR2_OPND src_lo = latxs_load_freg_from_ir1_1(opnd1, false, true);
+    IR2_OPND src_hi = latxs_load_freg_from_ir1_1(opnd1, true, true);
+
+    latxs_store_freg_to_ir1(&src_lo, opnd0, false, true);
+    latxs_store_freg_to_ir1(&src_hi, opnd0, true, true);
+
     return true;
 }
 

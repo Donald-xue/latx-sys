@@ -249,13 +249,13 @@ bool latxs_translate_ins(IR1_INST *pir1)
     switch (data_size) {
     /* target/i386/misc_helper.c */
     case 8:
-        tr_gen_call_to_helper((ADDR)helper_inb);
+        latxs_tr_gen_call_to_helper((ADDR)helper_inb);
         break;
     case 16:
-        tr_gen_call_to_helper((ADDR)helper_inw);
+        latxs_tr_gen_call_to_helper((ADDR)helper_inw);
         break;
     case 32:
-        tr_gen_call_to_helper((ADDR)helper_inl);
+        latxs_tr_gen_call_to_helper((ADDR)helper_inl);
         break;
     default:
         lsassertm_illop(ir1_addr(pir1), 0,
@@ -349,13 +349,13 @@ bool latxs_translate_outs(IR1_INST *pir1)
     switch (data_size) {
     /* target/i386/misc_helper.c */
     case 8:
-        tr_gen_call_to_helper((ADDR)helper_outb);
+        latxs_tr_gen_call_to_helper((ADDR)helper_outb);
         break;
     case 16:
-        tr_gen_call_to_helper((ADDR)helper_outw);
+        latxs_tr_gen_call_to_helper((ADDR)helper_outw);
         break;
     case 32:
-        tr_gen_call_to_helper((ADDR)helper_outl);
+        latxs_tr_gen_call_to_helper((ADDR)helper_outl);
         break;
     default:
         lsassertm_illop(ir1_addr(pir1), 0,

@@ -1933,6 +1933,7 @@ bool latxs_translate_minpd(IR1_INST *pir1);
 bool latxs_translate_minps(IR1_INST *pir1);
 bool latxs_translate_minsd(IR1_INST *pir1);
 bool latxs_translate_minss(IR1_INST *pir1);
+bool latxs_translate_movntdq(IR1_INST *pir1);
 bool latxs_translate_movntpd(IR1_INST *pir1);
 bool latxs_translate_movntps(IR1_INST *pir1);
 bool latxs_translate_movntq(IR1_INST *pir1);

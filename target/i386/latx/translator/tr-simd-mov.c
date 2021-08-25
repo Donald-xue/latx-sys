@@ -75,6 +75,9 @@ bool translate_movmskps(IR1_INST *pir1)
 
 bool translate_movntdq(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movntdq(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     if (ir1_opnd_is_xmm(src)) {
@@ -91,6 +94,7 @@ bool translate_movntdq(IR1_INST *pir1)
     store_freg_to_ir1(src_hi, ir1_get_opnd(pir1, 0), true,
                       true); /* fill default parameter */
     return true;
+#endif
 }
 
 bool translate_movnti(IR1_INST *pir1)
