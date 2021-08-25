@@ -523,7 +523,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     //implemented , but not in X86_INS_...        
     //lods,pusha,finit,popa,fstenv,xlat,fclex,movs,jmp_far,fsave,call_far,fstcw,
 
-    NULL,                 //X86_INS_INVALID = 0,
+    translate_invalid,   /* X86_INS_INVALID = 0, */
     translate_aaa,       //X86_INS_AAA,
     translate_aad,       //X86_INS_AAD,
     translate_aam,       //X86_INS_AAM,
@@ -2021,7 +2021,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     NULL,                //X86_INS_VCMPGE_OQPD,
     NULL,                //X86_INS_VCMPGT_OQPD,
     NULL,                //X86_INS_VCMPTRUE_USPD,
-    NULL,                //X86_INS_UD0,
+    translate_ud0,       /* X86_INS_UD0, */
     translate_endbr32,   //X86_INS_ENDBR32,
     NULL,                //X86_INS_ENDBR64,
     NULL,                //X86_INS_ENDING, // mark the end of the list of insn

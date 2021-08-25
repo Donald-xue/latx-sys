@@ -1575,6 +1575,9 @@ bool translate_prefetcht1(IR1_INST *pir1) { return true; }
 bool translate_prefetcht2(IR1_INST *pir1) { return true; }
 bool translate_prefetch(IR1_INST *pir1) { return true; }
 
+bool translate_invalid(IR1_INST *pir1) { return false; }
+bool translate_ud0(IR1_INST *pir1) { return false; }
+
 #else
 
 bool translate_lidt(IR1_INST *pir1) { return latxs_translate_lidt(pir1); }
@@ -1643,6 +1646,15 @@ bool translate_prefetcht2(IR1_INST *pir1)
 bool translate_prefetch(IR1_INST *pir1)
 {
     return latxs_translate_prefetch(pir1);
+}
+
+bool translate_invalid(IR1_INST *pir1)
+{
+    return latxs_translate_invalid(pir1);
+}
+bool translate_ud0(IR1_INST *pir1)
+{
+    return latxs_translate_ud0(pir1);
 }
 
 #endif

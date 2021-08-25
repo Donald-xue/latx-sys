@@ -2951,3 +2951,29 @@ bool latxs_translate_tzcnt(IR1_INST *pir1)
 
     return true;
 }
+
+bool latxs_translate_invalid(IR1_INST *pir1)
+{
+    switch (pir1->flags) {
+    case LATXS_IR1_FLAGS_ILLOP:
+        latxs_tr_gen_excp_illegal_op_addr(
+                ir1_addr(pir1) - lsenv->tr_data->sys.cs_base, 1);
+        break;
+    case LATXS_IR1_FLAGS_GENNOP:
+        /* Just do nothing */
+        break;
+    default:
+        lsassertm(0, "unsupport invalid ir1 falgs %d\n", pir1->flags);
+        break;
+    }
+    return true;
+};
+
+bool latxs_translate_ud0(IR1_INST *pir1)
+{
+    latxs_tr_gen_excp_illegal_op_addr(
+            ir1_addr(pir1) - lsenv->tr_data->sys.cs_base, /* EIP */
+            1 /* translation end with exception */
+    );
+    return true;
+}
