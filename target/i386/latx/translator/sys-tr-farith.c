@@ -602,7 +602,7 @@ bool latxs_translate_fsin(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU fsin to be implemented in LoongArch.\n");
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fsin, all_helper_cfg);
     return true;
 }
 
@@ -612,7 +612,7 @@ bool latxs_translate_fcos(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU fcos to be implemented in LoongArch.\n");
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fcos, all_helper_cfg);
     return true;
 }
 
@@ -622,7 +622,12 @@ bool latxs_translate_fpatan(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU fpatan to be implemented in LoongArch.\n");
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fpatan, all_helper_cfg);
+
+    if (!option_lsfpu) {
+        latxs_tr_fpu_pop();
+    }
+
     return true;
 }
 
@@ -692,7 +697,12 @@ bool latxs_translate_fxtract(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU fxtract to be implemented in LoongArch.\n");
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fxtract, all_helper_cfg);
+
+    if (!option_lsfpu) {
+        latxs_tr_fpu_push();
+    }
+
     return true;
 }
 
@@ -739,7 +749,11 @@ bool latxs_translate_fyl2xp1(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU fyl2xp1 to be implemented in LoongArch.\n");
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fyl2xp1, all_helper_cfg);
+
+    if (!option_lsfpu) {
+        latxs_tr_fpu_pop();
+    }
 
     return true;
 }
@@ -750,7 +764,11 @@ bool latxs_translate_fsincos(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU fsincos to be implemented in LoongArch.\n");
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fsincos, all_helper_cfg);
+
+    if (!option_lsfpu) {
+        latxs_tr_fpu_push();
+    }
 
     return true;
 }
@@ -786,7 +804,70 @@ bool latxs_translate_ftst(IR1_INST *pir1)
         return true;
     }
 
-    lsassertm(0, "FPU ftst to be implemented in LoongArch.\n");
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
+
+    IR2_OPND status = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_LD_H, &status, env,
+            lsenv_offset_of_status_word(lsenv));
+
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd1i(LISA_LU12I_W, &tmp, 0xb);
+    latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &tmp, 0xaff);
+    latxs_append_ir2_opnd3(LISA_AND, &status, &status, &tmp);
+
+    IR2_OPND f_zero = latxs_ra_alloc_ftemp();
+    latxs_append_ir2_opnd2(LISA_MOVGR2FR_W, &f_zero, zero);
+    latxs_append_ir2_opnd2(LISA_FFINT_D_W,  &f_zero, &f_zero);
+
+    IR2_OPND st0 = ra_alloc_st(0);
+    IR2_OPND label_for_lt  = latxs_ir2_opnd_new_label();
+    IR2_OPND label_for_un  = latxs_ir2_opnd_new_label();
+    IR2_OPND label_for_eq  = latxs_ir2_opnd_new_label();
+    IR2_OPND label_for_exit = latxs_ir2_opnd_new_label();
+
+    /* check for unordered */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0, &st0, &f_zero,
+                                 FCMP_COND_CUN);
+    latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_for_un);
+
+    /* check for equal */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0, &st0, &f_zero,
+                                 FCMP_COND_CEQ);
+    latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_for_eq);
+
+    /* check for less than */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0, &st0, &f_zero,
+                                 FCMP_COND_CLT);
+    latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_for_lt);
+
+    /* greater than */
+    latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
+
+    /* lt: */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_for_lt);
+    latxs_append_ir2_opnd2i(LISA_ORI, &status, &status, 0x100);
+    latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
+
+    /* eq: */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_for_eq);
+    latxs_append_ir2_opnd2i(LISA_ORI, &status, &status, 0x4000);
+    latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
+
+    /* un: */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_for_un);
+    latxs_append_ir2_opnd2i(LISA_ORI, &status, &status, 0x4500);
+
+    /* exit: */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_for_exit);
+
+    latxs_append_ir2_opnd2i(LISA_ST_H, &status, env,
+            lsenv_offset_of_status_word(lsenv));
+
+    latxs_ra_free_temp(&status);
+    latxs_ra_free_temp(&f_zero);
+    latxs_ra_free_temp(&tmp);
 
     return true;
 }
