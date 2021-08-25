@@ -52,6 +52,7 @@ extern int option_trace_start_tb_set;
 /* Optimization in softmmu */
 extern int option_staticcs;
 extern int option_njc;
+extern int option_sigint;
 extern int option_cross_page_check;
 
 /* For QEMU monitor in softmmu */
@@ -66,6 +67,8 @@ extern int option_monitor_tbht; /* TB Hash Table Stat */
 extern int option_monitor_ps; /* Prilivage Switch */
 
 extern int option_monitor_tbf; /* TB.flags */
+
+int sigint_enabled(void);
 
 #endif /* SOFTMMU */
 

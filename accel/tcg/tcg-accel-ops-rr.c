@@ -35,6 +35,10 @@
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
 
+#if defined(CONFIG_SOFTMMU)  && defined(CONFIG_LATX)
+#include "latx-options.h"
+#endif
+
 /* Kick all RR vCPUs */
 void rr_kick_vcpu_thread(CPUState *unused)
 {
@@ -42,6 +46,11 @@ void rr_kick_vcpu_thread(CPUState *unused)
 
     CPU_FOREACH(cpu) {
         cpu_exit(cpu);
+#if defined(CONFIG_SOFTMMU)  && defined(CONFIG_LATX)
+        if (sigint_enabled()) {
+            pthread_kill(cpu->thread->thread, 63);
+        }
+#endif
     };
 }
 
@@ -161,6 +170,7 @@ static void *rr_cpu_thread_fn(void *arg)
 
 #ifdef CONFIG_LATX
     latx_lsenv_init(cpu->env_ptr);
+    latxs_init_rr_thread_signal(cpu);
 #endif
 
     /* wait for initial kick-off after machine start */

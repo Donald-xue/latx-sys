@@ -1981,6 +1981,11 @@ extern ADDR latxs_sc_njc;
 int njc_enabled(void);
 int gen_latxs_njc_lookup_tb(void *code_ptr);
 
+void latxs_tb_unlink(TranslationBlock *utb);
+void latxs_tb_relink(TranslationBlock *utb);
+void latxs_init_rr_thread_signal(CPUState *cpu);
+void latxs_tr_gen_save_currtb_for_int(void);
+
 #endif
 
 #endif

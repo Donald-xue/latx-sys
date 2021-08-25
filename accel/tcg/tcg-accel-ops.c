@@ -73,6 +73,10 @@ int tcg_cpus_exec(CPUState *cpu)
     return ret;
 }
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latx-options.h"
+#endif
+
 /* mask must never be zero, except for A20 change call */
 void tcg_handle_interrupt(CPUState *cpu, int mask)
 {
@@ -88,6 +92,11 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
         qemu_cpu_kick(cpu);
     } else {
         qatomic_set(&cpu_neg(cpu)->icount_decr.u16.high, -1);
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        if (sigint_enabled()) {
+            pthread_kill(cpu->thread->thread, 63);
+        }
+#endif
     }
 }
 

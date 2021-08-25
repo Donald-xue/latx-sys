@@ -168,6 +168,8 @@ typedef struct TRANSLATION_DATA {
 
     int end_with_exception;
     int dec_icount_inst_id;
+
+    int need_save_currtb_for_int;
 #endif
 
 } TRANSLATION_DATA;
@@ -190,6 +192,9 @@ typedef struct ENV {
     FLAG_PATTERN_DATA *fp_data; /* from LATX */
 #endif
 #ifdef CONFIG_SOFTMMU
+    struct {
+        void *tb_unlinked;
+    } sigint_data;
     int after_exec_tb_fixed;
 #endif
 } ENV;

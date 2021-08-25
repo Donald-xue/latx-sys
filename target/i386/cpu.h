@@ -1429,6 +1429,7 @@ typedef struct CPUX86State {
     target_ulong exception_next_eip;
     struct TranslationBlock **tb_jmp_cache_ptr;
 #ifdef CONFIG_SOFTMMU
+    struct TranslationBlock *latxs_int_tb;
     uint32_t latxs_fpu;
 #endif
 #endif

@@ -39,6 +39,7 @@ int option_trace_start_tb_set;
 /* Optimization in softmmu */
 int option_staticcs;
 int option_njc;
+int option_sigint;
 int option_cross_page_check;
 
 /* For QEMU monitor in softmmu */
@@ -182,6 +183,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_smmu_slow     5
 #define LATXS_OPT_trace_simple      6
 #define LATXS_OPT_cross_page_check  7
+#define LATXS_OPT_sigint        8
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -225,6 +227,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "njc",
             .type = QEMU_OPT_BOOL,
             .help = "use Native Jmp Cache lookup",
+        }, {
+            .name = "sigint",
+            .type = QEMU_OPT_BOOL,
+            .help = "signal interrupt handle",
         }, {
             .name = "smmu",
             .type = QEMU_OPT_BOOL,
@@ -288,15 +294,33 @@ static
 void set_options(int index)
 {
     switch(index) {
-    case LATXS_OPT_by_hand:        option_by_hand        = 1;  break;
-    case LATXS_OPT_tb_link:        option_tb_link        = 1;  break;
-    case LATXS_OPT_lsfpu:          option_lsfpu          = 1;  break;
-    case LATXS_OPT_staticcs:       option_staticcs       = 1;  break;
-    case LATXS_OPT_njc:            option_njc            = 1;  break;
-    case LATXS_OPT_smmu_slow:      option_smmu_slow      = 1;  break;
-    case LATXS_OPT_trace_simple:   option_trace_simple   = 1;  break;
+    case LATXS_OPT_by_hand:
+        option_by_hand = 1;
+        break;
+    case LATXS_OPT_tb_link:
+        option_tb_link = 1;
+        break;
+    case LATXS_OPT_lsfpu:
+        option_lsfpu = 1;
+        break;
+    case LATXS_OPT_staticcs:
+        option_staticcs = 1;
+        break;
+    case LATXS_OPT_njc:
+        option_njc = 1;
+        break;
+    case LATXS_OPT_sigint:
+        option_sigint = 1;
+        break;
+    case LATXS_OPT_smmu_slow:
+        option_smmu_slow = 1;
+        break;
+    case LATXS_OPT_trace_simple:
+        option_trace_simple = 1;
+        break;
     case LATXS_OPT_cross_page_check:
-            option_cross_page_check = 1;  break;
+        option_cross_page_check = 1;
+        break;
     default: break;
     }
 }
@@ -403,6 +427,11 @@ void latx_sys_parse_options(QemuOpts *opts)
 
     opt = qemu_opt_find(opts, "njc");
     if (opt) parse_options_bool(LATXS_OPT_njc, opt->value.boolean);
+
+    opt = qemu_opt_find(opts, "sigint");
+    if (opt) {
+        parse_options_bool(LATXS_OPT_sigint, opt->value.boolean);
+    }
 
 _OUT:
     if (verbose) dump_latxs_options();
@@ -537,6 +566,8 @@ void latxs_options_init(void)
 
     option_staticcs = 0;
     option_njc = 0;
+    option_sigint = 0;
+
     option_cross_page_check = 0;
 
     option_monitor_sc = 0;

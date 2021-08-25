@@ -33,6 +33,9 @@
 static void latxs_tr_gen_raise_exception(
         IR1_INST *ir1, int excp_index, int end)
 {
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    td->need_save_currtb_for_int = 0;
+
     /* 1. save the address of the instruction caused exception into eip */
     ADDRX ir1_eip = ir1_addr(ir1);
     IR2_OPND eip_reg = latxs_ra_alloc_itemp();
@@ -57,6 +60,8 @@ static void latxs_tr_gen_raise_exception(
     if (end) {
         lsenv->tr_data->end_with_exception = 1;
     }
+
+    td->need_save_currtb_for_int = sigint_enabled();
 }
 
 static void latxs_tr_gen_raise_exception_addr(

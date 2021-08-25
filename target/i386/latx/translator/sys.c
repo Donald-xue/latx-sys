@@ -251,4 +251,6 @@ void latxs_tr_sys_init(TranslationBlock *tb,
 
     td->end_with_exception = 0;
     td->dec_icount_inst_id = 0;
+
+    td->need_save_currtb_for_int = sigint_enabled();
 }

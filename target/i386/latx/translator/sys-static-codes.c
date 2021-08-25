@@ -614,11 +614,32 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         latxs_append_ir2_opnda(LISA_B, (native_rotate_fpu_by
                  - (ADDR)code_ptr - offset) >> 2);
     } else {
+        IR2_OPND sigint_label;
+        if (sigint_enabled()) {
+            sigint_label = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd2i(LISA_LD_W, &tmp,
+                    &latxs_env_ir2_opnd,
+                    (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+                    (int32_t)offsetof(X86CPU, env));
+            latxs_append_ir2_opnd3(LISA_BLT, &tmp, zero,
+                    &sigint_label);
+        }
+
         /* With LSFPU enabled, we could jmp to next TB directly  */
         latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
                 offsetof(TranslationBlock, tc) +
                 offsetof(struct tb_tc, ptr));
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
+
+        if (sigint_enabled()) {
+            latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
+                    lsenv_offset_of_eip(lsenv));
+            offset = (td->real_ir2_inst_num << 2) - start;
+            latxs_append_ir2_opnda(LISA_B,
+                    (context_switch_native_to_bt_ret_0
+                     - (ADDR)code_ptr - offset) >> 2);
+        }
     }
 
     code_nr = latxs_tr_ir2_assemble(code_ptr);

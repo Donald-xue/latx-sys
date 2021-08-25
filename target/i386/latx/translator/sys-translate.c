@@ -420,6 +420,10 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 
 void latxs_tr_gen_tb_start(void)
 {
+    if (sigint_enabled()) {
+        return;
+    }
+
     TRANSLATION_DATA *td = lsenv->tr_data;
     IR2_OPND count = latxs_ra_alloc_itemp();
 
@@ -438,6 +442,10 @@ void latxs_tr_gen_tb_start(void)
 
 void latxs_tr_gen_tb_end(void)
 {
+    if (sigint_enabled()) {
+        return;
+    }
+
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
 

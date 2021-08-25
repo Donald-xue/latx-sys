@@ -123,6 +123,10 @@ void latxs_tr_cvt_fp80_to_64(void)
  */
 void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 {
+    if (sigint_enabled()) {
+        latxs_tr_gen_save_currtb_for_int();
+    }
+
     /* Use static helper prologue for default */
     if (scs_enabled() && cmp_helper_cfg(cfg, default_helper_cfg)) {
         TRANSLATION_DATA *td = lsenv->tr_data;

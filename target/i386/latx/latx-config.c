@@ -286,6 +286,7 @@ void latx_lsenv_init(CPUArchState *env)
     }
 #else
     env->latxs_fpu = LATXS_FPU_RESET_VALUE;
+    lsenv->sigint_data.tb_unlinked = NULL;
 
     lsenv->after_exec_tb_fixed = 1;
 
@@ -436,6 +437,12 @@ void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb)
     }
 
     lsenv->after_exec_tb_fixed = 1;
+
+    if (sigint_enabled()) {
+        TranslationBlock *utb = lsenv->sigint_data.tb_unlinked;
+        latxs_tb_relink(utb);
+        lsenv->sigint_data.tb_unlinked = NULL;
+    }
 }
 
 /*
