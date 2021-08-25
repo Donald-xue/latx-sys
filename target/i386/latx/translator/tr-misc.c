@@ -1144,22 +1144,30 @@ bool translate_cdq(IR1_INST *pir1)
 
 bool translate_sahf(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sahf(pir1);
+#else
     IR2_OPND ah = ra_alloc_itemp();
     load_ireg_from_ir1_2(ah, &ah_ir1_opnd, ZERO_EXTENSION, false);
     //la_append_ir2_opnd2i_em(LISA_ORI, ah, ah, 0x2);
     la_append_ir2_opnd1i(LISA_X86MTFLAG, ah, 0x1f);
     ra_free_temp(ah);
     return true;
+#endif
 }
 
 bool translate_lahf(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_lahf(pir1);
+#else
     IR2_OPND ah = ra_alloc_itemp();
     la_append_ir2_opnd1i_em(LISA_X86MFFLAG, ah, 0x1f);
     la_append_ir2_opnd2i_em(LISA_ORI, ah, ah, 0x2);
     store_ireg_to_ir1(ah, &ah_ir1_opnd, false);
     ra_free_temp(ah);
     return true;
+#endif
 }
 
 bool translate_loopnz(IR1_INST *pir1)

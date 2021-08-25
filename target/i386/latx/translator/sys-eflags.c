@@ -21,6 +21,9 @@ void latxs_sys_eflags_register_ir1(void)
     latxs_register_ir1(X86_INS_POPFD);
 
     latxs_register_ir1(X86_INS_CLTS);
+
+    latxs_register_ir1(X86_INS_SAHF);
+    latxs_register_ir1(X86_INS_LAHF);
 }
 
 /*
@@ -543,5 +546,25 @@ bool latxs_translate_clts(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_ST_W, &cr0, env, off_cr0);
     latxs_append_ir2_opnd2i(LISA_ST_W, &hf, env, off_hf);
 
+    return true;
+}
+
+bool latxs_translate_sahf(IR1_INST *pir1)
+{
+    IR2_OPND ah = latxs_ra_alloc_itemp();
+    latxs_load_ir1_gpr_to_ir2(&ah, &ah_ir1_opnd, EXMode_Z);
+    latxs_append_ir2_opnd2i(LISA_ORI, &ah, &ah, 0x2);
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &ah, 0x1f);
+    latxs_ra_free_temp(&ah);
+    return true;
+}
+
+bool latxs_translate_lahf(IR1_INST *pir1)
+{
+    IR2_OPND ah = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd1i(LISA_X86MFFLAG, &ah, 0x1f);
+    latxs_append_ir2_opnd2i(LISA_ORI, &ah, &ah, 0x2);
+    latxs_store_ir2_to_ir1_gpr(&ah, &ah_ir1_opnd);
+    latxs_ra_free_temp(&ah);
     return true;
 }

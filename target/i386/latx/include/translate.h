@@ -1700,6 +1700,9 @@ bool latxs_translate_stac(IR1_INST *pir1);
 bool latxs_translate_popf(IR1_INST *pir1);
 bool latxs_translate_pushf(IR1_INST *pir1);
 
+bool latxs_translate_sahf(IR1_INST *pir1);
+bool latxs_translate_lahf(IR1_INST *pir1);
+
 /* sys-setcc */
 bool latxs_translate_setz(IR1_INST *pir1);
 bool latxs_translate_setnz(IR1_INST *pir1);
