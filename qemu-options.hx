@@ -5252,4 +5252,16 @@ SRST
     Enable specific features of LATX.
 ERST
 
+DEF("latxtest", HAS_ARG, QEMU_OPTION_latx_test,
+    "\n"
+    "-latxtest [testype=dump|runtb]\n"
+    "      [,insts=0x1238y361n24r13ten]\n"
+    "      [,eax=num][,ecx=num][,edx=num][,ebx=num]\n"
+    "      [,esp=num][,ebp=num][,esi=num][,edi=num]\n",
+    QEMU_ARCH_I386)
+SRST
+``-latxtest [testype=dump|runtb]``
+    Simple test interface for LATX.
+ERST
+
 HXCOMM This is the last statement. Insert new options before this line!

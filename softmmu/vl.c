@@ -127,6 +127,7 @@
 
 #ifdef CONFIG_LATX
 void latx_sys_parse_options(QemuOpts *opts);
+#include "latx-test-sys.h"
 #endif
 
 #define MAX_VIRTIO_CONSOLES 1
@@ -2663,6 +2664,7 @@ void qemu_init(int argc, char **argv, char **envp)
     qemu_add_opts(&qemu_action_opts);
 #ifdef CONFIG_LATX
     qemu_add_opts(&qemu_latx_opts);
+    qemu_add_opts(&qemu_latx_test_opts);
 #endif
     module_call_init(MODULE_INIT_OPTS);
 
@@ -2716,6 +2718,12 @@ void qemu_init(int argc, char **argv, char **envp)
                         qemu_find_opts("latx"),
                         optarg, true);
                 latx_sys_parse_options(opts);
+                break;
+            case QEMU_OPTION_latx_test:
+                opts = qemu_opts_parse_noisily(
+                        qemu_find_opts("latxtest"),
+                        optarg, true);
+                latx_test_sys_parse_options(opts);
                 break;
 #endif
             case QEMU_OPTION_cpu:

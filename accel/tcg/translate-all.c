@@ -3418,3 +3418,46 @@ void tcg_flush_softmmu_tlb(CPUState *cs)
     tlb_flush(cs);
 #endif
 }
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+void *latx_test_sys_alloc_tb(void *_cpu, void **highwater)
+{
+    CPUState *cpu = _cpu;
+    CPUX86State *env = cpu->env_ptr;
+
+    target_ulong pc;
+    target_ulong cs_base;
+    uint32_t flags;
+    cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
+
+    TranslationBlock *tb = tcg_tb_alloc(tcg_ctx);
+    tb->tc.ptr  = tcg_ctx->code_gen_ptr;
+    tb->pc      = pc;
+    tb->cs_base = cs_base;
+    tb->flags   = flags;
+    tb->cflags  = 0;
+
+    tb->jmp_reset_offset[0] = TB_JMP_RESET_OFFSET_INVALID;
+    tb->jmp_reset_offset[1] = TB_JMP_RESET_OFFSET_INVALID;
+
+    /* init jump list */
+    qemu_spin_init(&tb->jmp_lock);
+    tb->jmp_list_head = (uintptr_t)NULL;
+    tb->jmp_list_next[0] = (uintptr_t)NULL;
+    tb->jmp_list_next[1] = (uintptr_t)NULL;
+    tb->jmp_dest[0] = (uintptr_t)NULL;
+    tb->jmp_dest[1] = (uintptr_t)NULL;
+
+    /* init original jump addresses which have been set during tcg_gen_code() */
+    if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
+        tb_reset_jump(tb, 0);
+    }
+    if (tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
+        tb_reset_jump(tb, 1);
+    }
+
+    *highwater = tcg_ctx->code_gen_highwater;
+
+    return tb;
+}
+#endif

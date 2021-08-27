@@ -42,6 +42,7 @@ extern int option_break_point;
 extern unsigned long long option_break_point_addrx;
 extern unsigned long long option_break_point_count;
 extern int option_native_printer;
+extern int option_test_sys;
 
 /* For generate TB execution trace */
 extern int option_trace_simple;

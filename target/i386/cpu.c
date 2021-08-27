@@ -64,6 +64,10 @@
 
 #include "disas/capstone.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latx-test-sys.h"
+#endif
+
 /* Helpers for building CPUID[2] descriptors: */
 
 struct CPUID2CacheDescriptorInfo {
@@ -6251,6 +6255,11 @@ static void x86_cpu_reset(DeviceState *dev)
 #endif
 #ifdef CONFIG_LATX
     env->tb_jmp_cache_ptr = s->tb_jmp_cache;
+#ifdef CONFIG_SOFTMMU
+    if (latx_test_sys_enabled()) {
+        latx_test_sys_reset_cpu(s);
+    }
+#endif
 #endif
 }
 

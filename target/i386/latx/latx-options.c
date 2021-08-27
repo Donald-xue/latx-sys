@@ -1,6 +1,6 @@
-#include "latx-options.h"
 #include "error.h"
 #include "qemu/osdep.h"
+#include "latx-options.h"
 
 int option_by_hand;
 #ifdef CONFIG_LATX_FLAG_PATTERN
@@ -579,6 +579,8 @@ void latxs_options_init(void)
     option_monitor_tbht = 0;
     option_monitor_ps = 0;
     option_monitor_tbf = 0;
+
+    option_test_sys = 0;
 }
 
 #endif

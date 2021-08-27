@@ -123,6 +123,7 @@ extern QemuOptsList qemu_semihosting_config_opts;
 #ifdef CONFIG_LATX
 /* Defined in target/i386/latx/latx-options.c  */
 extern QemuOptsList qemu_latx_opts;
+extern QemuOptsList qemu_latx_test_opts;
 #endif
 
 #endif

@@ -42,6 +42,10 @@
 #include "sysemu/replay.h"
 #include "internal.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latx-test-sys.h"
+#endif
+
 /* -icount align implementation. */
 
 typedef struct SyncClocks {
@@ -490,6 +494,12 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
     TranslationBlock *tb;
     target_ulong cs_base, pc;
     uint32_t flags;
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (latx_test_sys_enabled()) {
+        return latx_test_sys_start(cpu);
+    }
+#endif
 
     cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
 
