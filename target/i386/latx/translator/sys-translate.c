@@ -224,6 +224,11 @@ int latxs_tr_ir2_assemble(const void *code_base)
 
         if (ir2_opc == LISA_X86_INST) {
 
+            if (option_dump_host) {
+                fprintf(stderr, "IR2 at %p LISA X86Ins = %x\n",
+                        code_ptr, latxs_ir2_opnd_imm(&pir2->_opnd[0]));
+            }
+
             if (x86ins_nr >= 0) {
                 td->x86_ins_idx[x86ins_nr] = x86ins_idx;
                 td->x86_ins_lisa_nr[x86ins_nr] = x86ins_hcnt;
