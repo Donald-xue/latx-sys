@@ -803,7 +803,7 @@ static void __latxs_translate_div_byhand(
         latxs_append_ir2_opnd3(div_op, &div_res, &src, data);
         latxs_append_ir2_opnd3(mod_op, &div_mod, &src, data);
 
-        latxs_tr_gen_div_result_check(pir1, div_res, 8, 0);
+        latxs_tr_gen_div_result_check(pir1, div_res, 8, is_idiv);
 
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &div_mod, &div_mod, 8);
         latxs_append_ir2_opnd3(LISA_OR, &div_res, &div_res, &div_mod);
@@ -820,7 +820,7 @@ static void __latxs_translate_div_byhand(
         latxs_append_ir2_opnd3(mod_op, &div_mod, &src, data);
         latxs_ra_free_temp(&src);
 
-        latxs_tr_gen_div_result_check(pir1, div_res, 16, 0);
+        latxs_tr_gen_div_result_check(pir1, div_res, 16, is_idiv);
 
         latxs_store_ir2_to_ir1_gpr_em(&div_mod, &dx_ir1_opnd);
         latxs_store_ir2_to_ir1_gpr_em(&div_res, &ax_ir1_opnd);
@@ -840,7 +840,7 @@ static void __latxs_translate_div_byhand(
         latxs_append_ir2_opnd3(mod_op, &div_mod, &src, data);
         latxs_ra_free_temp(&src);
 
-        latxs_tr_gen_div_result_check(pir1, div_res, 32, 0);
+        latxs_tr_gen_div_result_check(pir1, div_res, 32, is_idiv);
 
         latxs_store_ir2_to_ir1_gpr_em(&div_mod, &edx_ir1_opnd);
         latxs_store_ir2_to_ir1_gpr_em(&div_res, &eax_ir1_opnd);
