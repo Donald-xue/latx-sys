@@ -1216,7 +1216,7 @@ bool latxs_translate_cmpltpd(IR1_INST *pir1)
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
     latxs_append_ir2_opnd3i(LISA_VFCMP_COND_D, &dest, &dest, &src,
-                                  FCMP_COND_CEQ);
+                                  FCMP_COND_CLT);
     return true;
 }
 
@@ -1275,7 +1275,7 @@ bool latxs_translate_cmpnltpd(IR1_INST *pir1)
     lsassert(ir1_opnd_is_xmm(opnd0));
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
-    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_D, &dest, &dest, &src,
+    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_D, &dest, &src, &dest,
                                   FCMP_COND_CLE);
     return true;
 }
@@ -1290,7 +1290,7 @@ bool latxs_translate_cmpnlepd(IR1_INST *pir1)
     lsassert(ir1_opnd_is_xmm(opnd0));
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
-    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_D, &dest, &dest, &src,
+    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_D, &dest, &src, &dest,
                                   FCMP_COND_CLT);
     return true;
 }
@@ -1336,7 +1336,7 @@ bool latxs_translate_cmpltps(IR1_INST *pir1)
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
     latxs_append_ir2_opnd3i(LISA_VFCMP_COND_S, &dest, &dest, &src,
-                                  FCMP_COND_CEQ);
+                                  FCMP_COND_CLT);
     return true;
 }
 
@@ -1395,7 +1395,7 @@ bool latxs_translate_cmpnltps(IR1_INST *pir1)
     lsassert(ir1_opnd_is_xmm(opnd0));
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
-    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_S, &dest, &dest, &src,
+    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_S, &dest, &src, &dest,
                                   FCMP_COND_CLE);
     return true;
 }
@@ -1410,7 +1410,7 @@ bool latxs_translate_cmpnleps(IR1_INST *pir1)
     lsassert(ir1_opnd_is_xmm(opnd0));
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
-    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_S, &dest, &dest, &src,
+    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_S, &dest, &src, &dest,
                                   FCMP_COND_CLT);
     return true;
 }
@@ -1585,9 +1585,9 @@ bool latxs_translate_cmpeqss(IR1_INST *pir1)
     IR2_OPND dest = XMM_LOAD128(opnd0);
     IR2_OPND src  = XMM_LOAD128(opnd1);
     IR2_OPND temp = latxs_ra_alloc_ftemp();
-    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_D, &temp, &dest, &src,
+    latxs_append_ir2_opnd3i(LISA_VFCMP_COND_S, &temp, &dest, &src,
                                   FCMP_COND_CEQ);
-    latxs_append_ir2_opnd2i(LISA_XVINSVE0_D, &dest, &temp, 0);
+    latxs_append_ir2_opnd2i(LISA_XVINSVE0_W, &dest, &temp, 0);
     return true;
 }
 
