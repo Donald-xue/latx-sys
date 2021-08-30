@@ -422,9 +422,11 @@ bool latxs_translate_btx(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_ANDI, &bit_off, &bit_off, t_imm);
     } else {
         /* opnd0 is memory operand */
-        latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_Z, false);
         if (ir1_opnd_is_imm(opnd1)) {
+            latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_Z, false);
             latxs_append_ir2_opnd2i(LISA_ANDI, &bit_off, &bit_off, t_imm);
+        } else {
+            latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_S, false);
         }
 
         latxs_convert_mem_opnd(&mem_opnd, opnd0, -1);
@@ -446,7 +448,7 @@ bool latxs_translate_btx(IR1_INST *pir1)
          *  \  byte offset for memory /  bit offset
          *   -------------------------   inside Byte
          */
-        latxs_append_ir2_opnd2i(LISA_SRLI_D, &byte_nr, &bit_off, 3);
+        latxs_append_ir2_opnd2i(LISA_SRAI_D, &byte_nr, &bit_off, 3);
         latxs_append_ir2_opnd2i(LISA_ANDI, &bit_off, &bit_off, 0x7);
 
         IR2_OPND off_not_zero = latxs_ir2_opnd_new_label();
@@ -457,6 +459,9 @@ bool latxs_translate_btx(IR1_INST *pir1)
 
         latxs_append_ir2_opnd3(LISA_ADD_D, &mem, &mem, &byte_nr);
         latxs_ra_free_temp(&byte_nr);
+
+        /* byte_nr is sx, make sure mem is 32zx */
+        latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
 
         gen_ldst_softmmu_helper(LISA_LD_HU, &bit_base, &mem_no_offset, 1);
     }
