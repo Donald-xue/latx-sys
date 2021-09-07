@@ -580,6 +580,12 @@ void latxs_fix_after_excp_or_int(void)
         latxs_fpu_fix_cpu_loop_exit();
     }
 
+    if (sigint_enabled()) {
+        TranslationBlock *utb = lsenv->sigint_data.tb_unlinked;
+        latxs_tb_relink(utb);
+        lsenv->sigint_data.tb_unlinked = NULL;
+    }
+
     lsenv->after_exec_tb_fixed = 1;
 }
 
