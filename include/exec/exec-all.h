@@ -570,6 +570,7 @@ static inline uint32_t curr_cflags(CPUState *cpu)
 void tb_invalidate_phys_addr(target_ulong addr);
 void tb_invalidate_phys_range(target_ulong start, target_ulong end);
 #else
+AddressSpace *cpuas2as_by_asidx(CPUAddressSpace* cpu_ases, int asidx);
 void tb_invalidate_phys_addr(AddressSpace *as, hwaddr addr, MemTxAttrs attrs);
 #endif
 void tb_flush(CPUState *cpu);

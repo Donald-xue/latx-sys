@@ -3697,3 +3697,8 @@ bool ram_block_discard_is_required(void)
 {
     return qatomic_read(&ram_block_discard_disabled) < 0;
 }
+
+AddressSpace *cpuas2as_by_asidx(CPUAddressSpace* cpu_ases, int asidx)
+{
+    return cpu_ases[asidx].as;
+}
