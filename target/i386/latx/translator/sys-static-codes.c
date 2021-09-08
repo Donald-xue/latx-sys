@@ -615,12 +615,19 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
                  - (ADDR)code_ptr - offset) >> 2);
     } else {
         IR2_OPND sigint_label;
+        IR2_OPND sigint_check_label_start;
+        IR2_OPND sigint_check_label_end;
         if (sigint_enabled()) {
+            sigint_check_label_start = latxs_ir2_opnd_new_label();
+            sigint_check_label_end   = latxs_ir2_opnd_new_label();
+
             sigint_label = latxs_ir2_opnd_new_label();
             latxs_append_ir2_opnd2i(LISA_LD_W, &tmp,
                     &latxs_env_ir2_opnd,
                     (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
                     (int32_t)offsetof(X86CPU, env));
+
+            latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_start);
             latxs_append_ir2_opnd3(LISA_BLT, &tmp, zero,
                     &sigint_label);
         }
@@ -632,13 +639,22 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
 
         if (sigint_enabled()) {
+            latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_end);
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
+
             latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
                     lsenv_offset_of_eip(lsenv));
             offset = (td->real_ir2_inst_num << 2) - start;
             latxs_append_ir2_opnda(LISA_B,
                     (context_switch_native_to_bt_ret_0
                      - (ADDR)code_ptr - offset) >> 2);
+
+            if (n == 2) {
+                /* calculate offset from start to end for sigint check */
+                latxs_sigint_prepare_check_jmp_glue_2(
+                        sigint_check_label_start,
+                        sigint_check_label_end);
+            }
         }
     }
 

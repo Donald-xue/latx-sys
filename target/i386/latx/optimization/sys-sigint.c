@@ -83,6 +83,12 @@ void latxs_tb_relink(TranslationBlock *utb)
     }
 }
 
+static int sigint_check_jmp_glue_2_st;
+static int sigint_check_jmp_glue_2_ed;
+
+static ADDR native_jmp_glue_2_sigint_check_st;
+static ADDR native_jmp_glue_2_sigint_check_ed;
+
 static void latxs_rr_interrupt_signal_handler(
         int n, siginfo_t *siginfo, void *ctx)
 {
@@ -104,6 +110,11 @@ static void latxs_rr_interrupt_signal_handler(
         if (ctb == NULL) {
             ctb = env->latxs_int_tb;
             DS_PRINT("0\n");
+            if (native_jmp_glue_2_sigint_check_st <= pc &&
+                native_jmp_glue_2_sigint_check_ed >= pc) {
+                fprintf(stderr, "[warning] in %s unhandled case\n",
+                        __func__);
+            }
         } else {
             DS_PRINT("1\n");
         }
@@ -195,4 +206,73 @@ void latxs_tr_gen_save_currtb_for_int(void)
                 offsetof(CPUX86State, latxs_int_tb));
         latxs_ra_free_temp(&tmp);
     }
+}
+
+void latxs_sigint_prepare_check_jmp_glue_2(
+        IR2_OPND lst, IR2_OPND led)
+{
+    int code_nr = 0;
+
+    int st_id = latxs_ir2_opnd_label_id(&lst);
+    int ed_id = latxs_ir2_opnd_label_id(&led);
+
+    int lid = 0;
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    IR2_INST *pir2 = td->ir2_inst_array;
+
+    /*
+     * example:
+     *
+     *   +-----> address = base
+     *   |   +-> address = base + (1 << 2)
+     *   |   |   ...
+     *   0   1         2   3   4       5   6
+     * +---+---+-----+---+---+---+---+---+---+
+     * |IR2|IR2|start|IR2|IR2|IR2|end|IR2|IR2|
+     * +---+---+-----+---+---+---+---+---+---+
+     *          ^      |       |  ^
+     *          label  |       |  label
+     *                 |       |
+     * start = 2       |       +--> address = base + (end   << 2)
+     * end   = 4       +----------> address = base + (start << 2)
+     */
+
+    while (pir2) {
+        IR2_OPCODE opc = latxs_ir2_opcode(pir2);
+
+        if (opc == LISA_X86_INST) {
+            pir2 = ir2_next(pir2);
+            continue;
+        }
+
+        if (opc == LISA_LABEL) {
+            lid = latxs_ir2_opnd_label_id(&pir2->_opnd[0]);
+            if (lid == st_id) {
+                sigint_check_jmp_glue_2_st = code_nr;
+            }
+            if (lid == ed_id) {
+                sigint_check_jmp_glue_2_ed = code_nr - 1;
+            }
+
+            pir2 = ir2_next(pir2);
+            continue;
+        }
+
+        code_nr += 1;
+        pir2 = ir2_next(pir2);
+    }
+
+    native_jmp_glue_2_sigint_check_st = native_jmp_glue_2 +
+        (sigint_check_jmp_glue_2_st << 2);
+    native_jmp_glue_2_sigint_check_ed = native_jmp_glue_2 +
+        (sigint_check_jmp_glue_2_ed << 2);
+
+    fprintf(stderr, "[SIGINT] jmp glue 2 check start %d at %llx\n",
+            sigint_check_jmp_glue_2_st,
+            native_jmp_glue_2_sigint_check_st);
+    fprintf(stderr, "[SIGINT] jmp glue 2 check end   %d at %llx\n",
+            sigint_check_jmp_glue_2_ed,
+            native_jmp_glue_2_sigint_check_ed);
 }

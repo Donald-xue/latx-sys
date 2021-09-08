@@ -2006,6 +2006,7 @@ void latxs_tb_unlink(TranslationBlock *utb);
 void latxs_tb_relink(TranslationBlock *utb);
 void latxs_init_rr_thread_signal(CPUState *cpu);
 void latxs_tr_gen_save_currtb_for_int(void);
+void latxs_sigint_prepare_check_jmp_glue_2(IR2_OPND, IR2_OPND);
 
 #endif
 
