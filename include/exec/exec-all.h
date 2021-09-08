@@ -548,7 +548,6 @@ struct TranslationBlock {
     struct IR1_INST *sys_eob_pir1;
     /* record the last instruction if TB is too large */
     struct IR1_INST *tb_too_large_pir1;
-    int is_indir_tb;
 #endif
 #endif
 };

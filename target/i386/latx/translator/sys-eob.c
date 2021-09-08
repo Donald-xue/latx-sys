@@ -665,16 +665,12 @@ indirect_jmp:
 
             ADDR code_buf = (ADDR)tb->tc.ptr;
             int offset = td->real_ir2_inst_num << 2;
-
-            IR2_OPND indirect_jmp_glue_label = latxs_ir2_opnd_new_label();
-            latxs_append_ir2_opnd1(LISA_LABEL, &indirect_jmp_glue_label);
             latxs_append_ir2_opnda(LISA_B,
                     (native_jmp_glue_2 - code_buf - offset) >> 2);
-            tb->jmp_reset_offset[0] = indirect_jmp_glue_label.val;
-            latxs_append_ir2_opnd0_(lisa_nop);
-            tb->is_indir_tb = 1;
+
+        } else {
+            latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
         }
-        latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
         break;
     case X86_INS_JE:
     case X86_INS_JNE:

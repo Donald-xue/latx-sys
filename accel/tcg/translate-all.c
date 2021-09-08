@@ -2368,7 +2368,6 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->next_tb[1] = NULL;
     tb->sys_eob_pir1 = NULL;
     tb->tb_too_large_pir1 = NULL;
-    tb->is_indir_tb = 0;
 #endif
 #endif
 

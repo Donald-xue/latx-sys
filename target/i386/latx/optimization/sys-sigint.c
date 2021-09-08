@@ -65,11 +65,6 @@ void latxs_tb_relink(TranslationBlock *utb)
         return;
     }
 
-    if (utb->is_indir_tb) {
-        tb_set_jmp_target(utb, 0, native_jmp_glue_2);
-        return;
-    }
-
     TranslationBlock *utb_next = NULL;
 
     utb_next = utb->next_tb[0];
