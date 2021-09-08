@@ -658,18 +658,40 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
 indirect_call:
 indirect_jmp:
 
-        if (can_link) {
-            /* store eip (in $11) into env */
-            latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd,
-                    &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+        if (sigint_enabled()) {
+            if (can_link) {
+                /* store eip (in $11) into env */
+                latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd,
+                        &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
 
-            ADDR code_buf = (ADDR)tb->tc.ptr;
-            int offset = td->real_ir2_inst_num << 2;
-            latxs_append_ir2_opnda(LISA_B,
-                    (native_jmp_glue_2 - code_buf - offset) >> 2);
+                ADDR code_buf = (ADDR)tb->tc.ptr;
+                int offset = td->real_ir2_inst_num << 2;
 
-        } else {
+                IR2_OPND sigint_label = latxs_ir2_opnd_new_label();
+                latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
+                latxs_append_ir2_opnda(LISA_B,
+                        (native_jmp_glue_2 - code_buf - offset) >> 2);
+
+                /* will be resolved in label_dispose() */
+                tb->jmp_reset_offset[0] =
+                    latxs_ir2_opnd_label_id(&sigint_label);
+                latxs_append_ir2_opnd0_(lisa_nop);
+                tb->is_indir_tb = 1;
+            }
             latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
+        } else {
+            if (can_link) {
+                /* store eip (in $11) into env */
+                latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd,
+                        &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+
+                ADDR code_buf = (ADDR)tb->tc.ptr;
+                int offset = td->real_ir2_inst_num << 2;
+                latxs_append_ir2_opnda(LISA_B,
+                        (native_jmp_glue_2 - code_buf - offset) >> 2);
+            } else {
+                latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
+            }
         }
         break;
     case X86_INS_JE:

@@ -2368,6 +2368,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->next_tb[1] = NULL;
     tb->sys_eob_pir1 = NULL;
     tb->tb_too_large_pir1 = NULL;
+    tb->is_indir_tb = 0;
 #endif
 #endif
 
@@ -2582,12 +2583,24 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->jmp_dest[1] = (uintptr_t)NULL;
 
     /* init original jump addresses which have been set during tcg_gen_code() */
+#if defined(CONFIG_LATX) && defined(COFNIG_SOFTMMU)
+    /* indirect jmp is already linked to jmp glue 2, no need to reset it */
+    if (!(tb->is_indir_tb)) {
+        if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
+            tb_reset_jump(tb, 0);
+        }
+        if (tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
+            tb_reset_jump(tb, 1);
+        }
+    }
+#else
     if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
         tb_reset_jump(tb, 0);
     }
     if (tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
         tb_reset_jump(tb, 1);
     }
+#endif
 
     /*
      * If the TB is not associated with a physical RAM page then
