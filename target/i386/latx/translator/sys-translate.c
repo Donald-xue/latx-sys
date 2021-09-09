@@ -377,12 +377,12 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
             /* latxs_tr_gen_io_start(); TODO for icount */
         /* } */
 
-        bool translation_success = ir1_translate(pir1);
-
         if (option_dump_ir1) {
             fprintf(stderr, "ir1 translate >>> ");
             ir1_dump(pir1);
         }
+
+        bool translation_success = ir1_translate(pir1);
 
         (void)translation_success; /* to avoid warning  */
         lsassertm(translation_success,

@@ -829,7 +829,7 @@ bool latxs_translate_psrld(IR1_INST *pir1)
             if (imm > 31) {
                 latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
             } else {
-                latxs_append_ir2_opnd2i(LISA_VXOR_V, &dest, &dest, imm);
+                latxs_append_ir2_opnd2i(LISA_VSRLI_W, &dest, &dest, imm);
             }
        } else {
             IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false, false);
@@ -1084,7 +1084,7 @@ bool latxs_translate_punpcklwd(IR1_INST *pir1)
         /* PUNPCKLWD mm, mm/m32 */
         IR2_OPND dest = XMM_LOADFP1(opnd0);
         IR2_OPND src  = load_freg_from_ir1_1(opnd1, false, false);
-        latxs_append_ir2_opnd3(LISA_VILVL_H, &dest, &dest, &src);
+        latxs_append_ir2_opnd3(LISA_VILVL_H, &dest, &src, &dest);
     }
 
     return true;

@@ -171,9 +171,8 @@ bool latxs_translate_movd(IR1_INST *pir1)
     }
 
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_gpr(src)) {
-        IR2_OPND gpr_src = latxs_ra_alloc_itemp();
-        latxs_load_ir1_gpr_to_ir2(&gpr_src, src, EXMode_Z);
-        IR2_OPND xmm_dest = latxs_ra_alloc_xmm(ir1_opnd_base_reg_num(dest));
+        IR2_OPND gpr_src = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(src));
+        IR2_OPND xmm_dest  = latxs_ra_alloc_xmm(ir1_opnd_base_reg_num(dest));
         latxs_append_ir2_opnd1i(LISA_VLDI, &xmm_dest, 0);
         latxs_append_ir2_opnd2i(LISA_VINSGR2VR_W, &xmm_dest, &gpr_src, 0);
         return true;
@@ -193,17 +192,34 @@ bool latxs_translate_movd(IR1_INST *pir1)
     }
 
     /* MMX */
-    IR2_OPND src_tmp = latxs_ra_alloc_itemp();
 
-    if (ir1_opnd_is_gpr(dest) || ir1_opnd_is_mem(dest)) {
-        lsassert(ir1_opnd_is_mmx(src));
-        latxs_load_ir1_to_ir2(&src_tmp, src, EXMode_N, false);
-        latxs_store_ir2_to_ir1(&src_tmp, dest, false);
+    if (ir1_opnd_is_mem(dest) && ir1_opnd_is_mmx(src)) {
+        IR2_OPND mmx_src = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(src));
+        latxs_store_freg_to_ir1(&mmx_src, dest, false, false);
         return true;
-    } else if (ir1_opnd_is_gpr(src) || ir1_opnd_is_mem(src)) {
-        lsassert(ir1_opnd_is_mmx(dest));
-        latxs_load_ir1_to_ir2(&src_tmp, src, EXMode_Z, false);
-        latxs_store_ir2_to_ir1(&src_tmp, dest, false);
+    }
+
+    if (ir1_opnd_is_gpr(dest) && ir1_opnd_is_mmx(src)) {
+        IR2_OPND gpr_dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(dest));
+        IR2_OPND mmx_src  = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(src));
+        latxs_append_ir2_opnd2(LISA_MOVFR2GR_S, &gpr_dest, &mmx_src);
+        return true;
+    }
+
+    if (ir1_opnd_is_mmx(dest) && ir1_opnd_is_mem(src)) {
+        IR2_OPND temp = latxs_ra_alloc_itemp();
+        latxs_load_ir1_mem_to_ir2(&temp, src, EXMode_Z, false, -1);
+        IR2_OPND mmx_dest = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(dest));
+        latxs_append_ir2_opnd1i(LISA_VLDI, &mmx_dest, 0);
+        latxs_append_ir2_opnd2i(LISA_VINSGR2VR_W, &mmx_dest, &temp, 0);
+        return true;
+    }
+
+    if (ir1_opnd_is_mmx(dest) && ir1_opnd_is_gpr(src)) {
+        IR2_OPND gpr_src = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(src));
+        IR2_OPND mmx_dest  = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(dest));
+        latxs_append_ir2_opnd1i(LISA_VLDI, &mmx_dest, 0);
+        latxs_append_ir2_opnd2i(LISA_VINSGR2VR_W, &mmx_dest, &gpr_src, 0);
         return true;
     }
 
