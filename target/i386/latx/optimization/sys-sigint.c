@@ -131,6 +131,20 @@ static void latxs_rr_interrupt_signal_handler(
         lsenv->sigint_data.tb_unlinked = ctb;
         latxs_tb_unlink(ctb);
     } else {
+
+        if (env->sigint_flag) {
+            /*
+             * vCPU is not executing TB
+             *
+             * Since we always check interrupt in context switch
+             * bt to native before jump to TB, then we could
+             * simply do nothing.
+             *
+             * And at this time, do unlink is meanless too.
+             */
+            return;
+        }
+
         TranslationBlock *ctb = env->latxs_int_tb;
         DS_PRINT("0, 0\n");
 

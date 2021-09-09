@@ -1429,6 +1429,12 @@ typedef struct CPUX86State {
     target_ulong exception_next_eip;
     struct TranslationBlock **tb_jmp_cache_ptr;
 #ifdef CONFIG_SOFTMMU
+    /*
+     * @sigint_flag used for sigint
+     *          = 0 vCPU is executing TB
+     *          = 1 vCPU is not executing TB
+     */
+    uint64_t sigint_flag;
     struct TranslationBlock *latxs_int_tb;
     uint32_t latxs_fpu;
 #endif

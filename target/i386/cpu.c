@@ -6256,6 +6256,7 @@ static void x86_cpu_reset(DeviceState *dev)
 #ifdef CONFIG_LATX
     env->tb_jmp_cache_ptr = s->tb_jmp_cache;
 #ifdef CONFIG_SOFTMMU
+    env->sigint_flag = 1;
     if (latx_test_sys_enabled()) {
         latx_test_sys_reset_cpu(s);
     }

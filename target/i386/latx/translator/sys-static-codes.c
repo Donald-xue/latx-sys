@@ -152,6 +152,13 @@ static int gen_latxs_sc_prologue(void *code_ptr)
         latxs_append_ir2_opnd0_(lisa_nop);
     }
 
+    if (sigint_enabled()) {
+        /* 3.0 set sigint_flag in ENV to 0 */
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, sigint_flag));
+    }
+
     /* 3. jump to native code address (saved in a0) */
     latxs_append_ir2_opnd2i(LISA_JIRL, zero, arg0, 0);
 
@@ -212,6 +219,15 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
      * context_switch_native_to_bt_ret_0 points here
      */
     latxs_append_ir2_opnd3(LISA_OR, ret0, zero, zero);
+
+    if (sigint_enabled()) {
+        /* 5.0 set sigint_flag in ENV to 1 */
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, zero, 1);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, sigint_flag));
+    }
 
     /* 1. store the last executed TB ($10) into env */
     IR2_OPND tb_ptr_opnd = latxs_ra_alloc_dbt_arg1();
