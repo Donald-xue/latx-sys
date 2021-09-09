@@ -97,6 +97,8 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
 
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
     int i = 0;
     const int extra_space = 40;
 
@@ -137,8 +139,54 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x00);
     latxs_tr_load_eflags(1);
 
+    IR2_OPND sigint_label = latxs_ir2_opnd_new_label();
+    if (sigint_enabled()) {
+        sigint_label = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_LD_W, &temp,
+                &latxs_env_ir2_opnd,
+                (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+                (int32_t)offsetof(X86CPU, env));
+        latxs_append_ir2_opnd3(LISA_BLT, &temp, &latxs_zero_ir2_opnd,
+                &sigint_label);
+        latxs_append_ir2_opnd0_(lisa_nop);
+    }
+
     /* 3. jump to native code address (saved in a0) */
     latxs_append_ir2_opnd2i(LISA_JIRL, zero, arg0, 0);
+
+    latxs_append_ir2_opnd0_(lisa_nop);
+    if (sigint_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
+
+        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_ret0_ir2_opnd, zero,
+                TB_EXIT_REQUESTED);
+
+        IR2_OPND tb_ptr_opnd = latxs_ra_alloc_dbt_arg1();
+        IR2_OPND eip_opnd = latxs_ra_alloc_dbt_arg2();
+
+        latxs_append_ir2_opnd2_(lisa_mov, &tb_ptr_opnd, zero);
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &eip_opnd,
+                &latxs_env_ir2_opnd,
+                lsenv_offset_of_eip(lsenv));
+
+        int inst_size = td->real_ir2_inst_num << 2;
+        /*
+         * native_to_bt -> 0x00 : xxxx
+         *                 0x04 : xxxx
+         *                 0x08 : xxxx
+         * bt_to_native -> 0x0c : xxxx
+         *                 0x10 : xxxx # inst_num = 2
+         *                 0x14 : xxxx <- LISA_B
+         *
+         * offset of branch   = 0x00 - 0x0c - 0x8  = 0xffec = -20 = - 0x14
+         * branch destiantion = 0x14 - 0x14 = 0x00
+         */
+        latxs_append_ir2_opnda(LISA_B,
+            (context_switch_native_to_bt -
+             context_switch_bt_to_native - inst_size) >> 2);
+        latxs_append_ir2_opnd0_(lisa_nop);
+    }
 
     i = latxs_tr_ir2_assemble(code_ptr);
     latxs_tr_fini();
@@ -712,18 +760,25 @@ int target_latxs_static_codes(void *code_base)
     code_ptr = code_base + (code_nr_all << 2);      \
 } while (0)
 
-    /* prologue */
-    context_switch_bt_to_native = (ADDR)code_ptr;
-    LATXS_GEN_STATIC_CODES(gen_latxs_sc_prologue, code_ptr);
-    LATXS_DUMP_STATIC_CODES_INFO("latxs prologue: %p\n",
-            (void *)context_switch_bt_to_native);
-
     /* epilogue */
     context_switch_native_to_bt_ret_0 = (ADDR)code_ptr;
     context_switch_native_to_bt = (ADDR)code_ptr + 4;
     LATXS_GEN_STATIC_CODES(gen_latxs_sc_epilogue, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO("latxs epilogue: %p\n",
             (void *)context_switch_native_to_bt);
+
+    /* prologue */
+    /*
+     * For signal interrupt optimization, we need to check interrupt
+     * pending before jump to TB's native codes. If there is an
+     * interrupt pending, we should jump to epilogue to return
+     * back to BT context. So we need to know the address of
+     * context switch native to bt here.
+     */
+    context_switch_bt_to_native = (ADDR)code_ptr;
+    LATXS_GEN_STATIC_CODES(gen_latxs_sc_prologue, code_ptr);
+    LATXS_DUMP_STATIC_CODES_INFO("latxs prologue: %p\n",
+            (void *)context_switch_bt_to_native);
 
     /* fpu rorate */
     LATXS_GEN_STATIC_CODES(gen_latxs_sc_fpu_rotate, code_ptr);

@@ -62,6 +62,17 @@ static void x86_cpu_exec_exit(CPUState *cs)
 static void x86_cpu_synchronize_from_tb(CPUState *cs,
                                         const TranslationBlock *tb)
 {
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    if (!tb) {
+        /*
+         * Only when sigint is enabled, will tb be NULL:
+         *     context switch bt to native detects interrupt before
+         *     jump to TB's native codes.
+         */
+        return;
+    }
+#endif
+
     X86CPU *cpu = X86_CPU(cs);
 
     cpu->env.eip = tb->pc - tb->cs_base;
