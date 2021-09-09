@@ -2599,7 +2599,7 @@ bool latxs_translate_pshufw(IR1_INST *pir1)
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
     IR2_OPND dest = XMM_LOADFP1(opnd0);
-    IR2_OPND src = load_freg_from_ir1_1(opnd0 + 1, true, true);
+    IR2_OPND src = XMM_LOADFP1(opnd1);
 
     IR1_OPND *imm8_reg = ir1_get_opnd(pir1, 2);
     uint64_t imm8 = ir1_opnd_uimm(imm8_reg);
