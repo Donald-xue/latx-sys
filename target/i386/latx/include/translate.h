@@ -1696,6 +1696,7 @@ bool latxs_translate_cld(IR1_INST *pir1);
 bool latxs_translate_std(IR1_INST *pir1);
 bool latxs_translate_clc(IR1_INST *pir1);
 bool latxs_translate_stc(IR1_INST *pir1);
+bool latxs_translate_cmc(IR1_INST *pir1);
 bool latxs_translate_clac(IR1_INST *pir1);
 bool latxs_translate_stac(IR1_INST *pir1);
 bool latxs_translate_popf(IR1_INST *pir1);
@@ -1780,6 +1781,7 @@ bool latxs_translate_ficom(IR1_INST *pir1);
 bool latxs_translate_ficomp(IR1_INST *pir1);
 
 bool latxs_translate_fnclex(IR1_INST *pir1);
+bool latxs_translate_emms(IR1_INST *pir1);
 
 /* sys-farith */
 bool latxs_translate_fadd(IR1_INST *pir1);

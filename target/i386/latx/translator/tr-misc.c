@@ -1261,12 +1261,16 @@ bool translate_loop(IR1_INST *pir1)
 
 bool translate_cmc(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmc(pir1);
+#else
     IR2_OPND temp = ra_alloc_itemp();
     la_append_ir2_opnd1i(LISA_X86MFFLAG, temp, 0x1);
     la_append_ir2_opnd2i(LISA_XORI, temp, temp, 0x1);
     la_append_ir2_opnd1i(LISA_X86MTFLAG, temp, 0x1);
     ra_free_temp(temp);
     return true;
+#endif
 }
 
 bool translate_cbw(IR1_INST *pir1)
@@ -1485,8 +1489,12 @@ bool translate_prefetchw(IR1_INST *pir1)
 
 bool translate_emms(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_emms(pir1);
+#else
     // TODO: do something?
     return true;
+#endif
 }
 
 bool translate_jmp_far(IR1_INST *pir1)

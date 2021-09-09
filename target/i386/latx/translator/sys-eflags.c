@@ -13,6 +13,7 @@ void latxs_sys_eflags_register_ir1(void)
     latxs_register_ir1(X86_INS_STD);
     latxs_register_ir1(X86_INS_CLC);
     latxs_register_ir1(X86_INS_STC);
+    latxs_register_ir1(X86_INS_CMC);
     latxs_register_ir1(X86_INS_CLAC);
     latxs_register_ir1(X86_INS_STAC);
     latxs_register_ir1(X86_INS_PUSHF);
@@ -317,6 +318,16 @@ bool latxs_translate_stc(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_ORI, &cf_opnd, &latxs_zero_ir2_opnd, 0x1);
     latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &cf_opnd, 0x1);
     latxs_ra_free_temp(&cf_opnd);
+    return true;
+}
+
+bool latxs_translate_cmc(IR1_INST *pir1)
+{
+    IR2_OPND temp = ra_alloc_itemp();
+    latxs_append_ir2_opnd1i(LISA_X86MFFLAG, &temp, 0x1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 0x1);
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &temp, 0x1);
+    latxs_ra_free_temp(&temp);
     return true;
 }
 

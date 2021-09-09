@@ -33,6 +33,7 @@ void latxs_sys_fctrl_register_ir1(void)
     latxs_register_ir1(X86_INS_FICOMP);
 
     latxs_register_ir1(X86_INS_FNCLEX);
+    latxs_register_ir1(X86_INS_EMMS);
 }
 
 static void latxs_update_fcsr_enable(
@@ -548,5 +549,34 @@ bool latxs_translate_fnclex(IR1_INST *pir1)
     latxs_ra_free_temp(&sw_opnd);
     latxs_ra_free_temp(&mask);
 
+    return true;
+}
+
+bool latxs_translate_emms(IR1_INST *pir1)
+{
+    /*
+     *  QEMU implements emms by helper func, which is simple,
+     *  so I choose to implements it by mips assembly.
+     *  void helper_emms(CPUX86State *env)
+     *  {
+     *      //set to empty state
+     *      *(uint32_t *)(env->fptags) = 0x01010101;
+     *      *(uint32_t *)(env->fptags + 4) = 0x01010101;
+     *  }
+     */
+
+    /* uint8_t fptags[8]; */
+    /* 0 = valid, 1 = empty */
+    IR2_OPND empty = latxs_ra_alloc_itemp();
+
+    /* empty = 0x0101 0101 */
+    latxs_load_imm32_to_ir2(&empty, 0x01010101, UNKNOWN_EXTENSION);
+    /* 64bit 0x0101010101010101 ok       */
+    /* store [empty, empty] to fptags[8] */
+    latxs_append_ir2_opnd2i(LISA_ST_W, &empty, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_tag_word(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ST_W, &empty, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_tag_word(lsenv) + 4);
+    latxs_ra_free_temp(&empty);
     return true;
 }

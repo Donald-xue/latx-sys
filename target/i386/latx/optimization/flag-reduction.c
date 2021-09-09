@@ -5,7 +5,7 @@
 #include "flag-reduction.h"
 
 static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
-    {__INVALID, __INVALID, __INVALID},                 //X86_INS_INVALID = 0,
+    {0, 0, 0},                 /* X86_INS_INVALID = 0, */
 
     {__AF, __ALL_EFLAGS, __OF | __SF | __ZF | __PF},                     /* aaa, *///X86_INS_AAA,
     {0, __ALL_EFLAGS, __OF | __AF | __CF}, /* aad, *///X86_INS_AAD,

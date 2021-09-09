@@ -12,14 +12,14 @@ static uint8_t *ir1_in_sys;
 int latxs_is_ir1_ok(IR1_INST *pir1)
 {
     IR1_OPCODE opc = ir1_opcode(pir1);
-    lsassertm(X86_INS_INVALID < opc && opc < X86_INS_ENDING,
+    lsassertm(X86_INS_INVALID <= opc && opc < X86_INS_ENDING,
             "unknown ir1 id %n\n", opc);
     return ir1_in_sys[opc];
 }
 
 void latxs_register_ir1(IR1_OPCODE opc)
 {
-    lsassertm(X86_INS_INVALID < opc && opc < X86_INS_ENDING,
+    lsassertm(X86_INS_INVALID <= opc && opc < X86_INS_ENDING,
             "unknown ir1 id %n\n", opc);
     ir1_in_sys[opc] = 1;
 }

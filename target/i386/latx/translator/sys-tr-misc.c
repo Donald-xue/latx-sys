@@ -9,6 +9,7 @@
 
 void latxs_sys_misc_register_ir1(void)
 {
+    latxs_register_ir1(X86_INS_INVALID);
     latxs_register_ir1(X86_INS_LJMP);
     latxs_register_ir1(X86_INS_CALL);
     latxs_register_ir1(X86_INS_JMP);
