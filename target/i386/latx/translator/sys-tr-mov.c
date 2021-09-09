@@ -199,10 +199,12 @@ bool latxs_translate_movd(IR1_INST *pir1)
         lsassert(ir1_opnd_is_mmx(src));
         latxs_load_ir1_to_ir2(&src_tmp, src, EXMode_N, false);
         latxs_store_ir2_to_ir1(&src_tmp, dest, false);
+        return true;
     } else if (ir1_opnd_is_gpr(src) || ir1_opnd_is_mem(src)) {
         lsassert(ir1_opnd_is_mmx(dest));
         latxs_load_ir1_to_ir2(&src_tmp, src, EXMode_Z, false);
         latxs_store_ir2_to_ir1(&src_tmp, dest, false);
+        return true;
     }
 
     lsassertm(0, "unknown SIMD type %s.\n", __func__);
