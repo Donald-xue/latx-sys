@@ -1106,7 +1106,7 @@ bool latxs_translate_punpckldq(IR1_INST *pir1)
         /*PUNPCKLDQ mm, mm/m32  */
         IR2_OPND dest = XMM_LOADFP1(opnd0);
         IR2_OPND src  = load_freg_from_ir1_1(opnd1, false, false);
-        latxs_append_ir2_opnd3(LISA_VILVL_W, &dest, &dest, &src);
+        latxs_append_ir2_opnd3(LISA_VILVL_W, &dest, &src, &dest);
     }
 
     return true;
