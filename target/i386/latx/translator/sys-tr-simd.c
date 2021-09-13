@@ -2387,39 +2387,20 @@ bool latxs_translate_pextrw(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
     IR1_OPND *opnd2 = ir1_get_opnd(pir1, 2);
-
-    if (ir1_opnd_is_xmm(opnd1)) {
-        uint8_t imm = ir1_opnd_uimm(opnd2);
-        imm &= 7;
-        IR2_OPND gpr = latxs_ra_alloc_gpr(XMM_REG(opnd0));
-        IR2_OPND xmm = latxs_ra_alloc_xmm(XMM_REG(opnd1));
-        latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_HU, &gpr, &xmm, imm);
-        return true;
-    }
-
-    IR2_OPND src_lo = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&src_lo, opnd1, EXMode_N, false);
-
     uint8_t imm = ir1_opnd_uimm(opnd2);
-    uint8_t select = imm & 0x3;
-    switch (select) {
-    case 0:
-        break;
-    case 1:
-        latxs_append_ir2_opnd2i(LISA_SRLI_D, &src_lo, &src_lo, 0x10);
-        break;
-    case 2:
-        latxs_append_ir2_opnd2i(LISA_SRLI_D, &src_lo, &src_lo, 0x20);
-        break;
-    case 3:
-        latxs_append_ir2_opnd2i(LISA_SRLI_D, &src_lo, &src_lo, 0x30);
-        break;
-    default:
-        fprintf(stderr, "1: invalid imm8<0:1> in PEXTRW : %d\n", select);
-        exit(-1);
+    IR2_OPND gpr = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+    IR2_OPND src_ir2;
+    if (ir1_opnd_is_xmm(opnd1)) {
+        imm &= 7;
+        src_ir2 = latxs_ra_alloc_xmm(XMM_REG(opnd1));
+    } else if (ir1_opnd_is_mmx(opnd1)) {
+        imm &= 3;
+        src_ir2 = latxs_ra_alloc_mmx(XMM_REG(opnd1));
+    } else {
+        lsassert(0);
     }
-    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &src_lo, &src_lo, 15, 0);
-    latxs_store_ir2_to_ir1(&src_lo, opnd0, false);
+
+    latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_HU, &gpr, &src_ir2, imm);
 
     return true;
 }
