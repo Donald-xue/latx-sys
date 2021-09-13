@@ -43,6 +43,9 @@ bool translate_movdq2q(IR1_INST *pir1)
 
 bool translate_movmskpd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movmskpd(pir1);
+#else
     IR1_OPND* dest = ir1_get_opnd(pir1, 0);
     IR1_OPND* src = ir1_get_opnd(pir1, 1);
     if(ir1_opnd_is_xmm(src)){
@@ -55,10 +58,14 @@ bool translate_movmskpd(IR1_INST *pir1)
     }
     lsassert(0);
     return false;
+#endif
 }
 
 bool translate_movmskps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movmskps(pir1);
+#else
     IR1_OPND* dest = ir1_get_opnd(pir1, 0);
     IR1_OPND* src = ir1_get_opnd(pir1, 1);
     if(ir1_opnd_is_xmm(src)){
@@ -71,6 +78,7 @@ bool translate_movmskps(IR1_INST *pir1)
     }
     lsassert(0);
     return false;
+#endif
 }
 
 bool translate_movntdq(IR1_INST *pir1)
@@ -346,12 +354,16 @@ bool translate_movaps(IR1_INST *pir1)
 
 bool translate_movhlps(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movhlps(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     la_append_ir2_opnd3(LISA_VILVH_D, dest, dest, src);
     return true;
+#endif
 }
 
 bool translate_movshdup(IR1_INST *pir1)
