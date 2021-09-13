@@ -1084,7 +1084,7 @@ bool latxs_translate_punpcklbw(IR1_INST *pir1)
     } else {
         /* PUNPCKLBW mm, mm/m32 */
         IR2_OPND dest = XMM_LOADFP1(opnd0);
-        IR2_OPND src  = load_freg_from_ir1_1(opnd1, false, false);
+        IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false, false);
         latxs_append_ir2_opnd3(LISA_VILVL_B, &dest, &src, &dest);
     }
 
@@ -1106,7 +1106,7 @@ bool latxs_translate_punpcklwd(IR1_INST *pir1)
     } else {
         /* PUNPCKLWD mm, mm/m32 */
         IR2_OPND dest = XMM_LOADFP1(opnd0);
-        IR2_OPND src  = load_freg_from_ir1_1(opnd1, false, false);
+        IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false, false);
         latxs_append_ir2_opnd3(LISA_VILVL_H, &dest, &src, &dest);
     }
 
@@ -1128,7 +1128,7 @@ bool latxs_translate_punpckldq(IR1_INST *pir1)
     } else {
         /*PUNPCKLDQ mm, mm/m32  */
         IR2_OPND dest = XMM_LOADFP1(opnd0);
-        IR2_OPND src  = load_freg_from_ir1_1(opnd1, false, false);
+        IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false, false);
         latxs_append_ir2_opnd3(LISA_VILVL_W, &dest, &src, &dest);
     }
 
