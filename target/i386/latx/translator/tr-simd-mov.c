@@ -32,6 +32,9 @@
 
 bool translate_movdq2q(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movdq2q(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)));
@@ -39,6 +42,7 @@ bool translate_movdq2q(IR1_INST *pir1)
                      ra_alloc_xmm(ir1_opnd_base_reg_num(src)));
     // TODO:zero fpu top and tag word
     return true;
+#endif
 }
 
 bool translate_movmskpd(IR1_INST *pir1)
@@ -107,10 +111,14 @@ bool translate_movntdq(IR1_INST *pir1)
 
 bool translate_movnti(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movnti(pir1);
+#else
     IR2_OPND src = load_ireg_from_ir1(ir1_get_opnd(pir1, 0) + 1, UNKNOWN_EXTENSION,
                                       false);   /* fill default parameter */
     store_ireg_to_ir1(src, ir1_get_opnd(pir1, 0), false); /* fill default parameter */
     return true;
+#endif
 }
 
 bool translate_movntpd(IR1_INST *pir1)
@@ -183,6 +191,9 @@ bool translate_movntq(IR1_INST *pir1)
 
 bool translate_movq2dq(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movq2dq(pir1);
+#else
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
@@ -191,6 +202,7 @@ bool translate_movq2dq(IR1_INST *pir1)
                       ra_alloc_mmx(ir1_opnd_base_reg_num(src)), 0);
     //TODO:zero fpu top and tag word
     return true;
+#endif
 }
 
 bool translate_pmovmskb(IR1_INST *pir1)
@@ -222,6 +234,9 @@ bool translate_pmovmskb(IR1_INST *pir1)
 
 bool translate_maskmovq(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_maskmovq(pir1);
+#else
     IR2_OPND src = ra_alloc_ftemp();
     IR2_OPND mask = ra_alloc_ftemp();
     load_freg_from_ir1_2(src, ir1_get_opnd(pir1, 0), IS_DEST_MMX);
@@ -246,10 +261,14 @@ bool translate_maskmovq(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_VOR_V, mem_data, mem_data, xmm_data);
     la_append_ir2_opnd2i(LISA_FST_D, mem_data, base_opnd, 0);
     return true;
+#endif
 }
 
 bool translate_maskmovdqu(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_maskmovdqu(pir1);
+#else
     IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     IR2_OPND mask = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
     IR2_OPND zero = ra_alloc_ftemp();
@@ -272,6 +291,7 @@ bool translate_maskmovdqu(IR1_INST *pir1)
     la_append_ir2_opnd3(LISA_VOR_V, mem_data, mem_data, xmm_data);
     la_append_ir2_opnd2i(LISA_VST, mem_data, base_opnd, 0);
     return true;
+#endif
 }
 
 bool translate_movupd(IR1_INST *pir1)

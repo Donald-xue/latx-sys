@@ -1437,6 +1437,8 @@ typedef struct CPUX86State {
     uint64_t sigint_flag;
     struct TranslationBlock *latxs_int_tb;
     uint32_t latxs_fpu;
+    /* helper use */
+    ZMMReg temp_xmm;
 #endif
 #endif
     /* standard registers */

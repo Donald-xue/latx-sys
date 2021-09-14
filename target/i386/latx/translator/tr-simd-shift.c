@@ -524,6 +524,9 @@ bool translate_psrad(IR1_INST *pir1)
 
 bool translate_pslldq(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pslldq(pir1);
+#else
     lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
     IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
     uint8_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 1));
@@ -535,6 +538,7 @@ bool translate_pslldq(IR1_INST *pir1)
         la_append_ir2_opnd2i(LISA_VBSLL_V, dest, dest, imm8);
     }
     return true;
+#endif
 }
 
 bool translate_psrldq(IR1_INST *pir1)

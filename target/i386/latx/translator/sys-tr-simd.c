@@ -37,6 +37,8 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_PSLLW);
     latxs_register_ir1(X86_INS_PSLLD);
     latxs_register_ir1(X86_INS_PSLLQ);
+    latxs_register_ir1(X86_INS_PSLLDQ);
+
     latxs_register_ir1(X86_INS_PSRLW);
     latxs_register_ir1(X86_INS_PSRLD);
     latxs_register_ir1(X86_INS_PSRLQ);
@@ -53,6 +55,9 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_PUNPCKLBW);
     latxs_register_ir1(X86_INS_PUNPCKLWD);
     latxs_register_ir1(X86_INS_PUNPCKLDQ);
+
+    latxs_register_ir1(X86_INS_PUNPCKHQDQ);
+    latxs_register_ir1(X86_INS_PUNPCKLQDQ);
 
     latxs_register_ir1(X86_INS_ADDSD);
     latxs_register_ir1(X86_INS_ADDSS);
@@ -106,6 +111,20 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_CVTSS2SD);
     latxs_register_ir1(X86_INS_CVTTSS2SI);
 
+    latxs_register_ir1(X86_INS_CVTPI2PS);
+    latxs_register_ir1(X86_INS_CVTPS2PI);
+    latxs_register_ir1(X86_INS_CVTSI2SS);
+    latxs_register_ir1(X86_INS_CVTSS2SI);
+    latxs_register_ir1(X86_INS_CVTTPS2PI);
+    latxs_register_ir1(X86_INS_CVTPI2PD);
+    latxs_register_ir1(X86_INS_CVTPD2PI);
+    latxs_register_ir1(X86_INS_CVTSD2SI);
+    latxs_register_ir1(X86_INS_CVTTPD2PI);
+    latxs_register_ir1(X86_INS_CVTPD2DQ);
+    latxs_register_ir1(X86_INS_CVTPS2DQ);
+    latxs_register_ir1(X86_INS_CVTTPS2DQ);
+    latxs_register_ir1(X86_INS_CVTTPD2DQ);
+
     latxs_register_ir1(X86_INS_DIVPD);
     latxs_register_ir1(X86_INS_DIVPS);
     latxs_register_ir1(X86_INS_DIVSD);
@@ -124,6 +143,7 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_MOVNTPD);
     latxs_register_ir1(X86_INS_MOVNTPS);
     latxs_register_ir1(X86_INS_MOVNTQ);
+    latxs_register_ir1(X86_INS_MOVNTI);
 
     latxs_register_ir1(X86_INS_MULPD);
     latxs_register_ir1(X86_INS_MULPS);
@@ -133,6 +153,9 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_ORPD);
     latxs_register_ir1(X86_INS_ORPS);
 
+    latxs_register_ir1(X86_INS_PAVGB);
+    latxs_register_ir1(X86_INS_PAVGW);
+
     latxs_register_ir1(X86_INS_PEXTRW);
     latxs_register_ir1(X86_INS_PINSRW);
 
@@ -141,12 +164,17 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_PMINSW);
     latxs_register_ir1(X86_INS_PMINUB);
 
+    latxs_register_ir1(X86_INS_PSADBW);
     latxs_register_ir1(X86_INS_PMOVMSKB);
+    latxs_register_ir1(X86_INS_MASKMOVQ);
+    latxs_register_ir1(X86_INS_MASKMOVDQU);
+    latxs_register_ir1(X86_INS_PMULHUW);
     latxs_register_ir1(X86_INS_PMULUDQ);
 
     latxs_register_ir1(X86_INS_PSHUFD);
     latxs_register_ir1(X86_INS_PSHUFW);
     latxs_register_ir1(X86_INS_PSHUFLW);
+    latxs_register_ir1(X86_INS_PSHUFHW);
 
     /* SSE */
     latxs_register_ir1(X86_INS_MOVUPD);
@@ -162,6 +190,9 @@ void latxs_sys_simd_register_ir1(void)
     latxs_register_ir1(X86_INS_MOVHPS);
     latxs_register_ir1(X86_INS_MOVLPD);
     latxs_register_ir1(X86_INS_MOVLPS);
+
+    latxs_register_ir1(X86_INS_MOVQ2DQ);
+    latxs_register_ir1(X86_INS_MOVDQ2Q);
 
     latxs_register_ir1(X86_INS_MOVMSKPS);
     latxs_register_ir1(X86_INS_MOVMSKPD);
@@ -1843,6 +1874,291 @@ bool latxs_translate_comiss(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_cvtpi2ps(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    lsassert(ir1_opnd_is_xmm(opnd0));
+    IR2_OPND fcsr_opnd = latxs_set_fpu_fcsr_rounding_field_by_x86();
+    IR2_OPND dest = latxs_load_freg128_from_ir1(opnd0);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    IR2_OPND temp = latxs_ra_alloc_ftemp();
+    latxs_append_ir2_opnd2(LISA_VFFINT_S_W, &temp, &src);
+    latxs_append_ir2_opnd2i(LISA_VEXTRINS_D, &dest, &temp,
+                        VEXTRINS_IMM_4_0(0, 0));
+    latxs_set_fpu_fcsr(&fcsr_opnd);
+    latxs_ra_free_temp(&temp);
+    return true;
+}
+
+bool latxs_translate_cvtps2pi(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtps2pi,
+                                    dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvtsi2ss(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    lsassert(ir1_opnd_is_xmm(opnd0));
+    IR2_OPND fcsr_opnd = latxs_set_fpu_fcsr_rounding_field_by_x86();
+    IR2_OPND dest = latxs_load_freg128_from_ir1(opnd0);
+    IR2_OPND src = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&src, opnd1, EXMode_Z);
+    IR2_OPND temp = latxs_ra_alloc_ftemp();
+    latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &temp, &src);
+    if (ir1_opnd_size(opnd1) == 64) {
+        latxs_append_ir2_opnd2(LISA_FFINT_S_L, &temp, &temp);
+    } else {
+        latxs_append_ir2_opnd2(LISA_FFINT_S_W, &temp, &temp);
+    }
+    latxs_append_ir2_opnd2i(LISA_VEXTRINS_W, &dest, &temp,
+                        VEXTRINS_IMM_4_0(0, 0));
+    latxs_set_fpu_fcsr(&fcsr_opnd);
+    latxs_ra_free_temp(&src);
+    latxs_ra_free_temp(&temp);
+    return true;
+}
+
+bool latxs_translate_cvtss2si(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2si, src_addr,
+                                        0, cfg);
+    latxs_store_ir2_to_ir1(&latxs_ret0_ir2_opnd, opnd0);
+    return true;
+}
+
+bool latxs_translate_cvttps2pi(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttps2pi,
+                                    dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvtpi2pd(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    lsassert(ir1_opnd_is_xmm(opnd0));
+    IR2_OPND fcsr_opnd = latxs_set_fpu_fcsr_rounding_field_by_x86();
+    /* TODO:simply */
+    IR2_OPND dest = XMM_LOAD128(opnd0);
+
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    IR2_OPND temp_src = latxs_ra_alloc_ftemp();
+
+    latxs_append_ir2_opnd2i(LISA_VEXTRINS_W, &temp_src, &src,
+                                 VEXTRINS_IMM_4_0(0, 0));
+    latxs_append_ir2_opnd2(LISA_FFINT_D_W, &temp_src, &temp_src);
+    latxs_append_ir2_opnd2i(LISA_VEXTRINS_D, &dest, &temp_src,
+                                 VEXTRINS_IMM_4_0(0, 0));
+
+    latxs_append_ir2_opnd2i(LISA_VEXTRINS_W, &temp_src, &src,
+                                 VEXTRINS_IMM_4_0(0, 1));
+    latxs_append_ir2_opnd2(LISA_FFINT_D_W, &temp_src, &temp_src);
+    latxs_append_ir2_opnd2i(LISA_VEXTRINS_D, &dest, &temp_src,
+                                 VEXTRINS_IMM_4_0(1, 0));
+    latxs_set_fpu_fcsr(&fcsr_opnd);
+    return true;
+}
+
+bool latxs_translate_cvtpd2pi(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtpd2pi,
+                                dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvtsd2si(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtsd2si, src_addr,
+                                        0, cfg);
+    latxs_store_ir2_to_ir1(&latxs_ret0_ir2_opnd, opnd0);
+    return true;
+}
+
+bool latxs_translate_cvttpd2pi(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttpd2pi,
+                                dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvtpd2dq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtpd2dq,
+                                dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvtps2dq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtps2dq,
+                                dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvttps2dq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttps2dq,
+                                dest_addr, src_addr, cfg);
+    return true;
+}
+
+bool latxs_translate_cvttpd2dq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+    latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+
+    helper_cfg_t cfg = default_helper_cfg;
+    int reg_index = ir1_opnd_base_reg_num(opnd0);
+    uint64_t dest_addr =
+        (uint64_t) &(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
+    uint64_t src_addr =
+        (uint64_t) &(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttpd2dq,
+                                dest_addr, src_addr, cfg);
+    return true;
+}
+
+
 bool latxs_translate_cvtdq2pd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
@@ -2246,6 +2562,20 @@ bool latxs_translate_movmskps(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_movnti(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND src = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&src, opnd1, EXMode_N);
+    latxs_store_ir2_to_ir1(&src, opnd0);
+
+    return true;
+}
+
 bool latxs_translate_movntdq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
@@ -2405,6 +2735,36 @@ bool latxs_translate_paddq(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_pavgb(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    latxs_append_ir2_opnd3(LISA_VAVGR_BU, &dest, &dest, &src);
+
+    return true;
+}
+
+bool latxs_translate_pavgw(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    latxs_append_ir2_opnd3(LISA_VAVGR_HU, &dest, &dest, &src);
+
+    return true;
+}
+
 bool latxs_translate_pextrw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
@@ -2550,6 +2910,119 @@ bool latxs_translate_pminub(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_psadbw(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    latxs_append_ir2_opnd3(LISA_VABSD_BU, &dest, &dest, &src);
+
+    if (ir1_opnd_size(opnd0) == 64) {
+        latxs_append_ir2_opnd2i(LISA_XVPICKVE_D, &dest, &dest, 0);
+    }
+
+    latxs_append_ir2_opnd2(LISA_VHADD8_D_BU, &dest, &dest);
+
+    return true;
+}
+
+bool latxs_translate_maskmovdqu(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    /* data */
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    /* mask */
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    IR2_OPND mask = latxs_ra_alloc_ftemp();
+
+    IR2_OPND one_msb = latxs_ra_alloc_itemp();
+    IR2_OPND one_byte = latxs_ra_alloc_itemp();
+
+    int addr_size = latxs_ir1_addr_size(pir1);
+    lsassert(addr_size == 2 || addr_size == 4);
+
+    IR1_OPND mem_ir1_opnd;
+
+    la_append_ir2_opnd2i(LISA_VANDI_B, mask, src, 0x80);
+
+    int byte_num = 16;
+
+    for (size_t i = 0; i < byte_num; i++) {
+        latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_BU, &one_msb, &mask, i);
+        latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_BU, &one_byte, &dest, i);
+        IR2_OPND skip = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd3(LISA_BEQ, &one_msb, &latxs_zero_ir2_opnd, &skip);
+
+        latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, 8, X86_REG_DS, X86_REG_EDI,
+                                      i, 0, 0);
+        latxs_store_ir2_to_ir1_mem(&one_byte, &mem_ir1_opnd, addr_size);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &skip);
+    }
+
+    latxs_ra_free_temp(&mask);
+    latxs_ra_free_temp(&one_msb);
+    latxs_ra_free_temp(&one_byte);
+
+    return true;
+}
+
+bool latxs_translate_maskmovq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    /* data */
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    /* mask */
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    IR2_OPND mask = latxs_ra_alloc_ftemp();
+
+    IR2_OPND one_msb = latxs_ra_alloc_itemp();
+    IR2_OPND one_byte = latxs_ra_alloc_itemp();
+
+    int addr_size = latxs_ir1_addr_size(pir1);
+    lsassert(addr_size == 2 || addr_size == 4);
+
+    IR1_OPND mem_ir1_opnd;
+
+    la_append_ir2_opnd2i(LISA_VANDI_B, mask, src, 0x80);
+
+    int byte_num = 8;
+
+    for (size_t i = 0; i < byte_num; i++) {
+        latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_BU, &one_msb, &mask, i);
+        latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_BU, &one_byte, &dest, i);
+        IR2_OPND skip = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd3(LISA_BEQ, &one_msb, &latxs_zero_ir2_opnd, &skip);
+
+        latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, 8, X86_REG_DS, X86_REG_EDI,
+                                      i, 0, 0);
+        latxs_store_ir2_to_ir1_mem(&one_byte, &mem_ir1_opnd, addr_size);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &skip);
+    }
+
+    latxs_ra_free_temp(&mask);
+    latxs_ra_free_temp(&one_msb);
+    latxs_ra_free_temp(&one_byte);
+
+    return true;
+}
+
 bool latxs_translate_pmovmskb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
@@ -2582,6 +3055,21 @@ bool latxs_translate_pmovmskb(IR1_INST *pir1)
 
     latxs_ra_free_temp(&itemp);
     latxs_ra_free_temp(&ftemp);
+    return true;
+}
+
+bool latxs_translate_pmulhuw(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    latxs_append_ir2_opnd3(LISA_VMUH_HU, &dest, &dest, &src);
+
     return true;
 }
 
@@ -2669,6 +3157,47 @@ bool latxs_translate_pshuflw(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VBSRL_V, &temp, &temp, 8);
     latxs_append_ir2_opnd2i(LISA_VSHUF4I_H, &dest, &dest, imm8);
     latxs_append_ir2_opnd2i(LISA_XVINSVE0_D, &dest, &temp, 1);
+    return true;
+}
+
+bool latxs_translate_pshufhw(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    lsassert(ir1_opnd_is_xmm(opnd0));
+    IR2_OPND dest = XMM_LOAD128(opnd0);
+    IR2_OPND src  = XMM_LOAD128(opnd1);
+
+    IR2_OPND temp = latxs_ra_alloc_ftemp();
+
+    uint64_t imm8 = ir1_opnd_uimm(ir1_get_opnd(pir1, 2));
+
+    latxs_append_ir2_opnd2i(LISA_VORI_B, &temp, &src, 0);
+    latxs_append_ir2_opnd2i(LISA_VSHUF4I_H, &dest, &src, imm8);
+    latxs_append_ir2_opnd2i(LISA_XVINSVE0_D, &dest, &temp, 0);
+    return true;
+}
+
+bool latxs_translate_pslldq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    lsassert(ir1_opnd_is_xmm(opnd0));
+    IR2_OPND dest = XMM_LOAD128(opnd0);
+    uint8_t imm8 = ir1_opnd_uimm(opnd1);
+    if (imm8 > 15) {
+        latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
+    } else if (imm8 == 0) {
+        return true;
+    } else {
+        latxs_append_ir2_opnd2i(LISA_VBSLL_V, &dest, &dest, imm8);
+    }
     return true;
 }
 
@@ -3092,6 +3621,36 @@ bool latxs_translate_movlps(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_movq2dq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    latxs_append_ir2_opnd2i(LISA_XVPICKVE_D, &dest, &src, 0);
+
+    return true;
+}
+
+bool latxs_translate_movdq2q(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+
+    latxs_append_ir2_opnd2i(LISA_XVPICKVE_D, &dest, &src, 0);
+
+    return true;
+}
+
 bool latxs_translate_addps(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
@@ -3179,6 +3738,26 @@ bool latxs_translate_unpckhps(IR1_INST *pir1)
     IR2_OPND dest = XMM_LOAD128(ir1_get_opnd(pir1, 0));
     IR2_OPND src  = XMM_LOAD128(ir1_get_opnd(pir1, 1));
     latxs_append_ir2_opnd3(LISA_VILVH_W, &dest, &src, &dest);
+    return true;
+}
+
+bool latxs_translate_punpcklqdq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
+    IR2_OPND dest = XMM_LOAD128(ir1_get_opnd(pir1, 0));
+    IR2_OPND src  = XMM_LOAD128(ir1_get_opnd(pir1, 1));
+    latxs_append_ir2_opnd3(LISA_VILVL_D, &dest, &src, &dest);
+    return true;
+}
+
+bool latxs_translate_punpckhqdq(IR1_INST *pir1)
+{
+    XMM_EXCP(pir1);
+    lsassert(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0)));
+    IR2_OPND dest = XMM_LOAD128(ir1_get_opnd(pir1, 0));
+    IR2_OPND src  = XMM_LOAD128(ir1_get_opnd(pir1, 1));
+    latxs_append_ir2_opnd3(LISA_VILVH_D, &dest, &src, &dest);
     return true;
 }
 

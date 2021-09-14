@@ -94,8 +94,8 @@ bool translate_movntss(IR1_INST *pir1) { return false; }
 bool translate_movntsd(IR1_INST *pir1) { return false; }
 bool translate_vmovntps(IR1_INST *pir1) { return false; }
 bool translate_vmovntpd(IR1_INST *pir1) { return false; }
-bool translate_cvttps2pi(IR1_INST *pir1) { return false; }
-bool translate_cvttpd2pi(IR1_INST *pir1) { return false; }
+/* bool translate_cvttps2pi(IR1_INST *pir1) { return false; } */
+/* bool translate_cvttpd2pi(IR1_INST *pir1) { return false; } */
 bool translate_vcvttss2si(IR1_INST *pir1) { return false; }
 bool translate_vcvttsd2si(IR1_INST *pir1) { return false; }
 bool translate_vcvtss2si(IR1_INST *pir1) { return false; }
@@ -1594,6 +1594,9 @@ bool translate_prefetch(IR1_INST *pir1) { return true; }
 bool translate_invalid(IR1_INST *pir1) { return false; }
 bool translate_ud0(IR1_INST *pir1) { return false; }
 
+bool translate_cvttps2pi(IR1_INST *pir1) { return false; }
+bool translate_cvttpd2pi(IR1_INST *pir1) { return false; }
+
 #else
 
 bool translate_lidt(IR1_INST *pir1) { return latxs_translate_lidt(pir1); }
@@ -1671,6 +1674,15 @@ bool translate_invalid(IR1_INST *pir1)
 bool translate_ud0(IR1_INST *pir1)
 {
     return latxs_translate_ud0(pir1);
+}
+
+bool translate_cvttps2pi(IR1_INST *pir1)
+{
+    return latxs_translate_cvttps2pi(pir1);
+}
+bool translate_cvttpd2pi(IR1_INST *pir1)
+{
+    return latxs_translate_cvttpd2pi(pir1);
 }
 
 #endif
