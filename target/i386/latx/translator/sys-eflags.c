@@ -323,7 +323,7 @@ bool latxs_translate_stc(IR1_INST *pir1)
 
 bool latxs_translate_cmc(IR1_INST *pir1)
 {
-    IR2_OPND temp = ra_alloc_itemp();
+    IR2_OPND temp = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_X86MFFLAG, &temp, 0x1);
     latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 0x1);
     latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &temp, 0x1);
