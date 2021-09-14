@@ -1185,7 +1185,7 @@ static void latxs_load_freg_from_ir1_mem(IR2_OPND *opnd2,
         if (is_convert) {
             latxs_append_ir2_opnd2(LISA_FCVT_D_S, opnd2, opnd2);
         }
-    } else if (ir1_opnd_size(opnd1) == 64 || ir1_opnd_size(opnd1) == 128) {
+    } else if (ir1_opnd_size(opnd1) == 64) {
         gen_ldst_c1_softmmu_helper(LISA_FLD_D, opnd2, &mem_opnd, 1);
     } else if (ir1_opnd_size(opnd1) == 16) {
         IR2_OPND itemp = latxs_ra_alloc_itemp();
@@ -1199,6 +1199,8 @@ static void latxs_load_freg_from_ir1_mem(IR2_OPND *opnd2,
         latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, opnd2, &itemp);
         latxs_ra_free_temp(&itemp);
         lsassertm(!is_convert, "convert 8-bit floating point?\n");
+    } else if (ir1_opnd_size(opnd1) == 128) {
+        latxs_load_freg128_from_ir1_mem(opnd2, opnd1);
     } else {
         latxs_load_64_bit_freg_from_ir1_80_bit_mem(opnd2, &mem_opnd);
     }
@@ -1249,7 +1251,8 @@ IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_convert)
             int ir1_reg = ir1_opnd_base_reg_num(opnd1);
             return latxs_ra_alloc_mmx(ir1_reg);
         } else if (ir1_opnd_is_xmm(opnd1)) {
-            lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
+            int ir1_reg = ir1_opnd_base_reg_num(opnd1);
+            return latxs_ra_alloc_xmm(ir1_reg);
         } else if (ir1_opnd_is_ymm(opnd1)) {
             lsassert(0);
         } else {
@@ -1381,9 +1384,10 @@ static void latxs_store_freg_to_ir1_mem(IR2_OPND *opnd2,
                     &mem_opnd, save_temp);
         }
         latxs_ra_free_temp(&ftemp);
-    } else if (ir1_opnd_size(opnd1) == 64 ||
-               ir1_opnd_size(opnd1) == 128) {
+    } else if (ir1_opnd_size(opnd1) == 64) {
         gen_ldst_c1_softmmu_helper(LISA_FST_D, opnd2, &mem_opnd, save_temp);
+    } else if (ir1_opnd_size(opnd1) == 128) {
+        latxs_store_freg128_to_ir1_mem(opnd2, opnd1);
     } else {
         latxs_store_64_bit_freg_to_ir1_80_bit_mem(opnd2, &mem_opnd);
     }
