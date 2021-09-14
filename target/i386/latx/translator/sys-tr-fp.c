@@ -515,8 +515,8 @@ bool latxs_translate_xgetbv(IR1_INST *pir1)
     latxs_append_ir2_opnd2_(lisa_mov32z, &edx_value,
                                          &latxs_ret0_ir2_opnd);
     /* 3. save into eax and edx */
-    latxs_store_ir2_to_ir1(&eax_value, &eax_ir1_opnd, false);
-    latxs_store_ir2_to_ir1(&edx_value, &edx_ir1_opnd, false);
+    latxs_store_ir2_to_ir1(&eax_value, &eax_ir1_opnd);
+    latxs_store_ir2_to_ir1(&edx_value, &edx_ir1_opnd);
     return true;
 }
 

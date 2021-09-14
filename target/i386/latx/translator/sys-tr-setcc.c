@@ -45,7 +45,7 @@ bool latxs_translate_setz(IR1_INST *pir1)
                                          &zf_opnd, ZF_BIT_INDEX);
     latxs_ra_free_temp(&zf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -61,7 +61,7 @@ bool latxs_translate_setnz(IR1_INST *pir1)
                                         &zf_opnd, 1);
     latxs_ra_free_temp(&zf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -77,7 +77,7 @@ bool latxs_translate_seto(IR1_INST *pir1)
                                          &of_opnd, OF_BIT_INDEX);
     latxs_ra_free_temp(&of_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -93,7 +93,7 @@ bool latxs_translate_setno(IR1_INST *pir1)
                                         &of_opnd, 1);
     latxs_ra_free_temp(&of_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -105,7 +105,7 @@ bool latxs_translate_setb(IR1_INST *pir1)
 
     latxs_get_eflag_condition(&value_opnd, pir1);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
     return true;
 }
@@ -120,7 +120,7 @@ bool latxs_translate_setae(IR1_INST *pir1)
                                         &cf_opnd, 1);
     latxs_ra_free_temp(&cf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -136,7 +136,7 @@ bool latxs_translate_setbe(IR1_INST *pir1)
                                       &latxs_zero_ir2_opnd, &cfzf_opnd);
     latxs_ra_free_temp(&cfzf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -152,7 +152,7 @@ bool latxs_translate_seta(IR1_INST *pir1)
                                         &cfzf_opnd, 1);
     latxs_ra_free_temp(&cfzf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -168,7 +168,7 @@ bool latxs_translate_sets(IR1_INST *pir1)
                                          &sf_opnd, SF_BIT_INDEX);
     latxs_ra_free_temp(&sf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -184,7 +184,7 @@ bool latxs_translate_setns(IR1_INST *pir1)
                                         &sf_opnd, SF_BIT_INDEX);
     latxs_ra_free_temp(&sf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -200,7 +200,7 @@ bool latxs_translate_setp(IR1_INST *pir1)
                                          &pf_opnd, PF_BIT_INDEX);
     latxs_ra_free_temp(&pf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -216,7 +216,7 @@ bool latxs_translate_setnp(IR1_INST *pir1)
                                         &pf_opnd, 1);
     latxs_ra_free_temp(&pf_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -228,7 +228,7 @@ bool latxs_translate_setl(IR1_INST *pir1)
 
     latxs_get_eflag_condition(&value_opnd, pir1); /* sf != of */
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -242,7 +242,7 @@ bool latxs_translate_setge(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_SLTUI, &value_opnd,
                                         &value_opnd, 1);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -256,7 +256,7 @@ bool latxs_translate_setle(IR1_INST *pir1)
     latxs_append_ir2_opnd3(LISA_SLTU, &value_opnd,
                                       &latxs_zero_ir2_opnd, &value_opnd);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -270,7 +270,7 @@ bool latxs_translate_setg(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_SLTUI, &value_opnd,
                                         &value_opnd, 1);
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
     latxs_ra_free_temp(&value_opnd);
 
     return true;
@@ -287,7 +287,7 @@ bool latxs_translate_bsf(IR1_INST *pir1)
     IR2_OPND src_opnd = latxs_ra_alloc_itemp();
 
     latxs_load_ir1_to_ir2(&src_opnd,
-            ir1_get_opnd(pir1, 1), EXMode_Z, false);
+            ir1_get_opnd(pir1, 1), EXMode_Z);
 
     if (ir1_is_zf_def(pir1)) {
         IR2_OPND temp = latxs_ra_alloc_itemp();
@@ -321,7 +321,7 @@ bool latxs_translate_bsf(IR1_INST *pir1)
     /* ------------------ LABEL 2 ---------------------- */
     latxs_append_ir2_opnd1(LISA_LABEL, &label_2);
 
-    latxs_store_ir2_to_ir1(&count, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&count, ir1_get_opnd(pir1, 0));
     if (ir1_is_zf_def(pir1)) {
         latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &latxs_zero_ir2_opnd, 0x8);
     }
@@ -341,7 +341,7 @@ bool latxs_translate_bsr(IR1_INST *pir1)
     IR2_OPND src_opnd = latxs_ra_alloc_itemp();
 
     latxs_load_ir1_to_ir2(&src_opnd,
-            ir1_get_opnd(pir1, 1), EXMode_Z, false);
+            ir1_get_opnd(pir1, 1), EXMode_Z);
 
     if (ir1_is_zf_def(pir1)) {
         IR2_OPND temp = latxs_ra_alloc_itemp();
@@ -375,7 +375,7 @@ bool latxs_translate_bsr(IR1_INST *pir1)
     /* ------------------ LABEL 2 ---------------------- */
     latxs_append_ir2_opnd1(LISA_LABEL, &label_2);
 
-    latxs_store_ir2_to_ir1(&count, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&count, ir1_get_opnd(pir1, 0));
     if (ir1_is_zf_def(pir1)) {
         latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &latxs_zero_ir2_opnd, 0x8);
     }
@@ -417,16 +417,16 @@ bool latxs_translate_btx(IR1_INST *pir1)
 
     /* get bit_base and bit_off */
     if (ir1_opnd_is_gpr(opnd0)) {
-        latxs_load_ir1_to_ir2(&bit_base, opnd0, EXMode_Z, false);
-        latxs_load_ir1_to_ir2(&bit_off,  opnd1, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&bit_base, opnd0, EXMode_Z);
+        latxs_load_ir1_to_ir2(&bit_off,  opnd1, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ANDI, &bit_off, &bit_off, t_imm);
     } else {
         /* opnd0 is memory operand */
         if (ir1_opnd_is_imm(opnd1)) {
-            latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_Z, false);
+            latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_Z);
             latxs_append_ir2_opnd2i(LISA_ANDI, &bit_off, &bit_off, t_imm);
         } else {
-            latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_S, false);
+            latxs_load_ir1_to_ir2(&bit_off, opnd1, EXMode_S);
         }
 
         latxs_convert_mem_opnd(&mem_opnd, opnd0, -1);
@@ -499,7 +499,7 @@ bool latxs_translate_btx(IR1_INST *pir1)
 
     if (ir1_opcode(pir1) != X86_INS_BT) {
         if (ir1_opnd_is_gpr(opnd0)) {
-            latxs_store_ir2_to_ir1(&bit_base, opnd0, false);
+            latxs_store_ir2_to_ir1(&bit_base, opnd0);
         } else {
             gen_ldst_softmmu_helper(LISA_ST_H, &bit_base, &mem_no_offset, 1);
         }

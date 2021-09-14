@@ -385,7 +385,7 @@ bool latxs_translate_popf(IR1_INST *pir1)
     IR2_OPND tmp = latxs_ra_alloc_itemp();
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_load_ir1_mem_to_ir2(&tmp,
-            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+            &mem_ir1_opnd, EXMode_Z, ss_addr_size);
 
     /*
      * 2. write into eflags
@@ -441,7 +441,7 @@ bool latxs_translate_popf(IR1_INST *pir1)
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ADDI_D,
                 &tmp, &esp_opnd, (data_size >> 3));
-        latxs_store_ir2_to_ir1(&tmp, &sp_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&tmp, &sp_ir1_opnd);
         latxs_ra_free_temp(&tmp);
     }
 
@@ -500,7 +500,7 @@ bool latxs_translate_pushf(IR1_INST *pir1)
 
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_store_ir2_to_ir1_mem(&eflags_to_push,
-            &mem_ir1_opnd, false, ss_addr_size);
+            &mem_ir1_opnd, ss_addr_size);
     latxs_ra_free_temp(&eflags_to_push);
 
     /* 3. update ESP */
@@ -515,7 +515,7 @@ bool latxs_translate_pushf(IR1_INST *pir1)
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ADDI_D,
                 &tmp, &esp_opnd, 0 - (data_size >> 3));
-        latxs_store_ir2_to_ir1(&tmp, &sp_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&tmp, &sp_ir1_opnd);
         latxs_ra_free_temp(&tmp);
     }
 

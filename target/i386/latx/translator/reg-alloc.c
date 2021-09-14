@@ -390,24 +390,6 @@ IR2_OPND latxs_ra_alloc_xmm(int num)
     return latxs_ir2_opnd_new(IR2_OPND_FPR, 16 + num);
 }
 
-/* TODO remove it */
-IR2_OPND latxs_ra_alloc_xmm_lo(int xmm_lo_num)
-{
-    static const int8 rai_fmap_xmm_lo[8] = {
-    16, 18, 20, 22, 24, 26, 28, 30};
-    return latxs_ir2_opnd_new(IR2_OPND_FPR,
-            rai_fmap_xmm_lo[xmm_lo_num]);
-}
-
-/* TODO remove it */
-IR2_OPND latxs_ra_alloc_xmm_hi(int xmm_hi_num)
-{
-    static const int8 rai_fmap_xmm_hi[8] = {
-    17, 19, 21, 23, 25, 27, 29, 31};
-    return latxs_ir2_opnd_new(IR2_OPND_FPR,
-            rai_fmap_xmm_hi[xmm_hi_num]);
-}
-
 IR2_OPND latxs_ra_alloc_dbt_arg1(void) { return latxs_ra_alloc_vreg(1); }
 IR2_OPND latxs_ra_alloc_dbt_arg2(void) { return latxs_ra_alloc_vreg(2); }
 

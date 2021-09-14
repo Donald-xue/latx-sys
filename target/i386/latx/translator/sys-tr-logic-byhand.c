@@ -57,7 +57,7 @@ static void latxs_translate_test_byhand_mem_gpr(
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, false, -1);
+    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, -1);
 
     int opnd1_reg = ir1_opnd_base_reg_num(opnd1);
     IR2_OPND reg1 = latxs_ra_alloc_gpr(opnd1_reg);
@@ -78,7 +78,7 @@ static void latxs_translate_test_byhand_mem_imm(
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
     IR2_OPND reg1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, false, -1);
+    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, -1);
     latxs_load_ir1_imm_to_ir2(&reg1, opnd1, EXMode_N);
 
     int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
@@ -217,7 +217,7 @@ static void latxs_translate_xor_and_or_byhand_gpr_mem(
     IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
     IR2_OPND reg1 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&reg1, opnd1, EXMode_Z, false, -1);
+    latxs_load_ir1_mem_to_ir2(&reg1, opnd1, EXMode_Z, -1);
 
     if (ir1_opnd_is_8h(opnd0)) {
         /* xor 8H, mem */
@@ -248,7 +248,7 @@ static void latxs_translate_xor_and_or_byhand_mem_gpr(
         IR2_OPCODE  lbt_op)
 {
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, false, -1);
+    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, -1);
 
     IR2_OPND reg1 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd1));
 
@@ -259,14 +259,14 @@ static void latxs_translate_xor_and_or_byhand_mem_gpr(
 
         IR2_OPND dest = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd3(lisa_op, &dest, &reg0, &tmp1);
-        latxs_store_ir2_to_ir1_mem(&dest, opnd0, false, -1);
+        latxs_store_ir2_to_ir1_mem(&dest, opnd0, -1);
 
         latxs_append_ir2_opnd2(lbt_op, &reg0, &tmp1);
     } else {
         /* xor mem, reg8/16/32 */
         IR2_OPND dest = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd3(lisa_op, &dest, &reg0, &reg1);
-        latxs_store_ir2_to_ir1_mem(&dest, opnd0, false, -1);
+        latxs_store_ir2_to_ir1_mem(&dest, opnd0, -1);
 
         int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
         latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);
@@ -280,14 +280,14 @@ static void latxs_translate_xor_and_or_byhand_mem_imm(
         IR2_OPCODE  lbt_op)
 {
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, false, -1);
+    latxs_load_ir1_mem_to_ir2(&reg0, opnd0, EXMode_N, -1);
 
     IR2_OPND reg1 = latxs_ra_alloc_itemp();
     latxs_load_ir1_imm_to_ir2(&reg1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(lisa_op, &dest, &reg0, &reg1);
-    latxs_store_ir2_to_ir1_mem(&dest, opnd0, false, -1);
+    latxs_store_ir2_to_ir1_mem(&dest, opnd0, -1);
 
     int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
     latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);

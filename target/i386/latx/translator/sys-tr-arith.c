@@ -44,20 +44,20 @@ bool latxs_translate_add(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_ADD_W, &dest, &src0, &src1);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -78,8 +78,8 @@ bool latxs_translate_adc(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_load_eflags_cf_to_ir2(&dest);
@@ -87,13 +87,13 @@ bool latxs_translate_adc(IR1_INST *pir1)
     latxs_append_ir2_opnd3(LISA_ADD_W, &dest, &dest, &src1);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -114,20 +114,20 @@ bool latxs_translate_sub(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &src0, &src1);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -148,8 +148,8 @@ bool latxs_translate_sbb(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_load_eflags_cf_to_ir2(&dest);
@@ -157,13 +157,13 @@ bool latxs_translate_sbb(IR1_INST *pir1)
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &dest, &src1);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -181,7 +181,7 @@ bool latxs_translate_inc(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
 
     IR2_OPND src0 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_ADDI_W, &dest, &src0, 1);
@@ -189,13 +189,13 @@ bool latxs_translate_inc(IR1_INST *pir1)
     IR2_OPND imm1 = latxs_ir2_opnd_new(IR2_OPND_IMMH, 1);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, &src0, &imm1, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, &src0, &imm1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -212,7 +212,7 @@ bool latxs_translate_dec(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
 
     IR2_OPND src0 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_ADDI_W, &dest, &src0, -1);
@@ -220,13 +220,13 @@ bool latxs_translate_dec(IR1_INST *pir1)
     IR2_OPND imm1 = latxs_ir2_opnd_new(IR2_OPND_IMMH, 1);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, &src0, &imm1, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, &src0, &imm1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -245,19 +245,19 @@ bool latxs_translate_neg(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
 
     IR2_OPND src0 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, zero, &src0);
 
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
         /* calculate elfags after store */
         latxs_generate_eflag_calculation(&dest, zero, &src0, pir1, true);
     } else {
         /* Destination is GPR, no exception will generate */
         latxs_generate_eflag_calculation(&dest, zero, &src0, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, opnd0, false);
+        latxs_store_ir2_to_ir1(&dest, opnd0);
     }
 
     latxs_ra_free_temp(&dest);
@@ -277,8 +277,8 @@ bool latxs_translate_cmp(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &src0, &src1);
@@ -302,7 +302,7 @@ bool latxs_translate_mul(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_Z, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_Z);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
 
@@ -311,21 +311,21 @@ bool latxs_translate_mul(IR1_INST *pir1)
     case 8:
         latxs_load_ir1_gpr_to_ir2(&src1, &al_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd3(LISA_MUL_W, &dest, &src1, &src0);
-        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd);
         break;
     case 16:
         latxs_load_ir1_gpr_to_ir2(&src1, &ax_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd3(LISA_MUL_W, &dest, &src1, &src0);
-        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd);
         latxs_append_ir2_opnd2i(LISA_SRLI_W, &dest, &dest, 16);
-        latxs_store_ir2_to_ir1(&dest, &dx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &dx_ir1_opnd);
         break;
     case 32:
         latxs_load_ir1_gpr_to_ir2(&src1, &eax_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd3(LISA_MUL_D, &dest, &src1, &src0);
-        latxs_store_ir2_to_ir1(&dest, &eax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &eax_ir1_opnd);
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &dest, &dest, 32);
-        latxs_store_ir2_to_ir1(&dest, &edx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &edx_ir1_opnd);
         break;
     default:
         lsassertm_illop(ir1_addr(pir1), 0,
@@ -348,7 +348,7 @@ static bool latxs_translate_imul_1_opnd(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
 
@@ -359,23 +359,23 @@ static bool latxs_translate_imul_1_opnd(IR1_INST *pir1)
         latxs_load_ir1_gpr_to_ir2(&src1, &al_ir1_opnd, EXMode_S);
         latxs_append_ir2_opnd3(LISA_MUL_W, &dest, &src1, &src0);
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd);
         break;
     case 16:
         latxs_load_ir1_gpr_to_ir2(&src1, &ax_ir1_opnd, EXMode_S);
         latxs_append_ir2_opnd3(LISA_MUL_W, &dest, &src1, &src0);
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &ax_ir1_opnd);
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &dest, &dest, 16);
-        latxs_store_ir2_to_ir1(&dest, &dx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &dx_ir1_opnd);
         break;
     case 32:
         latxs_load_ir1_gpr_to_ir2(&src1, &eax_ir1_opnd, EXMode_S);
         latxs_append_ir2_opnd3(LISA_MUL_D, &dest, &src1, &src0);
         latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-        latxs_store_ir2_to_ir1(&dest, &eax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &eax_ir1_opnd);
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &dest, &dest, 32);
-        latxs_store_ir2_to_ir1(&dest, &edx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&dest, &edx_ir1_opnd);
         break;
     default:
         lsassertm_illop(ir1_addr(pir1), 0,
@@ -405,8 +405,8 @@ bool latxs_translate_imul(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, srcopnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src1, srcopnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, srcopnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src1, srcopnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
 
@@ -428,9 +428,9 @@ bool latxs_translate_imul(IR1_INST *pir1)
 
     /* Destination is always GPR, no exception will generate */
     if (ir1_opnd_num(pir1) == 3) {
-        latxs_store_ir2_to_ir1(&dest, ir1_get_dest_opnd(pir1, 0), false);
+        latxs_store_ir2_to_ir1(&dest, ir1_get_dest_opnd(pir1, 0));
     } else {
-        latxs_store_ir2_to_ir1(&dest, ir1_get_src_opnd(pir1, 0), false);
+        latxs_store_ir2_to_ir1(&dest, ir1_get_src_opnd(pir1, 0));
     }
 
     latxs_ra_free_temp(&dest);
@@ -502,7 +502,7 @@ bool latxs_translate_div(IR1_INST *pir1)
     IR2_OPND src1 = latxs_ra_alloc_itemp();
     IR2_OPND src2 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_Z, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_Z);
 
     /* 1. if div zero, generate DIVZ exception */
     IR2_OPND label_not_zero = latxs_ir2_opnd_new_label();
@@ -537,7 +537,7 @@ bool latxs_translate_div(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &div_mod, &div_mod, 8);
         latxs_append_ir2_opnd3(LISA_OR, &div_res, &div_res, &div_mod);
         latxs_ra_free_temp(&div_mod);
-        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd);
         break;
     case 16:
         latxs_load_ir1_gpr_to_ir2(&src1, &ax_ir1_opnd, EXMode_Z);
@@ -559,9 +559,9 @@ bool latxs_translate_div(IR1_INST *pir1)
         /* 2.2 check if result is valid and generate exception if not */
         latxs_tr_gen_div_result_check(pir1, div_res, 16, 0);
         /* 2.3 store the results into destination */
-        latxs_store_ir2_to_ir1(&div_mod, &dx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_mod, &dx_ir1_opnd);
         latxs_ra_free_temp(&div_mod);
-        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd);
         break;
     case 32:
         latxs_load_ir1_gpr_to_ir2(&src1, &eax_ir1_opnd, EXMode_Z);
@@ -583,9 +583,9 @@ bool latxs_translate_div(IR1_INST *pir1)
         /* 2.2 check if result is valid and generate exception if not */
         latxs_tr_gen_div_result_check(pir1, div_res, 32, 0);
         /* 2.3 store the results into destination */
-        latxs_store_ir2_to_ir1(&div_mod, &edx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_mod, &edx_ir1_opnd);
         latxs_ra_free_temp(&div_mod);
-        latxs_store_ir2_to_ir1(&div_res, &eax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_res, &eax_ir1_opnd);
         break;
     default:
         lsassertm_illop(ir1_addr(pir1), 0,
@@ -609,7 +609,7 @@ bool latxs_translate_idiv(IR1_INST *pir1)
     IR2_OPND src1 = latxs_ra_alloc_itemp();
     IR2_OPND src2 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     /* 1. if div zero, generate DIVZ exception */
     IR2_OPND label_not_zero = latxs_ir2_opnd_new_label();
@@ -644,7 +644,7 @@ bool latxs_translate_idiv(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &div_mod, &div_mod, 8);
         latxs_append_ir2_opnd3(LISA_OR, &div_res, &div_res, &div_mod);
         latxs_ra_free_temp(&div_mod);
-        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd);
         break;
     case 16:
         latxs_load_ir1_gpr_to_ir2(&src1, &ax_ir1_opnd, EXMode_Z);
@@ -666,9 +666,9 @@ bool latxs_translate_idiv(IR1_INST *pir1)
         /* 2.2 check if result is valid and generate exception if not */
         latxs_tr_gen_div_result_check(pir1, div_res, 16, 1);
         /* 2.3 store the results into destination */
-        latxs_store_ir2_to_ir1(&div_mod, &dx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_mod, &dx_ir1_opnd);
         latxs_ra_free_temp(&div_mod);
-        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd);
         break;
     case 32:
         latxs_load_ir1_gpr_to_ir2(&src1, &eax_ir1_opnd, EXMode_Z);
@@ -690,9 +690,9 @@ bool latxs_translate_idiv(IR1_INST *pir1)
         /* 2.2 check if result is valid and generate exception if not */
         latxs_tr_gen_div_result_check(pir1, div_res, 32, 1);
         /* 2.3 store the results into destination */
-        latxs_store_ir2_to_ir1(&div_mod, &edx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_mod, &edx_ir1_opnd);
         latxs_ra_free_temp(&div_mod);
-        latxs_store_ir2_to_ir1(&div_res, &eax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&div_res, &eax_ir1_opnd);
         break;
     default:
         lsassertm_illop(ir1_addr(pir1), 0,
@@ -800,15 +800,15 @@ bool latxs_translate_xadd(IR1_INST *pir1)
     IR2_OPND src0 = latxs_ra_alloc_itemp();
     IR2_OPND src1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND sum = latxs_ra_alloc_itemp();
 
     if (ir1_opnd_is_gpr(opnd0)) {
-        latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+        latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
         latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
-        latxs_store_ir2_to_ir1(&src0, opnd1, false);
-        latxs_store_ir2_to_ir1(&sum, opnd0, false);
+        latxs_store_ir2_to_ir1(&src0, opnd1);
+        latxs_store_ir2_to_ir1(&sum, opnd0);
     } else {
         if (latxs_ir1_has_prefix_lock(pir1) &&
             td->sys.cflags & CF_PARALLEL) {
@@ -820,11 +820,11 @@ bool latxs_translate_xadd(IR1_INST *pir1)
              */
             lsassertm(0, "compile flag parallel not supported.\n");
         } else {
-            latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S, false);
+            latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
             latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
-            latxs_store_ir2_to_ir1(&sum, opnd0, false);
+            latxs_store_ir2_to_ir1(&sum, opnd0);
         }
-        latxs_store_ir2_to_ir1(&src0, opnd1, false);
+        latxs_store_ir2_to_ir1(&src0, opnd1);
     }
 
     latxs_generate_eflag_calculation(&sum, &src0, &src1, pir1, true);

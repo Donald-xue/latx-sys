@@ -365,7 +365,7 @@ bool latxs_translate_jcxz(IR1_INST *pir1)
     LOAD_TB_PTR_TO_DBT_ARG1;
 
     IR2_OPND cx_opnd = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&cx_opnd, &cx_ir1_opnd, EXMode_Z, false);
+    latxs_load_ir1_to_ir2(&cx_opnd, &cx_ir1_opnd, EXMode_Z);
 
     IR2_OPND target_label_opnd = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd2(LISA_BEQZ, &cx_opnd, &target_label_opnd);
@@ -382,7 +382,7 @@ bool latxs_translate_jecxz(IR1_INST *pir1)
     LOAD_TB_PTR_TO_DBT_ARG1;
 
     IR2_OPND ecx_opnd = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&ecx_opnd, &ecx_ir1_opnd, EXMode_Z, false);
+    latxs_load_ir1_to_ir2(&ecx_opnd, &ecx_ir1_opnd, EXMode_Z);
 
     IR2_OPND target_label_opnd = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd2(LISA_BEQZ, &ecx_opnd, &target_label_opnd);
@@ -418,16 +418,16 @@ bool latxs_translate_loopnz(IR1_INST *pir1)
     case 2:
         ir2_xcx = latxs_ra_alloc_itemp();
         ir2_xcx_tmp = 1;
-        latxs_load_ir1_to_ir2(&ir2_xcx, &cx_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&ir2_xcx, &cx_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
-        latxs_store_ir2_to_ir1(&ir2_xcx, &cx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&ir2_xcx, &cx_ir1_opnd);
         break;
     case 4:
         ir2_xcx = latxs_ra_alloc_itemp();
         ir2_xcx_tmp = 1;
-        latxs_load_ir1_to_ir2(&ir2_xcx, &ecx_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&ir2_xcx, &ecx_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
-        latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd);
         break;
     default:
         lsassert(0);
@@ -469,16 +469,16 @@ bool latxs_translate_loopz(IR1_INST *pir1)
     case 2:
         ir2_xcx = latxs_ra_alloc_itemp();
         ir2_xcx_tmp = 1;
-        latxs_load_ir1_to_ir2(&ir2_xcx, &cx_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&ir2_xcx, &cx_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
-        latxs_store_ir2_to_ir1(&ir2_xcx, &cx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&ir2_xcx, &cx_ir1_opnd);
         break;
     case 4:
         ir2_xcx = latxs_ra_alloc_itemp();
         ir2_xcx_tmp = 1;
-        latxs_load_ir1_to_ir2(&ir2_xcx, &ecx_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&ir2_xcx, &ecx_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
-        latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd);
         break;
     default:
         lsassert(0);
@@ -519,16 +519,16 @@ bool latxs_translate_loop(IR1_INST *pir1)
     case 2:
         ir2_xcx = latxs_ra_alloc_itemp();
         ir2_xcx_tmp = 1;
-        latxs_load_ir1_to_ir2(&ir2_xcx, &cx_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&ir2_xcx, &cx_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
-        latxs_store_ir2_to_ir1(&ir2_xcx, &cx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&ir2_xcx, &cx_ir1_opnd);
         break;
     case 4:
         ir2_xcx = latxs_ra_alloc_itemp();
         ir2_xcx_tmp = 1;
-        latxs_load_ir1_to_ir2(&ir2_xcx, &ecx_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&ir2_xcx, &ecx_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
-        latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd);
         break;
     default:
         lsassert(0);

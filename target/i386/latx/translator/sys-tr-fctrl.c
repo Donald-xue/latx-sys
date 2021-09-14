@@ -135,7 +135,7 @@ bool latxs_translate_fnstcw(IR1_INST *pir1)
     /* 2. store the control word to the dest_opnd */
     /* fix capstone bug */
     pir1->info->detail->x86.operands[0].size = 2;
-    latxs_store_ir2_to_ir1(&cw_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&cw_opnd, ir1_get_opnd(pir1, 0));
 
     latxs_ra_free_temp(&cw_opnd);
     return true;
@@ -149,7 +149,7 @@ bool latxs_translate_fldcw(IR1_INST *pir1)
 
     /* 1. load new control word from the source opnd */
     IR2_OPND new_cw = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&new_cw, ir1_get_opnd(pir1, 0), EXMode_N, false);
+    latxs_load_ir1_to_ir2(&new_cw, ir1_get_opnd(pir1, 0), EXMode_N);
 
     /* 2. store the value into the env->fpu_control_word */
     latxs_append_ir2_opnd2i(LISA_ST_H, &new_cw, &latxs_env_ir2_opnd,
@@ -204,7 +204,7 @@ bool latxs_translate_fnstsw(IR1_INST *pir1)
 
     /* 2. store the current value of status_word to dest_opnd */
     pir1->info->detail->x86.operands[0].size = 2;
-    latxs_store_ir2_to_ir1(&sw_value, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&sw_value, ir1_get_opnd(pir1, 0));
 
     /* 3. free tmp */
     latxs_ra_free_temp(&sw_value);
@@ -228,7 +228,7 @@ bool latxs_translate_stmxcsr(IR1_INST *pir1)
             lsenv_offset_of_mxcsr(lsenv));
 
     /* 2. store  the value of the mxcsr register state to the dest_opnd */
-    latxs_store_ir2_to_ir1(&mxcsr_opnd, ir1_get_opnd(pir1, 0), false);
+    latxs_store_ir2_to_ir1(&mxcsr_opnd, ir1_get_opnd(pir1, 0));
 
     latxs_ra_free_temp(&mxcsr_opnd);
     return true;
@@ -245,7 +245,7 @@ bool latxs_translate_ldmxcsr(IR1_INST *pir1)
 
     /* 1. load new mxcsr value from the source opnd */
     IR2_OPND new_mxcsr = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&new_mxcsr, ir1_get_opnd(pir1, 0), EXMode_N, false);
+    latxs_load_ir1_to_ir2(&new_mxcsr, ir1_get_opnd(pir1, 0), EXMode_N);
 
     /* 2. store the value into the env->mxcsr */
     latxs_append_ir2_opnd2i(LISA_ST_W, &new_mxcsr, &latxs_env_ir2_opnd,
@@ -287,7 +287,7 @@ bool latxs_translate_fcomi(IR1_INST *pir1)
         if (is_zpc_def) {
             IR2_OPND st0 = latxs_ra_alloc_st(0);
             IR2_OPND sti = latxs_load_freg_from_ir1_1(
-                    ir1_get_opnd(pir1, 0), false, true);
+                    ir1_get_opnd(pir1, 0), true);
 
             latxs_append_ir2_opnd2i(LISA_ORI, &eflags_temp,
                     &latxs_zero_ir2_opnd, 0xfff);
@@ -383,7 +383,7 @@ bool latxs_translate_fcom(IR1_INST *pir1)
     if (opnd_num == 0) {
         src = latxs_ra_alloc_st(1);
     } else {
-        src = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), false, true);
+        src = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 0), true);
     }
 
     IR2_OPND st0 = latxs_ra_alloc_st(0);

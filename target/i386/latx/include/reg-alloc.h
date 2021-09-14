@@ -57,10 +57,6 @@ IR2_OPND latxs_ra_alloc_mmx(int);
 IR2_OPND latxs_ra_alloc_st(int);
 IR2_OPND latxs_ra_alloc_xmm(int num);
 
-/* TODO remove xmm lo/hi */
-IR2_OPND latxs_ra_alloc_xmm_lo(int num);
-IR2_OPND latxs_ra_alloc_xmm_hi(int num);
-
 /* allocate dbt register */
 IR2_OPND latxs_ra_alloc_dbt_arg1(void);
 IR2_OPND latxs_ra_alloc_dbt_arg2(void);

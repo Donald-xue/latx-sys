@@ -490,7 +490,7 @@ void latxs_load_ir1_seg_to_ir2(IR2_OPND *opnd2, IR1_OPND *opnd1)
  * TODO remove xmm hi
  */
 void latxs_load_ir1_mem_to_ir2(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, EXMode em, bool is_xmm_hi, int addr_size)
+        IR1_OPND *opnd1, EXMode em, int addr_size)
 {
     lsassert(latxs_ir2_opnd_is_gpr(opnd2));
     lsassert(ir1_opnd_is_mem(opnd1));
@@ -501,11 +501,7 @@ void latxs_load_ir1_mem_to_ir2(IR2_OPND *opnd2,
     }
 
     IR2_OPND mem_opnd;
-    if (is_xmm_hi) {
-        latxs_convert_mem_opnd_with_bias(&mem_opnd, opnd1, 8, addr_size);
-    } else {
-        latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
-    }
+    latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
 
     IR2_OPCODE mem_opcode = LISA_INVALID;
 
@@ -621,7 +617,7 @@ void latxs_load_ir1_mmx_to_ir2(IR2_OPND *opnd2,
 }
 
 void latxs_load_ir1_xmm_to_ir2(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, EXMode em, bool is_xmm_hi)
+        IR1_OPND *opnd1, EXMode em)
 {
     lsassertm(0, "OPND: load ir1 xmm to be implemented in LoongArch.\n");
 }
@@ -846,7 +842,7 @@ void latxs_store_ir2_to_ir1_dr(IR2_OPND *opnd2, IR1_OPND *opnd1)
  *      Used only for imm, gpr, mem, mmx, xmm
  */
 void latxs_load_ir1_to_ir2(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, EXMode em, bool is_xmm_hi)
+        IR1_OPND *opnd1, EXMode em)
 {
     lsassert(latxs_ir2_opnd_is_gpr(opnd2));
 
@@ -871,7 +867,7 @@ void latxs_load_ir1_to_ir2(IR2_OPND *opnd2,
             latxs_load_ir1_mmx_to_ir2(opnd2, opnd1, em);
             break;
         } else if (ir1_opnd_is_xmm(opnd1)) {
-            latxs_load_ir1_xmm_to_ir2(opnd2, opnd1, em, is_xmm_hi);
+            latxs_load_ir1_xmm_to_ir2(opnd2, opnd1, em);
             break;
         } else {
             lsassert(0);
@@ -879,7 +875,7 @@ void latxs_load_ir1_to_ir2(IR2_OPND *opnd2,
         break;
     }
     case X86_OP_MEM:
-        latxs_load_ir1_mem_to_ir2(opnd2, opnd1, em, is_xmm_hi, -1);
+        latxs_load_ir1_mem_to_ir2(opnd2, opnd1, em, -1);
         break;
     default:
         lsassert(0);
@@ -935,7 +931,7 @@ void latxs_store_ir2_to_ir1_gpr(IR2_OPND *opnd2, IR1_OPND *opnd1)
 }
 
 void latxs_store_ir2_to_ir1_mem(IR2_OPND *value_opnd,
-        IR1_OPND *opnd1, bool is_xmm_hi, int addr_size)
+        IR1_OPND *opnd1, int addr_size)
 {
     lsassert(latxs_ir2_opnd_is_gpr(value_opnd));
 
@@ -945,11 +941,7 @@ void latxs_store_ir2_to_ir1_mem(IR2_OPND *value_opnd,
         addr_size = latxs_ir1_addr_size(lsenv->tr_data->curr_ir1_inst);
     }
 
-    if (is_xmm_hi) {
-        latxs_convert_mem_opnd_with_bias(&mem_opnd, opnd1, 8, addr_size);
-    } else {
-        latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
-    }
+    latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
 
     IR2_OPCODE mem_opcode = LISA_INVALID;
 
@@ -1091,8 +1083,7 @@ _GEN_EOB_:
  *
  * TODO remove xmm hi
  */
-void latxs_store_ir2_to_ir1(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi)
+void latxs_store_ir2_to_ir1(IR2_OPND *opnd2, IR1_OPND *opnd1)
 {
     lsassert(latxs_ir2_opnd_is_gpr(opnd2));
 
@@ -1120,16 +1111,7 @@ void latxs_store_ir2_to_ir1(IR2_OPND *opnd2,
             latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &mmx_opnd, opnd2);
             break;
         } else if (ir1_opnd_is_xmm(opnd1)) {
-            int ir1_reg = ir1_opnd_base_reg_num(opnd1);
-            IR2_OPND mmx_opnd;
-
-            if (is_xmm_hi) {
-                mmx_opnd = latxs_ra_alloc_xmm_hi(ir1_reg);
-            } else {
-                mmx_opnd = latxs_ra_alloc_xmm_lo(ir1_reg);
-            }
-
-            latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &mmx_opnd, opnd2);
+            lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
             break;
         } else {
             lsassert(0);
@@ -1137,7 +1119,7 @@ void latxs_store_ir2_to_ir1(IR2_OPND *opnd2,
         break;
     }
     case X86_OP_MEM:
-        latxs_store_ir2_to_ir1_mem(opnd2, opnd1, is_xmm_hi, -1);
+        latxs_store_ir2_to_ir1_mem(opnd2, opnd1, -1);
         break;
     default:
         lsassert(0);
@@ -1192,15 +1174,11 @@ static void latxs_load_64_bit_freg_from_ir1_80_bit_mem(
 }
 
 static void latxs_load_freg_from_ir1_mem(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
+        IR1_OPND *opnd1, bool is_convert)
 {
     IR2_OPND mem_opnd;
     int addr_size = latxs_ir1_addr_size(lsenv->tr_data->curr_ir1_inst);
-    if (is_xmm_hi) {
-        latxs_convert_mem_opnd_with_bias(&mem_opnd, opnd1, 8, addr_size);
-    } else {
-        latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
-    }
+    latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
 
     if (ir1_opnd_size(opnd1) == 32) {
         gen_ldst_c1_softmmu_helper(LISA_FLD_S, opnd2, &mem_opnd, 1);
@@ -1255,27 +1233,12 @@ static void latxs_load_freg_from_ir1_mmx(IR2_OPND *opnd2, IR1_OPND *opnd1)
 }
 
 static void latxs_load_freg_from_ir1_xmm(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi)
+        IR1_OPND *opnd1)
 {
-    lsassert(latxs_ir2_opnd_is_fpr(opnd2));
-    lsassert(ir1_opnd_is_xmm(opnd1));
-
-    int ir1_reg = ir1_opnd_base_reg_num(opnd1);
-    IR2_OPND xmm_opnd;
-
-    if (is_xmm_hi) {
-        xmm_opnd = latxs_ra_alloc_xmm_hi(ir1_reg);
-    } else {
-        xmm_opnd = latxs_ra_alloc_xmm_lo(ir1_reg);
-    }
-
-    if (!latxs_ir2_opnd_cmp(opnd2, &xmm_opnd)) {
-        latxs_append_ir2_opnd2(LISA_FMOV_D, opnd2, &xmm_opnd);
-    }
+    lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
 }
 
-IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *opnd1,
-        bool is_xmm_hi, bool is_convert)
+IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *opnd1, bool is_convert)
 {
     switch (ir1_opnd_type(opnd1)) {
     case X86_OP_REG: {
@@ -1286,12 +1249,7 @@ IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *opnd1,
             int ir1_reg = ir1_opnd_base_reg_num(opnd1);
             return latxs_ra_alloc_mmx(ir1_reg);
         } else if (ir1_opnd_is_xmm(opnd1)) {
-            int ir1_reg = ir1_opnd_base_reg_num(opnd1);
-            if (is_xmm_hi) {
-                return latxs_ra_alloc_xmm_hi(ir1_reg);
-            } else {
-                return latxs_ra_alloc_xmm_lo(ir1_reg);
-            }
+            lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
         } else if (ir1_opnd_is_ymm(opnd1)) {
             lsassert(0);
         } else {
@@ -1301,7 +1259,7 @@ IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *opnd1,
     }
     case X86_OP_MEM: {
         IR2_OPND ret_opnd = latxs_ra_alloc_ftemp();
-        latxs_load_freg_from_ir1_mem(&ret_opnd, opnd1, is_xmm_hi, is_convert);
+        latxs_load_freg_from_ir1_mem(&ret_opnd, opnd1, is_convert);
         return ret_opnd;
     }
     default:
@@ -1311,7 +1269,7 @@ IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *opnd1,
 }
 
 void latxs_load_freg_from_ir1_2(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
+        IR1_OPND *opnd1, bool is_convert)
 {
     lsassert(latxs_ir2_opnd_is_fpr(opnd2));
 
@@ -1324,7 +1282,7 @@ void latxs_load_freg_from_ir1_2(IR2_OPND *opnd2,
             latxs_load_freg_from_ir1_mmx(opnd2, opnd1);
             return;
         } else if (ir1_opnd_is_xmm(opnd1)) {
-            latxs_load_freg_from_ir1_xmm(opnd2, opnd1, is_xmm_hi);
+            latxs_load_freg_from_ir1_xmm(opnd2, opnd1);
             return;
         } else if (ir1_opnd_is_ymm(opnd1)) {
             lsassert(0);
@@ -1333,7 +1291,7 @@ void latxs_load_freg_from_ir1_2(IR2_OPND *opnd2,
         break;
     }
     case X86_OP_MEM:
-        latxs_load_freg_from_ir1_mem(opnd2, opnd1, is_xmm_hi, is_convert);
+        latxs_load_freg_from_ir1_mem(opnd2, opnd1, is_convert);
         break;
     default:
         lsassert(0);
@@ -1344,7 +1302,7 @@ void latxs_load_freg_from_ir1_2(IR2_OPND *opnd2,
 }
 
 void latxs_load_singles_from_ir1_pack(IR2_OPND *single0,
-        IR2_OPND *single1, IR1_OPND *opnd1, bool is_xmm_hi)
+        IR2_OPND *single1, IR1_OPND *opnd1)
 {
     lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
 }
@@ -1404,15 +1362,11 @@ void latxs_store_64_bit_freg_to_ir1_80_bit_mem(
 }
 
 static void latxs_store_freg_to_ir1_mem(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
+        IR1_OPND *opnd1, bool is_convert)
 {
     IR2_OPND mem_opnd;
     int addr_size = latxs_ir1_addr_size(lsenv->tr_data->curr_ir1_inst);
-    if (is_xmm_hi) {
-        latxs_convert_mem_opnd_with_bias(&mem_opnd, opnd1, 8, addr_size);
-    } else {
-        latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
-    }
+    latxs_convert_mem_opnd(&mem_opnd, opnd1, addr_size);
 
     int save_temp = 1;
 
@@ -1462,28 +1416,13 @@ static void latxs_store_freg_to_ir1_mmx(IR2_OPND *opnd2, IR1_OPND *opnd1)
     }
 }
 
-static void latxs_store_freg_to_ir1_xmm(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi)
+static void latxs_store_freg_to_ir1_xmm(IR2_OPND *opnd2, IR1_OPND *opnd1)
 {
-    lsassert(latxs_ir2_opnd_is_fpr(opnd2));
-    lsassert(ir1_opnd_is_xmm(opnd1));
-
-    int ir1_reg = ir1_opnd_base_reg_num(opnd1);
-    IR2_OPND xmm_opnd;
-
-    if (is_xmm_hi) {
-        xmm_opnd = latxs_ra_alloc_xmm_hi(ir1_reg);
-    } else {
-        xmm_opnd = latxs_ra_alloc_xmm_lo(ir1_reg);
-    }
-
-    if (!latxs_ir2_opnd_cmp(opnd2, &xmm_opnd)) {
-        latxs_append_ir2_opnd2(LISA_FMOV_D, &xmm_opnd, opnd2);
-    }
+    lsassertm(0, "%s to be implemented in LoongArch.\n", __func__);
 }
 
 void latxs_store_freg_to_ir1(IR2_OPND *opnd2,
-        IR1_OPND *opnd1, bool is_xmm_hi, bool is_convert)
+        IR1_OPND *opnd1, bool is_convert)
 {
     lsassert(latxs_ir2_opnd_is_fpr(opnd2));
 
@@ -1496,7 +1435,7 @@ void latxs_store_freg_to_ir1(IR2_OPND *opnd2,
             latxs_store_freg_to_ir1_mmx(opnd2, opnd1);
             return;
         } else if (ir1_opnd_is_xmm(opnd1)) {
-            latxs_store_freg_to_ir1_xmm(opnd2, opnd1, is_xmm_hi);
+            latxs_store_freg_to_ir1_xmm(opnd2, opnd1);
             return;
         } else if (ir1_opnd_is_ymm(opnd1)) {
             lsassert(0);
@@ -1505,7 +1444,7 @@ void latxs_store_freg_to_ir1(IR2_OPND *opnd2,
         break;
     }
     case X86_OP_MEM:
-        latxs_store_freg_to_ir1_mem(opnd2, opnd1, is_xmm_hi, is_convert);
+        latxs_store_freg_to_ir1_mem(opnd2, opnd1, is_convert);
         return;
     default:
         lsassert(0);
@@ -1589,7 +1528,7 @@ IR2_OPND latxs_load_freg128_from_ir1(IR1_OPND *opnd1)
         if (ir1_opnd_size(opnd1) == 128) {
             latxs_load_freg128_from_ir1_mem(&ret_opnd, opnd1);
         } else {
-            latxs_load_freg_from_ir1_mem(&ret_opnd, opnd1, false, false);
+            latxs_load_freg_from_ir1_mem(&ret_opnd, opnd1, false);
         }
         return ret_opnd;
     }

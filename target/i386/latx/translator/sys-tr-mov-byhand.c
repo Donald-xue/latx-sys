@@ -11,8 +11,8 @@ static bool latxs_translate_mov_byhand_normal(
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND tmp = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&tmp, opnd1, EXMode_N, false);
-    latxs_store_ir2_to_ir1(&tmp, opnd0, false);
+    latxs_load_ir1_to_ir2(&tmp, opnd1, EXMode_N);
+    latxs_store_ir2_to_ir1(&tmp, opnd0);
     latxs_ra_free_temp(&tmp);
     return true;
 }
@@ -128,11 +128,11 @@ static bool latxs_translate_mov_byhand_gpr_mem(
     if (os == 32) {
         int gpr_num = ir1_opnd_base_reg_num(opnd0);
         IR2_OPND gpr = latxs_ra_alloc_gpr(gpr_num);
-        latxs_load_ir1_mem_to_ir2(&gpr, opnd1, EXMode_S, false, -1);
+        latxs_load_ir1_mem_to_ir2(&gpr, opnd1, EXMode_S, -1);
         latxs_td_set_reg_extmb(gpr_num, EXMode_S, 32);
     } else {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
-        latxs_load_ir1_mem_to_ir2(&tmp, opnd1, EXMode_Z, false, -1);
+        latxs_load_ir1_mem_to_ir2(&tmp, opnd1, EXMode_Z, -1);
         latxs_store_ir2_to_ir1_gpr_em(&tmp, opnd0);
     }
 
@@ -206,10 +206,10 @@ static void tr_movsx_byhand_mem(IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     if (ir1_opnd_size(opnd0) == 32) {
         IR2_OPND dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
-        latxs_load_ir1_mem_to_ir2(&dest, opnd1, EXMode_S, false, -1);
+        latxs_load_ir1_mem_to_ir2(&dest, opnd1, EXMode_S, -1);
     } else {
         IR2_OPND src = latxs_ra_alloc_itemp();
-        latxs_load_ir1_mem_to_ir2(&src, opnd1, EXMode_S, false, -1);
+        latxs_load_ir1_mem_to_ir2(&src, opnd1, EXMode_S, -1);
         latxs_store_ir2_to_ir1_gpr_em(&src, opnd0);
     }
 }
@@ -243,10 +243,10 @@ static void tr_movzx_byhand_mem(IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     if (ir1_opnd_size(opnd0) == 32) {
         IR2_OPND dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
-        latxs_load_ir1_mem_to_ir2(&dest, opnd1, EXMode_Z, false, -1);
+        latxs_load_ir1_mem_to_ir2(&dest, opnd1, EXMode_Z, -1);
     } else {
         IR2_OPND src = latxs_ra_alloc_itemp();
-        latxs_load_ir1_mem_to_ir2(&src, opnd1, EXMode_Z, false, -1);
+        latxs_load_ir1_mem_to_ir2(&src, opnd1, EXMode_Z, -1);
         latxs_store_ir2_to_ir1_gpr_em(&src, opnd0);
     }
 }

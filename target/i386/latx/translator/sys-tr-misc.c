@@ -361,7 +361,7 @@ bool latxs_translate_call(IR1_INST *pir1)
     latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
             X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
     latxs_store_ir2_to_ir1_mem(&return_addr_opnd,
-            &mem_ir1_opnd, false, ss_addr_size);
+            &mem_ir1_opnd, ss_addr_size);
     latxs_ra_free_temp(&return_addr_opnd);
 
     /* 3. update ESP */
@@ -408,7 +408,7 @@ bool latxs_translate_callnext(IR1_INST *pir1)
     latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
             X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
     latxs_store_ir2_to_ir1_mem(&next_addr_opnd,
-            &mem_ir1_opnd, false, ss_addr_size);
+            &mem_ir1_opnd, ss_addr_size);
     latxs_ra_free_temp(&next_addr_opnd);
 
     /* 3. update ESP */
@@ -447,7 +447,7 @@ bool latxs_translate_callin(IR1_INST *pir1)
 
     /* 1. prepare successor x86 address */
     IR2_OPND next_eip_opnd = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&next_eip_opnd, opnd0, EXMode_Z, false);
+    latxs_load_ir1_to_ir2(&next_eip_opnd, opnd0, EXMode_Z);
     if (opnd_size == 16) {
         latxs_append_ir2_opnd2_(lisa_mov16z, &next_eip_opnd,
                                              &next_eip_opnd);
@@ -462,7 +462,7 @@ bool latxs_translate_callin(IR1_INST *pir1)
     latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size, /* 16 or 32 */
             X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
     latxs_store_ir2_to_ir1_mem(&return_addr_opnd,
-            &mem_ir1_opnd, false, ss_addr_size);
+            &mem_ir1_opnd, ss_addr_size);
     latxs_ra_free_temp(&return_addr_opnd);
 
     /* 4. update ESP */
@@ -506,7 +506,7 @@ bool latxs_translate_jmpin(IR1_INST *pir1)
     /* 1. set successor x86 address */
     IR2_OPND next_eip = latxs_ra_alloc_dbt_arg2();
     latxs_load_ir1_to_ir2(&next_eip,
-            ir1_get_opnd(pir1, 0), EXMode_Z, false);
+            ir1_get_opnd(pir1, 0), EXMode_Z);
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
         latxs_append_ir2_opnd2_(lisa_mov16z, &next_eip, &next_eip);
@@ -751,7 +751,7 @@ static void latxs_translate_lldt_mem(IR1_INST *pir1, IR1_OPND *opnd0)
 {
     /* 0. load selector value */
     IR2_OPND selector = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&selector, opnd0, EXMode_Z, false, -1);
+    latxs_load_ir1_mem_to_ir2(&selector, opnd0, EXMode_Z, -1);
 
     /* helper might cause exception, save complete CPUX86State */
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
@@ -802,7 +802,7 @@ bool latxs_translate_sldt(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_LD_W, &selector, &latxs_env_ir2_opnd,
             lsenv_offset_of_ldtr_selector(lsenv));
 
-    latxs_store_ir2_to_ir1(&selector, opnd0, false);
+    latxs_store_ir2_to_ir1(&selector, opnd0);
 
     return true;
 }
@@ -834,7 +834,7 @@ static void latxs_translate_ltr_mem(IR1_INST *pir1, IR1_OPND *opnd0)
 
     /* 1. get selector into arg1 (a1) */
     IR2_OPND selector = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&selector, opnd0, EXMode_Z, false, -1);
+    latxs_load_ir1_mem_to_ir2(&selector, opnd0, EXMode_Z, -1);
     latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd,
             &selector, &latxs_zero_ir2_opnd);
 
@@ -877,7 +877,7 @@ bool latxs_translate_str(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_LD_W, &selector, &latxs_env_ir2_opnd,
             lsenv_offset_of_tr_selector(lsenv));
 
-    latxs_store_ir2_to_ir1(&selector, opnd0, false);
+    latxs_store_ir2_to_ir1(&selector, opnd0);
 
     return true;
 }
@@ -971,7 +971,7 @@ bool latxs_translate_pop(IR1_INST *pir1)
     IR2_OPND tmp = latxs_ra_alloc_itemp();
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_load_ir1_mem_to_ir2(&tmp, &mem_ir1_opnd, EXMode_Z,
-            false, ss_addr_size);
+             ss_addr_size);
 
     /* 2. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
@@ -994,10 +994,10 @@ bool latxs_translate_pop(IR1_INST *pir1)
     /* 3. write into destination  : might generate exception */
     if (is_mem_esp) {
         td->sys.popl_esp_hack = data_size >> 3;
-        latxs_store_ir2_to_ir1_mem(&tmp, opnd0, false, ss_addr_size);
+        latxs_store_ir2_to_ir1_mem(&tmp, opnd0, ss_addr_size);
         td->sys.popl_esp_hack = 0;
     } else {
-        latxs_store_ir2_to_ir1(&tmp, opnd0, false);
+        latxs_store_ir2_to_ir1(&tmp, opnd0);
     }
 
     /*
@@ -1065,7 +1065,7 @@ bool latxs_translate_push(IR1_INST *pir1)
 
     /* 1. load source data   : might generate exception */
     IR2_OPND tmp = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&tmp, opnd0, EXMode_N, false);
+    latxs_load_ir1_to_ir2(&tmp, opnd0, EXMode_N);
 
     /* 2.1 build MEM(SS:ESP - 2/4)*/
     IR1_OPND mem_ir1_opnd;
@@ -1075,7 +1075,7 @@ bool latxs_translate_push(IR1_INST *pir1)
     /* 2.2 write data into stack   : might generate exception */
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_store_ir2_to_ir1_mem(&tmp, &mem_ir1_opnd,
-            false, ss_addr_size);
+             ss_addr_size);
 
     /* 3. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
@@ -1130,7 +1130,7 @@ bool latxs_translate_ret(IR1_INST *pir1)
     IR2_OPND return_addr_opnd = latxs_ra_alloc_dbt_arg2();
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_load_ir1_mem_to_ir2(&return_addr_opnd,
-            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+            &mem_ir1_opnd, EXMode_Z, ss_addr_size);
 
     /* 2. apply address size */
     if (data_size == 32 && addr_size == 2) {
@@ -1214,16 +1214,16 @@ bool latxs_translate_xchg(IR1_INST *pir1)
     IR2_OPND src_opnd_0 = latxs_ra_alloc_itemp();
     IR2_OPND src_opnd_1 = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src_opnd_0, opnd0, EXMode_N, false);
-    latxs_load_ir1_to_ir2(&src_opnd_1, opnd1, EXMode_N, false);
+    latxs_load_ir1_to_ir2(&src_opnd_0, opnd0, EXMode_N);
+    latxs_load_ir1_to_ir2(&src_opnd_1, opnd1, EXMode_N);
 
     /* Do memory access first for precise exception */
     if (ir1_opnd_is_mem(opnd0)) {
-        latxs_store_ir2_to_ir1(&src_opnd_1, opnd0, false);
-        latxs_store_ir2_to_ir1(&src_opnd_0, opnd1, false);
+        latxs_store_ir2_to_ir1(&src_opnd_1, opnd0);
+        latxs_store_ir2_to_ir1(&src_opnd_0, opnd1);
     } else {
-        latxs_store_ir2_to_ir1(&src_opnd_0, opnd1, false);
-        latxs_store_ir2_to_ir1(&src_opnd_1, opnd0, false);
+        latxs_store_ir2_to_ir1(&src_opnd_0, opnd1);
+        latxs_store_ir2_to_ir1(&src_opnd_1, opnd0);
     }
 
     return true;
@@ -1257,9 +1257,9 @@ bool latxs_translate_cmpxchg(IR1_INST *pir1)
     IR2_OPND src_opnd_1 = latxs_ra_alloc_itemp();
     IR2_OPND eax_opnd = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_to_ir2(&src_opnd_0, opnd0, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&src_opnd_1, opnd1, EXMode_S, false);
-    latxs_load_ir1_to_ir2(&eax_opnd, reg_ir1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&src_opnd_0, opnd0, EXMode_S);
+    latxs_load_ir1_to_ir2(&src_opnd_1, opnd1, EXMode_S);
+    latxs_load_ir1_to_ir2(&eax_opnd, reg_ir1, EXMode_S);
 
     IR2_OPND dest_opnd = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SUB_D,
@@ -1270,7 +1270,7 @@ bool latxs_translate_cmpxchg(IR1_INST *pir1)
             &src_opnd_0, &eax_opnd, &label_unequal);
 
     /* equal */
-    latxs_store_ir2_to_ir1(&src_opnd_1, opnd0, false);
+    latxs_store_ir2_to_ir1(&src_opnd_1, opnd0);
     latxs_ra_free_temp(&src_opnd_1);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
@@ -1737,14 +1737,14 @@ static void latxs_do_translate_ret_far_real(
     /* 2. load new EIP from MEM(SS:ESP) */
     IR2_OPND tmp_new_eip = latxs_ra_alloc_itemp();
     latxs_load_ir1_mem_to_ir2(&tmp_new_eip,
-            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+            &mem_ir1_opnd, EXMode_Z, ss_addr_size);
 
     /* 3. load new CS from MEM(SS:ESP + 2/4) */
     latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, opnd_size,
             X86_REG_SS, X86_REG_ESP, (opnd_size >> 3), 0, 0);
     IR2_OPND tmp_new_cs = latxs_ra_alloc_itemp();
     latxs_load_ir1_mem_to_ir2(&tmp_new_cs,
-            &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+            &mem_ir1_opnd, EXMode_Z, ss_addr_size);
 
     /* 4. update env->eip */
     latxs_append_ir2_opnd2i(LISA_ST_W, &tmp_new_eip, &latxs_env_ir2_opnd,
@@ -1811,9 +1811,9 @@ bool latxs_translate_retf(IR1_INST *pir1)
 bool latxs_translate_cwd(IR1_INST *pir1)
 {
     IR2_OPND val = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&val, &ax_ir1_opnd, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&val, &ax_ir1_opnd, EXMode_S);
     latxs_append_ir2_opnd2i(LISA_SRAI_W, &val, &val, 15);
-    latxs_store_ir2_to_ir1(&val, &dx_ir1_opnd, false);
+    latxs_store_ir2_to_ir1(&val, &dx_ir1_opnd);
     latxs_ra_free_temp(&val);
     return true;
 }
@@ -1827,11 +1827,11 @@ bool latxs_translate_cdq(IR1_INST *pir1)
 #endif
 
     IR2_OPND eax = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&eax, &eax_ir1_opnd, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&eax, &eax_ir1_opnd, EXMode_S);
     IR2_OPND edx = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2_(lisa_mov32s, &edx, &eax);
     latxs_append_ir2_opnd2i(LISA_SRAI_W, &edx, &edx, 31);
-    latxs_store_ir2_to_ir1(&edx, &edx_ir1_opnd, false);
+    latxs_store_ir2_to_ir1(&edx, &edx_ir1_opnd);
     latxs_ra_free_temp(&eax);
     latxs_ra_free_temp(&edx);
     return true;
@@ -1849,7 +1849,7 @@ bool latxs_translate_cwde(IR1_INST *pir1)
         /* AX = signed extension(al) */
         IR2_OPND al_opnd = latxs_ra_alloc_itemp();
         latxs_load_ir1_gpr_to_ir2(&al_opnd, &al_ir1_opnd, EXMode_S);
-        latxs_store_ir2_to_ir1(&al_opnd, &ax_ir1_opnd, false);
+        latxs_store_ir2_to_ir1(&al_opnd, &ax_ir1_opnd);
     } else if (data_size == 32) {
         /* EAX = signed extension(ax) */
         IR2_OPND eax_opnd = latxs_ra_alloc_gpr(eax_index);
@@ -1865,7 +1865,7 @@ bool latxs_translate_cbw(IR1_INST *pir1)
 {
     IR2_OPND val = latxs_ra_alloc_itemp();
     latxs_load_ir1_gpr_to_ir2(&val, &al_ir1_opnd, EXMode_S);
-    latxs_store_ir2_to_ir1(&val, &ax_ir1_opnd, false);
+    latxs_store_ir2_to_ir1(&val, &ax_ir1_opnd);
     return true;
 }
 
@@ -2450,7 +2450,7 @@ bool latxs_translate_enter(IR1_INST *pir1)
     /* 1.2 store */
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_store_ir2_to_ir1_mem(&ebp_opnd,
-            &mem_ir1_opnd, false, ss_addr_size);
+            &mem_ir1_opnd, ss_addr_size);
 
     level &= 31;
     if (level) {
@@ -2461,20 +2461,20 @@ bool latxs_translate_enter(IR1_INST *pir1)
                     X86_REG_SS, X86_REG_EBP, 0 - (data_size >> 3) * i, 0, 0);
             IR2_OPND value = latxs_ra_alloc_itemp();
             latxs_load_ir1_mem_to_ir2(&value,
-                    &mem_ir1_opnd, EXMode_Z, false, ss_addr_size);
+                    &mem_ir1_opnd, EXMode_Z, ss_addr_size);
 
             latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
                     X86_REG_SS, X86_REG_ESP,
                     0 - (data_size >> 3) * (i + 1), 0, 0);
             latxs_store_ir2_to_ir1_mem(&value,
-                    &mem_ir1_opnd, false, ss_addr_size);
+                    &mem_ir1_opnd, ss_addr_size);
         }
         /* push current FrameTemp as the last level */
         latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
                 X86_REG_SS, X86_REG_ESP,
                 0 - (data_size >> 3) * (level + 1), 0, 0);
         latxs_store_ir2_to_ir1_mem(&frametemp,
-                &mem_ir1_opnd, false, ss_addr_size);
+                &mem_ir1_opnd, ss_addr_size);
     }
 
     /* copy FrameTemp vlaue to EBP */
@@ -2515,7 +2515,7 @@ bool latxs_translate_leave(IR1_INST *pir1)
 
     IR2_OPND new_ebp = latxs_ra_alloc_itemp();
     latxs_load_ir1_mem_to_ir2(&new_ebp, &mem_ir1_opnd,
-            EXMode_Z, false, ss_addr_size);
+            EXMode_Z, ss_addr_size);
 
     IR2_OPND new_esp = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_ADDI_W, &new_esp, &ebp_opnd, data_size >> 3);
@@ -2875,7 +2875,7 @@ bool latxs_translate_tzcnt(IR1_INST *pir1)
 
     /* 1. load source data */
     IR2_OPND value = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&value, opnd1, EXMode_S, false);
+    latxs_load_ir1_to_ir2(&value, opnd1, EXMode_S);
 
     /* 2. count tailing zero */
     IR2_OPND tz_num = latxs_ra_alloc_itemp();

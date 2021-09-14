@@ -1335,31 +1335,31 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *, IR1_OPND *, int b, int as);
 
 void latxs_load_ir1_imm_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
 void latxs_load_ir1_seg_to_ir2(IR2_OPND *, IR1_OPND *);
-void latxs_load_ir1_mem_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool, int as);
+void latxs_load_ir1_mem_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, int as);
 void latxs_load_ir1_gpr_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
 void latxs_load_ir1_mmx_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
-void latxs_load_ir1_xmm_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool);
+void latxs_load_ir1_xmm_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
 void latxs_load_ir1_cr_to_ir2(IR2_OPND *, IR1_OPND *);
 void latxs_load_ir1_dr_to_ir2(IR2_OPND *, IR1_OPND *);
-void latxs_load_ir1_to_ir2(IR2_OPND *, IR1_OPND *, EXMode, bool);
+void latxs_load_ir1_to_ir2(IR2_OPND *, IR1_OPND *, EXMode);
 
 void latxs_store_ir2_to_ir1_gpr(IR2_OPND *, IR1_OPND *);
 void latxs_store_ir2_to_ir1_seg(IR2_OPND *, IR1_OPND *);
-void latxs_store_ir2_to_ir1_mem(IR2_OPND *, IR1_OPND *, bool, int as);
+void latxs_store_ir2_to_ir1_mem(IR2_OPND *, IR1_OPND *, int as);
 void latxs_store_ir2_to_ir1_cr(IR2_OPND *, IR1_OPND *);
 void latxs_store_ir2_to_ir1_dr(IR2_OPND *, IR1_OPND *);
-void latxs_store_ir2_to_ir1(IR2_OPND *, IR1_OPND *, bool);
+void latxs_store_ir2_to_ir1(IR2_OPND *, IR1_OPND *);
 
 void latxs_load_eflags_cf_to_ir2(IR2_OPND *opnd2);
 
-IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *, bool hi, bool cvt);
-void latxs_load_freg_from_ir1_2(IR2_OPND *, IR1_OPND *, bool hi, bool cvt);
+IR2_OPND latxs_load_freg_from_ir1_1(IR1_OPND *, bool cvt);
+void latxs_load_freg_from_ir1_2(IR2_OPND *, IR1_OPND *, bool cvt);
 
-void latxs_load_singles_from_ir1_pack(IR2_OPND *, IR2_OPND *, IR1_OPND *, bool);
+void latxs_load_singles_from_ir1_pack(IR2_OPND *, IR2_OPND *, IR1_OPND *);
 void latxs_store_singles_to_ir2_pack(IR2_OPND *, IR2_OPND *, IR2_OPND *);
 
 void latxs_store_64_bit_freg_to_ir1_80_bit_mem(IR2_OPND *, IR2_OPND *);
-void latxs_store_freg_to_ir1(IR2_OPND *, IR1_OPND *, bool hi, bool cvt);
+void latxs_store_freg_to_ir1(IR2_OPND *, IR1_OPND *, bool cvt);
 
 void latxs_load_freg128_from_ir1_mem(IR2_OPND *, IR1_OPND *);
 void latxs_store_freg128_to_ir1_mem(IR2_OPND *, IR1_OPND *);

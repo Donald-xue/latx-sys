@@ -36,7 +36,7 @@ bool latxs_translate_fcmovb(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -61,7 +61,7 @@ bool latxs_translate_fcmove(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                    true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -86,7 +86,7 @@ bool latxs_translate_fcmovbe(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                   true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -112,7 +112,7 @@ bool latxs_translate_fcmovu(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                   true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -138,7 +138,7 @@ bool latxs_translate_fcmovnb(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                   true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -164,7 +164,7 @@ bool latxs_translate_fcmovne(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                   true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -189,7 +189,7 @@ bool latxs_translate_fcmovnbe(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                   true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 
@@ -214,7 +214,7 @@ bool latxs_translate_fcmovnu(IR1_INST *pir1)
 
     IR2_OPND dst_opnd = latxs_ra_alloc_st(0);
     IR2_OPND src_opnd = latxs_load_freg_from_ir1_1(ir1_get_opnd(pir1, 1),
-                                                   false, true);
+                                                   true);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &dst_opnd, &src_opnd);
 

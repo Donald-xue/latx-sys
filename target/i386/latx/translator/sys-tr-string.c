@@ -235,7 +235,7 @@ bool latxs_translate_ins(IR1_INST *pir1)
      * Note: we must do this dummy write first to be restartable in
      * case of page fault.
      */
-    latxs_store_ir2_to_ir1_mem(&latxs_zero_ir2_opnd, opnd0, false, addr_size);
+    latxs_store_ir2_to_ir1_mem(&latxs_zero_ir2_opnd, opnd0, addr_size);
     /* 2.0 save native context */
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
     /* 2.1 prepare parameter for IO read helper */
@@ -269,7 +269,7 @@ bool latxs_translate_ins(IR1_INST *pir1)
     latxs_append_ir2_opnd2_(lisa_mov, &io_value_reg, &latxs_ret0_ir2_opnd);
 
     /* 3. write to mem */
-    latxs_store_ir2_to_ir1_mem(&io_value_reg, opnd0, false, addr_size);
+    latxs_store_ir2_to_ir1_mem(&io_value_reg, opnd0, addr_size);
     latxs_ra_free_temp(&io_value_reg);
 
     /* tr_gen_io_end(); */
@@ -331,7 +331,7 @@ bool latxs_translate_outs(IR1_INST *pir1)
 
     /* 2. load value from mem */
     IR2_OPND io_value_reg = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&io_value_reg, opnd1, EXMode_N, false);
+    latxs_load_ir1_to_ir2(&io_value_reg, opnd1, EXMode_N);
 
     /* 3.0 save native context */
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
@@ -418,8 +418,8 @@ bool latxs_translate_movs(IR1_INST *pir1)
 
     /* 2. load memory value at ESI, and store into memory at EDI */
     IR2_OPND src_value = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&src_value, opnd1, EXMode_S, false);
-    latxs_store_ir2_to_ir1_mem(&src_value, opnd0, false, addr_size);
+    latxs_load_ir1_to_ir2(&src_value, opnd1, EXMode_S);
+    latxs_store_ir2_to_ir1_mem(&src_value, opnd0, addr_size);
 
     /* 3. adjust (E)SI and (E)DI */
     if (addr_size == 4) {
@@ -436,8 +436,8 @@ bool latxs_translate_movs(IR1_INST *pir1)
         /* SI and DI */
         IR2_OPND si = latxs_ra_alloc_itemp();
         IR2_OPND di = latxs_ra_alloc_itemp();
-        latxs_load_ir1_to_ir2(&si, &si_ir1_opnd, EXMode_Z, false);
-        latxs_load_ir1_to_ir2(&di, &di_ir1_opnd, EXMode_Z, false);
+        latxs_load_ir1_to_ir2(&si, &si_ir1_opnd, EXMode_Z);
+        latxs_load_ir1_to_ir2(&di, &di_ir1_opnd, EXMode_Z);
         latxs_append_ir2_opnd3(LISA_SUB_W, &si, &si, &setp);
         latxs_append_ir2_opnd3(LISA_SUB_W, &di, &di, &setp);
         if (option_by_hand) {
@@ -480,7 +480,7 @@ bool latxs_translate_scas(IR1_INST *pir1)
     /* 2.1 load memory value at MEM(ES:(E)DI) */
     IR2_OPND _edi_ = latxs_ra_alloc_itemp();
     latxs_load_ir1_mem_to_ir2(&_edi_,
-            opnd1, EXMode_S, false, addr_size);
+            opnd1, EXMode_S, addr_size);
 
     /* 2.2 adjust EDI */
     if (addr_size == 4) {
@@ -540,8 +540,8 @@ bool latxs_translate_cmps(IR1_INST *pir1)
     IR2_OPND _esi_ = latxs_ra_alloc_itemp();
     IR2_OPND _edi_ = latxs_ra_alloc_itemp();
 
-    latxs_load_ir1_mem_to_ir2(&_esi_, opnd0, EXMode_S, false, addr_size);
-    latxs_load_ir1_mem_to_ir2(&_edi_, opnd1, EXMode_S, false, addr_size);
+    latxs_load_ir1_mem_to_ir2(&_esi_, opnd0, EXMode_S, addr_size);
+    latxs_load_ir1_mem_to_ir2(&_edi_, opnd1, EXMode_S, addr_size);
 
     /* 2.2 adjust ESI and EDI */
     if (addr_size == 4) {
@@ -614,7 +614,7 @@ bool latxs_translate_lods(IR1_INST *pir1)
     }
 
     IR2_OPND _esi_ = latxs_ra_alloc_itemp();
-    latxs_load_ir1_mem_to_ir2(&_esi_, opnd1, em, false, addr_size);
+    latxs_load_ir1_mem_to_ir2(&_esi_, opnd1, em, addr_size);
 
     /* 3 adjust (E)SI */
     if (addr_size == 4) {
@@ -667,7 +667,7 @@ bool latxs_translate_stos(IR1_INST *pir1)
             &label_loop, &label_exit, 1, &step);
 
     /* 2. store EAX into memory at EDI */
-    latxs_store_ir2_to_ir1_mem(&eax_value_opnd, opnd0, false, addr_size);
+    latxs_store_ir2_to_ir1_mem(&eax_value_opnd, opnd0, addr_size);
 
     /* 3. adjust (E)DI */
     if (addr_size == 4) {
