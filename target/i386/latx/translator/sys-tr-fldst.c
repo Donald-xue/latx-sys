@@ -275,13 +275,13 @@ bool latxs_translate_fist(IR1_INST *pir1)
     IR2_OPND bounder_opnd = latxs_ra_alloc_itemp();
     /* double for 0x7fff+0.499999 */
     latxs_load_imm64_to_ir2(&bounder_opnd, high_bound);
-    IR2_OPND f_high_bounder_opnd = ra_alloc_ftemp();
+    IR2_OPND f_high_bounder_opnd = latxs_ra_alloc_ftemp();
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &f_high_bounder_opnd,
                                             &bounder_opnd);
 
     /* double for 0x8000+(-0.499999) */
     latxs_load_imm64_to_ir2(&bounder_opnd, low_bound);
-    IR2_OPND f_low_bounder_opnd = ra_alloc_ftemp();
+    IR2_OPND f_low_bounder_opnd = latxs_ra_alloc_ftemp();
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &f_low_bounder_opnd,
                                             &bounder_opnd);
     latxs_ra_free_temp(&bounder_opnd);
@@ -312,7 +312,7 @@ bool latxs_translate_fist(IR1_INST *pir1)
     latxs_ra_free_temp(&f_high_bounder_opnd);
 
     /* not unorder or flow */
-    IR2_OPND fp_opnd = ra_alloc_ftemp();
+    IR2_OPND fp_opnd = latxs_ra_alloc_ftemp();
     latxs_append_ir2_opnd2(LISA_FTINT_L_D,  &fp_opnd,  &dest_opnd);
     latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &dest_int, &fp_opnd);
     latxs_ra_free_temp(&fp_opnd);

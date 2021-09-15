@@ -159,7 +159,7 @@ IR2_OPND latxs_set_fpu_fcsr_rounding_field_by_x86(void)
     latxs_append_ir2_opnd3(LISA_OR, &fcsr_opnd, &temp_fcsr, zero);
 
     /* set fcsr according to x86 MXCSR register */
-    IR2_OPND temp_mxcsr = ra_alloc_itemp();
+    IR2_OPND temp_mxcsr = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_LD_WU, &temp_mxcsr,
             &latxs_env_ir2_opnd,
             lsenv_offset_of_mxcsr(lsenv));

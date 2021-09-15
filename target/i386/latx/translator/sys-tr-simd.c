@@ -2789,7 +2789,7 @@ bool latxs_translate_movmskpd(IR1_INST *pir1)
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     lsassert(ir1_opnd_is_xmm(src));
-    IR2_OPND temp = ra_alloc_ftemp();
+    IR2_OPND temp = latxs_ra_alloc_ftemp();
     IR2_OPND src_ir2 = latxs_ra_alloc_xmm(XMM_REG(src));
     IR2_OPND dest_ir2 = latxs_ra_alloc_gpr(
         ir1_opnd_base_reg_num(dest));
@@ -2805,7 +2805,7 @@ bool latxs_translate_movmskps(IR1_INST *pir1)
     IR1_OPND *src = ir1_get_opnd(pir1, 1);
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     lsassert(ir1_opnd_is_xmm(src));
-    IR2_OPND temp = ra_alloc_ftemp();
+    IR2_OPND temp = latxs_ra_alloc_ftemp();
     IR2_OPND src_ir2 = latxs_ra_alloc_xmm(XMM_REG(src));
     IR2_OPND dest_ir2 = latxs_ra_alloc_gpr(
         ir1_opnd_base_reg_num(dest));
