@@ -409,6 +409,9 @@ bool translate_psrlq(IR1_INST *pir1)
 
 bool translate_psraw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_psraw(pir1);
+#else
     if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))) {
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)) ||
@@ -464,10 +467,14 @@ bool translate_psraw(IR1_INST *pir1)
         }
     }
     return true;
+#endif
 }
 
 bool translate_psrad(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_psrad(pir1);
+#else
     if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))) {
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 1)) ||
@@ -520,6 +527,7 @@ bool translate_psrad(IR1_INST *pir1)
         }
     }
     return true;
+#endif
 }
 
 bool translate_pslldq(IR1_INST *pir1)

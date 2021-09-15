@@ -298,6 +298,8 @@ IR2_INST   *latxs_ir2_next(IR2_INST *);
 IR2_INST   *latxs_ir2_get(int id);
 
 /* Functions to generate IR2_INST and add into the linked list */
+IR2_INST *latxs_append_ir2_opnd4(IR2_OPCODE, IR2_OPND *, IR2_OPND *,
+                                               IR2_OPND *, IR2_OPND *);
 IR2_INST *latxs_append_ir2_opnd3i(IR2_OPCODE, IR2_OPND *, IR2_OPND *,
                                               IR2_OPND *, int32_t);
 IR2_INST *latxs_append_ir2_opnd2ii(IR2_OPCODE, IR2_OPND *, IR2_OPND *,

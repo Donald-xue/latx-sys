@@ -5540,6 +5540,18 @@ IR2_INST *latxs_append_ir2_opnd3(IR2_OPCODE opcode,
     return pir2;
 }
 
+IR2_INST *latxs_append_ir2_opnd4(IR2_OPCODE opcode,
+    IR2_OPND  *opnd0, IR2_OPND *opnd1, IR2_OPND *opnd2, IR2_OPND *opnd3)
+{
+    IR2_INST *pir2 = latxs_ir2_allocate();
+    latxs_ir2_build4(pir2, opcode, opnd0, opnd1, opnd2, opnd3);
+    lsassertm(latxs_ir2_op_check(pir2),
+            "Maybe you should check the type of operand %s\n",
+            latxs_ir2_name(opcode));
+    latxs_ir2_append(pir2);
+    return pir2;
+}
+
 IR2_INST *latxs_append_ir2_opnd2i(IR2_OPCODE opcode,
         IR2_OPND  *opnd0, IR2_OPND *opnd1, int32_t imm)
 {

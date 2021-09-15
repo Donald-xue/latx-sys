@@ -157,6 +157,9 @@ bool translate_pxor(IR1_INST *pir1)
 
 bool translate_packsswb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_packsswb(pir1);
+#else
     if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))) {
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -179,10 +182,14 @@ bool translate_packsswb(IR1_INST *pir1)
         la_append_ir2_opnd2i(LISA_VSSRANI_B_H, dest, dest, 0);
     }
     return true;
+#endif
 }
 
 bool translate_packssdw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_packssdw(pir1);
+#else
     if (ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))) {
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -205,6 +212,7 @@ bool translate_packssdw(IR1_INST *pir1)
         la_append_ir2_opnd2i(LISA_VSSRANI_H_W, dest, dest, 0);
     }
     return true;
+#endif
 }
 
 bool translate_packuswb(IR1_INST *pir1)
@@ -308,6 +316,9 @@ bool translate_paddd(IR1_INST *pir1)
 
 bool translate_paddsb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_paddsb(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -320,10 +331,14 @@ bool translate_paddsb(IR1_INST *pir1)
                                            true); /* fill default parameter */
     la_append_ir2_opnd3(LISA_VSADD_B, dest_lo, dest_lo, src_lo);
     return true;
+#endif
 }
 
 bool translate_paddsw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_paddsw(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -336,6 +351,7 @@ bool translate_paddsw(IR1_INST *pir1)
                                            true); /* fill default parameter */
     la_append_ir2_opnd3(LISA_VSADD_H, dest_lo, dest_lo, src_lo);
     return true;
+#endif
 }
 
 bool translate_paddusb(IR1_INST *pir1)
@@ -430,6 +446,9 @@ bool translate_pandn(IR1_INST *pir1)
 
 bool translate_pmaddwd(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pmaddwd(pir1);
+#else
     IR2_OPND temp = ra_alloc_ftemp();
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
@@ -449,6 +468,7 @@ bool translate_pmaddwd(IR1_INST *pir1)
         la_append_ir2_opnd2i(LISA_VBSLL_V, dest_lo, temp, 0);
     }
     return true;
+#endif
 }
 
 bool translate_pmulhuw(IR1_INST *pir1)
@@ -473,6 +493,9 @@ bool translate_pmulhuw(IR1_INST *pir1)
 
 bool translate_pmulhw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_pmulhw(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -485,6 +508,7 @@ bool translate_pmulhw(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_VMUH_H, dest, dest, src);
     }
     return true;
+#endif
 }
 
 bool translate_pmullw(IR1_INST *pir1)
@@ -577,6 +601,9 @@ bool translate_psubd(IR1_INST *pir1)
 
 bool translate_psubsb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_psubsb(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -590,10 +617,14 @@ bool translate_psubsb(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_VSSUB_B, dest, dest, src);
     }
     return true;
+#endif
 }
 
 bool translate_psubsw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_psubsw(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -606,10 +637,14 @@ bool translate_psubsw(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_VSSUB_H, dest, dest, src);
     }
     return true;
+#endif
 }
 
 bool translate_psubusb(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_psubusb(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -622,10 +657,14 @@ bool translate_psubusb(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_VSSUB_BU, dest, dest, src);
     }
     return true;
+#endif
 }
 
 bool translate_psubusw(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_psubusw(pir1);
+#else
     if(ir1_opnd_is_xmm(ir1_get_opnd(pir1, 0))){
         IR2_OPND dest = load_freg128_from_ir1(ir1_get_opnd(pir1, 0));
         IR2_OPND src = load_freg128_from_ir1(ir1_get_opnd(pir1, 1));
@@ -638,6 +677,7 @@ bool translate_psubusw(IR1_INST *pir1)
         la_append_ir2_opnd3(LISA_VSSUB_HU, dest, dest, src);
     }
     return true;
+#endif
 }
 
 bool translate_punpckhbw(IR1_INST *pir1)
