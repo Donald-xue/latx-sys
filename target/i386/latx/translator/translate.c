@@ -3189,10 +3189,6 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
         tb->next_tb[n] = next_tb;
         tb_set_jmp_target(tb, n, (uintptr_t)next_tb->tc.ptr);
     } else {
-        if (option_dump)
-            fprintf(stderr, "%p %p(%x) %s to %p %p(%x)\n", tb, tb->tc.ptr,
-                    tb->pc, n ? "jmp" : "fallthrough", next_tb, next_tb->tc.ptr,
-                    next_tb->pc);
         lsassert(next_tb != NULL);
         tb->next_tb[n] = next_tb;
         if (n == 0)

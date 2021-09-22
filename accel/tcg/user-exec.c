@@ -190,7 +190,8 @@ static inline int handle_cpu_signal(uintptr_t pc, siginfo_t *info,
     if (current_tb != NULL) {
         int count =  current_tb->tc.size / 4;
         unsigned int *ins_p = (unsigned int *)current_tb->tc.ptr;
-        printf("\n===== current_tb start pc = 0x%x =====\n",current_tb->pc);
+        printf("\n===== current_tb start pc = 0x%x =====\n",
+                (unsigned int)current_tb->pc);
         for (int i = 0; i < count; i++) {
             if ((unsigned long)(ins_p + i) == epc)
                 printf(" epc => ");
