@@ -725,7 +725,7 @@ bool latxs_translate_pcmpgtb(IR1_INST *pir1)
     } else {
         IR2_OPND dest = XMM_LOADFP1(opnd0);
         IR2_OPND src  = XMM_LOADFP1(opnd1);
-        latxs_append_ir2_opnd3(LISA_VSLT_B, &dest, &dest, &src);
+        latxs_append_ir2_opnd3(LISA_VSLT_B, &dest, &src, &dest);
     }
 
     return true;
@@ -745,7 +745,7 @@ bool latxs_translate_pcmpgtw(IR1_INST *pir1)
     } else {
         IR2_OPND dest = XMM_LOADFP1(opnd0);
         IR2_OPND src  = XMM_LOADFP1(opnd1);
-        latxs_append_ir2_opnd3(LISA_VSLT_H, &dest, &dest, &src);
+        latxs_append_ir2_opnd3(LISA_VSLT_H, &dest, &src, &dest);
     }
 
     return true;
@@ -765,7 +765,7 @@ bool latxs_translate_pcmpgtd(IR1_INST *pir1)
     } else {
         IR2_OPND dest = XMM_LOADFP1(opnd0);
         IR2_OPND src  = XMM_LOADFP1(opnd1);
-        latxs_append_ir2_opnd3(LISA_VSLT_W, &dest, &dest, &src);
+        latxs_append_ir2_opnd3(LISA_VSLT_W, &dest, &src, &dest);
     }
 
     return true;
@@ -798,51 +798,30 @@ bool latxs_translate_psllw(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
-    if (ir1_opnd_is_xmm(opnd0)) {
-        IR2_OPND dest = XMM_LOAD128(opnd0);
-        if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
-            IR2_OPND src = XMM_LOAD128(opnd1);
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
+        IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+        IR2_OPND temp1 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp2 = latxs_ra_alloc_ftemp();
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 15);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd2i(LISA_VSLEI_DU, &temp2, &temp1, 15);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSLL_H, &dest, &dest, &temp1);
+        latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSLL_H, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        } else if (ir1_opnd_is_imm(opnd1)) {
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 15) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSLLI_H, &dest, &dest, imm);
-            }
+        latxs_ra_free_temp(&temp1);
+        latxs_ra_free_temp(&temp2);
+    } else if (ir1_opnd_is_imm(opnd1)) {
+        uint8_t imm = ir1_opnd_uimm(opnd1);
+        if (imm > 15) {
+            latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
         } else {
-            lsassert(0);
+            latxs_append_ir2_opnd2i(LISA_VSLLI_H, &dest, &dest, imm);
         }
-    } else { /* mmx */
-        if (ir1_opnd_is_imm(opnd0 + 1)) {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            uint8_t imm = ir1_opnd_uimm(opnd0 + 1);
-            if (imm > 15) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSLLI_H, &dest, &dest, imm);
-            }
-        } else {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false);
-
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 15);
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSLL_H, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        }
+    } else {
+        lsassert(0);
     }
     return true;
 }
@@ -854,52 +833,30 @@ bool latxs_translate_pslld(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
-    if (ir1_opnd_is_xmm(opnd0)) {
-        IR2_OPND dest = XMM_LOAD128(opnd0);
-        if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
-            IR2_OPND src = XMM_LOAD128(opnd1);
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
+        IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+        IR2_OPND temp1 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp2 = latxs_ra_alloc_ftemp();
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 31);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd2i(LISA_VSLEI_DU, &temp2, &temp1, 31);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSLL_W, &dest, &dest, &temp1);
+        latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSLL_W, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        } else if (ir1_opnd_is_imm(opnd1)) {
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 31) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSLLI_W, &dest, &dest, imm);
-            }
+        latxs_ra_free_temp(&temp1);
+        latxs_ra_free_temp(&temp2);
+    } else if (ir1_opnd_is_imm(opnd1)) {
+        uint8_t imm = ir1_opnd_uimm(opnd1);
+        if (imm > 31) {
+            latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
         } else {
-            lsassert(0);
+            latxs_append_ir2_opnd2i(LISA_VSLLI_W, &dest, &dest, imm);
         }
-    } else { /* mmx */
-        if (ir1_opnd_is_imm(opnd0 + 1)) {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            uint8_t imm = ir1_opnd_uimm(opnd0 + 1);
-            if (imm > 31) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSLLI_W, &dest, &dest, imm);
-            }
-        } else {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false);
-
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 31);
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSLL_W, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        }
+    } else {
+        lsassert(0);
     }
     return true;
 }
@@ -911,61 +868,33 @@ bool latxs_translate_psllq(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
-    if (ir1_opnd_is_xmm(opnd0)) {
-        IR2_OPND dest = XMM_LOAD128(opnd0);
-        if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
-            IR2_OPND src = XMM_LOAD128(opnd1);
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp3 = latxs_ra_alloc_ftemp();
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
+        IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+        IR2_OPND temp1 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp2 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp3 = latxs_ra_alloc_ftemp();
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd1i(LISA_VLDI, &temp2,
-                                         VLDI_IMM_TYPE0(3, 64));
-            latxs_append_ir2_opnd3(LISA_VSLT_DU, &temp3, &temp1, &temp2);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd1i(LISA_VLDI, &temp3, VLDI_IMM_TYPE0(3, 63));
+        latxs_append_ir2_opnd3(LISA_VSLE_DU, &temp2, &temp1, &temp3);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSLL_D, &dest, &dest, &temp1);
+        latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSLL_D, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp3);
-        } else if (ir1_opnd_is_imm(opnd1)) {
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 63) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSLLI_D, &dest, &dest, imm);
-            }
+        latxs_ra_free_temp(&temp1);
+        latxs_ra_free_temp(&temp2);
+        latxs_ra_free_temp(&temp3);
+    } else if (ir1_opnd_is_imm(opnd1)) {
+        uint8_t imm = ir1_opnd_uimm(opnd1);
+        if (imm > 63) {
+            latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
         } else {
-            lsassert(0);
+            latxs_append_ir2_opnd2i(LISA_VSLLI_D, &dest, &dest, imm);
         }
-    } else { /* mmx */
-        if (ir1_opnd_is_imm(opnd0 + 1)) {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            uint8_t imm = ir1_opnd_uimm(opnd0 + 1);
-            if (imm > 63) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSLLI_D, &dest, &dest, imm);
-            }
-        } else {
-            IR2_OPND temp_imm = latxs_ra_alloc_itemp();
-            IR2_OPND temp     = latxs_ra_alloc_itemp();
-            IR2_OPND target_label = latxs_ir2_opnd_new_label();
-
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false);
-
-            IR2_OPND *zero = &latxs_zero_ir2_opnd;
-            latxs_load_imm64_to_ir2(&temp_imm, 0xffffffffffffff80ULL);
-            latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &temp, &src);
-            latxs_append_ir2_opnd3(LISA_AND, &temp_imm, &temp_imm, &temp);
-            latxs_append_ir2_opnd3(LISA_BEQ, &temp_imm, zero, &target_label);
-            latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &dest, zero);
-            latxs_append_ir2_opnd1(LISA_LABEL, &target_label);
-            latxs_append_ir2_opnd3(LISA_VSLL_D, &dest, &dest, &src);
-
-            latxs_ra_free_temp(&temp_imm);
-            latxs_ra_free_temp(&temp);
-        }
+    } else {
+        lsassert(0);
     }
     return true;
 }
@@ -977,50 +906,30 @@ bool latxs_translate_psrlw(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
-    if (ir1_opnd_is_xmm(opnd0)) {
-        IR2_OPND dest = XMM_LOAD128(opnd0);
-        if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
-            IR2_OPND src = XMM_LOAD128(opnd1);
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 15);
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSRL_H, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        } else if (ir1_opnd_is_imm(opnd1)) {
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 15) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSRLI_H, &dest, &dest, imm);
-            }
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
+        IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+        IR2_OPND temp1 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp2 = latxs_ra_alloc_ftemp();
+
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd2i(LISA_VSLEI_DU, &temp2, &temp1, 15);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSRL_H, &dest, &dest, &temp1);
+        latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
+
+        latxs_ra_free_temp(&temp1);
+        latxs_ra_free_temp(&temp2);
+    } else if (ir1_opnd_is_imm(opnd1)) {
+        uint8_t imm = ir1_opnd_uimm(opnd1);
+        if (imm > 15) {
+            latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
         } else {
-            lsassert(0);
+            latxs_append_ir2_opnd2i(LISA_VSRLI_H, &dest, &dest, imm);
         }
-        return true;
     } else {
-        if (ir1_opnd_is_imm(opnd1)) {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            uint8_t imm = ir1_opnd_uimm(opnd0 + 1);
-            if (imm > 15) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSRLI_H, &dest, &dest, imm);
-            }
-        } else {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false);
-
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 15);
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSRL_H, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        }
+        lsassert(0);
     }
     return true;
 }
@@ -1032,53 +941,31 @@ bool latxs_translate_psrld(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
-    if (ir1_opnd_is_xmm(opnd0)) {
-        IR2_OPND dest = XMM_LOAD128(opnd0);
-        if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
-            IR2_OPND src = XMM_LOAD128(opnd1);
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
+        IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+        IR2_OPND temp1 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp2 = latxs_ra_alloc_ftemp();
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 31);
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSRL_W, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-        } else if (ir1_opnd_is_imm(opnd1)) {
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 31) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSRLI_W, &dest, &dest, imm);
-            }
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd2i(LISA_VSLEI_DU, &temp2, &temp1, 31);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSRL_W, &dest, &dest, &temp1);
+        latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
+
+        latxs_ra_free_temp(&temp1);
+        latxs_ra_free_temp(&temp2);
+    } else if (ir1_opnd_is_imm(opnd1)) {
+        uint8_t imm = ir1_opnd_uimm(opnd1);
+        if (imm > 31) {
+            latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
         } else {
-            lsassert(0);
+            latxs_append_ir2_opnd2i(LISA_VSRLI_W, &dest, &dest, imm);
         }
-        return true;
     } else {
-        if (ir1_opnd_is_imm(opnd1)) {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 31) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSRLI_W, &dest, &dest, imm);
-            }
-       } else {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false);
-
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 31);
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSRL_W, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
-       }
+        lsassert(0);
     }
-
     return true;
 }
 
@@ -1089,64 +976,34 @@ bool latxs_translate_psrlq(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
-    if (ir1_opnd_is_xmm(opnd0)) {
-        IR2_OPND dest = XMM_LOAD128(opnd0);
-        if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
-            IR2_OPND src = XMM_LOAD128(opnd1);
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp3 = latxs_ra_alloc_ftemp();
+    IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
+        IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
+        IR2_OPND temp1 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp2 = latxs_ra_alloc_ftemp();
+        IR2_OPND temp3 = latxs_ra_alloc_ftemp();
 
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd1i(LISA_VLDI, &temp2, VLDI_IMM_TYPE0(3, 64));
-            latxs_append_ir2_opnd3(LISA_VSLT_DU, &temp3, &temp1, &temp2);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd1i(LISA_VLDI, &temp3, VLDI_IMM_TYPE0(3, 63));
+        latxs_append_ir2_opnd3(LISA_VSLE_DU, &temp2, &temp1, &temp3);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSRL_D, &dest, &dest, &temp1);
+        latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp2);
 
-            latxs_append_ir2_opnd3(LISA_VSRL_D, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp3);
-        } else if (ir1_opnd_is_imm(opnd1)) {
-            uint8_t imm = ir1_opnd_uimm(opnd1);
-            if (imm > 63) {
-                latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
-            } else {
-                latxs_append_ir2_opnd2i(LISA_VSRLI_D, &dest, &dest, imm);
-            }
+        latxs_ra_free_temp(&temp1);
+        latxs_ra_free_temp(&temp2);
+        latxs_ra_free_temp(&temp3);
+    } else if (ir1_opnd_is_imm(opnd1)) {
+        uint8_t imm = ir1_opnd_uimm(opnd1);
+        if (imm > 63) {
+            latxs_append_ir2_opnd3(LISA_VXOR_V, &dest, &dest, &dest);
         } else {
-            lsassert(0);
+            latxs_append_ir2_opnd2i(LISA_VSRLI_D, &dest, &dest, imm);
         }
-    } else { /* mmx */
-        if (ir1_opnd_is_imm(opnd0 + 1)) {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            uint8_t imm = ir1_opnd_uimm(opnd0 + 1);
-            if (imm > 63) {
-                latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &dest,
-                        &latxs_zero_ir2_opnd);
-            } else {
-                IR2_OPND itemp = latxs_ra_alloc_itemp();
-                latxs_load_imm32_to_ir2(&itemp, imm, EXMode_N);
-                latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &itemp, &dest);
-                latxs_append_ir2_opnd2i(LISA_SRLI_D, &itemp, &itemp, imm);
-                latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &dest, &itemp);
-                latxs_ra_free_temp(&itemp);
-            }
-        } else {
-            IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-            IR2_OPND src  = latxs_load_freg_from_ir1_1(opnd1, false);
-
-            IR2_OPND temp1 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp2 = latxs_ra_alloc_ftemp();
-            IR2_OPND temp3 = latxs_ra_alloc_ftemp();
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd1i(LISA_VLDI, &temp2,
-                                         VLDI_IMM_TYPE0(3, 64));
-            latxs_append_ir2_opnd3(LISA_VSLT_DU, &temp3, &temp1, &temp2);
-
-            latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
-            latxs_append_ir2_opnd3(LISA_VSRL_D, &dest, &dest, &temp1);
-            latxs_append_ir2_opnd3(LISA_VAND_V, &dest, &dest, &temp3);
-        }
+    } else {
+        lsassert(0);
     }
-
     return true;
 }
 
@@ -1158,18 +1015,19 @@ bool latxs_translate_psraw(IR1_INST *pir1)
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
     IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-    if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
         IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
         IR2_OPND temp1 = latxs_ra_alloc_ftemp();
         IR2_OPND temp2 = latxs_ra_alloc_ftemp();
         IR2_OPND temp3 = latxs_ra_alloc_ftemp();
         IR2_OPND temp4 = latxs_ra_alloc_ftemp();
-        latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp1, &src, 0);
-        latxs_append_ir2_opnd1i(LISA_VLDI, &temp2, VLDI_IMM_TYPE0(1, 16));
-        latxs_append_ir2_opnd3(LISA_VSLT_HU, &temp3, &temp1, &temp2);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 15);
         latxs_append_ir2_opnd2i(LISA_VSRAI_H, &temp4, &dest, 15);
-        latxs_append_ir2_opnd3(LISA_VSRA_H, &dest, &dest, &temp1);
-        latxs_append_ir2_opnd4(LISA_VBITSEL_V, &dest, &temp4, &dest, &temp3);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_H, &temp3, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSRA_H, &dest, &dest, &temp3);
+        latxs_append_ir2_opnd4(LISA_VBITSEL_V, &dest, &temp4, &dest, &temp2);
         latxs_ra_free_temp(&temp1);
         latxs_ra_free_temp(&temp2);
         latxs_ra_free_temp(&temp3);
@@ -1194,18 +1052,19 @@ bool latxs_translate_psrad(IR1_INST *pir1)
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
     IR2_OPND dest = latxs_load_freg_from_ir1_1(opnd0, false);
-    if (ir1_opnd_is_xmm(opnd1) || ir1_opnd_is_mem(opnd1)) {
+    if (ir1_opnd_is_mmx(opnd1) || ir1_opnd_is_xmm(opnd1)
+                               || ir1_opnd_is_mem(opnd1)) {
         IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
         IR2_OPND temp1 = latxs_ra_alloc_ftemp();
         IR2_OPND temp2 = latxs_ra_alloc_ftemp();
         IR2_OPND temp3 = latxs_ra_alloc_ftemp();
         IR2_OPND temp4 = latxs_ra_alloc_ftemp();
-        latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp1, &src, 0);
-        latxs_append_ir2_opnd1i(LISA_VLDI, &temp2, VLDI_IMM_TYPE0(2, 32));
-        latxs_append_ir2_opnd3(LISA_VSLT_WU, &temp3, &temp1, &temp2);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_D, &temp1, &src, 0);
+        latxs_append_ir2_opnd2i(LISA_VSLTI_DU, &temp2, &temp1, 31);
         latxs_append_ir2_opnd2i(LISA_VSRAI_W, &temp4, &dest, 31);
-        latxs_append_ir2_opnd3(LISA_VSRA_W, &dest, &dest, &temp1);
-        latxs_append_ir2_opnd4(LISA_VBITSEL_V, &dest, &temp4, &dest, &temp3);
+        latxs_append_ir2_opnd2i(LISA_VREPLVEI_W, &temp3, &src, 0);
+        latxs_append_ir2_opnd3(LISA_VSRA_W, &dest, &dest, &temp3);
+        latxs_append_ir2_opnd4(LISA_VBITSEL_V, &dest, &temp4, &dest, &temp2);
         latxs_ra_free_temp(&temp1);
         latxs_ra_free_temp(&temp2);
         latxs_ra_free_temp(&temp3);
