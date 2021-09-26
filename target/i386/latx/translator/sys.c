@@ -164,7 +164,7 @@ void latxs_ir1_make_ins_ILLEGAL(IR1_INST *ir1,
     }
 
     info->id = X86_INS_INVALID;
-    info->address = addr;
+    info->address = addr - td->sys.cs_base;
     info->mnemonic[0] = 'i';
     info->mnemonic[1] = 'l';
     info->mnemonic[2] = 'l';
