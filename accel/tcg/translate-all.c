@@ -2583,7 +2583,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->jmp_dest[1] = (uintptr_t)NULL;
 
     /* init original jump addresses which have been set during tcg_gen_code() */
-#if defined(CONFIG_LATX) && defined(COFNIG_SOFTMMU)
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     /* indirect jmp is already linked to jmp glue 2, no need to reset it */
     if (!(tb->is_indir_tb)) {
         if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
