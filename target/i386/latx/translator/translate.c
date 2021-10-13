@@ -1832,7 +1832,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     NULL,                //X86_INS_XCRYPTOFB,
     NULL,                //X86_INS_XEND,
     translate_xgetbv,    //X86_INS_XGETBV,
-    NULL,                //X86_INS_XLATB,
+    translate_xlat,      /* X86_INS_XLATB */
     NULL,                //X86_INS_XRELEASE,
     translate_xrstor,    //X86_INS_XRSTOR,
     NULL,                //X86_INS_XRSTOR64,

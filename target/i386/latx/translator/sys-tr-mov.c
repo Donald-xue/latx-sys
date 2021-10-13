@@ -33,6 +33,8 @@ void latxs_sys_mov_register_ir1(void)
     latxs_register_ir1(X86_INS_CMOVGE);
     latxs_register_ir1(X86_INS_CMOVLE);
     latxs_register_ir1(X86_INS_CMOVG);
+
+    latxs_register_ir1(X86_INS_XLATB);
 }
 
 bool latxs_translate_mov(IR1_INST *pir1)
@@ -226,6 +228,35 @@ bool latxs_translate_movd(IR1_INST *pir1)
 
     return true;
 }
+
+bool latxs_translate_xlat(IR1_INST *pir1)
+{
+    /* TODO: error when FS/GS override */
+    lsassert(!lsenv->tr_data->sys.addseg);
+    int addr_size = latxs_ir1_addr_size(pir1);
+    lsassert(addr_size == 4);
+
+    IR2_OPND addr = latxs_ra_alloc_itemp();
+    IR2_OPND data = latxs_ra_alloc_itemp();
+
+    IR2_OPND eax_opnd = ra_alloc_gpr(eax_index);
+    IR2_OPND ebx_opnd = ra_alloc_gpr(ebx_index);
+    latxs_append_ir2_opnd2_(lisa_mov8z, &addr, &eax_opnd);
+    latxs_append_ir2_opnd3(LISA_ADD_D, &addr, &addr, &ebx_opnd);
+    latxs_append_ir2_opnd2_(lisa_mov32z, &addr, &addr);
+
+    IR2_OPND mem;
+    latxs_ir2_opnd_build_mem(&mem, latxs_ir2_opnd_reg(&addr), 0);
+
+    gen_ldst_softmmu_helper(LISA_LD_BU, &data, &mem, 1);
+
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &eax_opnd, &data, 7, 0);
+
+    latxs_ra_free_temp(&addr);
+    latxs_ra_free_temp(&data);
+    return true;
+}
+
 
 #define CMOVCC_ASSERT(pir1, os0, os1) \
     do { \

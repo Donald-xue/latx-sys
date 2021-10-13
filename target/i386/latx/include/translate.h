@@ -1691,6 +1691,8 @@ bool latxs_translate_cmovge(IR1_INST *pir1);
 bool latxs_translate_cmovle(IR1_INST *pir1);
 bool latxs_translate_cmovg(IR1_INST *pir1);
 
+bool latxs_translate_xlat(IR1_INST *pir1);
+
 /* sys-eflags */
 bool latxs_translate_cld(IR1_INST *pir1);
 bool latxs_translate_std(IR1_INST *pir1);
