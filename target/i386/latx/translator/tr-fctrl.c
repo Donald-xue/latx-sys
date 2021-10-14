@@ -618,8 +618,12 @@ bool translate_ficomp(IR1_INST *pir1)
 /* TODO: */
 bool translate_ud2(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_ud2(pir1);
+#else
     /* lsassert(lsenv->tr_data->static_translation); */
     return true;
+#endif
 }
 
 bool translate_ffree(IR1_INST *pir1)

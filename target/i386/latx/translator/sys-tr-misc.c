@@ -78,6 +78,8 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PREFETCHW);
     latxs_register_ir1(X86_INS_PREFETCH);
     latxs_register_ir1(X86_INS_TZCNT);
+
+    latxs_register_ir1(X86_INS_UD2);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -2971,6 +2973,15 @@ bool latxs_translate_invalid(IR1_INST *pir1)
 };
 
 bool latxs_translate_ud0(IR1_INST *pir1)
+{
+    latxs_tr_gen_excp_illegal_op_addr(
+            ir1_addr(pir1) - lsenv->tr_data->sys.cs_base, /* EIP */
+            1 /* translation end with exception */
+    );
+    return true;
+}
+
+bool latxs_translate_ud2(IR1_INST *pir1)
 {
     latxs_tr_gen_excp_illegal_op_addr(
             ir1_addr(pir1) - lsenv->tr_data->sys.cs_base, /* EIP */

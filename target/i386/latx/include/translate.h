@@ -1558,6 +1558,7 @@ bool latxs_translate_tzcnt(IR1_INST *pir1);
 
 bool latxs_translate_invalid(IR1_INST *pir1);
 bool latxs_translate_ud0(IR1_INST *pir1);
+bool latxs_translate_ud2(IR1_INST *pir1);
 
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);
