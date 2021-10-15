@@ -714,10 +714,12 @@ static bool latxs_translate_shrd_imm(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_SRLI_D, &low_dest, &dest, shift);
 
     int left_shift = opnd_size - shift;
-    lsassertm_illop(ir1_addr(pir1), left_shift >= 0 && left_shift <= 31,
-            "shrd imm left_shift %d is not valid. opsize = %d, shift = %d\n",
-            left_shift, opnd_size, shift);
-
+    if (opnd_size == 16 && shift > 16) {
+        fprintf(stderr, "[warning] <%s> %s:%d : ", __func__,
+                                             __FILE__, __LINE__);
+        fprintf(stderr, "undefined behaviour, shrd\n");
+        ir1_dump(pir1);
+    }
     IR2_OPND high_dest = latxs_ra_alloc_itemp();
     IR2_OPND final_dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_SLLI_D, &high_dest, &src, left_shift);
@@ -844,9 +846,12 @@ static bool latxs_translate_shld_imm(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_SLLI_D, &high_dest, &dest, shift);
 
     int left_shift = opnd_size - shift;
-    lsassertm_illop(ir1_addr(pir1), left_shift >= 0 && left_shift <= 31,
-            "shld imm left_shift %d is not valid. opsize = %d, shift = %d\n",
-            left_shift, opnd_size, shift);
+    if (opnd_size == 16 && shift > 16) {
+        fprintf(stderr, "[warning] <%s> %s:%d : ", __func__,
+                                            __FILE__, __LINE__);
+        fprintf(stderr, "undefined behaviour, shld\n");
+        ir1_dump(pir1);
+    }
 
     IR2_OPND low_dest = latxs_ra_alloc_itemp();
     IR2_OPND final_dest = latxs_ra_alloc_itemp();
@@ -894,10 +899,20 @@ bool latxs_translate_bswap(IR1_INST *pir1)
 
     int opnd_size = ir1_opnd_size(opnd0);
 
-    lsassertm_illop(ir1_addr(pir1), opnd_size == 32,
-            "bswap with opnd size = %d is unimplemented.\n", opnd_size);
-
     IR2_OPND value = latxs_ra_alloc_itemp();
+
+    if (opnd_size != 32) {
+        /* qemu just perform 32bit swap */
+        /* real machine perform set low 16 bit to zero */
+        /* eg. 66 0f c8 */
+        fprintf(stderr, "[warning] <%s> %s:%d : ", __func__,
+                                    __FILE__, __LINE__);
+        fprintf(stderr, "undefined behaviour, bswap\n");
+        ir1_dump(pir1);
+        /* TODO : common log(info/warning) */
+        opnd0->size = 4;
+    }
+
     latxs_load_ir1_to_ir2(&value, opnd0, EXMode_Z);
 
     latxs_append_ir2_opnd2(LISA_REVB_2W, &value, &value);

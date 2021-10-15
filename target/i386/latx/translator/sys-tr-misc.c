@@ -80,6 +80,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_TZCNT);
 
     latxs_register_ir1(X86_INS_UD2);
+    latxs_register_ir1(X86_INS_ENDBR32);
 }
 
 int latxs_get_sys_stack_addr_size(void)
