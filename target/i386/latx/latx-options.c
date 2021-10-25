@@ -41,6 +41,7 @@ int option_staticcs;
 int option_njc;
 int option_sigint;
 int option_cross_page_check;
+int option_cross_page_jmp_link;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -184,6 +185,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_trace_simple      6
 #define LATXS_OPT_cross_page_check  7
 #define LATXS_OPT_sigint        8
+#define LATXS_OPT_cross_page_jmp_link   9
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -272,6 +274,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_BOOL,
             .help = "enable/disable cross page check in system",
         }, {
+            .name = "cpjl",
+            .type = QEMU_OPT_BOOL,
+            .help = "enable/disable cross page direct jmp link",
+        }, {
             .name = "monitor",
             .type = QEMU_OPT_STRING,
             .help = "enable/disable XQM's monitor information",
@@ -320,6 +326,9 @@ void set_options(int index)
         break;
     case LATXS_OPT_cross_page_check:
         option_cross_page_check = 1;
+        break;
+    case LATXS_OPT_cross_page_jmp_link:
+        option_cross_page_jmp_link = 1;
         break;
     default: break;
     }
@@ -402,6 +411,12 @@ void latx_sys_parse_options(QemuOpts *opts)
 
     opt = qemu_opt_find(opts, "cpc");
     if (opt) parse_options_bool(LATXS_OPT_cross_page_check, opt->value.boolean);
+
+    opt = qemu_opt_find(opts, "cpjl");
+    if (opt) {
+        parse_options_bool(LATXS_OPT_cross_page_jmp_link,
+                opt->value.boolean);
+    }
 
     opt = qemu_opt_find(opts, "np");
     if (opt) {
@@ -569,6 +584,7 @@ void latxs_options_init(void)
     option_sigint = 0;
 
     option_cross_page_check = 0;
+    option_cross_page_jmp_link = 0;
 
     option_monitor_sc = 0;
     option_monitor_tc = 0;

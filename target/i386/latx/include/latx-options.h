@@ -55,6 +55,7 @@ extern int option_staticcs;
 extern int option_njc;
 extern int option_sigint;
 extern int option_cross_page_check;
+extern int option_cross_page_jmp_link;
 
 /* For QEMU monitor in softmmu */
 extern int option_monitor_sc; /* Simple Counter */

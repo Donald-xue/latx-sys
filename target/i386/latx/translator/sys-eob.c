@@ -510,6 +510,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     IR2_OPND next_eip_opnd = latxs_ra_alloc_dbt_arg2();
     int      next_eip_size = 32;
     ADDRX    next_eip;
+    ADDRX    curr_eip;
 
     IR1_OPCODE opcode = ir1_opcode(branch);
     int can_link = option_tb_link;
@@ -597,6 +598,7 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, tb_addr);
     }
 
+    int mask_cpdj = 1;
     /*
      * Standard process:
      * 1. prepare a6 and a7
@@ -604,6 +606,18 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
      *    > DBT arg2 : a7: Next TranslationBlock's EIP
      * 2. prepare the return value (a0/v0) for TB-link
      * 3. jump to context switch native to bt
+     *
+     * Cross Page Direct Jmp:
+     * 1. check with next_eip and curr_eip
+     * 2. set mask for cross page direct jmp
+     *    > mask = 1 : link according to @can_link
+     *      > when option_cpjl is enabled (force to allow link)
+     *      > when option_cpjl is disabled and
+     *             current branch is NOT a cross page direct jmp
+     *    > mask = 0 : force to disable link
+     *      > when option_cpjl is disabled and
+     *             current branch is a cross page direct jmp
+     * 3. generate exit tb according to can_link & mask_cpdj
      */
     switch (opcode) {
     case X86_INS_CALL:
@@ -612,6 +626,12 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         }
 
         next_eip = ir1_target_addr(branch);
+        curr_eip = ir1_addr(branch);
+
+        if ((next_eip >> TARGET_PAGE_BITS) !=
+            (curr_eip >> TARGET_PAGE_BITS)) {
+            mask_cpdj = option_cross_page_jmp_link;
+        }
 
         if (latxs_ir1_addr_size(branch) == 2 ||
             ir1_opnd_size(ir1_get_opnd(branch, 0)) == 16) {
@@ -621,7 +641,8 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         latxs_tr_gen_exit_tb_load_next_eip(0, &next_eip_opnd,
                 next_eip, next_eip_size);
 
-        latxs_tr_gen_exit_tb_j_context_switch(&tbptr, can_link, succ_id);
+        latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
+                can_link & mask_cpdj, succ_id);
         break;
 
     case X86_INS_LJMP:
@@ -646,12 +667,19 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         }
 
         next_eip = ir1_target_addr(branch);
+        curr_eip = ir1_addr(branch);
+
+        if ((next_eip >> TARGET_PAGE_BITS) !=
+            (curr_eip >> TARGET_PAGE_BITS)) {
+            mask_cpdj = option_cross_page_jmp_link;
+        }
 
         next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
         latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update,
                 &next_eip_opnd, next_eip, next_eip_size);
 
-        latxs_tr_gen_exit_tb_j_context_switch(&tbptr, can_link, succ_id);
+        latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
+                can_link & mask_cpdj, succ_id);
         break;
 
     case X86_INS_RET:
@@ -718,11 +746,18 @@ indirect_jmp:
     case X86_INS_LOOPNE:
         next_eip = succ_id ? ir1_target_addr(branch) : ir1_addr_next(branch);
         next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
+        curr_eip = ir1_addr(branch);
+
+        if ((next_eip >> TARGET_PAGE_BITS) !=
+            (curr_eip >> TARGET_PAGE_BITS)) {
+            mask_cpdj = option_cross_page_jmp_link;
+        }
 
         latxs_tr_gen_exit_tb_load_next_eip(0, &next_eip_opnd,
                 next_eip, next_eip_size);
 
-        latxs_tr_gen_exit_tb_j_context_switch(&tbptr, can_link, succ_id);
+        latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
+                can_link & mask_cpdj, succ_id);
         break;
     default:
         lsassertm(0, "not implement.\n");
