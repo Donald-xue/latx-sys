@@ -4895,7 +4895,6 @@ LATXS_REG_ALLOC_DEFINE_IR2(ir2name, IR2_OPND_GPR, ir2val);
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_zero_ir2_opnd,    0); /* ZERO */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_sp_ir2_opnd,      3); /* SP */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_fp_ir2_opnd,     22); /* FP */
-LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_eflags_ir2_opnd, 22); /* FP */
 LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_env_ir2_opnd,    23); /* S0 */
 
 /* Floating Point  Register */

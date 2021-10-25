@@ -137,7 +137,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 
     /* 2.3 load x86 mapping registers */
     latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x00);
-    latxs_tr_load_eflags(1);
+    latxs_tr_load_eflags();
 
     IR2_OPND sigint_label = latxs_ir2_opnd_new_label();
     if (sigint_enabled()) {
@@ -512,7 +512,6 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
     IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env  = &latxs_env_ir2_opnd;
-    IR2_OPND *eflags = &latxs_eflags_ir2_opnd;
 
     IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
@@ -595,9 +594,13 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
              * (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK |
              *                 VM_MASK | AC_MASK));
              */
+            IR2_OPND eflags = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &eflags, &latxs_env_ir2_opnd,
+                lsenv_offset_of_eflags(lsenv));
             latxs_load_imm64_to_ir2(&param0, (IOPL_MASK | TF_MASK | RF_MASK |
                                               VM_MASK | AC_MASK));
-            latxs_append_ir2_opnd3(LISA_AND, &param0, eflags, &param0);
+            latxs_append_ir2_opnd3(LISA_AND, &param0, &eflags, &param0);
+            latxs_ra_free_temp(&eflags);
             latxs_append_ir2_opnd2i(LISA_LD_WU, &param1, env,
                     offsetof(CPUX86State, hflags));
             latxs_append_ir2_opnd3(LISA_OR, &param1, &param1, &param0);

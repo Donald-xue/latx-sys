@@ -365,7 +365,7 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
         return;
     }
 
-    uint32_t eflags = helper_read_eflags(env);
+    uint32_t eflags = cpu_compute_eflags(env);
 
     fprintf(stderr, "[tracesp] ");
     fprintf(stderr, "PC=0x%x / ", tb->pc);
@@ -401,16 +401,6 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
         lsassert(lsenv_get_top_bias(lsenv) == 0);
         latxs_fpu_fix_before_exec_tb(env, tb);
     }
-
-    /*
-     * sync the eflags
-     *
-     * collaborate with tr_load_eflags() in context switch
-     * to load the newest elfags into native context
-     */
-    env->eflags = helper_read_eflags(env);
-    env->cc_src = env->eflags;
-    env->cc_op  = CC_OP_EFLAGS;
 
     lsenv->after_exec_tb_fixed = 0;
 }

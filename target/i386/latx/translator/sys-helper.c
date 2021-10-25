@@ -195,7 +195,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     }
 
     if (likely(cfg.sv_eflags)) {
-        latxs_tr_load_eflags(0);
+        latxs_tr_load_eflags();
     }
 
     if (likely(cfg.sv_allgpr)) {

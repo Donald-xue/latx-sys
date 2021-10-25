@@ -306,7 +306,7 @@ void latxs_tr_ra_init(TRANSLATION_DATA *td)
  * -------------------------------------------------------------------
  * 20 t8    G-B    : guest base (used ONLY in user-mode)
  * 21 x
- * 22 fp    EFLAGS : eflags mapping registers
+ * 22 fp           : not used
  * 23 s0    CPU    : address(HVA) of CPUX86State
  * -------------------------------------------------------------------
  * 24 s1    EAX    : x86 mapping registers eax

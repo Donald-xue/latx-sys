@@ -42,8 +42,11 @@ static void latxs_load_string_step_to_ir2(IR2_OPND *setp,
         IR1_INST *pir1, int opidx)
 {
     IR2_OPND df_opnd = latxs_ra_alloc_itemp();
+    /* env->df : if DF: env->df = 1 else env->df = -1 */
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &df_opnd, &latxs_env_ir2_opnd,
+            lsenv_offset_of_df(lsenv));
     latxs_append_ir2_opnd2i(LISA_ANDI, &df_opnd,
-            &latxs_eflags_ir2_opnd, 0x400);
+            &df_opnd, 0x400);
 
     lsassert(!(opidx >> 1)); /* opidx == 0 || opidx == 1 */
     IR1_OPND *opnd = ir1_get_opnd(pir1, opidx);

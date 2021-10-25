@@ -28,7 +28,7 @@
 #include "hw/i386/apic.h"
 #endif
 
-#ifdef CONFIG_LATX
+#if defined(CONFIG_LATX) && defined(CONFIG_USER_ONLY)
 static void x86_cpu_exec_enter(CPUState *cs)
 {
 }

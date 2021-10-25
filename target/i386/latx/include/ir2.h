@@ -174,7 +174,6 @@ void tr_ir2_optimize(void);
 extern IR2_OPND latxs_zero_ir2_opnd;
 extern IR2_OPND latxs_sp_ir2_opnd;
 extern IR2_OPND latxs_fp_ir2_opnd;
-extern IR2_OPND latxs_eflags_ir2_opnd;
 extern IR2_OPND latxs_env_ir2_opnd;
 
 extern IR2_OPND latxs_f32_ir2_opnd;

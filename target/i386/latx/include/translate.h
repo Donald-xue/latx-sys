@@ -1299,7 +1299,7 @@ void latxs_tr_restore_temp_register_mask(int mask);
 
 /* eflags related functions */
 void latxs_tr_save_eflags(void);
-void latxs_tr_load_eflags(int simple);
+void latxs_tr_load_eflags(void);
 void latxs_tr_gen_static_save_eflags(void);
 void latxs_tr_gen_static_load_eflags(int simple);
 
