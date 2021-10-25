@@ -1058,7 +1058,12 @@ static bool tcg_out_qemu_ld_slow_path(TCGContext *s, TCGLabelQemuLdst *l)
     tcg_out_movi(s, TCG_TYPE_PTR, a3, (tcg_target_long)l->raddr);
 
     tcg_out_call(s, qemu_ld_helpers[opc & (MO_BSWAP | MO_SSIZE)]);
-    tcg_out_mov(s, (opc & MO_SIZE) == MO_64, l->datalo_reg, a0);
+    if (TCG_TARGET_REG_BITS == 64 && l->type == TCG_TYPE_I32) {
+        /* we always sign-extend 32-bit loads */
+        tcg_out_opc_shift(s, OPC_SLLIW, l->datalo_reg, TCG_REG_A0, 0);
+    } else {
+        tcg_out_mov(s, (opc & MO_SIZE) == MO_64, l->datalo_reg, a0);
+    }
 
     tcg_out_goto(s, l->raddr);
     return true;
