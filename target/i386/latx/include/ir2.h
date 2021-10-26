@@ -319,6 +319,35 @@ IR2_INST *latxs_append_ir2_opnd2_(IR2_OPCODE, IR2_OPND *, IR2_OPND *);
 IR2_INST *latxs_append_ir2_opnd1_(IR2_OPCODE, IR2_OPND *);
 IR2_INST *latxs_append_ir2_opnd0_(IR2_OPCODE);
 
+/*
+ *  jmp_offset : instruction number
+ *  link : whether save pc + c at ra
+ */
+#define latxs_append_ir2_jmp_far(jmp_offset, link)                             \
+    do {                                                                       \
+        if (option_large_code_cache) {                                         \
+            int64_t upper, lower;                                              \
+            upper = (((jmp_offset) + (1 << 15)) >> 16) << 44 >> 44;            \
+            lower = (jmp_offset) << 48 >> 48;                                  \
+            IR2_OPND tmp = latxs_ra_alloc_itemp();                             \
+            latxs_append_ir2_opnd1i(LISA_PCADDU18I, &tmp, upper);              \
+            if (link) {                                                        \
+                latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_ra_ir2_opnd, &tmp,   \
+                                        lower);                                \
+            } else {                                                           \
+                latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_zero_ir2_opnd, &tmp, \
+                                        lower);                                \
+            }                                                                  \
+            latxs_ra_free_temp(&tmp);                                          \
+        } else {                                                               \
+            if (link) {                                                        \
+                latxs_append_ir2_opnda(LISA_BL, ins_offset);                   \
+            } else {                                                           \
+                latxs_append_ir2_opnda(LISA_B, ins_offset);                    \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
+
 /* Functions to identify IR2_INST's type */
 bool latxs_ir2_opcode_is_load(IR2_OPCODE);
 bool latxs_ir2_opcode_is_store(IR2_OPCODE);

@@ -481,8 +481,9 @@ void latxs_tr_gen_tb_end(void)
 
     ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = td->real_ir2_inst_num << 2;
-    latxs_append_ir2_opnda(LISA_B,
-            (context_switch_native_to_bt - code_buf - offset) >> 2);
+    int64_t ins_offset =
+        (context_switch_native_to_bt - code_buf - offset) >> 2;
+    latxs_append_ir2_jmp_far(ins_offset, 0);
 }
 
 /* translate functions */

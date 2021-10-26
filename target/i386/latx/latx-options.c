@@ -42,6 +42,7 @@ int option_njc;
 int option_sigint;
 int option_cross_page_check;
 int option_cross_page_jmp_link;
+int option_large_code_cache;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -186,6 +187,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_cross_page_check  7
 #define LATXS_OPT_sigint        8
 #define LATXS_OPT_cross_page_jmp_link   9
+#define LATXS_OPT_large_code_cache 10
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -225,6 +227,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "staticcs",
             .type = QEMU_OPT_BOOL,
             .help = "use static generated codes for context switch",
+        }, {
+            .name = "largecc",
+            .type = QEMU_OPT_BOOL,
+            .help = "use pcaddu18i and jirl for large than 128MB code cache",
         }, {
             .name = "njc",
             .type = QEMU_OPT_BOOL,
@@ -311,6 +317,9 @@ void set_options(int index)
         break;
     case LATXS_OPT_staticcs:
         option_staticcs = 1;
+        break;
+    case LATXS_OPT_large_code_cache:
+        option_large_code_cache = 1;
         break;
     case LATXS_OPT_njc:
         option_njc = 1;
@@ -440,6 +449,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "staticcs");
     if (opt) parse_options_bool(LATXS_OPT_staticcs, opt->value.boolean);
 
+    opt = qemu_opt_find(opts, "largecc");
+    if (opt) {
+        parse_options_bool(LATXS_OPT_large_code_cache, opt->value.boolean);
+    }
+
     opt = qemu_opt_find(opts, "njc");
     if (opt) parse_options_bool(LATXS_OPT_njc, opt->value.boolean);
 
@@ -543,6 +557,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] tb_link = %d\n", option_tb_link);
     printf("[LATXS-OPT] lsfpu = %d\n", option_lsfpu);
     printf("[LATXS-OPT] staticcs = %d\n", option_staticcs);
+    printf("[LATXS-OPT] large code cache = %d\n", option_large_code_cache);
     printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_njc);
 #ifdef CONFIG_SOFTMMU
     printf("[LATXS-OPT] monitor 1 simple    counter = %d\n", option_monitor_sc);
@@ -580,6 +595,7 @@ void latxs_options_init(void)
     option_trace_start_tb_set = 0;
 
     option_staticcs = 0;
+    option_large_code_cache = 0;
     option_njc = 0;
     option_sigint = 0;
 

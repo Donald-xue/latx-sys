@@ -377,7 +377,7 @@ void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id)
     tb->jmp_reset_offset[succ_id] = goto_label_opnd.val;
 
     /* point to current j insn addr plus 8 by default, will resolve in */
-    /* label_dispose */
+    /* label_dispose, two instructions for pcaddu18i and jirl patch */
     latxs_append_ir2_opnda(LISA_B, 1);
     latxs_append_ir2_opnd0_(lisa_nop);
 }
@@ -430,8 +430,8 @@ void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
     ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = td->real_ir2_inst_num << 2;
 
-    latxs_append_ir2_opnda(LISA_B,
-            (context_switch_native_to_bt - code_buf - offset) >> 2);
+    int64_t ins_offset = (context_switch_native_to_bt - code_buf - offset) >> 2;
+    latxs_append_ir2_jmp_far(ins_offset, 0);
 }
 
 /* Should always use TB-Link. */
@@ -697,8 +697,10 @@ indirect_jmp:
 
                 IR2_OPND sigint_label = latxs_ir2_opnd_new_label();
                 latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
-                latxs_append_ir2_opnda(LISA_B,
-                        (native_jmp_glue_2 - code_buf - offset) >> 2);
+
+                int64_t ins_offset =
+                    (native_jmp_glue_2 - code_buf - offset) >> 2;
+                latxs_append_ir2_jmp_far(ins_offset, 0);
 
                 /* will be resolved in label_dispose() */
                 tb->jmp_reset_offset[0] =
@@ -715,8 +717,9 @@ indirect_jmp:
 
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->real_ir2_inst_num << 2;
-                latxs_append_ir2_opnda(LISA_B,
-                        (native_jmp_glue_2 - code_buf - offset) >> 2);
+                int64_t ins_offset =
+                    (native_jmp_glue_2 - code_buf - offset) >> 2;
+                latxs_append_ir2_jmp_far(ins_offset, 0);
             } else {
                 latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
             }

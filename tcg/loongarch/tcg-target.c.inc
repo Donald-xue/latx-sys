@@ -1924,18 +1924,43 @@ static void tcg_target_init(TCGContext *s)
 void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
                               uintptr_t jmp_rw, uintptr_t addr)
 {
-    ptrdiff_t offset = addr - jmp_rx;
-    tcg_insn_unit insn;
-
-    if (offset == sextreg(offset, 0, 28)) {
-        insn = encode_dj(OPC_B, offset);
-    } else { // TODO
-        tcg_debug_assert(0);
+#ifdef CONFIG_SOFTMMU
+    if(option_large_code_cache){
+        ptrdiff_t jmp_offset = addr - jmp_rx;
+        if (jmp_offset == sextreg(jmp_offset, 0, 28)) {
+            tcg_insn_unit insn;
+            insn = encode_dj(OPC_B, jmp_offset);
+            qatomic_set((uint32_t *)jmp_rw, insn);
+            flush_idcache_range(jmp_rx, jmp_rw, 4);
+        } else {
+            tcg_insn_unit i1, i2;
+            jmp_offset >>= 2;
+            int64_t upper, lower;
+            upper = ((jmp_offset + (1 << 15)) >> 16) & 0xfffff;
+            lower = (jmp_offset & 0xffff);
+            /* $t0 -> temp reg, was not used at end of tb */
+            i1 = 0x1e000000 | upper << 5 | TCG_REG_T0;       /* pcaddu18i */
+            i2 = 0x4c000000 | lower << 10 | TCG_REG_T0 << 5; /* jirl */
+            qatomic_set((uint32_t *)jmp_rw, i1);
+            qatomic_set((uint32_t *)(jmp_rw + 4), i2);
+            flush_idcache_range(jmp_rx, jmp_rw, 8);
+        }
     }
+    else {
+    #endif
+        ptrdiff_t offset = addr - jmp_rx;
+        tcg_insn_unit insn;
 
-    // Update insn with new address.
-    qatomic_set((uint32_t *)jmp_rw, insn);
-    flush_idcache_range(jmp_rx, jmp_rw, 4);
+        if (offset == sextreg(offset, 0, 28)) {
+            insn = encode_dj(OPC_B, offset);
+        } else { // TODO
+            tcg_debug_assert(0);
+        }
+        qatomic_set((uint32_t *)jmp_rw, insn);
+        flush_idcache_range(jmp_rx, jmp_rw, 4);
+    #ifdef CONFIG_SOFTMMU
+    }
+    #endif
 }
 
 typedef struct {

@@ -5644,6 +5644,7 @@ IR2_INST *latxs_append_ir2_opnda(IR2_OPCODE opcode,
     switch (opcode) {
     case LISA_B:
     case LISA_BL:
+        lsassert(int32_in_int26(addr));
     case LISA_X86_INST:
     case LISA_DUP:
         latxs_ir2_build1(pir2, opcode, &imm_opnd);

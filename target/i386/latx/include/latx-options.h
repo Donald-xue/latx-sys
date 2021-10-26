@@ -52,6 +52,7 @@ extern int option_trace_start_tb_set;
 
 /* Optimization in softmmu */
 extern int option_staticcs;
+extern int option_large_code_cache;
 extern int option_njc;
 extern int option_sigint;
 extern int option_cross_page_check;

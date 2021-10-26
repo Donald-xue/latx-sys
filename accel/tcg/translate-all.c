@@ -1352,6 +1352,9 @@ static void page_lock_pair(PageDesc **ret_p1, tb_page_addr_t phys1,
 #elif defined(__s390x__)
   /* We have a +- 4GB range on the branches; leave some slop.  */
 # define MAX_CODE_GEN_BUFFER_SIZE  (3 * GiB)
+
+#elif defined(CONFIG_SOFTMMU) && defined(__loongarch__) && defined(CONFIG_LATX)
+# define MAX_CODE_GEN_BUFFER_SIZE  (4 * GiB)
 #elif defined(__mips__) || defined (__loongarch__) && defined (CONFIG_LATX)
   /* We have a 256MB branch region, but leave room to make sure the
      main executable is also within that region.  */
@@ -1392,8 +1395,20 @@ static void page_lock_pair(PageDesc **ret_p1, tb_page_addr_t phys1,
   (DEFAULT_CODE_GEN_BUFFER_SIZE_1 < MAX_CODE_GEN_BUFFER_SIZE \
    ? DEFAULT_CODE_GEN_BUFFER_SIZE_1 : MAX_CODE_GEN_BUFFER_SIZE)
 
+#ifdef CONFIG_LATX
+#include "latx-options.h"
+#endif
+
 static size_t size_code_gen_buffer(size_t tb_size)
 {
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (option_large_code_cache) {
+        return tb_size;
+    } else {
+        /* max code cache size with b */
+        return 128 * 1024 * 1024;
+    }
+#else
     /* Size the buffer.  */
     if (tb_size == 0) {
         size_t phys_mem = qemu_get_host_physmem();
@@ -1410,6 +1425,7 @@ static size_t size_code_gen_buffer(size_t tb_size)
         tb_size = MAX_CODE_GEN_BUFFER_SIZE;
     }
     return tb_size;
+#endif
 }
 
 #ifdef __mips__
@@ -2277,6 +2293,7 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
 
 #ifdef CONFIG_LATX
 #include "latx-config.h"
+#include "latx-options.h"
 #ifndef CONFIG_SOFTMMU
 
 void tb_exit_to_qemu (CPUArchState *env, uintptr_t pc)

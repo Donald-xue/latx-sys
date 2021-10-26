@@ -189,9 +189,11 @@ static int gen_latxs_sc_prologue(void *code_ptr)
          * offset of branch   = 0x00 - 0x0c - 0x8  = 0xffec = -20 = - 0x14
          * branch destiantion = 0x14 - 0x14 = 0x00
          */
-        latxs_append_ir2_opnda(LISA_B,
-            (context_switch_native_to_bt -
-             context_switch_bt_to_native - inst_size) >> 2);
+
+        int64_t ins_offset = (context_switch_native_to_bt -
+                               context_switch_bt_to_native - inst_size) >>
+                              2;
+        latxs_append_ir2_jmp_far(ins_offset, 1);
         latxs_append_ir2_opnd0_(lisa_nop);
     }
 
@@ -634,9 +636,9 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
                 lsenv_offset_of_eip(lsenv));
         offset = (td->real_ir2_inst_num << 2) - start;
-        latxs_append_ir2_opnda(LISA_B,
-                (context_switch_native_to_bt_ret_0
-                 - (ADDR)code_ptr - offset) >> 2);
+        int64_t ins_offset =
+            (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >> 2;
+        latxs_append_ir2_jmp_far(ins_offset, 0);
 
         /* else compare tb->top_out and next_tb->top_in */
         latxs_append_ir2_opnd1(LISA_LABEL, &label_next_tb_exist);
@@ -678,8 +680,10 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
                 offsetof(TranslationBlock, tc) +
                 offsetof(struct tb_tc, ptr));
         offset = (lsenv->tr_data->real_ir2_inst_num << 2) - start;
-        latxs_append_ir2_opnda(LISA_B, (native_rotate_fpu_by
-                 - (ADDR)code_ptr - offset) >> 2);
+
+        int64_t ins_offset =
+            (native_rotate_fpu_by - (ADDR)code_ptr - offset) >> 2;
+        latxs_append_ir2_jmp_far(ins_offset, 0);
     } else {
         IR2_OPND sigint_label;
         IR2_OPND sigint_check_label_start;
@@ -712,9 +716,10 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
                     lsenv_offset_of_eip(lsenv));
             offset = (td->real_ir2_inst_num << 2) - start;
-            latxs_append_ir2_opnda(LISA_B,
-                    (context_switch_native_to_bt_ret_0
-                     - (ADDR)code_ptr - offset) >> 2);
+            int64_t ins_offset =
+                (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+                2;
+            latxs_append_ir2_jmp_far(ins_offset, 0);
 
             if (n == 2) {
                 /* calculate offset from start to end for sigint check */
