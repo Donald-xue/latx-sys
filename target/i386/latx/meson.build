@@ -56,6 +56,7 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: files(
 i386_ss.add(when: 'CONFIG_LATX', if_true: capStone)
 
 i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
+  'sys-trace-interrupt.c',
   'sys-test.c'
 ))
 

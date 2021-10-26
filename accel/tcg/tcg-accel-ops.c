@@ -84,6 +84,12 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
 
     cpu->interrupt_request |= mask;
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (sigint_enabled()) {
+        sys_trace_send_interrupt(mask);
+    }
+#endif
+
     /*
      * If called from iothread context, wake the target cpu in
      * case its halted.

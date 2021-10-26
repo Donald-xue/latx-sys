@@ -9,16 +9,6 @@
 #include <signal.h>
 #include <ucontext.h>
 
-/* #define LATXS_DEBUG_SIGINT */
-#ifdef LATXS_DEBUG_SIGINT
-#define DS_PRINT(...) do {          \
-    fprintf(stderr, __VA_ARGS__); \
-} while (0)
-
-#else
-#define DS_PRINT(...)
-#endif
-
 static uint64_t code_buffer_lo;
 static uint64_t code_buffer_hi;
 
@@ -32,6 +22,8 @@ void latxs_tb_unlink(TranslationBlock *ctb)
     if (!ctb) {
         return;
     }
+
+    sys_trace_sigint_unlink(ctb);
 
     uintptr_t addr = 0;
 
@@ -64,6 +56,8 @@ void latxs_tb_relink(TranslationBlock *utb)
     if (!utb) {
         return;
     }
+
+    sys_trace_sigint_relink(utb);
 
     if (utb->is_indir_tb) {
         tb_set_jmp_target(utb, 0, native_jmp_glue_2);
@@ -99,37 +93,28 @@ static void latxs_rr_interrupt_signal_handler(
     ucontext_t *uc = ctx;
 
     uintptr_t pc = (uintptr_t)uc->uc_mcontext.__pc;
-    DS_PRINT("sigint, %llx, ", (unsigned long long)pc);
+
+    sys_trace_sigint_handler(pc);
 
     CPUX86State *env = lsenv->cpu_state;
+    TranslationBlock *ctb = NULL;
+    TranslationBlock *oldtb = NULL;
 
     if (code_buffer_lo <= pc && pc <= code_buffer_hi) {
-        DS_PRINT("1, ");
-        TranslationBlock *ctb = tcg_tb_lookup(pc);
+        ctb = tcg_tb_lookup(pc);
 
         if (ctb == NULL) {
             ctb = env->latxs_int_tb;
-            DS_PRINT("0\n");
+            sys_trace_sigint_event("tbinenv", ctb);
             if (native_jmp_glue_2_sigint_check_st <= pc &&
                 native_jmp_glue_2_sigint_check_ed >= pc) {
                 fprintf(stderr, "[warning] in %s unhandled case\n",
                         __func__);
             }
         } else {
-            DS_PRINT("1\n");
+            sys_trace_sigint_event("tcglookuptb", ctb);
         }
 
-        TranslationBlock *oldtb = lsenv->sigint_data.tb_unlinked;
-        if (oldtb == ctb) {
-            /* This TB is already unlinked */
-            return;
-        } else {
-            /* Prev TB is unlinked and not relinked */
-            latxs_tb_relink(oldtb);
-        }
-
-        lsenv->sigint_data.tb_unlinked = ctb;
-        latxs_tb_unlink(ctb);
     } else {
 
         if (env->sigint_flag) {
@@ -142,24 +127,27 @@ static void latxs_rr_interrupt_signal_handler(
              *
              * And at this time, do unlink is meanless too.
              */
+            sys_trace_sigint_event("noexectb", NULL);
             return;
         }
 
-        TranslationBlock *ctb = env->latxs_int_tb;
-        DS_PRINT("0, 0\n");
-
-        TranslationBlock *oldtb = lsenv->sigint_data.tb_unlinked;
-        if (oldtb == ctb) {
-            /* This TB is already unlinked */
-            return;
-        } else {
-            /* Prev TB is unlinked and not relinked */
-            latxs_tb_relink(oldtb);
-        }
-
-        lsenv->sigint_data.tb_unlinked = ctb;
-        latxs_tb_unlink(ctb);
+        ctb = env->latxs_int_tb;
+        sys_trace_sigint_event("tbinenv", ctb);
     }
+
+    oldtb = lsenv->sigint_data.tb_unlinked;
+    if (oldtb == ctb) {
+        /* This TB is already unlinked */
+        sys_trace_sigint_event("alreadyunlinkedtb", ctb);
+        return;
+    } else {
+        /* Prev TB is unlinked and not relinked */
+        sys_trace_sigint_event("relinkoldtb", oldtb);
+        latxs_tb_relink(oldtb);
+    }
+
+    lsenv->sigint_data.tb_unlinked = ctb;
+    latxs_tb_unlink(ctb);
 }
 
 void latxs_init_rr_thread_signal(CPUState *cpu)

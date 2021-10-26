@@ -2,3 +2,14 @@
 
 # latx-profile.c
 xtm_tr_tb(void *tb, void *code_addr, void *pc) "TB %p ; code %p ; PC %p"
+
+# latx interrupt tracing
+latx_do_int_pt(unsigned long tid, int intno, int is_int, unsigned long tns) "thread 0x%lx dointptno %d dointptisint %d timens %ld"
+latx_do_int_rl(unsigned long tid, int intno, int is_int, unsigned long tns) "thread 0x%lx dointrlno %d dointrlisint %d timens %ld"
+latx_send_int(unsigned long tid, unsigned long tns, int mask) "thread 0x%lx timens %ld sendint %d"
+latx_exe_int(unsigned long tid, unsigned long tns, int reqin, int reqout) "thread 0x%lx timens %ld execintreq %d pendingintreq %d"
+
+latx_sigint_handler(unsigned long tid, unsigned long tns, unsigned long pc) "thread 0x%lx timens %ld sigintpc 0x%lx"
+latx_sigint_event(unsigned long tid, unsigned long tns, const char *type, unsigned long tbpc) "thread 0x%lx timens %ld %s 0x%lx"
+latx_sigint_unlink(unsigned long tid, unsigned long tns, unsigned long tbpc, int isindir) "thread 0x%lx timens %ld unlinktbpc 0x%lx isindirtb %d"
+latx_sigint_relink(unsigned long tid, unsigned long tns, unsigned long tbpc, int isindir) "thread 0x%lx timens %ld relinktbpc 0x%lx isindirtb %d"
