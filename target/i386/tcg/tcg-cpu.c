@@ -72,6 +72,11 @@ static void x86_cpu_synchronize_from_tb(CPUState *cs,
         return;
     }
 #endif
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    if (!tb) {
+        return;
+    }
+#endif
 
     X86CPU *cpu = X86_CPU(cs);
 

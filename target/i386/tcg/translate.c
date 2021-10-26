@@ -33,6 +33,10 @@
 #include "trace-tcg.h"
 #include "exec/log.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#include "sigint-i386-tcg-la.h"
+#endif
+
 #define PREFIX_REPZ   0x01
 #define PREFIX_REPNZ  0x02
 #define PREFIX_LOCK   0x04
@@ -8668,3 +8672,224 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
     env->regs[R_EDI] = uc->uc_mcontext.__gregs[30];
 #endif
 }
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+
+uint64_t tcgsigint_cbuf_lo;
+uint64_t tcgsigint_cbuf_hi;
+
+static
+void rr_cpu_tcgsigint_unlink_tb(TranslationBlock *tb)
+{
+    if (!tb) {
+        return;
+    }
+
+    if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
+        uintptr_t addr = (uintptr_t)(tb->tc.ptr +
+                                     tb->jmp_reset_offset[0]);
+        tb_set_jmp_target(tb, 0, addr);
+    }
+
+    if (tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
+        uintptr_t addr = (uintptr_t)(tb->tc.ptr +
+                                     tb->jmp_reset_offset[1]);
+        tb_set_jmp_target(tb, 1, addr);
+    }
+}
+
+static
+void rr_cpu_tcgsigint_relink_tb(TranslationBlock *tb)
+{
+    if (!tb) {
+        return;
+    }
+
+    TranslationBlock *next_tb = NULL;
+
+    next_tb = (TranslationBlock *)tb->jmp_dest[0];
+    if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID
+            && next_tb && !(tb_cflags(next_tb) & CF_INVALID)) {
+        tb_set_jmp_target(tb, 0, (uintptr_t)(next_tb->tc.ptr));
+    }
+
+    next_tb = (TranslationBlock *)tb->jmp_dest[1];
+    if (tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID
+            && next_tb && !(tb_cflags(next_tb) & CF_INVALID)) {
+        tb_set_jmp_target(tb, 1, (uintptr_t)(next_tb->tc.ptr));
+    }
+}
+
+/*
+ * IF pc inside code cache
+ *
+ *    IF it is able to find TB according to pc
+ *    => we are executing this TB right now
+ *    => unlink this TB
+ *
+ *    IF can not find
+ *    => we are executing some static generated codes
+ *       => prologue: do nothing (env->tb_executing = NULL)
+ *       => epilogue: do nothing (env->tb_executing = NULL)
+ *       => others: env->tb_executing will be set before jump to there
+ *    => unlink env->tb_executing
+ *
+ * IF pc not in code cache
+ *
+ *    IF we are executing TB (aka. env->sigintflag = 0)
+ *    => we are executing helpers
+ *    => env->tb_executing will be set before jump to helper
+ *    => unlink env->tb_executing
+ *
+ *    IF not (aka. env->sigintflag != 0)
+ *    => do nothing
+ */
+static
+void rr_cpu_tcgsigint_handler(int n, siginfo_t *siginfo, void *ctx)
+{
+    /*assert(0);*/
+    ucontext_t *uc = ctx;
+
+    /*uintptr_t pc = (uintptr_t)uc->uc_mcontext.gregs[REG_RIP]; */
+    uintptr_t pc = (uintptr_t)uc->uc_mcontext.__pc;
+
+    CPUX86State *env = NULL;
+    if (current_cpu) {
+        env = current_cpu->env_ptr;
+    } else {
+        return;
+    }
+
+    TranslationBlock *ctb = NULL;
+    TranslationBlock *otb = NULL;
+
+    if (tcgsigint_cbuf_lo <= pc &&
+        tcgsigint_cbuf_hi >= pc) {
+        /* pc in code cache */
+        ctb = tcg_tb_lookup(pc);
+        if (ctb == NULL) {
+            /* no tb found: in static codes */
+            ctb = env->tb_executing;
+        }
+    } else {
+        if (env->sigintflag) {
+            /* outside TB's execution */
+            return;
+        }
+        /* inside helper function */
+        ctb = env->tb_executing;
+    }
+
+    otb = env->tb_unlinked;
+    if (otb == ctb) {
+        return;
+    } else {
+        rr_cpu_tcgsigint_relink_tb(otb);
+    }
+
+    env->tb_unlinked = ctb;
+    rr_cpu_tcgsigint_unlink_tb(ctb);
+}
+
+/*
+ * Called in rr_tcg_thread_fn(), before cpus start executing
+ * to register signal handler
+ */
+void rr_cpu_tcgsigint_init(CPUState *cpu)
+{
+    /*return;*/
+    /* 1. unblock the signal for vCPU thread */
+    sigset_t set, oldset;
+    sigemptyset(&set);
+    sigaddset(&set, 63);
+
+    int ret = pthread_sigmask(SIG_UNBLOCK, &set, &oldset);
+    if (ret < 0) {
+        fprintf(stderr, "[SIGINT] unblock SIG63 failed\n");
+        exit(-1);
+    }
+
+    /* 2. set the handler for signal */
+    struct sigaction act;
+    struct sigaction old_act;
+
+    memset(&act, 0, sizeof(act));
+    act.sa_flags = SA_SIGINFO;
+    act.sa_sigaction = rr_cpu_tcgsigint_handler;
+
+    ret = sigaction(63, &act, &old_act);
+    if (ret < 0) {
+        fprintf(stderr, "[SIGINT] set handler failed\n");
+        exit(-1);
+    }
+
+    fprintf(stderr,
+            "[SIGINT] thread %x set signal 63 handler\n",
+            (unsigned int)pthread_self());
+
+    /* 3. set the range of code buffer */
+    tcgsigint_cbuf_lo = (uint64_t)tcg_ctx->code_gen_buffer;
+    tcgsigint_cbuf_hi = (uint64_t)tcg_ctx->code_gen_buffer +
+                     (uint64_t)tcg_ctx->code_gen_buffer_size;
+
+    fprintf(stderr,
+            "[SIGINT] monitor code buffer %llx to %llx\n",
+            (unsigned long long)tcgsigint_cbuf_lo,
+            (unsigned long long)tcgsigint_cbuf_hi);
+}
+
+/*
+ * Called in tcg_gen_tb() after tb alloc
+ *                        before generating IR
+ */
+void tcgsigint_tb_gen_start(CPUState *cpu, TranslationBlock *tb)
+{
+    /*return;*/
+    if (cpu) {
+        CPUX86State *env = cpu->env_ptr;
+        if (env) {
+            env->tb_translating = tb;
+        }
+    }
+}
+
+/*
+ * Called in tcg_gen_tb() after generating host binary
+ */
+void tcgsigint_tb_gen_end(CPUState *cpu, TranslationBlock *tb)
+{
+    /*return;*/
+    if (cpu) {
+        CPUX86State *env = cpu->env_ptr;
+        if (env) {
+            env->tb_translating = NULL;
+        }
+    }
+}
+
+/*
+ * Called in cpu_loop_exit() which is usually used
+ * when guest exception happends
+ */
+void tcgsigint_cpu_loop_exit(CPUState *cpu)
+{
+    /*fprintf(stderr, "cpu loop exit from tb execution\n");*/
+    /*return;*/
+    CPUX86State *env = cpu->env_ptr;
+    env->sigintflag = 0;
+    rr_cpu_tcgsigint_relink_tb(env->tb_unlinked);
+    env->tb_unlinked = NULL;
+}
+
+/*
+ * Called after context switch from TB's execution
+ */
+void tcgsigint_after_tb_exec(CPUState *cpu)
+{
+    /*return;*/
+    CPUX86State *env = cpu->env_ptr;
+    rr_cpu_tcgsigint_relink_tb(env->tb_unlinked);
+    env->tb_unlinked = NULL;
+}
+
+#endif

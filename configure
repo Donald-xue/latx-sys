@@ -862,10 +862,19 @@ if test "$mingw32" = "yes" ; then
 fi
 
 werror=""
+tcgsigint=""
 
 for opt do
   optarg=$(expr "x$opt" : 'x[^=]*=\(.*\)')
   case "$opt" in
+  --enable-tcg-sigint) tcgsigint=yes
+    if test "$cpu" != "loongarch" ; then
+      error_exit "sigint only support TCG on LoongArch Linux"
+    fi
+    if test "$linux" = "no" ; then
+      error_exit "sigint only support TCG on LoongArch Linux"
+    fi
+  ;;
   --help|-h) show_help=yes
   ;;
   --version|-V) exec cat $source_path/VERSION
@@ -5517,6 +5526,9 @@ echo "GIT_SUBMODULES_ACTION=$git_submodules_action" >> $config_host_mak
 
 echo "ARCH=$ARCH" >> $config_host_mak
 
+if test "$tcgsigint" = "yes" ; then
+  echo "CONFIG_SIGINT=y" >> $config_host_mak
+fi
 if test "$debug_tcg" = "yes" ; then
   echo "CONFIG_DEBUG_TCG=y" >> $config_host_mak
 fi

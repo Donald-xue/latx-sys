@@ -25,6 +25,9 @@
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
 #include "latx-config.h"
 #endif
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+#include "sigint-i386-tcg-la.h"
+#endif
 
 bool tcg_allowed;
 
@@ -69,6 +72,9 @@ void cpu_loop_exit(CPUState *cpu)
 {
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     latxs_fix_after_excp_or_int();
+#endif
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    tcgsigint_cpu_loop_exit(cpu);
 #endif
     /* Undo the setting in cpu_tb_exec.  */
     cpu->can_do_io = 1;

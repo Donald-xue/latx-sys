@@ -38,6 +38,10 @@
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#include "sigint-i386-tcg-la.h"
+#endif
+
 /* common functionality among all TCG variants */
 
 void tcg_cpu_init_cflags(CPUState *cpu, bool parallel)
@@ -102,6 +106,9 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
         if (sigint_enabled()) {
             pthread_kill(cpu->thread->thread, 63);
         }
+#endif
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+        pthread_kill(cpu->thread->thread, 63);
 #endif
     }
 }

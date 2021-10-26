@@ -62,6 +62,10 @@
 #include "hw/core/tcg-cpu-ops.h"
 #include "internal.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#include "sigint-i386-tcg-la.h"
+#endif
+
 /* #define DEBUG_TB_INVALIDATE */
 /* #define DEBUG_TB_FLUSH */
 /* make various TB consistency checks */
@@ -2358,6 +2362,11 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->cflags = cflags;
     tb->trace_vcpu_dstate = *cpu->trace_dstate;
     tcg_ctx->tb_cflags = cflags;
+
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    tcgsigint_tb_gen_start(cpu, tb);
+#endif
+
 #ifndef CONFIG_LATX
  tb_overflow:
 #else
@@ -2461,6 +2470,10 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         goto buffer_overflow;
     }
     tb->tc.size = gen_code_size;
+
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    tcgsigint_tb_gen_end(cpu, tb);
+#endif
 
 #ifdef CONFIG_PROFILER
     qatomic_set(&prof->code_time, prof->code_time + profile_getclock() - ti);

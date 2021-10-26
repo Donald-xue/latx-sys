@@ -39,6 +39,10 @@
 #include "latx-options.h"
 #endif
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#include "sigint-i386-tcg-la.h"
+#endif
+
 /* Kick all RR vCPUs */
 void rr_kick_vcpu_thread(CPUState *unused)
 {
@@ -50,6 +54,9 @@ void rr_kick_vcpu_thread(CPUState *unused)
         if (sigint_enabled()) {
             pthread_kill(cpu->thread->thread, 63);
         }
+#endif
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+        pthread_kill(cpu->thread->thread, 63);
 #endif
     };
 }
@@ -171,6 +178,9 @@ static void *rr_cpu_thread_fn(void *arg)
 #ifdef CONFIG_LATX
     latx_lsenv_init(cpu->env_ptr);
     latxs_init_rr_thread_signal(cpu);
+#endif
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+    rr_cpu_tcgsigint_init(cpu);
 #endif
 
     /* wait for initial kick-off after machine start */

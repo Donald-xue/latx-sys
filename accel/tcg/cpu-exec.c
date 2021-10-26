@@ -45,6 +45,9 @@
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-test-sys.h"
 #endif
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+#include "sigint-i386-tcg-la.h"
+#endif
 
 /* -icount align implementation. */
 
@@ -217,6 +220,9 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
 #endif
 #else
     ret = tcg_qemu_tb_exec(env, tb_ptr);
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    tcgsigint_after_tb_exec(cpu);
+#endif
 #endif
 #ifdef CONFIG_LATX_DEBUG
     latx_after_exec_trace_tb(env, itb);

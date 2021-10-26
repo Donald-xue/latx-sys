@@ -1441,6 +1441,13 @@ typedef struct CPUX86State {
     ZMMReg temp_xmm;
 #endif
 #endif
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    /* sigint in TCG loongarch */
+    void *tb_translating;
+    void *tb_executing;
+    void *tb_unlinked;
+    uint64_t sigintflag;
+#endif
     /* standard registers */
     target_ulong regs[CPU_NB_REGS];
     target_ulong eip;

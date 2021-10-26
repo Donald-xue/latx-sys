@@ -36,16 +36,20 @@ static inline void gen_tb_start(const TranslationBlock *tb)
 {
     TCGv_i32 count;
 
+#if !defined(CONFIG_SIGINT)
     tcg_ctx->exitreq_label = gen_new_label();
+#endif
     if (tb_cflags(tb) & CF_USE_ICOUNT) {
         count = tcg_temp_local_new_i32();
     } else {
         count = tcg_temp_new_i32();
     }
 
+#if !defined(CONFIG_SIGINT)
     tcg_gen_ld_i32(count, cpu_env,
                    offsetof(ArchCPU, neg.icount_decr.u32) -
                    offsetof(ArchCPU, env));
+#endif
 
     if (tb_cflags(tb) & CF_USE_ICOUNT) {
         /*
@@ -57,7 +61,9 @@ static inline void gen_tb_start(const TranslationBlock *tb)
         icount_start_insn = tcg_last_op();
     }
 
+#if !defined(CONFIG_SIGINT)
     tcg_gen_brcondi_i32(TCG_COND_LT, count, 0, tcg_ctx->exitreq_label);
+#endif
 
     if (tb_cflags(tb) & CF_USE_ICOUNT) {
         tcg_gen_st16_i32(count, cpu_env,
@@ -80,8 +86,10 @@ static inline void gen_tb_end(const TranslationBlock *tb, int num_insns)
                            tcgv_i32_arg(tcg_constant_i32(num_insns)));
     }
 
+#if !defined(CONFIG_SIGINT)
     gen_set_label(tcg_ctx->exitreq_label);
     tcg_gen_exit_tb(tb, TB_EXIT_REQUESTED);
+#endif
 }
 
 #endif
