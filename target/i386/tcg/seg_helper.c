@@ -27,6 +27,10 @@
 #include "exec/log.h"
 #include "helper-tcg.h"
 
+#if defined(CONFIG_SOFTMMU)
+#include "trace.h"
+#endif
+
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
 #include "latx-options.h"
 #endif
@@ -821,8 +825,9 @@ static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
                    get_seg_limit(e1, e2),
                    e2);
     env->eip = offset;
-#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    sys_trace_do_interrupt_pt(env, intno, is_int, error_code, is_hw);
+
+#if defined(CONFIG_SOFTMMU)
+    trace_x86_do_int_pt(pthread_self(), get_clock(), intno, is_int);
 #endif
 }
 
@@ -1141,8 +1146,9 @@ static void do_interrupt_real(CPUX86State *env, int intno, int is_int,
     env->segs[R_CS].selector = selector;
     env->segs[R_CS].base = (selector << 4);
     env->eflags &= ~(IF_MASK | TF_MASK | AC_MASK | RF_MASK);
-#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    sys_trace_do_interrupt_rl(env, intno, is_int, error_code);
+
+#if defined(CONFIG_SOFTMMU)
+    trace_x86_do_int_rl(pthread_self(), get_clock(), intno, is_int);
 #endif
 }
 
@@ -1340,9 +1346,10 @@ bool x86_cpu_exec_interrupt(CPUState *cs, int interrupt_request)
     CPUX86State *env = &cpu->env;
     int intno;
 
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#if 1 && defined(CONFIG_SOFTMMU)
     int intreqout = x86_cpu_pending_interrupt(cs, interrupt_request);
-    sys_trace_x86_exec_interrupt(interrupt_request, intreqout);
+    trace_x86_exec_int(pthread_self(), get_clock(),
+            interrupt_request, intreqout);
     interrupt_request = intreqout;
 #else
     interrupt_request = x86_cpu_pending_interrupt(cs, interrupt_request);

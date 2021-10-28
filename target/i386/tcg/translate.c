@@ -33,6 +33,10 @@
 #include "trace-tcg.h"
 #include "exec/log.h"
 
+#if defined(CONFIG_SOFTMMU)
+#include "trace.h"
+#endif
+
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif
@@ -8675,6 +8679,12 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
 
+#define TCG_SIGINT_TRACE(name, ...) do {            \
+    trace_tcg_sigint_##name(                        \
+            pthread_self(), get_clock()             \
+           , __VA_ARGS__);                          \
+} while (0)
+
 uint64_t tcgsigint_cbuf_lo;
 uint64_t tcgsigint_cbuf_hi;
 
@@ -8684,6 +8694,8 @@ void rr_cpu_tcgsigint_unlink_tb(TranslationBlock *tb)
     if (!tb) {
         return;
     }
+
+    TCG_SIGINT_TRACE(unlink, tb->pc);
 
     if (tb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
         uintptr_t addr = (uintptr_t)(tb->tc.ptr +
@@ -8704,6 +8716,8 @@ void rr_cpu_tcgsigint_relink_tb(TranslationBlock *tb)
     if (!tb) {
         return;
     }
+
+    TCG_SIGINT_TRACE(relink, tb->pc);
 
     TranslationBlock *next_tb = NULL;
 
@@ -8753,6 +8767,8 @@ void rr_cpu_tcgsigint_handler(int n, siginfo_t *siginfo, void *ctx)
     /*uintptr_t pc = (uintptr_t)uc->uc_mcontext.gregs[REG_RIP]; */
     uintptr_t pc = (uintptr_t)uc->uc_mcontext.__pc;
 
+    TCG_SIGINT_TRACE(handler, pc);
+
     CPUX86State *env = NULL;
     if (current_cpu) {
         env = current_cpu->env_ptr;
@@ -8770,20 +8786,27 @@ void rr_cpu_tcgsigint_handler(int n, siginfo_t *siginfo, void *ctx)
         if (ctb == NULL) {
             /* no tb found: in static codes */
             ctb = env->tb_executing;
+            TCG_SIGINT_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
+        } else {
+            TCG_SIGINT_TRACE(event, "tcglookuptb", ctb ? ctb->pc : 0);
         }
     } else {
         if (env->sigintflag) {
             /* outside TB's execution */
+            TCG_SIGINT_TRACE(event, "noexectb", 0);
             return;
         }
         /* inside helper function */
         ctb = env->tb_executing;
+        TCG_SIGINT_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
     }
 
     otb = env->tb_unlinked;
     if (otb == ctb) {
+        TCG_SIGINT_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0);
         return;
     } else {
+        TCG_SIGINT_TRACE(event, "relinkoldtb", otb ? otb->pc : 0);
         rr_cpu_tcgsigint_relink_tb(otb);
     }
 

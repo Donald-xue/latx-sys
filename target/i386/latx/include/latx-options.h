@@ -72,20 +72,6 @@ extern int option_monitor_tbf; /* TB.flags */
 
 int sigint_enabled(void);
 
-/* latxs/trace/sys-trace-interrupt.c */
-void sys_trace_do_interrupt_pt(void *env, int intno, int is_int,
-                                          int error_code, int is_hw);
-void sys_trace_do_interrupt_rl(void *env, int intno, int is_int,
-                                          int error_code);
-
-void sys_trace_send_interrupt(int mask);
-void sys_trace_x86_exec_interrupt(int intreqin, int intreqout);
-
-void sys_trace_sigint_handler(unsigned long pc);
-void sys_trace_sigint_event(const char *event, void *tb);
-void sys_trace_sigint_unlink(void *tb);
-void sys_trace_sigint_relink(void *tb);
-
 #endif /* SOFTMMU */
 
 #endif

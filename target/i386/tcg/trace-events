@@ -1,0 +1,10 @@
+# x86 interrupt tracing
+x86_do_int_pt(unsigned long tid, unsigned long tns, int intno, int is_int) "thread 0x%lx timens %ld dointptno %d dointptisint %d"
+x86_do_int_rl(unsigned long tid, unsigned long tns, int intno, int is_int) "thread 0x%lx timens %ld dointrlno %d dointrlisint %d"
+x86_exec_int(unsigned long tid, unsigned long tns, int reqin, int reqout) "thread 0x%lx timens %ld execintreq %d pendingintreq %d"
+
+# tcg sigint tracing
+tcg_sigint_handler(unsigned long tid, unsigned long tns, unsigned long pc) "thread 0x%lx timens %ld sigintpc 0x%lx"
+tcg_sigint_event(unsigned long tid, unsigned long tns, const char *type, unsigned long tbpc) "thread 0x%lx timens %ld %s 0x%lx"
+tcg_sigint_unlink(unsigned long tid, unsigned long tns, unsigned long tbpc) "thread 0x%lx timens %ld unlinktbpc 0x%lxd"
+tcg_sigint_relink(unsigned long tid, unsigned long tns, unsigned long tbpc) "thread 0x%lx timens %ld relinktbpc 0x%lxd"

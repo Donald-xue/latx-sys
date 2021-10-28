@@ -38,6 +38,10 @@
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
 
+#if defined(CONFIG_SOFTMMU)
+#include "trace.h"
+#endif
+
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif
@@ -88,10 +92,8 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
 
     cpu->interrupt_request |= mask;
 
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-    if (sigint_enabled()) {
-        sys_trace_send_interrupt(mask);
-    }
+#if defined(CONFIG_SOFTMMU)
+    trace_tcg_send_int(pthread_self(), get_clock(), mask);
 #endif
 
     /*

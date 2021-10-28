@@ -5,9 +5,17 @@
 #include "latx-options.h"
 #include "translate.h"
 #include <string.h>
+#include "qemu/timer.h"
+#include "trace.h"
 
 #include <signal.h>
 #include <ucontext.h>
+
+#define LATX_TRACE(name, ...) do {                  \
+    trace_latx_sigint_##name(                       \
+            pthread_self(), get_clock()             \
+           , __VA_ARGS__);                          \
+} while (0)
 
 static uint64_t code_buffer_lo;
 static uint64_t code_buffer_hi;
@@ -23,7 +31,7 @@ void latxs_tb_unlink(TranslationBlock *ctb)
         return;
     }
 
-    sys_trace_sigint_unlink(ctb);
+    LATX_TRACE(unlink, ctb->pc, ctb->is_indir_tb);
 
     uintptr_t addr = 0;
 
@@ -57,7 +65,7 @@ void latxs_tb_relink(TranslationBlock *utb)
         return;
     }
 
-    sys_trace_sigint_relink(utb);
+    LATX_TRACE(relink, utb->pc, utb->is_indir_tb);
 
     if (utb->is_indir_tb) {
         tb_set_jmp_target(utb, 0, native_jmp_glue_2);
@@ -94,7 +102,7 @@ static void latxs_rr_interrupt_signal_handler(
 
     uintptr_t pc = (uintptr_t)uc->uc_mcontext.__pc;
 
-    sys_trace_sigint_handler(pc);
+    LATX_TRACE(handler, pc);
 
     CPUX86State *env = lsenv->cpu_state;
     TranslationBlock *ctb = NULL;
@@ -105,14 +113,14 @@ static void latxs_rr_interrupt_signal_handler(
 
         if (ctb == NULL) {
             ctb = env->latxs_int_tb;
-            sys_trace_sigint_event("tbinenv", ctb);
+            LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
             if (native_jmp_glue_2_sigint_check_st <= pc &&
                 native_jmp_glue_2_sigint_check_ed >= pc) {
                 fprintf(stderr, "[warning] in %s unhandled case\n",
                         __func__);
             }
         } else {
-            sys_trace_sigint_event("tcglookuptb", ctb);
+            LATX_TRACE(event, "tcglookuptb", ctb ? ctb->pc : 0);
         }
 
     } else {
@@ -127,22 +135,22 @@ static void latxs_rr_interrupt_signal_handler(
              *
              * And at this time, do unlink is meanless too.
              */
-            sys_trace_sigint_event("noexectb", NULL);
+            LATX_TRACE(event, "noexectb", 0);
             return;
         }
 
         ctb = env->latxs_int_tb;
-        sys_trace_sigint_event("tbinenv", ctb);
+        LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
     }
 
     oldtb = lsenv->sigint_data.tb_unlinked;
     if (oldtb == ctb) {
         /* This TB is already unlinked */
-        sys_trace_sigint_event("alreadyunlinkedtb", ctb);
+        LATX_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0);
         return;
     } else {
         /* Prev TB is unlinked and not relinked */
-        sys_trace_sigint_event("relinkoldtb", oldtb);
+        LATX_TRACE(event, "relinkoldtb", oldtb ? oldtb->pc : 0);
         latxs_tb_relink(oldtb);
     }
 

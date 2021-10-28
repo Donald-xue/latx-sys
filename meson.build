@@ -1850,6 +1850,8 @@ if have_system or have_user
     'target/i386',
     'target/i386/kvm',
     'target/i386/latx',
+    'target/i386/latx/optimization',
+    'target/i386/tcg',
     'target/mips',
     'target/ppc',
     'target/riscv',
