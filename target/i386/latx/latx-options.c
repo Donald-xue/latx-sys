@@ -593,8 +593,17 @@ void dump_latxs_options(void)
 
 void latxs_options_init(void)
 {
-    option_tb_link = 0;
+    option_tb_link = 1;
+    option_by_hand = 1;
+    option_staticcs = 1;
+    option_lsfpu = 1;
+
     option_intb_link = 0;
+    option_njc = 0;
+    option_sigint = 0;
+    option_cross_page_check = 0;
+    option_cross_page_jmp_link = 0;
+    option_large_code_cache = 0;
 
     option_smmu_slow = 0;
 
@@ -608,14 +617,6 @@ void latxs_options_init(void)
     option_trace_start_nr = 0;
     option_trace_start_tb = 0;
     option_trace_start_tb_set = 0;
-
-    option_staticcs = 0;
-    option_large_code_cache = 0;
-    option_njc = 0;
-    option_sigint = 0;
-
-    option_cross_page_check = 0;
-    option_cross_page_jmp_link = 0;
 
     option_monitor_sc = 0;
     option_monitor_tc = 0;
