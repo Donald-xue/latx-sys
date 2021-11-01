@@ -686,6 +686,8 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
 indirect_call:
 indirect_jmp:
 
+        can_link = can_link && option_intb_link;
+
         if (sigint_enabled()) {
             if (can_link) {
                 /* store eip (in $11) into env */

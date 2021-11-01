@@ -43,6 +43,7 @@ int option_sigint;
 int option_cross_page_check;
 int option_cross_page_jmp_link;
 int option_large_code_cache;
+int option_intb_link;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -188,6 +189,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_sigint        8
 #define LATXS_OPT_cross_page_jmp_link   9
 #define LATXS_OPT_large_code_cache 10
+#define LATXS_OPT_intb_link     11
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -219,6 +221,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "tblink",
             .type = QEMU_OPT_BOOL,
             .help = "enable/disable TB-link(aka TB-chaining)",
+        }, {
+            .name = "intblink",
+            .type = QEMU_OPT_BOOL,
+            .help = "enable/disable indirect TB-link",
         }, {
             .name = "lsfpu",
             .type = QEMU_OPT_BOOL,
@@ -338,6 +344,9 @@ void set_options(int index)
         break;
     case LATXS_OPT_cross_page_jmp_link:
         option_cross_page_jmp_link = 1;
+        break;
+    case LATXS_OPT_intb_link:
+        option_intb_link = 1;
         break;
     default: break;
     }
@@ -462,6 +471,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_bool(LATXS_OPT_sigint, opt->value.boolean);
     }
 
+    opt = qemu_opt_find(opts, "intblink");
+    if (opt) {
+        parse_options_bool(LATXS_OPT_intb_link, opt->value.boolean);
+    }
+
 _OUT:
     if (verbose) dump_latxs_options();
 
@@ -580,6 +594,7 @@ void dump_latxs_options(void)
 void latxs_options_init(void)
 {
     option_tb_link = 0;
+    option_intb_link = 0;
 
     option_smmu_slow = 0;
 
