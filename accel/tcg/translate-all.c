@@ -62,7 +62,7 @@
 #include "hw/core/tcg-cpu-ops.h"
 #include "internal.h"
 
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#if defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
 #endif
 
@@ -3502,5 +3502,12 @@ void *latx_test_sys_alloc_tb(void *_cpu, void **highwater)
     *highwater = tcg_ctx->code_gen_highwater;
 
     return tb;
+}
+#endif
+
+#if defined(CONFIG_SOFTMMU)
+void tcgsigint_remove_tb_from_jmp_list(void *tb, int n)
+{
+    tb_remove_from_jmp_list(tb, n);
 }
 #endif

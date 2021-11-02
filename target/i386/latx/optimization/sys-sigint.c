@@ -11,6 +11,8 @@
 #include <signal.h>
 #include <ucontext.h>
 
+#include "sigint-i386-tcg-la.h"
+
 #define LATX_TRACE(name, ...) do {                  \
     trace_latx_sigint_##name(                       \
             pthread_self(), get_clock()             \
@@ -25,6 +27,9 @@ int sigint_enabled(void)
     return option_sigint;
 }
 
+/* no relink for direct jmp */
+#define SIGINT_NO_RELINK
+
 void latxs_tb_unlink(TranslationBlock *ctb)
 {
     if (!ctb) {
@@ -38,6 +43,12 @@ void latxs_tb_unlink(TranslationBlock *ctb)
     if (ctb->jmp_reset_offset[0] != TB_JMP_RESET_OFFSET_INVALID) {
         addr = (uintptr_t)(ctb->tc.ptr + ctb->jmp_reset_offset[0]);
         tb_set_jmp_target(ctb, 0, addr);
+#ifdef SIGINT_NO_RELINK
+        if (!ctb->is_indir_tb) {
+            tcgsigint_remove_tb_from_jmp_list(ctb, 0);
+            qatomic_set(&ctb->jmp_dest[0], (uintptr_t)NULL);
+        }
+#endif
     }
 
     /* if (xtm_branch_opt() && TODO */
@@ -56,6 +67,12 @@ void latxs_tb_unlink(TranslationBlock *ctb)
     if (ctb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
         addr = (uintptr_t)(ctb->tc.ptr + ctb->jmp_reset_offset[1]);
         tb_set_jmp_target(ctb, 1, addr);
+#ifdef SIGINT_NO_RELINK
+        if (!ctb->is_indir_tb) {
+            tcgsigint_remove_tb_from_jmp_list(ctb, 1);
+            qatomic_set(&ctb->jmp_dest[1], (uintptr_t)NULL);
+        }
+#endif
     }
 }
 
@@ -71,6 +88,10 @@ void latxs_tb_relink(TranslationBlock *utb)
         tb_set_jmp_target(utb, 0, native_jmp_glue_2);
         return;
     }
+
+#ifdef SIGINT_NO_RELINK
+    return;
+#endif
 
     TranslationBlock *utb_next = NULL;
 

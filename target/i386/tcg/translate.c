@@ -35,9 +35,6 @@
 
 #if defined(CONFIG_SOFTMMU)
 #include "trace.h"
-#endif
-
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif
 
@@ -8677,7 +8674,9 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
 #endif
 }
 
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#if defined(CONFIG_SOFTMMU)
+
+#if defined(CONFIG_SIGINT)
 
 #define TCG_SIGINT_TRACE(name, ...) do {            \
     trace_tcg_sigint_##name(                        \
@@ -8687,6 +8686,8 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
 
 uint64_t tcgsigint_cbuf_lo;
 uint64_t tcgsigint_cbuf_hi;
+
+#define TCG_SIGINT_NO_RELINK
 
 static
 void rr_cpu_tcgsigint_unlink_tb(TranslationBlock *tb)
@@ -8701,18 +8702,30 @@ void rr_cpu_tcgsigint_unlink_tb(TranslationBlock *tb)
         uintptr_t addr = (uintptr_t)(tb->tc.ptr +
                                      tb->jmp_reset_offset[0]);
         tb_set_jmp_target(tb, 0, addr);
+#if defined(TCG_SIGINT_NO_RELINK)
+        tcgsigint_remove_tb_from_jmp_list(tb, 0);
+        qatomic_set(&tb->jmp_dest[0], (uintptr_t)NULL);
+#endif
     }
 
     if (tb->jmp_reset_offset[1] != TB_JMP_RESET_OFFSET_INVALID) {
         uintptr_t addr = (uintptr_t)(tb->tc.ptr +
                                      tb->jmp_reset_offset[1]);
         tb_set_jmp_target(tb, 1, addr);
+#if defined(TCG_SIGINT_NO_RELINK)
+        tcgsigint_remove_tb_from_jmp_list(tb, 1);
+        qatomic_set(&tb->jmp_dest[1], (uintptr_t)NULL);
+#endif
     }
 }
 
 static
 void rr_cpu_tcgsigint_relink_tb(TranslationBlock *tb)
 {
+#if defined(TCG_SIGINT_NO_RELINK)
+    return;
+#endif
+
     if (!tb) {
         return;
     }
@@ -8914,5 +8927,16 @@ void tcgsigint_after_tb_exec(CPUState *cpu)
     rr_cpu_tcgsigint_relink_tb(env->tb_unlinked);
     env->tb_unlinked = NULL;
 }
+
+#else
+
+void rr_cpu_tcgsigint_init(CPUState *cpu) {}
+
+void tcgsigint_tb_gen_start(CPUState *cpu, TranslationBlock *tb) {}
+void tcgsigint_tb_gen_end(CPUState *cpu, TranslationBlock *tb) {}
+void tcgsigint_cpu_loop_exit(CPUState *cpu) {}
+void tcgsigint_after_tb_exec(CPUState *cpu) {}
+
+#endif
 
 #endif
