@@ -534,8 +534,7 @@ bool latxs_translate_div(IR1_INST *pir1)
         /* 2.2 check if result is valid and generate exception if not */
         latxs_tr_gen_div_result_check(pir1, div_res, 8, 0);
         /* 2.3 store the results into destination */
-        latxs_append_ir2_opnd2i(LISA_SLLI_D, &div_mod, &div_mod, 8);
-        latxs_append_ir2_opnd3(LISA_OR, &div_res, &div_res, &div_mod);
+        latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &div_res, &div_mod, 15, 8);
         latxs_ra_free_temp(&div_mod);
         latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd);
         break;
@@ -641,8 +640,7 @@ bool latxs_translate_idiv(IR1_INST *pir1)
         /* 2.2 check if result is valid and generate exception if not */
         latxs_tr_gen_div_result_check(pir1, div_res, 8, 1);
         /* 2.3 store the results into destination */
-        latxs_append_ir2_opnd2i(LISA_SLLI_D, &div_mod, &div_mod, 8);
-        latxs_append_ir2_opnd3(LISA_OR, &div_res, &div_res, &div_mod);
+        latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &div_res, &div_mod, 15, 8);
         latxs_ra_free_temp(&div_mod);
         latxs_store_ir2_to_ir1(&div_res, &ax_ir1_opnd);
         break;
