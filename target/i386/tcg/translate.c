@@ -8678,6 +8678,12 @@ void restore_state_to_opc(CPUX86State *env, TranslationBlock *tb,
 
 #if defined(CONFIG_SIGINT)
 
+int tcgsigint_mode(void)
+{
+    return TCG_SIGINT_MODE_UNLINK_ONE;
+    /* return TCG_SIGINT_MODE_UNLINK_ALL; */
+}
+
 #define TCG_SIGINT_TRACE(name, ...) do {            \
     trace_tcg_sigint_##name(                        \
             pthread_self(), get_clock()             \
@@ -8692,6 +8698,10 @@ uint64_t tcgsigint_cbuf_hi;
 static
 void rr_cpu_tcgsigint_unlink_tb(TranslationBlock *tb)
 {
+    if (tcgsigint_mode() != TCG_SIGINT_MODE_UNLINK_ONE) {
+        return;
+    }
+
     if (!tb) {
         return;
     }
@@ -8725,6 +8735,9 @@ void rr_cpu_tcgsigint_relink_tb(TranslationBlock *tb)
 #if defined(TCG_SIGINT_NO_RELINK)
     return;
 #endif
+    if (tcgsigint_mode() != TCG_SIGINT_MODE_UNLINK_ONE) {
+        return;
+    }
 
     if (!tb) {
         return;
@@ -8827,6 +8840,68 @@ void rr_cpu_tcgsigint_handler(int n, siginfo_t *siginfo, void *ctx)
     rr_cpu_tcgsigint_unlink_tb(ctb);
 }
 
+static QemuSpin tcg_sigint_slk;
+
+static
+void __attribute__((__constructor__)) tcg_sigint_init(void)
+{
+    qemu_spin_init(&tcg_sigint_slk);
+}
+
+static void tcgsigint_unlink_tb_recursive(TranslationBlock *tb);
+
+static
+void tcgsigint_unlink_tb_recursive_2(TranslationBlock *tb, int n)
+{
+    TranslationBlock *tb_next = (TranslationBlock *)tb->jmp_dest[n];
+
+    if (tb_next) {
+        tcgsigint_remove_tb_from_jmp_list(tb, n);
+        tb->jmp_dest[n] = (uintptr_t)NULL;
+
+        /* reset tb's jump link */
+        if (tb->jmp_reset_offset[n] != TB_JMP_RESET_OFFSET_INVALID)  {
+            uintptr_t addr = (uintptr_t)(tb->tc.ptr +
+                                         tb->jmp_reset_offset[n]);
+            tb_set_jmp_target(tb, n, addr);
+        }
+
+        tcgsigint_unlink_tb_recursive(tb_next);
+    }
+}
+
+static
+void tcgsigint_unlink_tb_recursive(TranslationBlock *tb)
+{
+    tcgsigint_unlink_tb_recursive_2(tb, 0);
+    tcgsigint_unlink_tb_recursive_2(tb, 1);
+}
+
+void tcgsigint_unlink_tb_all(CPUState *cpu)
+{
+    CPUX86State *env = cpu->env_ptr;
+    TranslationBlock *tb;
+
+    qemu_spin_lock(&tcg_sigint_slk);
+
+    tb = env->tb_executing;
+    if (tb) {
+        env->tb_executing = NULL;
+        tcgsigint_unlink_tb_recursive(tb);
+    }
+
+    qemu_spin_unlock(&tcg_sigint_slk);
+}
+
+static
+void rr_cpu_tcgsigint_handler_unlink_all(int n,
+        siginfo_t *siginfo, void *ctx)
+{
+    if (current_cpu) {
+        tcgsigint_unlink_tb_all(current_cpu);
+    }
+}
+
 /*
  * Called in rr_tcg_thread_fn(), before cpus start executing
  * to register signal handler
@@ -8851,7 +8926,13 @@ void rr_cpu_tcgsigint_init(CPUState *cpu)
 
     memset(&act, 0, sizeof(act));
     act.sa_flags = SA_SIGINFO;
-    act.sa_sigaction = rr_cpu_tcgsigint_handler;
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        act.sa_sigaction = rr_cpu_tcgsigint_handler;
+    } else if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ALL) {
+        act.sa_sigaction = rr_cpu_tcgsigint_handler_unlink_all;
+    } else {
+        assert(0);
+    }
 
     ret = sigaction(63, &act, &old_act);
     if (ret < 0) {
@@ -8863,15 +8944,17 @@ void rr_cpu_tcgsigint_init(CPUState *cpu)
             "[SIGINT] thread %x set signal 63 handler\n",
             (unsigned int)pthread_self());
 
-    /* 3. set the range of code buffer */
-    tcgsigint_cbuf_lo = (uint64_t)tcg_ctx->code_gen_buffer;
-    tcgsigint_cbuf_hi = (uint64_t)tcg_ctx->code_gen_buffer +
-                     (uint64_t)tcg_ctx->code_gen_buffer_size;
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        /* 3. set the range of code buffer */
+        tcgsigint_cbuf_lo = (uint64_t)tcg_ctx->code_gen_buffer;
+        tcgsigint_cbuf_hi = (uint64_t)tcg_ctx->code_gen_buffer +
+                         (uint64_t)tcg_ctx->code_gen_buffer_size;
 
-    fprintf(stderr,
-            "[SIGINT] monitor code buffer %llx to %llx\n",
-            (unsigned long long)tcgsigint_cbuf_lo,
-            (unsigned long long)tcgsigint_cbuf_hi);
+        fprintf(stderr,
+                "[SIGINT] monitor code buffer %llx to %llx\n",
+                (unsigned long long)tcgsigint_cbuf_lo,
+                (unsigned long long)tcgsigint_cbuf_hi);
+    }
 }
 
 /*
@@ -8881,6 +8964,10 @@ void rr_cpu_tcgsigint_init(CPUState *cpu)
 void tcgsigint_tb_gen_start(CPUState *cpu, TranslationBlock *tb)
 {
     /*return;*/
+    if (tcgsigint_mode() != TCG_SIGINT_MODE_UNLINK_ONE) {
+        return;
+    }
+
     if (cpu) {
         CPUX86State *env = cpu->env_ptr;
         if (env) {
@@ -8895,6 +8982,10 @@ void tcgsigint_tb_gen_start(CPUState *cpu, TranslationBlock *tb)
 void tcgsigint_tb_gen_end(CPUState *cpu, TranslationBlock *tb)
 {
     /*return;*/
+    if (tcgsigint_mode() != TCG_SIGINT_MODE_UNLINK_ONE) {
+        return;
+    }
+
     if (cpu) {
         CPUX86State *env = cpu->env_ptr;
         if (env) {
@@ -8911,10 +9002,28 @@ void tcgsigint_cpu_loop_exit(CPUState *cpu)
 {
     /*fprintf(stderr, "cpu loop exit from tb execution\n");*/
     /*return;*/
+    if (tcgsigint_mode() != TCG_SIGINT_MODE_UNLINK_ONE) {
+        return;
+    }
+
     CPUX86State *env = cpu->env_ptr;
     env->sigintflag = 0;
     rr_cpu_tcgsigint_relink_tb(env->tb_unlinked);
     env->tb_unlinked = NULL;
+}
+
+/*
+ * Called before context switch from TB's execution
+ */
+void tcgsigint_before_tb_exec(CPUState *cpu, void *_tb)
+{
+    if (tcgsigint_mode() != TCG_SIGINT_MODE_UNLINK_ALL) {
+        return;
+    }
+
+    TranslationBlock *tb = _tb;
+    CPUX86State *env = cpu->env_ptr;
+    env->tb_executing = tb;
 }
 
 /*
@@ -8924,8 +9033,16 @@ void tcgsigint_after_tb_exec(CPUState *cpu)
 {
     /*return;*/
     CPUX86State *env = cpu->env_ptr;
-    rr_cpu_tcgsigint_relink_tb(env->tb_unlinked);
-    env->tb_unlinked = NULL;
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        rr_cpu_tcgsigint_relink_tb(env->tb_unlinked);
+        env->tb_unlinked = NULL;
+        return;
+    }
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ALL) {
+        env->tb_executing = NULL;
+        return;
+    }
+    assert(0);
 }
 
 #else
@@ -8935,7 +9052,13 @@ void rr_cpu_tcgsigint_init(CPUState *cpu) {}
 void tcgsigint_tb_gen_start(CPUState *cpu, TranslationBlock *tb) {}
 void tcgsigint_tb_gen_end(CPUState *cpu, TranslationBlock *tb) {}
 void tcgsigint_cpu_loop_exit(CPUState *cpu) {}
+void tcgsigint_before_tb_exec(CPUState *cpu, void *tb) {}
 void tcgsigint_after_tb_exec(CPUState *cpu) {}
+
+int tcgsigint_mode(void)
+{
+    return TCG_SIGINT_MODE_NONE;
+}
 
 #endif
 

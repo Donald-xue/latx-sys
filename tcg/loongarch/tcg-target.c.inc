@@ -867,11 +867,13 @@ static void tcg_out_setcond2(TCGContext *s, TCGCond cond, TCGReg ret,
 static void tcg_out_call_int(TCGContext *s, const tcg_insn_unit *arg, bool tail)
 {
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
-    CPUX86State *env = current_cpu->env_ptr;
-    tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_TMP0,
-        (uint64_t)env->tb_translating);
-    tcg_out_st(s, TCG_TYPE_PTR, TCG_REG_TMP0,
-        TCG_AREG0, offsetof(CPUX86State, tb_executing));
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        CPUX86State *env = current_cpu->env_ptr;
+        tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_TMP0,
+            (uint64_t)env->tb_translating);
+        tcg_out_st(s, TCG_TYPE_PTR, TCG_REG_TMP0,
+            TCG_AREG0, offsetof(CPUX86State, tb_executing));
+    }
 #endif
 
     TCGReg link = tail ? TCG_REG_ZERO : TCG_REG_RA;
@@ -1843,28 +1845,32 @@ static void tcg_target_qemu_prologue(TCGContext *s)
     tcg_out_mov(s, TCG_TYPE_PTR, TCG_AREG0, tcg_target_call_iarg_regs[0]);
 
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
-    /* env->sigintflag = 0 : vCPU is executing TBs */
-    tcg_out_sti(s, TCG_TYPE_I64, 0, TCG_AREG0,
-        offsetof(CPUX86State, sigintflag));
-    /* check interrupt pending before jump to TB */
-    tcg_out_ld(s, TCG_TYPE_I32, TCG_REG_T0, TCG_AREG0,
-        offsetof(ArchCPU, neg.icount_decr.u32) -
-        offsetof(ArchCPU, env));
-    tcg_out_opc_jbr(s, OPC_BLT, TCG_REG_ZERO, TCG_REG_T0,
-        4 + 4); /* =======> branch */
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        /* env->sigintflag = 0 : vCPU is executing TBs */
+        tcg_out_sti(s, TCG_TYPE_I64, 0, TCG_AREG0,
+            offsetof(CPUX86State, sigintflag));
+        /* check interrupt pending before jump to TB */
+        tcg_out_ld(s, TCG_TYPE_I32, TCG_REG_T0, TCG_AREG0,
+            offsetof(ArchCPU, neg.icount_decr.u32) -
+            offsetof(ArchCPU, env));
+        tcg_out_opc_jbr(s, OPC_BLT, TCG_REG_ZERO, TCG_REG_T0,
+            4 + 4); /* =======> branch */
+    }
 #endif
 
     tcg_out_opc_jbr(s, OPC_JIRL, TCG_REG_ZERO, tcg_target_call_iarg_regs[1], 0);
 
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
-    /* =======> branch to here from above */
-    tcg_out_movi(s, TCG_TYPE_REG, TCG_REG_A0,
-        TB_EXIT_REQUESTED);
-    tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_T0, 2);
-    tcg_out_st(s, TCG_TYPE_I64, TCG_REG_T0,
-        TCG_AREG0, offsetof(CPUX86State, sigintflag));
-    tcg_out_opc_djp(s, OPC_B,
-        12 + 4); /* =========> directjmp */
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        /* =======> branch to here from above */
+        tcg_out_movi(s, TCG_TYPE_REG, TCG_REG_A0,
+            TB_EXIT_REQUESTED);
+        tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_T0, 2);
+        tcg_out_st(s, TCG_TYPE_I64, TCG_REG_T0,
+            TCG_AREG0, offsetof(CPUX86State, sigintflag));
+        tcg_out_opc_djp(s, OPC_B,
+            12 + 4); /* =========> directjmp */
+    }
 #endif
 
     /* Return path for goto_ptr. Set return value to 0 */
@@ -1875,11 +1881,13 @@ static void tcg_target_qemu_prologue(TCGContext *s)
     tb_ret_addr = tcg_splitwx_to_rx(s->code_ptr);
 
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
-    /* env->sigintflag = 1 : vCPU is not executing TBs */
-    tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_T0, 1);
-    tcg_out_st(s, TCG_TYPE_I64, TCG_REG_T0,
-        TCG_AREG0, offsetof(CPUX86State, sigintflag));
-    /* ========> directjmp to here from above */
+    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+        /* env->sigintflag = 1 : vCPU is not executing TBs */
+        tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_T0, 1);
+        tcg_out_st(s, TCG_TYPE_I64, TCG_REG_T0,
+            TCG_AREG0, offsetof(CPUX86State, sigintflag));
+        /* ========> directjmp to here from above */
+    }
 #endif
 
     for (i = 0; i < ARRAY_SIZE(tcg_target_callee_save_regs); i++) {

@@ -110,7 +110,13 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
         }
 #endif
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
-        pthread_kill(cpu->thread->thread, 63);
+        if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+            pthread_kill(cpu->thread->thread, 63);
+        } else if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ALL) {
+            tcgsigint_unlink_tb_all(cpu);
+        } else {
+            assert(0);
+        }
 #endif
     }
 }

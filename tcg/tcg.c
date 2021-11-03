@@ -458,6 +458,10 @@ static const TCGTargetOpDef constraint_sets[] = {
 #define C_O2_I3(O1, O2, I1, I2, I3)     C_PFX5(c_o2_i3_, O1, O2, I1, I2, I3)
 #define C_O2_I4(O1, O2, I1, I2, I3, I4) C_PFX6(c_o2_i4_, O1, O2, I1, I2, I3, I4)
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#include "sigint-i386-tcg-la.h"
+#endif
+
 #include "tcg-target.c.inc"
 
 /* compare a pointer @ptr and a tb_tc @s */

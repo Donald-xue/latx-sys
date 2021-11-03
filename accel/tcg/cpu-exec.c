@@ -219,6 +219,9 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
     latxs_after_exec_tb(cpu, itb);
 #endif
 #else
+#if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
+    tcgsigint_before_tb_exec(cpu, itb);
+#endif
     ret = tcg_qemu_tb_exec(env, tb_ptr);
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
     tcgsigint_after_tb_exec(cpu);
