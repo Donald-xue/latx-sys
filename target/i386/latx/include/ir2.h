@@ -341,9 +341,9 @@ IR2_INST *latxs_append_ir2_opnd0_(IR2_OPCODE);
             latxs_ra_free_temp(&tmp);                                          \
         } else {                                                               \
             if (link) {                                                        \
-                latxs_append_ir2_opnda(LISA_BL, ins_offset);                   \
+                latxs_append_ir2_opnda(LISA_BL, (int32_t)ins_offset);          \
             } else {                                                           \
-                latxs_append_ir2_opnda(LISA_B, ins_offset);                    \
+                latxs_append_ir2_opnda(LISA_B, (int32_t)ins_offset);           \
             }                                                                  \
         }                                                                      \
     } while (0)
