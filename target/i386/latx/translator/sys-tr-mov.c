@@ -239,8 +239,8 @@ bool latxs_translate_xlat(IR1_INST *pir1)
     IR2_OPND addr = latxs_ra_alloc_itemp();
     IR2_OPND data = latxs_ra_alloc_itemp();
 
-    IR2_OPND eax_opnd = ra_alloc_gpr(eax_index);
-    IR2_OPND ebx_opnd = ra_alloc_gpr(ebx_index);
+    IR2_OPND eax_opnd = latxs_ra_alloc_gpr(eax_index);
+    IR2_OPND ebx_opnd = latxs_ra_alloc_gpr(ebx_index);
     latxs_append_ir2_opnd2_(lisa_mov8z, &addr, &eax_opnd);
     latxs_append_ir2_opnd3(LISA_ADD_D, &addr, &addr, &ebx_opnd);
     latxs_append_ir2_opnd2_(lisa_mov32z, &addr, &addr);
