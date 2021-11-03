@@ -1924,8 +1924,8 @@ static void tcg_target_init(TCGContext *s)
 void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
                               uintptr_t jmp_rw, uintptr_t addr)
 {
-#ifdef CONFIG_SOFTMMU
-    if(option_large_code_cache){
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (option_large_code_cache) {
         ptrdiff_t jmp_offset = addr - jmp_rx;
         if (jmp_offset == sextreg(jmp_offset, 0, 28)) {
             tcg_insn_unit insn;
@@ -1947,7 +1947,7 @@ void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
         }
     }
     else {
-    #endif
+#endif
         ptrdiff_t offset = addr - jmp_rx;
         tcg_insn_unit insn;
 
@@ -1958,9 +1958,9 @@ void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
         }
         qatomic_set((uint32_t *)jmp_rw, insn);
         flush_idcache_range(jmp_rx, jmp_rw, 4);
-    #ifdef CONFIG_SOFTMMU
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     }
-    #endif
+#endif
 }
 
 typedef struct {
