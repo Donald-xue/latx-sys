@@ -302,8 +302,8 @@ void latxs_sigint_prepare_check_jmp_glue_2(
 
     fprintf(stderr, "[SIGINT] jmp glue 2 check start %d at %llx\n",
             sigint_check_jmp_glue_2_st,
-            native_jmp_glue_2_sigint_check_st);
+            (unsigned long long)native_jmp_glue_2_sigint_check_st);
     fprintf(stderr, "[SIGINT] jmp glue 2 check end   %d at %llx\n",
             sigint_check_jmp_glue_2_ed,
-            native_jmp_glue_2_sigint_check_ed);
+            (unsigned long long)native_jmp_glue_2_sigint_check_ed);
 }
