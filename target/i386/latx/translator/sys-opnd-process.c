@@ -981,6 +981,17 @@ void latxs_store_ir2_to_ir1_seg(IR2_OPND *seg_value_opnd, IR1_OPND *opnd1)
     int seg_num = ir1_opnd_base_reg_num(opnd1);
 
     TRANSLATION_DATA *td = lsenv->tr_data;
+
+    /*
+     * Intel SDM Vol.3A 6.8.3 states;
+     * "Any single-step trap that would be delivered following the MOV to SS
+     * instruction or POP to SS instruction (because EFLAGS.TF is 1) is
+     * suppressed."
+     */
+    if (seg_num == ss_index) {
+        td->sys.tf = 0;
+    }
+
     helper_cfg_t cfg = default_helper_cfg;
 
     IR1_INST *pir1 = td->curr_ir1_inst;

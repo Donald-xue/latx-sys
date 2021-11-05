@@ -396,19 +396,26 @@ void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env,
          */
         latxs_append_ir2_opnd2i(LISA_LD_W, eip_opnd, &latxs_env_ir2_opnd,
                 lsenv_offset_of_eip(lsenv));
-        return;
+    } else {
+        switch (opnd_size) {
+        case 32:
+            latxs_load_imm32_to_ir2(eip_opnd, eip, EXMode_Z);
+            break;
+        case 16:
+            latxs_load_imm32_to_ir2(eip_opnd, eip & 0xffff, EXMode_Z);
+            break;
+        default:
+            lsassert(0);
+            break;
+        }
     }
 
-    switch (opnd_size) {
-    case 32:
-        latxs_load_imm32_to_ir2(eip_opnd, eip, EXMode_Z);
-        break;
-    case 16:
-        latxs_load_imm32_to_ir2(eip_opnd, eip & 0xffff, EXMode_Z);
-        break;
-    default:
-        lsassert(0);
-        break;
+    /* should correctly set env->eip */
+    if (lsenv->tr_data->sys.tf) {
+        latxs_append_ir2_opnd2i(LISA_ST_W, eip_opnd, &latxs_env_ir2_opnd,
+                lsenv_offset_of_eip(lsenv));
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_single_step,
+                                         default_helper_cfg);
     }
 }
 
