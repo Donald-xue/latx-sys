@@ -40,11 +40,10 @@
 
 #if defined(CONFIG_SOFTMMU)
 #include "trace.h"
-#endif
-
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#if defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif
+#endif /* CONFIG_SOFTMMU */
 
 /* common functionality among all TCG variants */
 
@@ -104,12 +103,14 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
         qemu_cpu_kick(cpu);
     } else {
         qatomic_set(&cpu_neg(cpu)->icount_decr.u16.high, -1);
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#if defined(CONFIG_SOFTMMU)
+#if defined(CONFIG_LATX)
         if (sigint_enabled()) {
-            pthread_kill(cpu->thread->thread, 63);
+            /* pthread_kill(cpu->thread->thread, 63); */
+            latxs_rr_interrupt_self(cpu);
         }
-#endif
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#endif /* CONFIG_LATX */
+#if defined(CONFIG_SIGINT)
         if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
             pthread_kill(cpu->thread->thread, 63);
         } else if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ALL) {
@@ -117,7 +118,8 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
         } else {
             assert(0);
         }
-#endif
+#endif /* CONFIG_SIGINT */
+#endif /* CONFIG_SOFTMMU */
     }
 }
 

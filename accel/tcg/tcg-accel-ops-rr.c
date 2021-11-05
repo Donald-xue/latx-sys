@@ -35,13 +35,14 @@
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
 
-#if defined(CONFIG_SOFTMMU)  && defined(CONFIG_LATX)
+#if defined(CONFIG_SOFTMMU)
+#if defined(CONFIG_LATX)
 #include "latx-options.h"
 #endif
-
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#if defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif
+#endif /* CONFIG_SOFTMMU */
 
 /* Kick all RR vCPUs */
 void rr_kick_vcpu_thread(CPUState *unused)
@@ -50,12 +51,14 @@ void rr_kick_vcpu_thread(CPUState *unused)
 
     CPU_FOREACH(cpu) {
         cpu_exit(cpu);
-#if defined(CONFIG_SOFTMMU)  && defined(CONFIG_LATX)
+#if defined(CONFIG_SOFTMMU)
+#if defined(CONFIG_LATX)
         if (sigint_enabled()) {
-            pthread_kill(cpu->thread->thread, 63);
+            /* pthread_kill(cpu->thread->thread, 63); */
+            latxs_rr_interrupt_self(cpu);
         }
-#endif
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#endif /* CONFIG_LATX */
+#if defined(CONFIG_SIGINT)
         if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
             pthread_kill(cpu->thread->thread, 63);
         } else if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ALL) {
@@ -63,7 +66,8 @@ void rr_kick_vcpu_thread(CPUState *unused)
         } else {
             assert(0);
         }
-#endif
+#endif /* CONFIG_SIGINT */
+#endif /* CONFIG_SOFTMMU */
     };
 }
 
@@ -183,11 +187,16 @@ static void *rr_cpu_thread_fn(void *arg)
 
 #ifdef CONFIG_LATX
     latx_lsenv_init(cpu->env_ptr);
+#endif
+
+#if defined(CONFIG_SOFTMMU)
+#if defined(CONFIG_LATX)
     latxs_init_rr_thread_signal(cpu);
 #endif
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_SIGINT)
+#if defined(CONFIG_SIGINT)
     rr_cpu_tcgsigint_init(cpu);
 #endif
+#endif /* CONFIG_SOFTMMU */
 
     /* wait for initial kick-off after machine start */
     while (first_cpu->stopped) {

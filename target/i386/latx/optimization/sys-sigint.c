@@ -106,6 +106,34 @@ void latxs_tb_relink(TranslationBlock *utb)
     }
 }
 
+void latxs_rr_interrupt_self(CPUState *cpu)
+{
+    CPUX86State *env = cpu->env_ptr;
+
+    TranslationBlock *ctb = NULL;
+    TranslationBlock *otb = NULL;
+
+    if (env->sigint_flag) {
+        LATX_TRACE(event, "noexectb", 0);
+        return;
+    }
+
+    ctb = env->latxs_int_tb;
+    LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
+
+    otb = lsenv->sigint_data.tb_unlinked;
+    if (otb == ctb && !ctb) {
+        LATX_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0);
+        return;
+    } else {
+        LATX_TRACE(event, "relinkoldtb", otb ? otb->pc : 0);
+        latxs_tb_relink(otb);
+    }
+
+    lsenv->sigint_data.tb_unlinked = ctb;
+    latxs_tb_unlink(ctb);
+}
+
 static int sigint_check_jmp_glue_2_st;
 static int sigint_check_jmp_glue_2_ed;
 
