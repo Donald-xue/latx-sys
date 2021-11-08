@@ -170,12 +170,8 @@ static int gen_latxs_sc_prologue(void *code_ptr)
                 TB_EXIT_REQUESTED);
 
         IR2_OPND tb_ptr_opnd = latxs_ra_alloc_dbt_arg1();
-        IR2_OPND eip_opnd = latxs_ra_alloc_dbt_arg2();
 
         latxs_append_ir2_opnd2_(lisa_mov, &tb_ptr_opnd, zero);
-        latxs_append_ir2_opnd2i(LISA_LD_WU, &eip_opnd,
-                &latxs_env_ir2_opnd,
-                lsenv_offset_of_eip(lsenv));
 
         int inst_size = td->real_ir2_inst_num << 2;
         /*
@@ -236,12 +232,6 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
     latxs_append_ir2_opnd2i(LISA_ST_D, &tb_ptr_opnd,
             &latxs_env_ir2_opnd,
             lsenv_offset_of_last_executed_tb(lsenv));
-
-    /* 2. store eip (in $11) into env */
-    IR2_OPND eip_opnd = latxs_ra_alloc_dbt_arg2();
-    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd,
-            &latxs_env_ir2_opnd,
-            lsenv_offset_of_eip(lsenv));
 
     /* 3. save x86 mapping registers */
     int save_top = option_lsfpu ? 1 : 0;
@@ -328,13 +318,12 @@ static int __gen_fpu_rotate_step(void *code_base,
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &top_bias, &top_bias, step);
         latxs_append_ir2_opnd2i(LISA_ANDI,   &top_bias, &top_bias, 0x7);
 
-        /* 1.5 jump to next TB's native code */
-        IR2_OPND target_native_code_addr = latxs_ra_alloc_dbt_arg2();
         latxs_append_ir2_opnd2i(LISA_ST_W, &top_bias,
                 &latxs_env_ir2_opnd,
                 lsenv_offset_of_top_bias(lsenv));
+        /* 1.5 jump to next TB's native code, saved in ra by jump glue */
         latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_zero_ir2_opnd,
-                &target_native_code_addr, 0);
+                &latxs_ra_ir2_opnd, 0);
 
         rotate_step_array[step] = (ADDR)code_ptr;
         rotate_step_array[step - 8] = (ADDR)code_ptr;
@@ -519,7 +508,6 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
 
     IR2_OPND tb  = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
-    IR2_OPND eip = latxs_ra_alloc_dbt_arg2(); /* $11 a7 */
 
     IR2_OPND tmp    = latxs_ra_alloc_itemp();
     IR2_OPND param0 = latxs_ra_alloc_itemp();
@@ -531,7 +519,6 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
      * DBT arg 2 : next TB's native codes
      */
     IR2_OPND step_opnd = latxs_ra_alloc_dbt_arg1();
-    IR2_OPND tb_nc_opnd = latxs_ra_alloc_dbt_arg2();
 
     if (n == 0 || n == 1) {
         /* load tb->next_tb[n] into a0/v0 */
@@ -545,8 +532,8 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
 
         /*
          * $a6: prev TB           @tb         @step_opnd
-         * $a7: EIP for next TB   @eip
          *
+         * tmp: EIP for next TB   @eip
          * tmp: free to use here  @param0
          * tmp: free to use here  @param1
          * tmp: free to use here  @tmp
@@ -568,7 +555,11 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             /* check if PC == TB.PC */
             latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
                     offsetof(TranslationBlock, pc));
+            IR2_OPND eip = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, &latxs_env_ir2_opnd,
+                                    lsenv_offset_of_eip(lsenv));
             latxs_append_ir2_opnd3(LISA_BNE, &param0, &eip, &njc_miss);
+            latxs_ra_free_temp(&eip);
 
             /*
              * check next TB cflags CF_INVALID
@@ -633,8 +624,6 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
 
         /* if next_tb == NULL, jump to epilogue */
-        latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
-                lsenv_offset_of_eip(lsenv));
         offset = (td->real_ir2_inst_num << 2) - start;
         int64_t ins_offset =
             (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >> 2;
@@ -675,8 +664,8 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         }
 
         /* top_bias != 0, need to rotate, step is in arg1 */
-        /* fetch native address of next_tb to arg2 */
-        latxs_append_ir2_opnd2i(LISA_LD_D, &tb_nc_opnd, ret0,
+        /* fetch native address of next_tb to ra */
+        latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd, ret0,
                 offsetof(TranslationBlock, tc) +
                 offsetof(struct tb_tc, ptr));
         offset = (lsenv->tr_data->real_ir2_inst_num << 2) - start;
@@ -713,8 +702,6 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_end);
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, env,
-                    lsenv_offset_of_eip(lsenv));
             offset = (td->real_ir2_inst_num << 2) - start;
             int64_t ins_offset =
                 (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>

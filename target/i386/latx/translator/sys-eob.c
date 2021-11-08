@@ -332,15 +332,13 @@ void latxs_tr_gen_sys_eob(IR1_INST *pir1)
     latxs_tr_gen_eob();
 
     IR2_OPND tbptr = latxs_ra_alloc_dbt_arg1(); /* a6($10) */
-    IR2_OPND next_eip_opnd = latxs_ra_alloc_dbt_arg2(); /* a7($11) */
 
     /* t8: This TB's address */
     latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, (ADDR)tb);
 
     /* t9: next x86 instruction's address */
     ADDRX next_eip = ir1_addr_next(pir1);
-    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update,
-            &next_eip_opnd, next_eip, 32);
+    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 32);
 
     /* jump to context switch */
     latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, 0);
@@ -382,38 +380,34 @@ void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id)
     latxs_append_ir2_opnd0_(lisa_nop);
 }
 
-void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env,
-        IR2_OPND *eip_opnd, ADDRX eip, int opnd_size)
+void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env, ADDRX eip,
+                                        int opnd_size)
 {
-    if (reload_eip_from_env) {
-        /*
-         * Marked by special instruction that reaches special EOB
-         *
-         * This mark means that we should not update the eip in env.
-         * But the context switch is fixed, it will always update eip.
-         *
-         * So we read env->eip into next_eip_opnd here.
-         */
-        latxs_append_ir2_opnd2i(LISA_LD_W, eip_opnd, &latxs_env_ir2_opnd,
-                lsenv_offset_of_eip(lsenv));
-    } else {
+    /*
+     * reload_eip_from_env : pc has been stored to env
+     * Marked by special instruction that reaches special EOB
+     * This mark means that we should not update the eip in env.
+     */
+    if (!reload_eip_from_env) {
+        IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
         switch (opnd_size) {
         case 32:
-            latxs_load_imm32_to_ir2(eip_opnd, eip, EXMode_Z);
+            latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
             break;
         case 16:
-            latxs_load_imm32_to_ir2(eip_opnd, eip & 0xffff, EXMode_Z);
+            latxs_load_imm32_to_ir2(&eip_opnd, eip & 0xffff, EXMode_Z);
             break;
         default:
             lsassert(0);
             break;
         }
+        latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_eip(lsenv));
+        latxs_ra_free_temp(&eip_opnd);
     }
 
     /* should correctly set env->eip */
     if (lsenv->tr_data->sys.tf) {
-        latxs_append_ir2_opnd2i(LISA_ST_W, eip_opnd, &latxs_env_ir2_opnd,
-                lsenv_offset_of_eip(lsenv));
         latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_single_step,
                                          default_helper_cfg);
     }
@@ -468,7 +462,6 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
     }
 
     IR2_OPND tbptr = latxs_ra_alloc_dbt_arg1(); /* a6($10) */
-    IR2_OPND next_eip_opnd = latxs_ra_alloc_dbt_arg2(); /* a7($11) */
     int succ_id = 1;
 
     /* t8: This TB's address */
@@ -480,8 +473,7 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
 
     /* t9: next x86 instruction's address */
     ADDRX next_eip = ir1_addr_next(pir1);
-    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update,
-            &next_eip_opnd, next_eip, 32);
+    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 32);
 
     /* jump to context switch */
     latxs_tr_gen_exit_tb_j_context_switch(&tbptr, can_link, succ_id);
@@ -514,7 +506,6 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
  */
 void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 {
-    IR2_OPND next_eip_opnd = latxs_ra_alloc_dbt_arg2();
     int      next_eip_size = 32;
     ADDRX    next_eip;
     ADDRX    curr_eip;
@@ -645,8 +636,7 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
             next_eip_size = 16;
         }
 
-        latxs_tr_gen_exit_tb_load_next_eip(0, &next_eip_opnd,
-                next_eip, next_eip_size);
+        latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
                 can_link & mask_cpdj, succ_id);
@@ -656,12 +646,11 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         /* only ptr16:16/ptr16:32 is supported now */
         if (td->sys.pe && !td->sys.vm86) {
             lsassert(td->ignore_eip_update == 1);
-            latxs_tr_gen_exit_tb_load_next_eip(1, &next_eip_opnd, 0, 0);
+            latxs_tr_gen_exit_tb_load_next_eip(1, 0, 0);
         } else if (!ir1_opnd_is_mem(ir1_get_opnd(branch, 0))) {
             next_eip = ir1_opnd_uimm(ir1_get_opnd(branch, 1));
             next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 1));
-            latxs_tr_gen_exit_tb_load_next_eip(0, &next_eip_opnd,
-                    next_eip, next_eip_size);
+            latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
         }
 
         /* Always no TB-link for jmp far */
@@ -682,8 +671,8 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         }
 
         next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
-        latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update,
-                &next_eip_opnd, next_eip, next_eip_size);
+        latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip,
+                                           next_eip_size);
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
                 can_link & mask_cpdj, succ_id);
@@ -697,10 +686,6 @@ indirect_jmp:
 
         if (sigint_enabled()) {
             if (can_link) {
-                /* store eip (in $11) into env */
-                latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd,
-                        &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
-
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->real_ir2_inst_num << 2;
 
@@ -720,10 +705,6 @@ indirect_jmp:
             latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
         } else {
             if (can_link) {
-                /* store eip (in $11) into env */
-                latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd,
-                        &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
-
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->real_ir2_inst_num << 2;
                 int64_t ins_offset =
@@ -765,8 +746,7 @@ indirect_jmp:
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        latxs_tr_gen_exit_tb_load_next_eip(0, &next_eip_opnd,
-                next_eip, next_eip_size);
+        latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
                 can_link & mask_cpdj, succ_id);

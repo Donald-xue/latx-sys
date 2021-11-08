@@ -391,7 +391,6 @@ IR2_OPND latxs_ra_alloc_xmm(int num)
 }
 
 IR2_OPND latxs_ra_alloc_dbt_arg1(void) { return latxs_ra_alloc_vreg(1); }
-IR2_OPND latxs_ra_alloc_dbt_arg2(void) { return latxs_ra_alloc_vreg(2); }
 
 IR2_OPND latxs_ra_alloc_itemp(void)
 {

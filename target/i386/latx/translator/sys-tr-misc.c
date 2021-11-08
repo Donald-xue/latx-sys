@@ -304,8 +304,8 @@ static void translate_jmp_far_real_mem(IR1_INST *pir1, IR1_OPND *opnd0)
 
     latxs_ra_free_temp(&dest);
 
-    IR2_OPND next_eip_opnd = latxs_ra_alloc_dbt_arg2();
-    latxs_append_ir2_opnd2_(lisa_mov, &next_eip_opnd, &next_eip);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
     latxs_tr_generate_exit_tb(pir1, 1);
 }
 
@@ -485,9 +485,8 @@ bool latxs_translate_callin(IR1_INST *pir1)
     }
 
     /* 5. go to next TB */
-    IR2_OPND succ_x86_addr_opnd = latxs_ra_alloc_dbt_arg2();
-    latxs_append_ir2_opnd3(LISA_OR, &succ_x86_addr_opnd,
-            &latxs_zero_ir2_opnd, &next_eip_opnd);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
 
     latxs_tr_generate_exit_tb(pir1, 0);
 
@@ -507,14 +506,15 @@ bool latxs_translate_jmp(IR1_INST *pir1)
 bool latxs_translate_jmpin(IR1_INST *pir1)
 {
     /* 1. set successor x86 address */
-    IR2_OPND next_eip = latxs_ra_alloc_dbt_arg2();
+    IR2_OPND next_eip = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&next_eip,
             ir1_get_opnd(pir1, 0), EXMode_Z);
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
         latxs_append_ir2_opnd2_(lisa_mov16z, &next_eip, &next_eip);
     }
-
+    latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
     latxs_tr_generate_exit_tb(pir1, 1);
     return true;
 }
@@ -1141,7 +1141,7 @@ bool latxs_translate_ret(IR1_INST *pir1)
     IR1_OPND mem_ir1_opnd;
     latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
             X86_REG_SS, X86_REG_ESP, 0, 0, 0);
-    IR2_OPND return_addr_opnd = latxs_ra_alloc_dbt_arg2();
+    IR2_OPND return_addr_opnd = latxs_ra_alloc_itemp();
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     latxs_load_ir1_mem_to_ir2(&return_addr_opnd,
             &mem_ir1_opnd, EXMode_Z, ss_addr_size);
@@ -1151,6 +1151,8 @@ bool latxs_translate_ret(IR1_INST *pir1)
         latxs_append_ir2_opnd2_(lisa_mov16z, &return_addr_opnd,
                                              &return_addr_opnd);
     }
+    latxs_append_ir2_opnd2i(LISA_ST_W, &return_addr_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
 
     /* 3. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
