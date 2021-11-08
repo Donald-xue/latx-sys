@@ -354,7 +354,7 @@ IR2_OPND latxs_ra_alloc_vreg(int vr_num)
      */
 
     static const int8_t latxs_rai_imap_vr[LATXS_IR2_VREG_NUM] = {
-    20, 10, 11, 0, 0, 0};
+    0, 10, 0, 0, 0, 0};
 
     int reg = latxs_rai_imap_vr[vr_num];
     lsassert(reg);

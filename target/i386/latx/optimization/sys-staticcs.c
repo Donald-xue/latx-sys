@@ -37,14 +37,14 @@ int gen_latxs_scs_prologue_cfg(
     /* FPU TOP will be stored outside */
     if ((cfg.sv_allgpr)) {
         latxs_tr_gen_static_save_registers_to_env(
-                0xff, 0xff, 0xff, 0xff, 0x7);
+                0xff, 0xff, 0xff, 0xff, 0x2);
     } else {
         latxs_tr_gen_static_save_registers_to_env(
                 GPR_USEDEF_TO_SAVE,
                 FPR_USEDEF_TO_SAVE,
                 XMM_LO_USEDEF_TO_SAVE,
                 XMM_HI_USEDEF_TO_SAVE,
-                0x7);
+                0x2);
     }
 
     if (cfg.sv_eflags) {
@@ -93,14 +93,14 @@ int gen_latxs_scs_epilogue_cfg(
     /* FPU TOP will be loaded outside */
     if (cfg.sv_allgpr) {
         latxs_tr_gen_static_load_registers_from_env(
-                0xff, 0xff, 0xff, 0xff, 0x7);
+                0xff, 0xff, 0xff, 0xff, 0x2);
     } else {
         latxs_tr_gen_static_load_registers_from_env(
                 GPR_USEDEF_TO_SAVE,
                 FPR_USEDEF_TO_SAVE,
                 XMM_LO_USEDEF_TO_SAVE,
                 XMM_HI_USEDEF_TO_SAVE,
-                0x7);
+                0x2);
     }
 
     latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd,

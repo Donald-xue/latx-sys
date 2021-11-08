@@ -145,14 +145,14 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 
     if (likely(cfg.sv_allgpr)) {
         latxs_tr_save_registers_to_env(
-                0xff, 0xff, 1, 0xff, 0xff, 0x7);
+                0xff, 0xff, 1, 0xff, 0xff, 0x2);
     } else {
         latxs_tr_save_registers_to_env(
                 GPR_USEDEF_TO_SAVE,
                 FPR_USEDEF_TO_SAVE, 1,
                 XMM_LO_USEDEF_TO_SAVE,
                 XMM_HI_USEDEF_TO_SAVE,
-                0x7);
+                0x2);
     }
 
     if (likely(cfg.sv_eflags)) {
@@ -200,7 +200,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     }
 
     if (likely(cfg.sv_allgpr)) {
-        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x7);
+        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x2);
         if (fix_em) {
             latxs_td_set_reg_extmb_after_cs(0xFF);
         }
@@ -210,7 +210,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
                 FPR_USEDEF_TO_SAVE, 1,
                 XMM_LO_USEDEF_TO_SAVE,
                 XMM_HI_USEDEF_TO_SAVE,
-                0x7);
+                0x2);
         if (fix_em) {
             lsassertm(0, "not ready.\n");
             latxs_td_set_reg_extmb_after_cs(GPR_USEDEF_TO_SAVE);

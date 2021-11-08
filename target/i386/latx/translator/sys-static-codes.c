@@ -613,14 +613,14 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             latxs_tr_gen_save_curr_top();
             latxs_tr_fpu_disable_top_mode();
         }
-        latxs_tr_save_registers_to_env(0xff, 0xff, 0, 0xff, 0xff, 0x3);
+        latxs_tr_save_registers_to_env(0xff, 0xff, 0, 0xff, 0xff, 0x2);
         latxs_tr_save_eflags();
 
         latxs_load_addr_to_ir2(&tmp, (ADDR)helper_lookup_tb);
         latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
         latxs_append_ir2_opnd2i(LISA_JIRL, ra, &tmp, 0);
 
-        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x3);
+        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x2);
         latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
 
         /* if next_tb == NULL, jump to epilogue */
