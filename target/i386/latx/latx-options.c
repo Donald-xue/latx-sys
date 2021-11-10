@@ -309,44 +309,44 @@ void latx_sys_check_options(void)
 }
 
 static
-void set_options(int index)
+void set_options(int index, int v)
 {
     switch(index) {
     case LATXS_OPT_by_hand:
-        option_by_hand = 1;
+        option_by_hand = v;
         break;
     case LATXS_OPT_tb_link:
-        option_tb_link = 1;
+        option_tb_link = v;
         break;
     case LATXS_OPT_lsfpu:
-        option_lsfpu = 1;
+        option_lsfpu = v;
         break;
     case LATXS_OPT_staticcs:
-        option_staticcs = 1;
+        option_staticcs = v;
         break;
     case LATXS_OPT_large_code_cache:
-        option_large_code_cache = 1;
+        option_large_code_cache = v;
         break;
     case LATXS_OPT_njc:
-        option_njc = 1;
+        option_njc = v;
         break;
     case LATXS_OPT_sigint:
-        option_sigint = 1;
+        option_sigint = v;
         break;
     case LATXS_OPT_smmu_slow:
-        option_smmu_slow = 1;
+        option_smmu_slow = v;
         break;
     case LATXS_OPT_trace_simple:
-        option_trace_simple = 1;
+        option_trace_simple = v;
         break;
     case LATXS_OPT_cross_page_check:
-        option_cross_page_check = 1;
+        option_cross_page_check = v;
         break;
     case LATXS_OPT_cross_page_jmp_link:
-        option_cross_page_jmp_link = 1;
+        option_cross_page_jmp_link = v;
         break;
     case LATXS_OPT_intb_link:
-        option_intb_link = 1;
+        option_intb_link = v;
         break;
     default: break;
     }
@@ -381,11 +381,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         if (verbose) {
             printf("[optimization] enable all optimizations.\n");
         }
-        set_options(LATXS_OPT_by_hand);
-        set_options(LATXS_OPT_tb_link);
-        set_options(LATXS_OPT_lsfpu);
-        set_options(LATXS_OPT_staticcs);
-        set_options(LATXS_OPT_njc);
+        set_options(LATXS_OPT_by_hand, 1);
+        set_options(LATXS_OPT_tb_link, 1);
+        set_options(LATXS_OPT_lsfpu, 1);
+        set_options(LATXS_OPT_staticcs, 1);
+        set_options(LATXS_OPT_njc, 1);
         need_parse_optimizations = 0;
     } else if (strncmp(str, "none", 4) == 0) {
         if (verbose) {
@@ -486,7 +486,11 @@ _OUT:
 
 void parse_options_bool(int index, bool set)
 {
-    if (set) set_options(index);
+    if (set) {
+        set_options(index, 1);
+    } else {
+        set_options(index, 0);
+    }
 }
 
 void options_parse_monitor(const char *bits)
