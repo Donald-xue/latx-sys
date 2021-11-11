@@ -289,7 +289,7 @@ void latxs_tr_gen_eob(void)
     }
 
     /* reset to 32s for TB-Link */
-    /*tr_reset_extmb(0xFF); TODO */
+    latxs_tr_reset_extmb(0xFF);
 }
 
 /*
