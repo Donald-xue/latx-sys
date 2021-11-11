@@ -54,8 +54,7 @@ void rr_kick_vcpu_thread(CPUState *unused)
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
         if (sigint_enabled()) {
-            /* pthread_kill(cpu->thread->thread, 63); */
-            latxs_rr_interrupt_self(cpu);
+            pthread_kill(cpu->thread->thread, 63);
         }
 #endif /* CONFIG_LATX */
 #if defined(CONFIG_SIGINT)
