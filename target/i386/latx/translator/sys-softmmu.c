@@ -295,7 +295,7 @@ static void td_rcd_softmmu_slow_path(
     sp->retaddr = (ADDR)(tb->tc.ptr) +
                   (ADDR)((td->real_ir2_inst_num - 2) << 2);
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         sp->fpu_top = latxs_td_fpu_get_top();
     }
 
@@ -382,7 +382,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     td->itemp_mask = sp->tmp_mask;
 
     int top_bak = 0;
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         top_bak = latxs_td_fpu_get_top();
         latxs_td_fpu_set_top(sp->fpu_top);
     }
@@ -527,7 +527,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
 
     td->itemp_mask = tmp_mask_bak;
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         latxs_td_fpu_set_top(top_bak);
     }
 

@@ -39,6 +39,9 @@ static void latxs_tr_gen_fwait(void)
 
 bool latxs_translate_wait(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_wait_softfpu(pir1);
+    }
     if (latxs_tr_gen_excp_check(pir1)) {
         return true;
     }
@@ -50,7 +53,7 @@ bool latxs_translate_wait(IR1_INST *pir1)
 
 static void latxs_tr_set_xtm_fpu_top_in_env(IR1_INST *ir1)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu || option_soft_fpu) {
         lsassert(0);
     }
 
@@ -102,6 +105,7 @@ static void latxs_tr_set_xtm_fpu_top_in_env(IR1_INST *ir1)
 
 static IR2_OPND latxs_tr_get_real_curr_top(void)
 {
+    lsassert(!option_soft_fpu);
     IR2_OPND top = latxs_ra_alloc_itemp();
 
     if (!option_lsfpu) {
@@ -134,6 +138,9 @@ bool latxs_translate_fsetpm(IR1_INST *pir1)
 
 bool latxs_translate_fxsave(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fxsave_softfpu(pir1);
+    }
     if (latxs_tr_gen_excp_check(pir1)) {
         return true;
     }
@@ -184,6 +191,9 @@ bool latxs_translate_fxsave(IR1_INST *pir1)
 /* End of TB in system-mode */
 bool latxs_translate_fxrstor(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fxrstor_softfpu(pir1);
+    }
     if (latxs_tr_gen_excp_check(pir1)) {
         return true;
     }
@@ -238,6 +248,9 @@ bool latxs_translate_fxrstor(IR1_INST *pir1)
 
 bool latxs_translate_fnstenv(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fnstenv_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -294,6 +307,9 @@ bool latxs_translate_fnstenv(IR1_INST *pir1)
 /* End of TB in system-mode */
 bool latxs_translate_fldenv(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fldenv_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -355,6 +371,9 @@ bool latxs_translate_fldenv(IR1_INST *pir1)
 /* End of TB in system-mode */
 bool latxs_translate_fnsave(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fnsave_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -416,6 +435,9 @@ bool latxs_translate_fnsave(IR1_INST *pir1)
 /* End of TB in system-mode */
 bool latxs_translate_frstor(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_frstor_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -629,6 +651,7 @@ bool latxs_translate_xsave(IR1_INST *pir1)
 /* End of TB in system-mode */
 bool latxs_translate_xrstor(IR1_INST *pir1)
 {
+    lsassert(!option_soft_fpu);
     if (latxs_tr_gen_excp_check(pir1)) {
         return true;
     }
@@ -754,6 +777,9 @@ bool latxs_translate_xsaveopt(IR1_INST *pir1)
 /* End of TB in system-mode */
 bool latxs_translate_fninit(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fninit_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -795,6 +821,9 @@ bool latxs_translate_fninit(IR1_INST *pir1)
 
 bool latxs_translate_ffree(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_ffree_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -832,6 +861,9 @@ bool latxs_translate_fincstp(IR1_INST *pir1)
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
+    if (option_soft_fpu) {
+        return latxs_translate_fincstp_softfpu(pir1);
+    }
 
     /* 1. increase the top-of-stack pointer : td->curr_top */
     latxs_tr_fpu_inc();
@@ -853,6 +885,9 @@ bool latxs_translate_fincstp(IR1_INST *pir1)
 
 bool latxs_translate_fdecstp(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fdecstp_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }

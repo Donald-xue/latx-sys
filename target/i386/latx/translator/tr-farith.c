@@ -1464,13 +1464,21 @@ bool translate_fsetpm(IR1_INST *pir1)
 }
 bool translate_fbld(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fbld(pir1);
+#else
     fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
     return false;
+#endif
 }
 bool translate_fbstp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fbstp(pir1);
+#else
     fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
     return false;
+#endif
 }
 /*
  * NOTE:invoke helper is much easier than native insns, there is 512 bytes need to

@@ -279,7 +279,7 @@ void latxs_tr_gen_eob(void)
      * again after helper finished. So the context switch can
      * read the correct TOP value and save it again.
      */
-    if (!(td->ignore_top_update) && !option_lsfpu) {
+    if (!(td->ignore_top_update) && !option_lsfpu && !option_soft_fpu) {
         /*
          * Func tr_gen_save_curr_top is controled by the flag
          * td->is_top_saved. Here we should always save TOP
@@ -557,7 +557,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     IR2_OPND tbptr = latxs_ra_alloc_dbt_arg1(); /* t8($24) */
     ADDR tb_addr = (ADDR)tb;
 
-    int need_tb_addr_for_jmp_glue = option_lsfpu ? 0 : 1;
+    int need_tb_addr_for_jmp_glue = (option_lsfpu || option_soft_fpu) ? 0 : 1;
 
     /*
      * TODO

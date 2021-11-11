@@ -7,21 +7,11 @@
 #include "fpu/softfloat.h"
 #include <string.h>
 
-helper_cfg_t all_helper_cfg = {
-    .sv_allgpr = 1,
-    .sv_eflags = 1,
-    .cvt_fp80  = 1
-};
-helper_cfg_t zero_helper_cfg = {
-    .sv_allgpr = 0,
-    .sv_eflags = 0,
-    .cvt_fp80  = 0
-};
-helper_cfg_t default_helper_cfg = {
-    .sv_allgpr = 1,
-    .sv_eflags = 1,
-    .cvt_fp80  = 0
-};
+helper_cfg_t all_helper_cfg = {.sv_allgpr = 1, .sv_eflags = 1, .cvt_fp80 = 1};
+helper_cfg_t zero_helper_cfg = {.sv_allgpr = 0, .sv_eflags = 0, .cvt_fp80 = 0};
+helper_cfg_t default_helper_cfg = {.sv_allgpr = 1,
+                                   .sv_eflags = 1,
+                                   .cvt_fp80 = 0};
 
 /*
  * return 1: cfg1 == cfg2
@@ -30,8 +20,7 @@ helper_cfg_t default_helper_cfg = {
 int cmp_helper_cfg(helper_cfg_t cfg1, helper_cfg_t cfg2)
 {
     return cfg1.sv_allgpr == cfg2.sv_allgpr &&
-           cfg1.sv_eflags == cfg2.sv_eflags &&
-           cfg1.cvt_fp80  == cfg2.cvt_fp80;
+           cfg1.sv_eflags == cfg2.sv_eflags && cfg1.cvt_fp80 == cfg2.cvt_fp80;
 }
 
 IR2_INST *latxs_tr_gen_call_to_helper(ADDR func_addr)
@@ -68,38 +57,40 @@ static void latxs_convert_fpregs_x80_to_64(void)
 
 void latxs_tr_cvt_fp64_to_80(void)
 {
+    lsassert(!option_soft_fpu);
     /* 1. call convert_fpregs_x64_to_80 */
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
     latxs_load_addr_to_ir2(&func_addr_opnd,
-            (ADDR)latxs_convert_fpregs_64_to_x80);
+                           (ADDR)latxs_convert_fpregs_64_to_x80);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
 
     /* 2. call update_fp_status */
     latxs_load_addr_to_ir2(&func_addr_opnd, (ADDR)update_fp_status);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
-                                      &latxs_env_ir2_opnd);
+                            &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 }
 
 void latxs_tr_cvt_fp80_to_64(void)
 {
+    lsassert(!option_soft_fpu);
     /* 1. save return value */
-    latxs_append_ir2_opnd2i(LISA_ST_D,
-            &latxs_ret0_ir2_opnd, &latxs_env_ir2_opnd,
-            lsenv_offset_of_mips_regs(lsenv, 0x2));
+    latxs_append_ir2_opnd2i(LISA_ST_D, &latxs_ret0_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            lsenv_offset_of_mips_regs(lsenv, 0x2));
 
     /* 2. call convert_fpregs_x80_to_64 */
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
     latxs_load_addr_to_ir2(&func_addr_opnd,
-            (ADDR)latxs_convert_fpregs_x80_to_64);
+                           (ADDR)latxs_convert_fpregs_x80_to_64);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
     /* 3. restore return value */
-    latxs_append_ir2_opnd2i(LISA_LD_D,
-            &latxs_ret0_ir2_opnd, &latxs_env_ir2_opnd,
-            lsenv_offset_of_mips_regs(lsenv, 0x2));
+    latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ret0_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            lsenv_offset_of_mips_regs(lsenv, 0x2));
 }
 
 /*
@@ -136,30 +127,26 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 
         int64_t ins_offset = (latxs_sc_scs_prologue - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
-        if (!option_lsfpu) {
+        if (!option_lsfpu && !option_soft_fpu) {
             latxs_tr_gen_save_curr_top();
         }
         return;
     }
 
-
     if (likely(cfg.sv_allgpr)) {
-        latxs_tr_save_registers_to_env(
-                0xff, 0xff, 1, 0xff, 0xff, 0x2);
+        latxs_tr_save_registers_to_env(0xff, 0xff, !option_soft_fpu, 0xff, 0xff,
+                                       0x2);
     } else {
-        latxs_tr_save_registers_to_env(
-                GPR_USEDEF_TO_SAVE,
-                FPR_USEDEF_TO_SAVE, 1,
-                XMM_LO_USEDEF_TO_SAVE,
-                XMM_HI_USEDEF_TO_SAVE,
-                0x2);
+        latxs_tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
+                                       !option_soft_fpu, XMM_LO_USEDEF_TO_SAVE,
+                                       XMM_HI_USEDEF_TO_SAVE, 0x2);
     }
 
     if (likely(cfg.sv_eflags)) {
         latxs_tr_save_eflags();
     }
 
-    if (unlikely(cfg.cvt_fp80)) {
+    if ((!option_soft_fpu) && unlikely(cfg.cvt_fp80)) {
         latxs_tr_save_temp_register();
         latxs_tr_cvt_fp64_to_80();
         latxs_tr_restore_temp_register();
@@ -190,8 +177,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
         return;
     }
 
-
-    if (unlikely(cfg.cvt_fp80)) {
+    if ((!option_soft_fpu) && unlikely(cfg.cvt_fp80)) {
         latxs_tr_cvt_fp80_to_64();
     }
 
@@ -200,17 +186,15 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     }
 
     if (likely(cfg.sv_allgpr)) {
-        latxs_tr_load_registers_from_env(0xff, 0xff, 1, 0xff, 0xff, 0x2);
+        latxs_tr_load_registers_from_env(0xff, 0xff, !option_soft_fpu, 0xff,
+                                         0xff, 0x2);
         if (fix_em) {
             latxs_td_set_reg_extmb_after_cs(0xFF);
         }
     } else {
         latxs_tr_load_registers_from_env(
-                GPR_USEDEF_TO_SAVE,
-                FPR_USEDEF_TO_SAVE, 1,
-                XMM_LO_USEDEF_TO_SAVE,
-                XMM_HI_USEDEF_TO_SAVE,
-                0x2);
+            GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE, !option_soft_fpu,
+            XMM_LO_USEDEF_TO_SAVE, XMM_HI_USEDEF_TO_SAVE, 0x2);
         if (fix_em) {
             lsassertm(0, "not ready.\n");
             latxs_td_set_reg_extmb_after_cs(GPR_USEDEF_TO_SAVE);
@@ -242,7 +226,7 @@ void latxs_tr_gen_call_to_helper1_cfg(ADDR func, helper_cfg_t cfg)
     latxs_load_addr_to_ir2(&func_addr_opnd, (ADDR)func);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
-                                      &latxs_env_ir2_opnd);
+                            &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
@@ -250,8 +234,7 @@ void latxs_tr_gen_call_to_helper1_cfg(ADDR func, helper_cfg_t cfg)
 }
 
 /* helper with 2 arg(CPUArchState*, int) */
-void latxs_tr_gen_call_to_helper2_cfg(ADDR func,
-        int arg2, helper_cfg_t cfg)
+void latxs_tr_gen_call_to_helper2_cfg(ADDR func, int arg2, helper_cfg_t cfg)
 {
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
 
@@ -261,7 +244,7 @@ void latxs_tr_gen_call_to_helper2_cfg(ADDR func,
     latxs_load_imm32_to_ir2(&latxs_arg1_ir2_opnd, arg2, EXMode_S);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
-                                &latxs_env_ir2_opnd);
+                            &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
@@ -269,8 +252,8 @@ void latxs_tr_gen_call_to_helper2_cfg(ADDR func,
 }
 
 /* helper with 3 arg(CPUArchState*, int, int) */
-void latxs_tr_gen_call_to_helper3_cfg(ADDR func,
-        int arg2, int arg3, helper_cfg_t cfg)
+void latxs_tr_gen_call_to_helper3_cfg(ADDR func, int arg2, int arg3,
+                                      helper_cfg_t cfg)
 {
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
 
@@ -281,7 +264,7 @@ void latxs_tr_gen_call_to_helper3_cfg(ADDR func,
     latxs_load_imm32_to_ir2(&latxs_arg2_ir2_opnd, arg3, EXMode_S);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
-                                      &latxs_env_ir2_opnd);
+                            &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
@@ -289,8 +272,8 @@ void latxs_tr_gen_call_to_helper3_cfg(ADDR func,
 }
 
 /* helper with 3 arg(CPUArchState*, uint64, uint64) */
-void latxs_tr_gen_call_to_helper3_u64_cfg(ADDR func,
-        uint64_t arg2, uint64_t arg3, helper_cfg_t cfg)
+void latxs_tr_gen_call_to_helper3_u64_cfg(ADDR func, uint64_t arg2,
+                                          uint64_t arg3, helper_cfg_t cfg)
 {
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
 
@@ -301,15 +284,16 @@ void latxs_tr_gen_call_to_helper3_u64_cfg(ADDR func,
     latxs_load_imm64_to_ir2(&latxs_arg2_ir2_opnd, arg3);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
-                                      &latxs_env_ir2_opnd);
+                            &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
 
-void latxs_tr_gen_call_to_helper4_u64_cfg(ADDR func,
-        uint64_t arg2, uint64_t arg3, uint64_t arg4, helper_cfg_t cfg)
+void latxs_tr_gen_call_to_helper4_u64_cfg(ADDR func, uint64_t arg2,
+                                          uint64_t arg3, uint64_t arg4,
+                                          helper_cfg_t cfg)
 {
     IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
 
@@ -321,7 +305,7 @@ void latxs_tr_gen_call_to_helper4_u64_cfg(ADDR func,
     latxs_load_imm64_to_ir2(&latxs_arg3_ir2_opnd, arg4);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
-                                      &latxs_env_ir2_opnd);
+                            &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
     latxs_ra_free_temp(&func_addr_opnd);
 
@@ -345,9 +329,8 @@ void latxs_tr_gen_save_curr_eip(void)
     IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_opnd, curr_eip);
 
-    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd,
-            &latxs_env_ir2_opnd,
-            lsenv_offset_of_eip(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
 
     latxs_ra_free_temp(&eip_opnd);
 }
@@ -361,9 +344,8 @@ void latxs_tr_gen_save_next_eip(void)
     IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_opnd, next_eip);
 
-    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd,
-            &latxs_env_ir2_opnd,
-            lsenv_offset_of_eip(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
 
     latxs_ra_free_temp(&eip_opnd);
 }
@@ -376,9 +358,8 @@ void latxs_tr_save_temp_register_mask(int mask)
         if ((mask >> i) & 0x1) {
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
-            latxs_append_ir2_opnd2i(LISA_ST_D,
-                    &gpr, &latxs_env_ir2_opnd,
-                    lsenv_offset_of_mips_regs(lsenv, ireg));
+            latxs_append_ir2_opnd2i(LISA_ST_D, &gpr, &latxs_env_ir2_opnd,
+                                    lsenv_offset_of_mips_regs(lsenv, ireg));
         }
     }
 }
@@ -391,13 +372,11 @@ void latxs_tr_restore_temp_register_mask(int mask)
         if ((mask >> i) & 0x1) {
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
-            latxs_append_ir2_opnd2i(LISA_LD_D,
-                    &gpr, &latxs_env_ir2_opnd,
-                    lsenv_offset_of_mips_regs(lsenv, ireg));
+            latxs_append_ir2_opnd2i(LISA_LD_D, &gpr, &latxs_env_ir2_opnd,
+                                    lsenv_offset_of_mips_regs(lsenv, ireg));
         }
     }
 }
-
 
 /* Only need to save current used temp registers */
 void latxs_tr_save_temp_register(void)
@@ -408,18 +387,16 @@ void latxs_tr_save_temp_register(void)
     int mask = td->itemp_mask;
     td->itemp_mask_bk = mask;
 
-    lsassertm(!(td->itemp_saved),
-            "Can not save temp again after save temp.\n");
+    lsassertm(!(td->itemp_saved), "Can not save temp again after save temp.\n");
 
     int i;
     for (i = 0; i < latxs_itemp_status_num; ++i) {
         /* if ((mask >> i) & 0x1) { */
-            int ireg = p[i].physical_id;
-            IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
-            latxs_append_ir2_opnd2i(LISA_ST_D,
-                    &gpr, &latxs_env_ir2_opnd,
-                    lsenv_offset_of_mips_regs(lsenv, ireg));
-            /* pb[i].virtual_id = p[i].virtual_id; */
+        int ireg = p[i].physical_id;
+        IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &gpr, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_mips_regs(lsenv, ireg));
+        /* pb[i].virtual_id = p[i].virtual_id; */
         /* } */
     }
 
@@ -436,16 +413,15 @@ void latxs_tr_restore_temp_register(void)
     td->itemp_mask = mask_bk;
 
     lsassertm(td->itemp_saved,
-            "Can not resoter temp again if not save temp.\n");
+              "Can not resoter temp again if not save temp.\n");
 
     int i;
     for (i = 0; i < latxs_itemp_status_num; ++i) {
         if ((mask_bk >> i) & 0x1) {
             int ireg = p[i].physical_id;
             IR2_OPND gpr = latxs_ir2_opnd_new(IR2_OPND_GPR, ireg);
-            latxs_append_ir2_opnd2i(LISA_LD_D,
-                    &gpr, &latxs_env_ir2_opnd,
-                    lsenv_offset_of_mips_regs(lsenv, ireg));
+            latxs_append_ir2_opnd2i(LISA_LD_D, &gpr, &latxs_env_ir2_opnd,
+                                    lsenv_offset_of_mips_regs(lsenv, ireg));
         }
     }
 

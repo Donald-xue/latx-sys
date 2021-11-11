@@ -373,6 +373,7 @@ IR2_OPND latxs_ra_alloc_mmx(int mmx_num)
 
 IR2_OPND latxs_ra_alloc_st(int st_num)
 {
+    lsassert(!option_soft_fpu);
     static const int8_t latxs_rai_fmap_mmx[8] = {
     0, 1, 2, 3, 4, 5, 6, 7};
 

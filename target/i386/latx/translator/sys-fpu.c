@@ -6,7 +6,7 @@
 
 void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu || option_soft_fpu) {
         return;
     }
 
@@ -20,7 +20,7 @@ void latxs_tr_fpu_init(TRANSLATION_DATA *td, TranslationBlock *tb)
 
 void latxs_td_fpu_set_top(int ctop)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu || option_soft_fpu) {
         lsassert(0);
     }
 
@@ -32,7 +32,7 @@ void latxs_td_fpu_set_top(int ctop)
 
 int latxs_td_fpu_get_top(void)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu || option_soft_fpu) {
         lsassert(0);
     }
 
@@ -47,6 +47,10 @@ void latxs_tr_fpu_pop(void) { latxs_tr_fpu_inc(); }
 
 void latxs_tr_fpu_inc(void)
 {
+    if (option_soft_fpu) {
+        lsassert(0);
+    }
+
     if (option_lsfpu) {
         latxs_append_ir2_opnd0(LISA_X86INCTOP);
     } else {
@@ -57,6 +61,10 @@ void latxs_tr_fpu_inc(void)
 
 void latxs_tr_fpu_dec(void)
 {
+    if (option_soft_fpu) {
+        lsassert(0);
+    }
+
     if (option_lsfpu) {
         latxs_append_ir2_opnd0(LISA_X86DECTOP);
     } else {
@@ -67,6 +75,10 @@ void latxs_tr_fpu_dec(void)
 
 void latxs_tr_gen_save_curr_top(void)
 {
+    if (option_soft_fpu) {
+        lsassert(0);
+    }
+
     TRANSLATION_DATA *td = lsenv->tr_data;
 
     int ctop = td->curr_top;

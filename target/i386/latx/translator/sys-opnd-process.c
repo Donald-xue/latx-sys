@@ -298,6 +298,24 @@ void latxs_convert_mem_opnd(IR2_OPND *opnd2,
 }
 
 /*
+ * Convert IR1_OPND_MEM to IR2_OPND_REG without offset
+ */
+void latxs_convert_mem_opnd_no_offset(IR2_OPND *opnd2, IR1_OPND *opnd1)
+{
+    IR2_OPND mem_opnd;
+    int addr_size = latxs_ir1_addr_size(lsenv->tr_data->curr_ir1_inst);
+    latxs_convert_mem_opnd_with_bias(&mem_opnd, opnd1, 0, addr_size);
+
+    lsassert(latxs_ir2_opnd_is_mem(&mem_opnd));
+
+    int mem_offset = latxs_ir2_opnd_mem_get_offset(&mem_opnd);
+
+    IR2_OPND mem_old_base = latxs_ir2_opnd_mem_get_base(&mem_opnd);
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, opnd2, &mem_old_base, mem_offset);
+}
+
+/*
  * Convert IR1_OPND_MEM to IR2_OPND_MEM
  * > Temp register might be used.
  * > The IR2_OPND_MEM's base will always be temp register !!!
@@ -1424,6 +1442,7 @@ static void latxs_store_freg_to_ir1_mmx(IR2_OPND *opnd2, IR1_OPND *opnd1)
     lsassert(ir1_opnd_is_mmx(opnd1));
 
     int ir1_reg = ir1_opnd_base_reg_num(opnd1);
+
     IR2_OPND mmx_opnd = latxs_ra_alloc_mmx(ir1_reg);
 
     if (latxs_ir2_opnd_cmp(opnd2, &mmx_opnd)) {

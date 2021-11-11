@@ -123,6 +123,9 @@ static void latxs_update_fcsr_by_cw(IR2_OPND cw)
 
 bool latxs_translate_fnstcw(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fnstcw_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -143,6 +146,9 @@ bool latxs_translate_fnstcw(IR1_INST *pir1)
 
 bool latxs_translate_fldcw(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fldcw_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -163,6 +169,9 @@ bool latxs_translate_fldcw(IR1_INST *pir1)
 
 bool latxs_translate_fnstsw(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fnstsw_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -252,7 +261,7 @@ bool latxs_translate_ldmxcsr(IR1_INST *pir1)
                       lsenv_offset_of_mxcsr(lsenv));
 
     /* latxs_tr_gen_call_to_helper1((ADDR)update_mxcsr_status, 1); */
-    latxs_tr_gen_call_to_helper0_cfg((ADDR)update_mxcsr_status,
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)update_mxcsr_status,
             all_helper_cfg);
 
     return true;
@@ -260,6 +269,9 @@ bool latxs_translate_ldmxcsr(IR1_INST *pir1)
 
 bool latxs_translate_fcomi(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fcomi_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -346,12 +358,24 @@ bool latxs_translate_fcomi(IR1_INST *pir1)
 
 bool latxs_translate_fucomi(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fucomi_softfpu(pir1);
+    }
+    if (latxs_tr_gen_fp_common_excp_check(pir1)) {
+        return true;
+    }
     latxs_translate_fcomi(pir1);
     return true;
 }
 
 bool latxs_translate_fucomip(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fucomip_softfpu(pir1);
+    }
+    if (latxs_tr_gen_fp_common_excp_check(pir1)) {
+        return true;
+    }
     latxs_translate_fcomi(pir1);
     latxs_tr_fpu_pop();
     return true;
@@ -359,6 +383,13 @@ bool latxs_translate_fucomip(IR1_INST *pir1)
 
 bool latxs_translate_fcomip(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fcomip_softfpu(pir1);
+    }
+    if (latxs_tr_gen_fp_common_excp_check(pir1)) {
+        return true;
+    }
+
     latxs_translate_fcomi(pir1);
     latxs_tr_fpu_pop();
     return true;
@@ -366,6 +397,9 @@ bool latxs_translate_fcomip(IR1_INST *pir1)
 
 bool latxs_translate_fcom(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fcom_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -469,6 +503,9 @@ bool latxs_translate_fcom(IR1_INST *pir1)
 
 bool latxs_translate_fcomp(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fcomp_softfpu(pir1);
+    }
     latxs_translate_fcom(pir1);
     latxs_tr_fpu_pop();
     return true;
@@ -476,6 +513,9 @@ bool latxs_translate_fcomp(IR1_INST *pir1)
 
 bool latxs_translate_fcompp(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fcompp_softfpu(pir1);
+    }
     latxs_translate_fcom(pir1);
     latxs_tr_fpu_pop();
     latxs_tr_fpu_pop();
@@ -484,12 +524,18 @@ bool latxs_translate_fcompp(IR1_INST *pir1)
 
 bool latxs_translate_fucom(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fucom_softfpu(pir1);
+    }
     latxs_translate_fcom(pir1);
     return true;
 }
 
 bool latxs_translate_fucomp(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fucomp_softfpu(pir1);
+    }
     latxs_translate_fcom(pir1);
     latxs_tr_fpu_pop();
     return true;
@@ -497,6 +543,9 @@ bool latxs_translate_fucomp(IR1_INST *pir1)
 
 bool latxs_translate_fucompp(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fucompp_softfpu(pir1);
+    }
     latxs_translate_fcom(pir1);
     latxs_tr_fpu_pop();
     latxs_tr_fpu_pop();
@@ -505,6 +554,9 @@ bool latxs_translate_fucompp(IR1_INST *pir1)
 
 bool latxs_translate_ficom(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_ficom_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
@@ -519,6 +571,9 @@ bool latxs_translate_ficom(IR1_INST *pir1)
 
 bool latxs_translate_ficomp(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_ficomp_softfpu(pir1);
+    }
     translate_ficom(pir1);
     latxs_tr_fpu_pop();
     return true;
@@ -526,6 +581,9 @@ bool latxs_translate_ficomp(IR1_INST *pir1)
 
 bool latxs_translate_fnclex(IR1_INST *pir1)
 {
+    if (option_soft_fpu) {
+        return latxs_translate_fnclex_softfpu(pir1);
+    }
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }

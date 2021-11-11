@@ -353,6 +353,8 @@ void latxs_ir1_free_info(IR1_INST *ir1);
 
 int latxs_ir1_is_illegal(IR1_INST *ir1);
 
+int latxs_ir1_access_mmx(IR1_INST *ir1);
+
 int latxs_ir1_inst_size(IR1_INST *ir1);
 int latxs_ir1_addr_size(IR1_INST *ir1); /* Address Size */
 

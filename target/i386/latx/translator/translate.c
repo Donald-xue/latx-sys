@@ -3185,7 +3185,11 @@ void tr_gen_top_mode_init(void)
 void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                                    TranslationBlock *next_tb)
 {
+#ifdef CONFIG_SOFTMMU
+    if (option_lsfpu || option_soft_fpu || tb->_top_out == next_tb->_top_in) {
+#else
     if (option_lsfpu || tb->_top_out == next_tb->_top_in) {
+#endif
         tb->next_tb[n] = next_tb;
         tb_set_jmp_target(tb, n, (uintptr_t)next_tb->tc.ptr);
     } else {

@@ -1787,4 +1787,15 @@ int latxs_ir1_is_illegal(IR1_INST *ir1)
     return ir1->info->id == X86_INS_INVALID;
 }
 
+int latxs_ir1_access_mmx(IR1_INST *ir1)
+{
+    int opnd_num = ir1_opnd_num(ir1);
+    for (int i = 0; i < opnd_num; i++) {
+        if (ir1_opnd_is_mmx(ir1_get_opnd(ir1, i))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 #endif

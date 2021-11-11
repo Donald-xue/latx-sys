@@ -1328,6 +1328,7 @@ void latxs_load_addr_to_ir2(IR2_OPND *, ADDR);
 IR2_OPND latxs_convert_mem_ir2_opnd_plus_2(IR2_OPND *mem);
 IR2_OPND latxs_convert_mem_ir2_opnd_plus_4(IR2_OPND *mem);
 IR2_OPND latxs_convert_mem_ir2_opnd_no_offset(IR2_OPND *mem, int *newtmp);
+void latxs_convert_mem_opnd_no_offset(IR2_OPND *opnd2, IR1_OPND *opnd1);
 
 void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *, IR1_OPND *, int as);
 void latxs_convert_mem_opnd(IR2_OPND *, IR1_OPND *, int as);
@@ -1840,6 +1841,8 @@ bool latxs_translate_fst(IR1_INST *pir1);
 bool latxs_translate_fild(IR1_INST *pir1);
 bool latxs_translate_fist(IR1_INST *pir1);
 bool latxs_translate_fistp(IR1_INST *pir1);
+bool latxs_translate_fbld(IR1_INST *pir1);
+bool latxs_translate_fbstp(IR1_INST *pir1);
 
 /* sys-fcmovcc */
 bool latxs_translate_fcmovb(IR1_INST *pir1);
@@ -2054,6 +2057,114 @@ bool latxs_translate_rsqrtss(IR1_INST *pir1);
 bool latxs_translate_cvtps2pd(IR1_INST *pir1);
 bool latxs_translate_cvttsd2si(IR1_INST *pir1);
 
+/* softfpu x87 */
+bool latxs_translate_fld_softfpu(IR1_INST *pir1);
+bool latxs_translate_fild_softfpu(IR1_INST *pir1);
+bool latxs_translate_fstp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fst_softfpu(IR1_INST *pir1);
+bool latxs_translate_fist_softfpu(IR1_INST *pir1);
+bool latxs_translate_fistp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fbld_softfpu(IR1_INST *pir1);
+bool latxs_translate_fbstp_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fcmovb_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmove_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmovbe_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmovu_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmovnb_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmovne_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmovnbe_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcmovnu_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fadd_softfpu(IR1_INST *pir1);
+bool latxs_translate_faddp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fiadd_softfpu(IR1_INST *pir1);
+bool latxs_translate_fmul_softfpu(IR1_INST *pir1);
+bool latxs_translate_fmulp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fimul_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fsub_softfpu(IR1_INST *pir1);
+bool latxs_translate_fsubp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fisub_softfpu(IR1_INST *pir1);
+bool latxs_translate_fsubr_softfpu(IR1_INST *pir1);
+bool latxs_translate_fsubrp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fisubr_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fsin_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcos_softfpu(IR1_INST *pir1);
+bool latxs_translate_fpatan_softfpu(IR1_INST *pir1);
+bool latxs_translate_fsincos_softfpu(IR1_INST *pir1);
+bool latxs_translate_fptan_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fscale_softfpu(IR1_INST *pir1);
+bool latxs_translate_f2xm1_softfpu(IR1_INST *pir1);
+bool latxs_translate_fyl2x_softfpu(IR1_INST *pir1);
+bool latxs_translate_fyl2xp1_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fdiv_softfpu(IR1_INST *pir1);
+bool latxs_translate_fdivp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fidiv_softfpu(IR1_INST *pir1);
+bool latxs_translate_fdivr_softfpu(IR1_INST *pir1);
+bool latxs_translate_fdivrp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fidivr_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fldz_softfpu(IR1_INST *pir1);
+bool latxs_translate_fld1_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldl2e_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldl2t_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldlg2_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldln2_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldpi_softfpu(IR1_INST *pir1);
+bool latxs_translate_fsqrt_softfpu(IR1_INST *pir1);
+bool latxs_translate_fabs_softfpu(IR1_INST *pir1);
+bool latxs_translate_fchs_softfpu(IR1_INST *pir1);
+bool latxs_translate_fprem_softfpu(IR1_INST *pir1);
+bool latxs_translate_fprem1_softfpu(IR1_INST *pir1);
+bool latxs_translate_frndint_softfpu(IR1_INST *pir1);
+bool latxs_translate_fxtract_softfpu(IR1_INST *pir1);
+bool latxs_translate_fxch_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fcomi_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcomip_softfpu(IR1_INST *pir1);
+bool latxs_translate_fucomi_softfpu(IR1_INST *pir1);
+bool latxs_translate_fucomip_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fcom_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcomp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fcompp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fucom_softfpu(IR1_INST *pir1);
+bool latxs_translate_fucomp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fucompp_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_ficom_softfpu(IR1_INST *pir1);
+bool latxs_translate_ficomp_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fxam_softfpu(IR1_INST *pir1);
+bool latxs_translate_ftst_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fincstp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fdecstp_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_wait_softfpu(IR1_INST *pir1);
+bool latxs_translate_fninit_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fnstcw_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldcw_softfpu(IR1_INST *pir1);
+bool latxs_translate_fnstsw_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fnstenv_softfpu(IR1_INST *pir1);
+bool latxs_translate_fldenv_softfpu(IR1_INST *pir1);
+bool latxs_translate_fnsave_softfpu(IR1_INST *pir1);
+bool latxs_translate_frstor_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fnclex_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_ffree_softfpu(IR1_INST *pir1);
+bool latxs_translate_fnop_softfpu(IR1_INST *pir1);
+
+bool latxs_translate_fxsave_softfpu(IR1_INST *pir1);
+bool latxs_translate_fxrstor_softfpu(IR1_INST *pir1);
+
 /* optimization */
 extern ADDR latxs_sc_scs_prologue;
 extern ADDR latxs_sc_scs_epilogue;
@@ -2074,6 +2185,7 @@ void latxs_tb_relink(TranslationBlock *utb);
 void latxs_init_rr_thread_signal(CPUState *cpu);
 void latxs_tr_gen_save_currtb_for_int(void);
 void latxs_sigint_prepare_check_jmp_glue_2(IR2_OPND, IR2_OPND);
+void latxs_enter_mmx(void);
 
 #endif
 

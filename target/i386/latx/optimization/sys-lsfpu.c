@@ -8,7 +8,7 @@
 
 void latxs_tr_load_lstop_from_env(IR2_OPND *top)
 {
-    if (!option_lsfpu) {
+    if (!option_lsfpu || option_soft_fpu) {
         return;
     }
 
@@ -33,7 +33,7 @@ void latxs_tr_load_lstop_from_env(IR2_OPND *top)
 
 void latxs_tr_save_lstop_to_env(IR2_OPND *top)
 {
-    if (!option_lsfpu) {
+    if (!option_lsfpu || option_soft_fpu) {
         return;
     }
 
@@ -45,7 +45,7 @@ void latxs_tr_save_lstop_to_env(IR2_OPND *top)
 
 void latxs_tr_gen_top_mode_init(void)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu && !option_soft_fpu) {
         latxs_append_ir2_opndi(LISA_X86MTTOP, 0);
         latxs_append_ir2_opnd0(LISA_X86SETTM);
     }
@@ -53,14 +53,14 @@ void latxs_tr_gen_top_mode_init(void)
 
 void latxs_tr_fpu_enable_top_mode(void)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu && !option_soft_fpu) {
         latxs_append_ir2_opnd0(LISA_X86SETTM);
     }
 }
 
 void latxs_tr_fpu_disable_top_mode(void)
 {
-    if (option_lsfpu) {
+    if (option_lsfpu && !option_soft_fpu) {
         latxs_append_ir2_opnd0(LISA_X86CLRTM);
     }
 }

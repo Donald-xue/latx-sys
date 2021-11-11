@@ -265,6 +265,9 @@ void latxs_sys_simd_register_ir1(void)
 bool latxs_translate_por(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -286,6 +289,9 @@ bool latxs_translate_por(IR1_INST *pir1)
 bool latxs_translate_pxor(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -314,6 +320,9 @@ bool latxs_translate_pxor(IR1_INST *pir1)
 bool latxs_translate_packuswb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -347,6 +356,9 @@ bool latxs_translate_packuswb(IR1_INST *pir1)
 bool latxs_translate_packsswb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -378,6 +390,9 @@ bool latxs_translate_packsswb(IR1_INST *pir1)
 bool latxs_translate_packssdw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -409,6 +424,9 @@ bool latxs_translate_packssdw(IR1_INST *pir1)
 bool latxs_translate_paddb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -430,6 +448,9 @@ bool latxs_translate_paddb(IR1_INST *pir1)
 bool latxs_translate_paddw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -450,6 +471,9 @@ bool latxs_translate_paddw(IR1_INST *pir1)
 bool latxs_translate_paddd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -470,6 +494,9 @@ bool latxs_translate_paddd(IR1_INST *pir1)
 bool latxs_translate_paddusb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -491,6 +518,9 @@ bool latxs_translate_paddusb(IR1_INST *pir1)
 bool latxs_translate_paddusw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -512,6 +542,9 @@ bool latxs_translate_paddusw(IR1_INST *pir1)
 bool latxs_translate_paddsw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -533,6 +566,9 @@ bool latxs_translate_paddsw(IR1_INST *pir1)
 bool latxs_translate_paddsb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -554,6 +590,9 @@ bool latxs_translate_paddsb(IR1_INST *pir1)
 bool latxs_translate_psubsb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -569,6 +608,9 @@ bool latxs_translate_psubsb(IR1_INST *pir1)
 bool latxs_translate_psubsw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -584,6 +626,9 @@ bool latxs_translate_psubsw(IR1_INST *pir1)
 bool latxs_translate_psubusb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -599,6 +644,9 @@ bool latxs_translate_psubusb(IR1_INST *pir1)
 bool latxs_translate_psubusw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -614,6 +662,9 @@ bool latxs_translate_psubusw(IR1_INST *pir1)
 bool latxs_translate_pand(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -634,6 +685,9 @@ bool latxs_translate_pand(IR1_INST *pir1)
 bool latxs_translate_pandn(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -654,6 +708,9 @@ bool latxs_translate_pandn(IR1_INST *pir1)
 bool latxs_translate_pcmpeqb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -674,6 +731,9 @@ bool latxs_translate_pcmpeqb(IR1_INST *pir1)
 bool latxs_translate_pcmpeqw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -694,6 +754,9 @@ bool latxs_translate_pcmpeqw(IR1_INST *pir1)
 bool latxs_translate_pcmpeqd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -774,6 +837,9 @@ bool latxs_translate_pcmpgtd(IR1_INST *pir1)
 bool latxs_translate_pmullw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -794,6 +860,9 @@ bool latxs_translate_pmullw(IR1_INST *pir1)
 bool latxs_translate_psllw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -829,6 +898,9 @@ bool latxs_translate_psllw(IR1_INST *pir1)
 bool latxs_translate_pslld(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -864,6 +936,9 @@ bool latxs_translate_pslld(IR1_INST *pir1)
 bool latxs_translate_psllq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -902,6 +977,9 @@ bool latxs_translate_psllq(IR1_INST *pir1)
 bool latxs_translate_psrlw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -937,6 +1015,9 @@ bool latxs_translate_psrlw(IR1_INST *pir1)
 bool latxs_translate_psrld(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -972,6 +1053,9 @@ bool latxs_translate_psrld(IR1_INST *pir1)
 bool latxs_translate_psrlq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1010,6 +1094,9 @@ bool latxs_translate_psrlq(IR1_INST *pir1)
 bool latxs_translate_psraw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1047,6 +1134,9 @@ bool latxs_translate_psraw(IR1_INST *pir1)
 bool latxs_translate_psrad(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1085,6 +1175,9 @@ bool latxs_translate_psrad(IR1_INST *pir1)
 bool latxs_translate_psubb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1104,6 +1197,9 @@ bool latxs_translate_psubb(IR1_INST *pir1)
 bool latxs_translate_psubw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1123,6 +1219,9 @@ bool latxs_translate_psubw(IR1_INST *pir1)
 bool latxs_translate_psubd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1142,6 +1241,9 @@ bool latxs_translate_psubd(IR1_INST *pir1)
 bool latxs_translate_punpckhbw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1166,6 +1268,9 @@ bool latxs_translate_punpckhbw(IR1_INST *pir1)
 bool latxs_translate_punpckhwd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1190,6 +1295,9 @@ bool latxs_translate_punpckhwd(IR1_INST *pir1)
 bool latxs_translate_punpckhdq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1214,6 +1322,9 @@ bool latxs_translate_punpckhdq(IR1_INST *pir1)
 bool latxs_translate_punpcklbw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1236,6 +1347,9 @@ bool latxs_translate_punpcklbw(IR1_INST *pir1)
 bool latxs_translate_punpcklwd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1258,6 +1372,9 @@ bool latxs_translate_punpcklwd(IR1_INST *pir1)
 bool latxs_translate_punpckldq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -1988,6 +2105,9 @@ bool latxs_translate_comiss(IR1_INST *pir1)
 bool latxs_translate_cvtpi2ps(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2008,7 +2128,9 @@ bool latxs_translate_cvtpi2ps(IR1_INST *pir1)
 bool latxs_translate_cvtps2pi(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
-
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
     IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
@@ -2075,7 +2197,9 @@ bool latxs_translate_cvtss2si(IR1_INST *pir1)
 bool latxs_translate_cvttps2pi(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
-
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
     IR2_OPND src = latxs_load_freg_from_ir1_1(opnd1, false);
@@ -2096,6 +2220,9 @@ bool latxs_translate_cvttps2pi(IR1_INST *pir1)
 bool latxs_translate_cvtpi2pd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2127,6 +2254,9 @@ bool latxs_translate_cvtpi2pd(IR1_INST *pir1)
 bool latxs_translate_cvtpd2pi(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2167,6 +2297,9 @@ bool latxs_translate_cvtsd2si(IR1_INST *pir1)
 bool latxs_translate_cvttpd2pi(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2732,6 +2865,9 @@ bool latxs_translate_movntps(IR1_INST *pir1)
 bool latxs_translate_movntq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2827,6 +2963,9 @@ bool latxs_translate_orps(IR1_INST *pir1)
 bool latxs_translate_paddq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2849,6 +2988,9 @@ bool latxs_translate_paddq(IR1_INST *pir1)
 bool latxs_translate_pavgb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2863,7 +3005,11 @@ bool latxs_translate_pavgb(IR1_INST *pir1)
 
 bool latxs_translate_pavgw(IR1_INST *pir1)
 {
+
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2879,6 +3025,9 @@ bool latxs_translate_pavgw(IR1_INST *pir1)
 bool latxs_translate_pextrw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2904,6 +3053,9 @@ bool latxs_translate_pextrw(IR1_INST *pir1)
 bool latxs_translate_pinsrw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2932,6 +3084,9 @@ bool latxs_translate_pinsrw(IR1_INST *pir1)
 bool latxs_translate_pmaxsw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2955,6 +3110,9 @@ bool latxs_translate_pmaxsw(IR1_INST *pir1)
 bool latxs_translate_pmaxub(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -2978,6 +3136,9 @@ bool latxs_translate_pmaxub(IR1_INST *pir1)
 bool latxs_translate_pminsw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3001,6 +3162,9 @@ bool latxs_translate_pminsw(IR1_INST *pir1)
 bool latxs_translate_pminub(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3024,6 +3188,9 @@ bool latxs_translate_pminub(IR1_INST *pir1)
 bool latxs_translate_psadbw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3137,6 +3304,9 @@ bool latxs_translate_maskmovq(IR1_INST *pir1)
 bool latxs_translate_pmovmskb(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3172,6 +3342,9 @@ bool latxs_translate_pmovmskb(IR1_INST *pir1)
 bool latxs_translate_pmulhw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3187,6 +3360,9 @@ bool latxs_translate_pmulhw(IR1_INST *pir1)
 bool latxs_translate_pmulhuw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3202,6 +3378,9 @@ bool latxs_translate_pmulhuw(IR1_INST *pir1)
 bool latxs_translate_pmaddwd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3222,6 +3401,9 @@ bool latxs_translate_pmaddwd(IR1_INST *pir1)
 bool latxs_translate_pmuludq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3262,6 +3444,9 @@ bool latxs_translate_pshufd(IR1_INST *pir1)
 bool latxs_translate_pshufw(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3330,6 +3515,9 @@ bool latxs_translate_pshufhw(IR1_INST *pir1)
 bool latxs_translate_pslldq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3350,6 +3538,9 @@ bool latxs_translate_pslldq(IR1_INST *pir1)
 bool latxs_translate_psrldq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
@@ -3370,6 +3561,9 @@ bool latxs_translate_psrldq(IR1_INST *pir1)
 bool latxs_translate_psubq(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);

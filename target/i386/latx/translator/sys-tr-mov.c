@@ -97,6 +97,9 @@ bool latxs_translate_movq(IR1_INST *pir1)
     if (latxs_tr_gen_sse_common_excp_check(pir1)) {
         return true;
     }
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
+    }
 
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);
     IR1_OPND *src  = ir1_get_opnd(pir1, 1);
@@ -155,6 +158,9 @@ bool latxs_translate_movd(IR1_INST *pir1)
 {
     if (latxs_tr_gen_sse_common_excp_check(pir1)) {
         return true;
+    }
+    if (option_soft_fpu && latxs_ir1_access_mmx(pir1)) {
+        latxs_enter_mmx();
     }
 
     IR1_OPND *dest = ir1_get_opnd(pir1, 0);

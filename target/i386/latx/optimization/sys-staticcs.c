@@ -121,7 +121,7 @@ void latxs_tr_gen_static_save_registers_to_env(
         uint8_t vreg_to_save)
 {
     latxs_tr_save_gprs_to_env(gpr_to_save);
-    if (option_lsfpu) {
+    if (option_lsfpu && !option_soft_fpu) {
         latxs_tr_save_lstop_to_env(&latxs_stmp1_ir2_opnd);
         latxs_tr_fpu_disable_top_mode();
     }
@@ -140,7 +140,7 @@ void latxs_tr_gen_static_load_registers_from_env(
     latxs_tr_load_vreg_from_env(vreg_to_load);
     latxs_tr_load_xmms_from_env(xmm_lo_to_load, xmm_hi_to_load);
     latxs_tr_load_fprs_from_env(fpr_to_load, 0);
-    if (option_lsfpu) {
+    if (option_lsfpu && !option_soft_fpu) {
         latxs_tr_load_lstop_from_env(&latxs_stmp1_ir2_opnd);
         latxs_tr_fpu_enable_top_mode();
     }

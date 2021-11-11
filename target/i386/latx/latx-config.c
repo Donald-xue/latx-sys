@@ -338,7 +338,7 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
 
     tb_flag(tb);
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         tb->_top_in = env->fpstt & 0x7;
     }
 
@@ -397,7 +397,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         lsassert(lsenv_get_top_bias(lsenv) == 0);
         latxs_fpu_fix_before_exec_tb(env, tb);
     }
@@ -409,7 +409,7 @@ void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb)
 {
     CPUX86State *env = cpu->env_ptr;
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         /*
          * if tb linked to other tbs, last executed tb might not be current tb
          * if last_executed_tb is null, it is not linked indirect jmps
@@ -569,7 +569,7 @@ void latxs_fix_after_excp_or_int(void)
         return;
     }
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         latxs_fpu_fix_cpu_loop_exit();
     }
 

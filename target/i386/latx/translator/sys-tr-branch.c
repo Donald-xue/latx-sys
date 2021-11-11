@@ -38,7 +38,7 @@ void latxs_sys_branch_register_ir1(void)
 #ifdef CONFIG_SOFTMMU
 
 #define LOAD_TB_PTR_TO_DBT_ARG1 do {                        \
-    if (!option_lsfpu) {                                    \
+    if (!option_lsfpu && !option_soft_fpu) {                \
         IR2_OPND tb_ptr_opnd = latxs_ra_alloc_dbt_arg1();   \
         latxs_tr_gen_exit_tb_load_tb_addr(&tb_ptr_opnd,     \
                 (ADDR)lsenv->tr_data->curr_tb);             \

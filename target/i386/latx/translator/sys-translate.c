@@ -75,7 +75,7 @@ void latxs_tr_fini(void)
     td->itemp_num = 32;
     td->ftemp_num = 32;
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         latxs_td_fpu_set_top(0);
     }
 }
@@ -416,7 +416,7 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
     latxs_tr_gen_tb_end();
     tr_gen_softmmu_slow_path();
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         tb->_top_out = latxs_td_fpu_get_top();
     }
 
@@ -466,7 +466,7 @@ void latxs_tr_gen_tb_end(void)
     int eip = tb->pc - tb->cs_base;
     latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
 
-    if (!option_lsfpu) {
+    if (!option_lsfpu && !option_soft_fpu) {
         /* FPU top shoud be TB's top_in, not top_out. */
         IR2_OPND top_in = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ORI, &top_in,
@@ -548,6 +548,7 @@ void latxs_tr_save_fprs_to_env(uint8_t mask, int save_top)
 
     /* 1. save FPU top: curr_top is rotated */
     if (save_top) {
+        lsassert(!option_soft_fpu);
         latxs_tr_gen_save_curr_top();
         latxs_tr_fpu_disable_top_mode();
     }
@@ -616,6 +617,7 @@ void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top)
     }
 
     if (load_top && option_lsfpu) {
+        lsassert(!option_soft_fpu);
         IR2_OPND top = latxs_ra_alloc_itemp();
         latxs_tr_load_lstop_from_env(&top);
         latxs_ra_free_temp(&top);
@@ -647,4 +649,14 @@ void latxs_tr_load_vreg_from_env(uint8_t mask)
                     lsenv_offset_of_vreg(lsenv, i));
         }
     }
+}
+
+void latxs_enter_mmx(void)
+{
+    /* same as helper_enter_mmx */
+    latxs_append_ir2_opnd2i(LISA_ST_W, &latxs_zero_ir2_opnd,
+                            &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ST_D, &latxs_zero_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            lsenv_offset_of_tag_word(lsenv));
 }
