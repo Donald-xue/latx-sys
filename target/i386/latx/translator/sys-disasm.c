@@ -269,13 +269,6 @@ IR1_INST *latxs_get_ir1_list(TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
             break;
         }
 
-        /* check if TB is too large */
-        if (ir1_num == lsenv->tr_data->max_insns &&
-                !ir1_is_tb_ending(pir1)) {
-            tb->tb_too_large_pir1 = pir1;
-            break;
-        }
-
         /*
          * special end of block in system-mode
          * > special system instructions
@@ -284,6 +277,13 @@ IR1_INST *latxs_get_ir1_list(TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
          */
         if (latxs_ir1_is_eob_in_sys(pir1)) {
             tb->sys_eob_pir1 = pir1;
+            break;
+        }
+
+        /* check if TB is too large */
+        if (ir1_num == lsenv->tr_data->max_insns &&
+                !ir1_is_tb_ending(pir1)) {
+            tb->tb_too_large_pir1 = pir1;
             break;
         }
 
