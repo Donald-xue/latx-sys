@@ -29,6 +29,7 @@ int option_break_point;
 unsigned long long option_break_point_addrx;
 unsigned long long option_break_point_count;
 int option_native_printer;
+int option_tb_max_insns;
 
 /* For generate TB execution trace */
 int option_trace_simple;
@@ -256,6 +257,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_BOOL,
             .help = "use softmmu slow path only (debug)",
         }, {
+            .name = "tbsizei",
+            .type = QEMU_OPT_NUMBER,
+            .help = "limit TB's max num of instructions. 0 for default 255",
+        }, {
             .name = "np",
             .type = QEMU_OPT_NUMBER,
             .help = "enable print helper to be called from native codes",
@@ -366,6 +371,13 @@ static void parse_options_native_printer(unsigned long long t)
     option_native_printer = t;
 }
 
+static void parse_options_tbsizei(unsigned long long i)
+{
+    if (i && i < 255) {
+        option_tb_max_insns = i;
+    }
+}
+
 void latx_sys_parse_options(QemuOpts *opts)
 {
     QemuOpt     *opt;
@@ -435,6 +447,11 @@ void latx_sys_parse_options(QemuOpts *opts)
 
     opt = qemu_opt_find(opts, "smmu");
     if (opt) parse_options_bool(LATXS_OPT_smmu_slow, opt->value.boolean);
+
+    opt = qemu_opt_find(opts, "tbsizei");
+    if (opt) {
+        parse_options_tbsizei(opt->value.uint);
+    }
 
     opt = qemu_opt_find(opts, "cpc");
     if (opt) parse_options_bool(LATXS_OPT_cross_page_check, opt->value.boolean);
@@ -626,6 +643,8 @@ void latxs_options_init(void)
     option_soft_fpu = 0;
 
     option_smmu_slow = 0;
+
+    option_tb_max_insns = 0;
 
     option_break_point = 0;
     option_break_point_addrx = 0;

@@ -182,6 +182,14 @@ void latxs_ir1_make_ins_ILLEGAL(IR1_INST *ir1,
     ir1->info = info;
 }
 
+int latxs_tb_max_insns(void)
+{
+    if (!option_tb_max_insns) {
+        return MAX_IR1_NUM_PER_TB;
+    }
+    return option_tb_max_insns;
+}
+
 void latxs_tr_sys_init(TranslationBlock *tb,
         int max_insns, void *code_highwater)
 {
@@ -193,8 +201,8 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     TRANSLATION_DATA *td = lsenv->tr_data;
 
     lsassert(max_insns >= 1);
-    td->max_insns = max_insns < MAX_IR1_NUM_PER_TB ?
-                    max_insns : MAX_IR1_NUM_PER_TB ;
+    int max_nr = latxs_tb_max_insns();
+    td->max_insns = max_insns < max_nr ? max_insns : max_nr;
     td->code_highwater = code_highwater;
 
     uint32_t flags  = tb->flags;
