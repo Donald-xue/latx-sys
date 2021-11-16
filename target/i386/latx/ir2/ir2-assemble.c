@@ -171,6 +171,30 @@ void latxs_ir2_op_check_imm(IR2_OPND *opnd, GM_OPERAND_TYPE opnd_type)
     case OPD_PTR:
         lsassertm(uint32_in_uint3(imm), "IR2 check imm fail OPD_PTR\n");
         break;
+    case OPD_LSBD:
+        lsassertm(uint32_in_uint6(imm), "IR2 check imm fail OPD_LSBD\n");
+        break;
+    case OPD_LSBW:
+        lsassertm(uint32_in_uint5(imm), "IR2 check imm fail OPD_LSBW\n");
+        break;
+    case OPD_MSBD:
+        lsassertm(uint32_in_uint6(imm), "IR2 check imm fail OPD_MSBD\n");
+        break;
+    case OPD_MSBW:
+        lsassertm(uint32_in_uint5(imm), "IR2 check imm fail OPD_MSBW\n");
+        break;
+
+    case OPD_CONDF:
+        return;
+    case OPD_CONDH:
+        return;
+    case OPD_CONDL:
+        return;
+
+    case OPD_I13:
+        lsassertm(int32_in_int13(imm), "IR2 check imm fail OPD_I13\n");
+        break;
+
     default:
         lsassertm(0, "IR2 check imm unsupported type %d\n", opnd_type);
         break;
@@ -210,12 +234,14 @@ bool latxs_ir2_op_check(IR2_INST *pir2)
 
         if (place.type == IR2_OPND_INV) {
             break;
-        } else if (place.type == IR2_OPND_IMMH) {
-            return (opnd._type == IR2_OPND_LABEL ||
-                    opnd._type == IR2_OPND_IMMD  ||
-                    opnd._type == IR2_OPND_IMMH);
-        } else {
-            return (opnd._type == place.type);
+        }
+        if (place.type == IR2_OPND_IMMH) {
+            if (!(opnd._type == IR2_OPND_LABEL || opnd._type == IR2_OPND_IMMD ||
+                  opnd._type == IR2_OPND_IMMH)) {
+                return 0;
+            }
+        } else if (opnd._type != place.type) {
+            return 0;
         }
     }
 

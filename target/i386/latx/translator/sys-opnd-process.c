@@ -15,12 +15,12 @@ void latxs_load_imm64(IR2_OPND *opnd2, int64_t value)
     } else if (value >> 12 == 0) {
         latxs_append_ir2_opnd2i(LISA_ORI, opnd2, zero, value);
     } else if (value >> 31 == -1 || value >> 31 == 0) {
-        latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
+        latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value << 32 >> 44);
         if (value & 0xfff) {
             latxs_append_ir2_opnd2i(LISA_ORI, opnd2, opnd2, value & 0xfff);
         }
     } else if (value >> 32 == 0) {
-        latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
+        latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value << 32 >> 44);
         if (value & 0xfff) {
             latxs_append_ir2_opnd2i(LISA_ORI, opnd2, opnd2, value & 0xfff);
         }
@@ -29,32 +29,32 @@ void latxs_load_imm64(IR2_OPND *opnd2, int64_t value)
         if ((value & 0xffffffff) == 0) {
             latxs_append_ir2_opnd3(LISA_OR, opnd2, zero, zero);
         } else if ((value & 0xfff) == 0) {
-            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
+            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value << 32 >> 44);
         } else {
-            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
+            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value << 32 >> 44);
             latxs_append_ir2_opnd2i(LISA_ORI, opnd2, opnd2, value & 0xfff);
         }
-        latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value >> 32);
+        latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value << 12 >> 44);
     } else {
         if ((value & 0xfffffffffffff) == 0) {
             latxs_append_ir2_opnd2i(LISA_LU52I_D, opnd2,
-                    zero, (value >> 52) & 0xfff);
+                    zero, value >> 52);
         } else if ((value & 0xffffffff) == 0) {
             latxs_append_ir2_opnd3(LISA_OR, opnd2, zero, zero);
-            latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value >> 32);
+            latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value << 12 >> 44);
             latxs_append_ir2_opnd2i(LISA_LU52I_D,
-                    opnd2, opnd2, (value >> 52) & 0xfff);
+                    opnd2, opnd2, value >> 52);
         } else if ((value & 0xfff) == 0) {
-            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
-            latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value >> 32);
+            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value << 32 >> 44);
+            latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value << 12 >> 44);
             latxs_append_ir2_opnd2i(LISA_LU52I_D,
-                    opnd2, opnd2, (value >> 52) & 0xfff);
+                    opnd2, opnd2, value >> 52);
         } else {
-            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value >> 12);
+            latxs_append_ir2_opnd1i(LISA_LU12I_W, opnd2, value << 32 >> 44);
             latxs_append_ir2_opnd2i(LISA_ORI, opnd2, opnd2, value & 0xfff);
-            latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value >> 32);
+            latxs_append_ir2_opnd1i(LISA_LU32I_D, opnd2, value << 12 >> 44);
             latxs_append_ir2_opnd2i(LISA_LU52I_D,
-                    opnd2, opnd2, (value >> 52) & 0xfff);
+                    opnd2, opnd2, value >> 52);
         }
     }
 }

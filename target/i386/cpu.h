@@ -1176,7 +1176,11 @@ typedef union {
     uint64_t _q[4];
 } YMMReg;
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU) && defined(TARGET_X86_64)
+typedef MMREG_UNION(ZMMReg, 128) ZMMReg;
+#else
 typedef MMREG_UNION(ZMMReg, 512) ZMMReg;
+#endif
 typedef MMREG_UNION(MMXReg, 64)  MMXReg;
 
 typedef struct BNDReg {
@@ -1418,7 +1422,7 @@ typedef struct HVFX86LazyFlags {
 
 typedef struct CPUX86State {
 #ifdef CONFIG_LATX
-    ZMMReg xmm_regs[CPU_NB_REGS == 8 ? 8 : 32];
+    ZMMReg xmm_regs[CPU_NB_REGS == 8 ? 8 : 16];
     void *ibtc_table_p;
     /* ldq,only 10bits offset */
     uint64_t vregs[5];
@@ -1449,6 +1453,12 @@ typedef struct CPUX86State {
     void *tb_executing;
     void *tb_unlinked;
     uint64_t sigintflag;
+#endif
+#ifdef TARGET_X86_64
+    target_ulong lstar;
+    target_ulong cstar;
+    target_ulong fmask;
+    target_ulong kernelgsbase;
 #endif
     /* standard registers */
     target_ulong regs[CPU_NB_REGS];
@@ -1523,12 +1533,6 @@ typedef struct CPUX86State {
 
     uint64_t vm_hsave;
 
-#ifdef TARGET_X86_64
-    target_ulong lstar;
-    target_ulong cstar;
-    target_ulong fmask;
-    target_ulong kernelgsbase;
-#endif
 
     uint64_t tsc;
     uint64_t tsc_adjust;

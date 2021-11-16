@@ -2542,7 +2542,8 @@ bool latxs_translate_cvttss2si(IR1_INST *pir1)
 
     IR2_OPND temp_under_flow  = latxs_ra_alloc_itemp();
     IR2_OPND ftemp_under_flow = latxs_ra_alloc_ftemp();
-    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_under_flow, zero, 0xc1e);
+    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_under_flow, zero,
+                            0xc1e << 20 >> 20);
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp_under_flow,
                                             &temp_under_flow);
 
@@ -4319,7 +4320,8 @@ bool latxs_translate_cvttsd2si(IR1_INST *pir1)
     IR2_OPND temp_under_flow  = latxs_ra_alloc_itemp();
     IR2_OPND ftemp_under_flow = latxs_ra_alloc_ftemp();
 
-    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_under_flow, zero, 0xc1e);
+    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_under_flow, zero,
+                            0xc1e << 20 >> 20);
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp_under_flow,
                                             &temp_under_flow);
 

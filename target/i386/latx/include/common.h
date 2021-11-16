@@ -90,6 +90,7 @@ typedef int8_t EXBits;
 #define int32_in_int10(x)  int32_in_intn(x, 10)
 #define int32_in_int11(x)  int32_in_intn(x, 11)
 #define int32_in_int12(x)  int32_in_intn(x, 12)
+#define int32_in_int13(x)  int32_in_intn(x, 13)
 #define int32_in_int14(x)  int32_in_intn(x, 14)
 #define int32_in_int16(x)  (!(((x) + 0x8000) & (~(0xffff))))
 #define int32_in_int20(x)  int32_in_intn(x, 20)

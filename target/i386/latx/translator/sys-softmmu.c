@@ -143,8 +143,11 @@ static void tr_gen_lookup_qemu_tlb(
 
     /* 5. load compare part from tlb entry */
     IR2_OPND tag_opnd = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_LD_WU, &tag_opnd, &tlb_opnd, tag_off);
-
+    if (TARGET_LONG_BITS == 32) {
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &tag_opnd, &tlb_opnd, tag_off);
+    } else {
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tag_opnd, &tlb_opnd, tag_off);
+    }
     /* 6. cmp = vaddr & mask */
     /*
      *                      12 11 8 7  4 3  0
