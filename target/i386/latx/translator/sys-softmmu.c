@@ -107,7 +107,11 @@ static void tr_gen_lookup_qemu_tlb(
     }
 
     /* 1. load f[mmu].mask */
+#ifndef TARGET_X86_64
     IR2_OPND mask_opnd = latxs_ra_alloc_itemp();
+#else
+    IR2_OPND mask_opnd = latxs_arg0_ir2_opnd;
+#endif
     if (int32_in_int12(mask_off)) {
         latxs_append_ir2_opnd2i(LISA_LD_D, &mask_opnd, env, mask_off);
     } else {
@@ -117,17 +121,27 @@ static void tr_gen_lookup_qemu_tlb(
     }
 
     /* 2. extract tlb index */
+#ifndef TARGET_X86_64
     IR2_OPND index_opnd = latxs_ra_alloc_itemp();
+#else
+    IR2_OPND index_opnd = latxs_arg1_ir2_opnd;
+#endif
     /* 2.1 index = address >> shift */
     int shift = TARGET_PAGE_BITS - CPU_TLB_ENTRY_BITS;
     latxs_append_ir2_opnd2i(LISA_SRLI_W, &index_opnd, &mem, shift);
 
     /* 2.2 index = index & mask */
     latxs_append_ir2_opnd3(LISA_AND, &index_opnd, &index_opnd, &mask_opnd);
+#ifndef TARGET_X86_64
     latxs_ra_free_temp(&mask_opnd);
+#endif
 
     /* 3. load f[mmu].table */
+#ifndef TARGET_X86_64
     IR2_OPND table_opnd = latxs_ra_alloc_itemp();
+#else
+    IR2_OPND table_opnd = latxs_arg2_ir2_opnd;
+#endif
     if (int32_in_int12(table_off)) {
         latxs_append_ir2_opnd2i(LISA_LD_D, &table_opnd, env, table_off);
     } else {
@@ -139,10 +153,16 @@ static void tr_gen_lookup_qemu_tlb(
     /* 4. tlb entry = table + index */
     latxs_append_ir2_opnd3(LISA_ADD_D, &table_opnd, &table_opnd, &index_opnd);
     IR2_OPND tlb_opnd = table_opnd;
+#ifndef TARGET_X86_64
     latxs_ra_free_temp(&index_opnd);
+#endif
 
     /* 5. load compare part from tlb entry */
+#ifndef TARGET_X86_64
     IR2_OPND tag_opnd = latxs_ra_alloc_itemp();
+#else
+    IR2_OPND tag_opnd = latxs_arg0_ir2_opnd;
+#endif
     if (TARGET_LONG_BITS == 32) {
         latxs_append_ir2_opnd2i(LISA_LD_WU, &tag_opnd, &tlb_opnd, tag_off);
     } else {
@@ -158,7 +178,11 @@ static void tr_gen_lookup_qemu_tlb(
      *                                                      3 ; D 64-bits
      */
     int align_bits = get_ldst_align_bits(op);
+#ifndef TARGET_X86_64
     IR2_OPND cmp_opnd = latxs_ra_alloc_itemp();
+#else
+    IR2_OPND cmp_opnd = latxs_arg1_ir2_opnd;
+#endif
     latxs_append_ir2_opnd2_(lisa_mov, &cmp_opnd, &mem);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &cmp_opnd, zero,
             TARGET_PAGE_BITS - 1, align_bits);
@@ -197,13 +221,21 @@ static void tr_gen_lookup_qemu_tlb(
         latxs_append_ir2_opnd3(LISA_BEQ,
                 zero, zero, &label_slow_path);
     }
+#ifndef TARGET_X86_64
     latxs_ra_free_temp(&tag_opnd);
     latxs_ra_free_temp(&cmp_opnd);
+#endif
 
     /* 8. load addend from tlb entry */
+#ifndef TARGET_X86_64
     IR2_OPND add_opnd = latxs_ra_alloc_itemp();
+#else
+    IR2_OPND add_opnd = latxs_arg1_ir2_opnd;
+#endif
     latxs_append_ir2_opnd2i(LISA_LD_D, &add_opnd, &tlb_opnd, add_off);
+#ifndef TARGET_X86_64
     latxs_ra_free_temp(&tlb_opnd);
+#endif
 
     /* 9. get hvaddr if not branch */
     switch (op) {
@@ -244,7 +276,9 @@ static void tr_gen_lookup_qemu_tlb(
         lsassertm(0, "wrong in softmmu\n");
         break;
     }
+#ifndef TARGET_X86_64
     latxs_ra_free_temp(&add_opnd);
+#endif
 
     if (mem_no_offset_new_tmp) {
         latxs_ra_free_temp(&mem_no_offset);
