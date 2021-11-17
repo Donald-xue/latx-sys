@@ -5072,11 +5072,23 @@ int latxs_ir2_opnd_is_reg_temp(IR2_OPND *opnd)
     case IR2_OPND_MEMY:
     case IR2_OPND_GPR: {
         reg = latxs_ir2_opnd_reg(opnd);
-        return 12 <= reg  && reg <= 19; /* T0 - T7 */
+        int i = 0;
+        for (; i < latxs_itemp_status_num; i++) {
+            if (reg == latxs_itemp_status_default[i].physical_id) {
+                return 1;
+            }
+        }
+        return 0;
     }
     case IR2_OPND_FPR: {
         reg = latxs_ir2_opnd_reg(opnd);
-        return 9 <= reg  && reg <= 15; /* F9 - F15 */
+        int i = 0;
+        for (; i < latxs_itemp_status_num; i++) {
+            if (reg == ftemp_status_default[i].physical_id) {
+                return 1;
+            }
+        }
+        return 0;
     }
     default: {
         lsassert(0);
