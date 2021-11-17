@@ -25,10 +25,8 @@ int cmp_helper_cfg(helper_cfg_t cfg1, helper_cfg_t cfg2)
 
 IR2_INST *latxs_tr_gen_call_to_helper(ADDR func_addr)
 {
-    IR2_OPND func = latxs_ra_alloc_itemp();
-    latxs_load_addr_to_ir2(&func, (ADDR)func_addr);
-    latxs_append_ir2_opnd1_(lisa_call, &func);
-    latxs_ra_free_temp(&func);
+    latxs_load_addr_to_ir2(&latxs_ra_ir2_opnd, (ADDR)func_addr);
+    latxs_append_ir2_opnd1_(lisa_call, &latxs_ra_ir2_opnd);
     return NULL;
 }
 
@@ -205,13 +203,9 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
 /* helper with zero arg */
 void latxs_tr_gen_call_to_helper0_cfg(ADDR func, helper_cfg_t cfg)
 {
-    IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
-    latxs_load_addr_to_ir2(&func_addr_opnd, (ADDR)func);
-    latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
-    latxs_ra_free_temp(&func_addr_opnd);
+    latxs_tr_gen_call_to_helper(func);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
@@ -219,16 +213,12 @@ void latxs_tr_gen_call_to_helper0_cfg(ADDR func, helper_cfg_t cfg)
 /* helper with 1 default arg(CPUArchState*) */
 void latxs_tr_gen_call_to_helper1_cfg(ADDR func, helper_cfg_t cfg)
 {
-    IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
-
-    latxs_load_addr_to_ir2(&func_addr_opnd, (ADDR)func);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
-    latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
-    latxs_ra_free_temp(&func_addr_opnd);
+
+    latxs_tr_gen_call_to_helper(func);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
@@ -236,17 +226,13 @@ void latxs_tr_gen_call_to_helper1_cfg(ADDR func, helper_cfg_t cfg)
 /* helper with 2 arg(CPUArchState*, int) */
 void latxs_tr_gen_call_to_helper2_cfg(ADDR func, int arg2, helper_cfg_t cfg)
 {
-    IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
-    latxs_load_addr_to_ir2(&func_addr_opnd, func);
     latxs_load_imm32_to_ir2(&latxs_arg1_ir2_opnd, arg2, EXMode_S);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
-    latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
-    latxs_ra_free_temp(&func_addr_opnd);
+    latxs_tr_gen_call_to_helper(func);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
@@ -255,18 +241,14 @@ void latxs_tr_gen_call_to_helper2_cfg(ADDR func, int arg2, helper_cfg_t cfg)
 void latxs_tr_gen_call_to_helper3_cfg(ADDR func, int arg2, int arg3,
                                       helper_cfg_t cfg)
 {
-    IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
-    latxs_load_addr_to_ir2(&func_addr_opnd, func);
     latxs_load_imm32_to_ir2(&latxs_arg1_ir2_opnd, arg2, EXMode_S);
     latxs_load_imm32_to_ir2(&latxs_arg2_ir2_opnd, arg3, EXMode_S);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
-    latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
-    latxs_ra_free_temp(&func_addr_opnd);
+    latxs_tr_gen_call_to_helper(func);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
@@ -275,18 +257,14 @@ void latxs_tr_gen_call_to_helper3_cfg(ADDR func, int arg2, int arg3,
 void latxs_tr_gen_call_to_helper3_u64_cfg(ADDR func, uint64_t arg2,
                                           uint64_t arg3, helper_cfg_t cfg)
 {
-    IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
-    latxs_load_addr_to_ir2(&func_addr_opnd, func);
     latxs_load_imm64_to_ir2(&latxs_arg1_ir2_opnd, arg2);
     latxs_load_imm64_to_ir2(&latxs_arg2_ir2_opnd, arg3);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
-    latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
-    latxs_ra_free_temp(&func_addr_opnd);
+    latxs_tr_gen_call_to_helper(func);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
@@ -295,19 +273,15 @@ void latxs_tr_gen_call_to_helper4_u64_cfg(ADDR func, uint64_t arg2,
                                           uint64_t arg3, uint64_t arg4,
                                           helper_cfg_t cfg)
 {
-    IR2_OPND func_addr_opnd = latxs_ra_alloc_itemp();
-
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
 
-    latxs_load_addr_to_ir2(&func_addr_opnd, func);
     latxs_load_imm64_to_ir2(&latxs_arg1_ir2_opnd, arg2);
     latxs_load_imm64_to_ir2(&latxs_arg2_ir2_opnd, arg3);
     latxs_load_imm64_to_ir2(&latxs_arg3_ir2_opnd, arg4);
 
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
-    latxs_append_ir2_opnd1_(lisa_call, &func_addr_opnd);
-    latxs_ra_free_temp(&func_addr_opnd);
+    latxs_tr_gen_call_to_helper(func);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(cfg);
 }
