@@ -867,7 +867,7 @@ static void tcg_out_setcond2(TCGContext *s, TCGCond cond, TCGReg ret,
 static void tcg_out_call_int(TCGContext *s, const tcg_insn_unit *arg, bool tail)
 {
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
-    if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
+    if (!tail && tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
         CPUX86State *env = current_cpu->env_ptr;
         tcg_out_movi(s, TCG_TYPE_I64, TCG_REG_TMP0,
             (uint64_t)env->tb_translating);
