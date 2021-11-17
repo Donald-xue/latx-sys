@@ -8840,6 +8840,36 @@ void rr_cpu_tcgsigint_handler(int n, siginfo_t *siginfo, void *ctx)
     rr_cpu_tcgsigint_unlink_tb(ctb);
 }
 
+void tcgsigint_rr_interrupt_self(CPUState *cpu)
+{
+    CPUX86State *env = cpu->env_ptr;
+
+    TranslationBlock *ctb = NULL;
+    TranslationBlock *otb = NULL;
+
+    if (env->sigintflag) {
+        /* outside TB's execution */
+        TCG_SIGINT_TRACE(event, "noexectb", 0);
+        return;
+    }
+
+    /* inside helper function */
+    ctb = env->tb_executing;
+    TCG_SIGINT_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
+
+    otb = env->tb_unlinked;
+    if (otb == ctb) {
+        TCG_SIGINT_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0);
+        return;
+    } else {
+        TCG_SIGINT_TRACE(event, "relinkoldtb", otb ? otb->pc : 0);
+        rr_cpu_tcgsigint_relink_tb(otb);
+    }
+
+    env->tb_unlinked = ctb;
+    rr_cpu_tcgsigint_unlink_tb(ctb);
+}
+
 static QemuSpin tcg_sigint_slk;
 
 static

@@ -11,6 +11,7 @@ void rr_cpu_tcgsigint_init(CPUState *cpu);
 void tcgsigint_cpu_loop_exit(CPUState *cpu);
 void tcgsigint_before_tb_exec(CPUState *cpu, void *tb);
 void tcgsigint_after_tb_exec(CPUState *cpu);
+void tcgsigint_rr_interrupt_self(CPUState *cpu);
 
 void tcgsigint_remove_tb_from_jmp_list(void *tb, int n);
 

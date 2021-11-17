@@ -112,7 +112,8 @@ void tcg_handle_interrupt(CPUState *cpu, int mask)
 #endif /* CONFIG_LATX */
 #if defined(CONFIG_SIGINT)
         if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ONE) {
-            pthread_kill(cpu->thread->thread, 63);
+            /* pthread_kill(cpu->thread->thread, 63); */
+            tcgsigint_rr_interrupt_self(cpu);
         } else if (tcgsigint_mode() == TCG_SIGINT_MODE_UNLINK_ALL) {
             tcgsigint_unlink_tb_all(cpu);
         } else {
