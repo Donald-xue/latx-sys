@@ -1939,6 +1939,9 @@ static void latxs_translate_call_far_imm(IR1_INST *pir1)
     /* 3.3 arg3 : shift according to data size */
     latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
             &latxs_zero_ir2_opnd, shift);
+
+    /* latxs_arg4_ir2_opnd is itemp in x86_64, please be careful */
+
     /* 3.4 arg4 : next eip */
     latxs_load_imm32_to_ir2(&latxs_arg4_ir2_opnd,
             (uint32_t)next_eip, EXMode_Z);

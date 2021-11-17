@@ -506,24 +506,24 @@ bool latxs_translate_rcl(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &cf, &cf, opnd_size);
     }
 
-    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
-    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
-    IR2_OPND final_dest = latxs_ra_alloc_itemp();
     IR2_OPND tmp_dest   = latxs_ra_alloc_itemp();
-    IR2_OPND tmp_rotate = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_OR, &tmp_dest, &dest, &cf);
+    latxs_ra_free_temp(&cf);
+    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SLL_D, &high_dest, &tmp_dest, &rotate);
+    IR2_OPND tmp_rotate = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp_rotate,
                                          &rotate, -1 - opnd_size);
     latxs_append_ir2_opnd3(LISA_SUB_D, &tmp_rotate,
                                        &latxs_zero_ir2_opnd, &tmp_rotate);
+    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SRL_D, &low_dest, &tmp_dest, &tmp_rotate);
+    latxs_ra_free_temp(&tmp_dest);
+    latxs_ra_free_temp(&tmp_rotate);
+    IR2_OPND final_dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_OR, &final_dest, &high_dest, &low_dest);
-    latxs_ra_free_temp(&cf);
     latxs_ra_free_temp(&low_dest);
     latxs_ra_free_temp(&high_dest);
-    latxs_ra_free_temp(&tmp_rotate);
-    latxs_ra_free_temp(&tmp_dest);
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&final_dest, opnd0);
@@ -584,24 +584,24 @@ bool latxs_translate_rcr(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &cf, &cf, opnd_size);
     }
 
-    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
-    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
-    IR2_OPND final_dest = latxs_ra_alloc_itemp();
-    IR2_OPND tmp_rotate = latxs_ra_alloc_itemp();
     IR2_OPND tmp_dest   = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_OR, &tmp_dest, &dest, &cf);
+    latxs_ra_free_temp(&cf);
+    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SRL_D, &low_dest, &tmp_dest, &rotate);
+    IR2_OPND tmp_rotate = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp_rotate,
                                          &rotate, -1 - opnd_size);
     latxs_append_ir2_opnd3(LISA_SUB_D, &tmp_rotate,
                                        &latxs_zero_ir2_opnd, &tmp_rotate);
+    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SLL_D, &high_dest,  &tmp_dest, &tmp_rotate);
-    latxs_append_ir2_opnd3(LISA_OR, &final_dest, &high_dest, &low_dest);
-    latxs_ra_free_temp(&cf);
-    latxs_ra_free_temp(&high_dest);
-    latxs_ra_free_temp(&low_dest);
     latxs_ra_free_temp(&tmp_rotate);
     latxs_ra_free_temp(&tmp_dest);
+    IR2_OPND final_dest = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd3(LISA_OR, &final_dest, &high_dest, &low_dest);
+    latxs_ra_free_temp(&high_dest);
+    latxs_ra_free_temp(&low_dest);
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&final_dest, opnd0);
@@ -632,40 +632,38 @@ static bool latxs_translate_shrd_cl(IR1_INST *pir1)
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     IR2_OPND src = latxs_ra_alloc_itemp();
-    IR2_OPND src_shift = latxs_ra_alloc_itemp();
+    IR2_OPND shift = latxs_ra_alloc_itemp();
 
     latxs_load_ir1_to_ir2(&dest, opnd0, EXMode_Z);
     latxs_load_ir1_to_ir2(&src, opnd1, EXMode_Z);
-    latxs_load_ir1_to_ir2(&src_shift, opnd2, EXMode_Z);
+    latxs_load_ir1_to_ir2(&shift, opnd2, EXMode_Z);
 
     int opnd_size = ir1_opnd_size(opnd0);
-    IR2_OPND shift = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, 0x1f);
-
-    latxs_ra_free_temp(&src_shift);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &shift, 0x1f);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BEQ, &shift,
             &latxs_zero_ir2_opnd, &label_exit);
 
-    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
-    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
-    IR2_OPND final_dest = latxs_ra_alloc_itemp();
     IR2_OPND left_shift = latxs_ra_alloc_itemp();
-
     IR2_OPND size = latxs_ra_alloc_itemp();
     latxs_load_imm32_to_ir2(&size, opnd_size, EXMode_S);
-
     latxs_append_ir2_opnd3(LISA_SUB_W, &left_shift, &size, &shift);
-    latxs_append_ir2_opnd3(LISA_SRL_D, &low_dest, &dest, &shift);
+    latxs_ra_free_temp(&size);
+    latxs_ra_free_temp(&src);
+
+    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SLL_D, &high_dest, &src, &left_shift);
+    latxs_ra_free_temp(&left_shift);
+
+    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd3(LISA_SRL_D, &low_dest, &dest, &shift);
+
+    IR2_OPND final_dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_OR, &final_dest, &high_dest, &low_dest);
 
     latxs_ra_free_temp(&low_dest);
     latxs_ra_free_temp(&high_dest);
-    latxs_ra_free_temp(&left_shift);
-    latxs_ra_free_temp(&size);
-    latxs_ra_free_temp(&src);
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&final_dest, opnd0);
@@ -766,39 +764,37 @@ static bool latxs_translate_shld_cl(IR1_INST *pir1)
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     IR2_OPND src = latxs_ra_alloc_itemp();
-    IR2_OPND src_shift = latxs_ra_alloc_itemp();
+    IR2_OPND shift = latxs_ra_alloc_itemp();
 
     latxs_load_ir1_to_ir2(&dest, opnd0, EXMode_Z);
     latxs_load_ir1_to_ir2(&src, opnd1, EXMode_Z);
-    latxs_load_ir1_to_ir2(&src_shift, opnd2, EXMode_Z);
+    latxs_load_ir1_to_ir2(&shift, opnd2, EXMode_Z);
 
     int opnd_size = ir1_opnd_size(opnd0);
 
-    IR2_OPND shift = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, 0x1f);
-    latxs_ra_free_temp(&src_shift);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &shift, 0x1f);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BEQ, &shift,
             &latxs_zero_ir2_opnd, &label_exit);
 
-    IR2_OPND size       = latxs_ra_alloc_itemp();
-    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
-    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
-    IR2_OPND final_dest = latxs_ra_alloc_itemp();
     IR2_OPND left_shift = latxs_ra_alloc_itemp();
-
+    IR2_OPND size       = latxs_ra_alloc_itemp();
     latxs_load_imm32_to_ir2(&size, opnd_size, EXMode_S);
     latxs_append_ir2_opnd3(LISA_SUB_W, &left_shift, &size, &shift);
-    latxs_append_ir2_opnd3(LISA_SLL_D, &high_dest, &dest, &shift);
+    latxs_ra_free_temp(&size);
+    IR2_OPND low_dest   = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SRL_D, &low_dest, &src, &left_shift);
+    latxs_ra_free_temp(&left_shift);
+    latxs_ra_free_temp(&src);
+
+    IR2_OPND high_dest  = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd3(LISA_SLL_D, &high_dest, &dest, &shift);
+    IR2_OPND final_dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_OR, &final_dest, &high_dest, &low_dest);
 
     latxs_ra_free_temp(&low_dest);
     latxs_ra_free_temp(&high_dest);
-    latxs_ra_free_temp(&left_shift);
-    latxs_ra_free_temp(&size);
-    latxs_ra_free_temp(&src);
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&final_dest, opnd0);

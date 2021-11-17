@@ -196,6 +196,7 @@ static void tr_gen_lookup_qemu_tlb(
                 zero, latxs_ir2_opnd_reg(&cmp_opnd));
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
                 zero, latxs_ir2_opnd_reg(&tag_opnd));
+        /* latxs_arg4/5/6_ir2_opnd is itemp in x86_64, please be careful */
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg4_ir2_opnd,
                 zero, latxs_ir2_opnd_reg(&mem));
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg5_ir2_opnd,
@@ -410,6 +411,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
     IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
     IR2_OPND *arg3 = &latxs_arg3_ir2_opnd;
+    /* latxs_arg4_ir2_opnd is itemp in x86_64, please be careful */
     IR2_OPND *arg4 = &latxs_arg4_ir2_opnd;
 
     latxs_append_ir2_opnd1(LISA_LABEL, &sp->label_slow_path);

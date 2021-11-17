@@ -39,11 +39,19 @@ static const TEMP_REG_STATUS itemp_status_default[] = {
 
 #ifdef CONFIG_SOFTMMU
 
+#ifdef TARGET_X86_64
+/* temp registers in system mode : a4, a5, a7, t8, x, fp */
+static const TEMP_REG_STATUS latxs_itemp_status_default[] = {
+    {false, 8}, {false, 9}, {false, 11},
+    {false, 20}, {false, 21}, {false, 22}
+};
+#else
 /* temp registers in system mode : T0 - T7 */
 static const TEMP_REG_STATUS latxs_itemp_status_default[] = {
     {false, 12}, {false, 13}, {false, 14}, {false, 15},
     {false, 16}, {false, 17}, {false, 18}, {false, 19}
 };
+#endif
 
 #define latxs_itemp_status_num \
     (sizeof(latxs_itemp_status_default) / sizeof(TEMP_REG_STATUS))
