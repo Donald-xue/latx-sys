@@ -886,8 +886,8 @@ static void tcg_out_call_int(TCGContext *s, const tcg_insn_unit *arg, bool tail)
         tcg_out_opc_djp(s, tail ? OPC_B : OPC_BL, offset);
     } else if (TCG_TARGET_REG_BITS == 32 || offset == sextreg(offset, 0, 38)) {
         /* long jump: 38-bit */
-        tcg_target_long imm = sextreg((tcg_target_long)arg, 0, 18);
-        tcg_target_long base = ((tcg_target_long)arg - imm) >> 6;
+        tcg_target_long imm = sextreg((tcg_target_long)offset, 0, 18);
+        tcg_target_long base = ((tcg_target_long)offset- imm) >> 6;
         tcg_out_opc_upp(s, OPC_PCADDU18I, TCG_REG_TMP0, base);
         tcg_out_opc_jbr(s, OPC_JIRL, link, TCG_REG_TMP0, imm);
     } else if (TCG_TARGET_REG_BITS == 64) {
