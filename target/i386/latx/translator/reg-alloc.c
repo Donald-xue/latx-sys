@@ -327,11 +327,16 @@ void latxs_tr_ra_init(TRANSLATION_DATA *td)
 
 IR2_OPND latxs_ra_alloc_gpr(int gpr_num)
 {
-    lsassert(gpr_num >= 0 && gpr_num <= 7);
+    lsassert(gpr_num >= 0 && gpr_num < CPU_NB_REGS);
 
     /* EAX - EDI => S1 - S8 */
-    static const int8_t latxs_rai_imap_gpr[8] = {
-    24, 25, 26, 27, 28, 29, 30, 31};
+    /* R8  - R15 => T0 - T7 */
+    static const int8_t latxs_rai_imap_gpr[CPU_NB_REGS] = {
+        24, 25, 26, 27, 28, 29, 30, 31,
+#ifdef TARGET_X86_64
+        12, 13, 14, 15, 16, 17, 18, 19
+#endif
+    };
 
     IR2_OPND opnd;
     latxs_ir2_opnd_build(&opnd, IR2_OPND_GPR, latxs_rai_imap_gpr[gpr_num]);
@@ -387,7 +392,7 @@ IR2_OPND latxs_ra_alloc_st(int st_num)
 
 IR2_OPND latxs_ra_alloc_xmm(int num)
 {
-    lsassert(0 <= num && num <= 7);
+    lsassert(0 <= num && num < CPU_NB_REGS);
     return latxs_ir2_opnd_new(IR2_OPND_FPR, 16 + num);
 }
 
