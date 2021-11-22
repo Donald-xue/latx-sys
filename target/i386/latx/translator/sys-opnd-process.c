@@ -98,7 +98,15 @@ void latxs_load_imm64_to_ir2(IR2_OPND *opnd2, uint64_t value)
 
 void latxs_load_addrx_to_ir2(IR2_OPND *opnd, ADDRX addrx)
 {
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_load_imm64_to_ir2(opnd, addrx);
+    } else {
+        latxs_load_imm32_to_ir2(opnd, (uint32_t)addrx, EXMode_Z);
+    }
+#else
     latxs_load_imm32_to_ir2(opnd, (uint32_t)addrx, EXMode_Z);
+#endif
 }
 
 void latxs_load_addr_to_ir2(IR2_OPND *opnd, ADDR addr)
@@ -212,6 +220,17 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
     int ea_base_only = 0;
     IR2_OPND ea_base;
 
+#ifdef TARGET_X86_64
+    /* x86_64 : RIP/EIP relative addressing */
+    if (ir1_opnd_is_pc_relative(opnd1)) {
+        /* offset = next_IP + offset */
+        int64_t offset =
+            ir1_addr_next(lsenv->tr_data->curr_ir1_inst) + ir1_opnd_simm(opnd1);
+        latxs_load_imm64_to_ir2(value_opnd, offset);
+        return;
+    }
+#endif
+
     /* 1. ea = disp + [base + index << scale] */
     if (ir1_opnd_has_index(opnd1)) {
         /* 1.1 ea = base + index << scale */
@@ -252,7 +271,7 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
     if (!ea_valid) {
         /* 1.3 ea = disp */
         longx offset = ir1_opnd_simm(opnd1);
-        latxs_load_imm32_to_ir2(&ea, offset, EXMode_S);
+        latxs_load_imm64_to_ir2(&ea, offset);
     } else if (ir1_opnd_simm(opnd1) != 0) {
         /* 1.4 ea = disp + ea */
         longx offset = ir1_opnd_simm(opnd1);
@@ -261,7 +280,7 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
                     ea_base_only ? &ea_base : &ea, offset);
         } else {
             IR2_OPND offset_opnd = latxs_ra_alloc_itemp();
-            latxs_load_imm32_to_ir2(&offset_opnd, offset, EXMode_S);
+            latxs_load_imm64_to_ir2(&offset_opnd, offset);
             latxs_append_ir2_opnd3(LISA_ADD_D, &ea,
                     ea_base_only ? &ea_base : &ea, &offset_opnd);
             latxs_ra_free_temp(&offset_opnd);
@@ -280,6 +299,10 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
     case 4:
         latxs_append_ir2_opnd2_(lisa_mov32z, &ea, &ea);
         break;
+#ifdef TARGET_X86_64
+    case 8:
+        break;
+#endif
     default:
         lsassertm(0, "unknown addr size %d in convert mem opnd.\n", addr_size);
         break;
@@ -339,6 +362,21 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
     int ea_ir1_reg = 0;
     int ea_off = 0;
 
+#ifdef TARGET_X86_64
+    /* x86_64 : RIP/EIP relative addressing */
+    if (ir1_opnd_is_pc_relative(opnd1)) {
+        /* offset = next_IP + offset */
+        int64_t offset = ir1_addr_next(lsenv->tr_data->curr_ir1_inst) +
+                         ir1_opnd_simm(opnd1) + bias;
+        latxs_load_imm64_to_ir2(&ea, offset);
+        /* construct IR2_OPND_MEM */
+        int mem_base = latxs_ir2_opnd_reg(&ea);
+        latxs_ir2_opnd_build_mem(opnd2, mem_base, 0);
+        return;
+    }
+#endif
+
+
     /* 1. ea = disp + [base + index << scale] */
     if (ir1_opnd_has_index(opnd1)) {
         /* 1.1 ea = base + index << scale */
@@ -378,10 +416,11 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
     if (!ea_valid) {
         /* 1.3 ea = disp */
         longx offset = ir1_opnd_simm(opnd1) + bias;
-        latxs_load_imm32_to_ir2(&ea, offset, EXMode_S);
+        latxs_load_imm64_to_ir2(&ea, offset);
     } else if (ir1_opnd_simm(opnd1) != 0 || bias != 0) {
         /* 1.4 ea = disp + ea */
         longx offset = ir1_opnd_simm(opnd1) + bias;
+        /* TARGET_X86_64 int32 is ok */
         if (int32_in_int12(offset)) {
             /* allow to do risk optimization */
             /* if (xtm_risk_opt() && TODO */
@@ -395,7 +434,7 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
             /* } */
         } else {
             IR2_OPND offset_opnd = latxs_ra_alloc_itemp();
-            latxs_load_imm32_to_ir2(&offset_opnd, offset, EXMode_S);
+            latxs_load_imm64_to_ir2(&offset_opnd, offset);
             latxs_append_ir2_opnd3(LISA_ADD_D, &ea,
                     ea_base_only ? &ea_base : &ea, &offset_opnd);
             latxs_ra_free_temp(&offset_opnd);
@@ -429,6 +468,12 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
         latxs_append_ir2_opnd2_(lisa_mov32z, &ea,
                 ea_base_only ? &ea_base : &ea);
         break;
+#ifdef TARGET_X86_64
+    case 8:
+        latxs_append_ir2_opnd2_(lisa_mov, &ea,
+                ea_base_only ? &ea_base : &ea);
+        break;
+#endif
     default:
         lsassertm(0, "unknown addr size %d in %s.\n",
                 addr_size, __func__);
@@ -455,8 +500,14 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
 
         latxs_append_ir2_opnd3(LISA_ADD_D, &ea, &ea, &seg_base);
         latxs_ra_free_temp(&seg_base);
-
+#ifdef TARGET_X86_64
+        /* there is no !64 bit addr, assertion has be done in translate */
+        if (!td->sys.code64) {
+            latxs_append_ir2_opnd2_(lisa_mov32z, &ea, &ea);
+        }
+#else
         latxs_append_ir2_opnd2_(lisa_mov32z, &ea, &ea);
+#endif
     }
 
     /* 3. construct IR2_OPND_MEM */
@@ -476,8 +527,15 @@ void latxs_load_ir1_imm_to_ir2(IR2_OPND *opnd2,
     } else {
         value = ir1_opnd_simm(opnd1);
     }
-
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_load_imm64_to_ir2(opnd2, ir1_opnd_simm(opnd1));
+    } else {
+        latxs_load_imm32_to_ir2(opnd2, value, em);
+    }
+#else
     latxs_load_imm32_to_ir2(opnd2, value, em);
+#endif
 }
 
 void latxs_load_ir1_seg_to_ir2(IR2_OPND *opnd2, IR1_OPND *opnd1)

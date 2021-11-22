@@ -11,6 +11,7 @@
 void latxs_sys_mov_register_ir1(void)
 {
     latxs_register_ir1(X86_INS_MOV);
+    latxs_register_ir1(X86_INS_MOVABS);
     latxs_register_ir1(X86_INS_MOVZX);
     latxs_register_ir1(X86_INS_MOVSX);
     latxs_register_ir1(X86_INS_LEA);

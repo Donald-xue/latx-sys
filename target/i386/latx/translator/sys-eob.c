@@ -397,6 +397,11 @@ void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env, ADDRX eip,
         case 16:
             latxs_load_imm32_to_ir2(&eip_opnd, eip & 0xffff, EXMode_Z);
             break;
+#ifdef TARGET_X86_64
+        case 64:
+            latxs_load_imm64_to_ir2(&eip_opnd, eip);
+            break;
+#endif
         default:
             lsassert(0);
             break;

@@ -103,7 +103,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {__SF, 0, 0},                                    /* cmovs, */           //X86_INS_CMOVS,
     {0, __ALL_EFLAGS, 0}, /* cmp, */             //X86_INS_CMP,
     {0, __ALL_EFLAGS, 0},                //X86_INS_CMPSB,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_CMPSQ,
+    {0, __ALL_EFLAGS, 0},                /* X86_INS_CMPSQ */
     {0, __ALL_EFLAGS, 0},                //X86_INS_CMPSW,
     {0, 0, 0},                                       /* cmpxchg16b, */      //X86_INS_CMPXCHG16B,
     {0, __ALL_EFLAGS, 0}, /* cmpxchg, */         //X86_INS_CMPXCHG,
@@ -341,10 +341,10 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, __ALL_EFLAGS, __AF}, /* or, */           //X86_INS_OR,
     {0, __ALL_EFLAGS, 0},    /* sub, */          //X86_INS_SUB,
     {0, __ALL_EFLAGS, __AF}, /* xor, */          //X86_INS_XOR,
-    {0, 0, 0},                                              /* lods, */        //X86_INS_LODSB,
-    {0, 0, 0},                                              /* lods, */       //X86_INS_LODSD,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_LODSQ,
-    {0, 0, 0},                                              /* lods, */      //X86_INS_LODSW,
+    {__DF, 0, 0},                                              /* lods, */
+    {__DF, 0, 0},                                              /* lods, */
+    {__DF, 0, 0},                                              /* lods, */
+    {__DF, 0, 0},                                              /* lods, */
     {0, 0, 0},            /* loop, */                                       //X86_INS_LOOP,
      {__ZF, 0, 0},         /* loopz, */                //X86_INS_LOOPE,
     {__ZF, 0, 0},         /* loopnz, */                //X86_INS_LOOPNE,
@@ -456,7 +456,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* monitor, */         //X86_INS_MONITOR,
     {__INVALID, __INVALID, __INVALID},                //X86_INS_MONTMUL,
     {0, 0, 0},                                          /* mov, */          //X86_INS_MOV,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_MOVABS,
+    {0, 0, 0},                                       /* X86_INS_MOVABS */
     {0, 0, 0},                                       /* movbe */            //X86_INS_MOVBE,
     {0, 0, 0},                                       /* movddup, */         //X86_INS_MOVDDUP,
     {0, 0, 0},                                       /* movdqa, */          //X86_INS_MOVDQA,
@@ -480,7 +480,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* movsd, */           //X86_INS_MOVSD,
     {0, 0, 0},                                       /* movshdup, */        //X86_INS_MOVSHDUP,
     {0, 0, 0},                                       /* movsldup, */        //X86_INS_MOVSLDUP,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_MOVSQ,
+    {__DF, 0, 0},                                    /* X86_INS_MOVSQ */
     {0, 0, 0},                                       /* movss, */           //X86_INS_MOVSS,
     {__DF, 0, 0},                                           /* movs, */                //X86_INS_MOVSW,
     {0, 0, 0},                                       /* movsx, */           //X86_INS_MOVSX,
@@ -576,9 +576,9 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* X86_INS_POPAW, */
     {0, 0, 0},                                                              //X86_INS_POPAL,
     {0, 0, 0},                                       /* popcnt */           //X86_INS_POPCNT,
-    {0, __ALL_EFLAGS | __DF, 0},                     /* popf */             //X86_INS_POPF,
-    {0, __ALL_EFLAGS | __DF, 0},                                            //X86_INS_POPFD,
-    {__INVALID, __INVALID, __INVALID},                                      //X86_INS_POPFQ,
+    {0, __ALL_EFLAGS | __DF, 0},                     /* X86_INS_POPF */
+    {0, __ALL_EFLAGS | __DF, 0},                     /* X86_INS_POPFD */
+    {0, __ALL_EFLAGS | __DF, 0},                     /* X86_INS_POPFQ */
     {0, 0, 0},                                       /* prefetch, */        //X86_INS_PREFETCH,
     {0, 0, 0},                                       /* prefetchnta, */     //X86_INS_PREFETCHNTA,
     {0, 0, 0},                                       /* prefetcht0, */      //X86_INS_PREFETCHT0,
@@ -597,9 +597,9 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* push, */            //X86_INS_PUSH,
     {0, 0, 0},                                      /* X86_INS_PUSHAW, */
     {0, 0, 0},                                                              //X86_INS_PUSHAL,
-    {__ALL_EFLAGS | __DF, 0, 0},                     /* pushf */            //X86_INS_PUSHF,
-    {__ALL_EFLAGS | __DF, 0, 0},                     /* pushf */            //X86_INS_PUSHFD,
-    {__INVALID, __INVALID, __INVALID},                                      //X86_INS_PUSHFQ,
+    {__ALL_EFLAGS | __DF, 0, 0},                     /* X86_INS_PUSHF */
+    {__ALL_EFLAGS | __DF, 0, 0},                     /* X86_INS_PUSHFD */
+    {__ALL_EFLAGS | __DF, 0, 0},                     /* X86_INS_PUSHFQ */
     {__CF, __OF | __CF, 0},                          /* rcl, */             //X86_INS_RCL,
     {0, 0, 0},                                       /* rcpps, */           //X86_INS_RCPPS,
     {0, 0, 0},                                       /* rcpss, */           //X86_INS_RCPSS,
@@ -630,7 +630,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {__CF, __ALL_EFLAGS, 0}, /* sbb, */          //X86_INS_SBB,
     {__DF, __ALL_EFLAGS, 0},     /* scas, */     //X86_INS_SCASB,
     {__DF, __ALL_EFLAGS, 0},     /* scas, */     //X86_INS_SCASD,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_SCASQ,
+    {__DF, __ALL_EFLAGS, 0},                /* X86_INS_SCASQ */
     {__DF, __ALL_EFLAGS, 0},     /* scas, */      //X86_INS_SCASW,
     {__CF, 0, 0},                                    /* setae */            //X86_INS_SETAE,
     {__ZF | __CF, 0, 0},                             /* seta, */            //X86_INS_SETA,
@@ -681,10 +681,10 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* stgi, */            //X86_INS_STGI,
     {0, 0, 0},                                       /* sti, */             //X86_INS_STI,
     {0, 0, 0},                                       /* stmxcsr, */         //X86_INS_STMXCSR,
-    {0, 0, 0},                                              /* lods, */        //X86_INS_STOSB,
-    {0, 0, 0},                                              /* lods, */     //X86_INS_STOSD,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_STOSQ,
-    {0, 0, 0},                                              /* lods, */        //X86_INS_STOSW,
+    {__DF, 0, 0},                                       /* stos, */
+    {__DF, 0, 0},                                       /* stos, */
+    {__DF, 0, 0},                                       /* stos, */
+    {__DF, 0, 0},                                       /* stos, */
     {0, 0, 0},                                       /* str, */             //X86_INS_STR,
     {0, 0, 0},                                       /* fst, */             //X86_INS_FST,
     {0, 0, 0},                                       /* fstp, */            //X86_INS_FSTP,
@@ -1515,8 +1515,8 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {__INVALID, __INVALID, __INVALID},                //X86_INS_VCMPTRUE_USPD,
 
     {__INVALID, __INVALID, __INVALID},                //X86_INS_UD0,
-    {0, 0, 0},                //X86_INS_ENDBR32,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_ENDBR64,
+    {0, 0, 0},                                        /* X86_INS_ENDBR32 */
+    {0, 0, 0},                                        /* X86_INS_ENDBR64 */
 
     {__INVALID, __INVALID, __INVALID},                //X86_INS_ENDING, // mark the end of the list of insn
 

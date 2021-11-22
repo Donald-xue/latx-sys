@@ -620,7 +620,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_cmovs,     //X86_INS_CMOVS,
     translate_cmp,       //X86_INS_CMP,
     translate_cmps,      /* X86_INS_CMPSB, */
-    NULL,                //X86_INS_CMPSQ,
+    translate_cmps,                /* X86_INS_CMPSQ, */
     translate_cmps,      /* X86_INS_CMPSW, */
     translate_cmpxchg16b,//X86_INS_CMPXCHG16B,
     translate_cmpxchg,   //X86_INS_CMPXCHG,
@@ -860,7 +860,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_xor,       //X86_INS_XOR,
     translate_lods,      /* X86_INS_LODSB, */
     translate_lods,      /* X86_INS_LODSD, */
-    NULL,                //X86_INS_LODSQ,
+    translate_lods,      /* X86_INS_LODSQ, */
     translate_lods,      /* X86_INS_LODSW, */
     translate_loop,      //X86_INS_LOOP,
     translate_loopz,     //X86_INS_LOOPE,
@@ -973,7 +973,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_monitor,   //X86_INS_MONITOR,
     NULL,                //X86_INS_MONTMUL,
     translate_mov,       //X86_INS_MOV,
-    NULL,                //X86_INS_MOVABS,
+    translate_mov,       /* X86_INS_MOVABS, */
     translate_movbe,     //X86_INS_MOVBE,
     translate_movddup,   //X86_INS_MOVDDUP,
     translate_movdqa,    //X86_INS_MOVDQA,
@@ -997,7 +997,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_movs,      /* X86_INS_MOVSD, */
     translate_movshdup,  //X86_INS_MOVSHDUP,
     translate_movsldup,  //X86_INS_MOVSLDUP,
-    NULL,                //X86_INS_MOVSQ,
+    translate_movs,                /* X86_INS_MOVSQ, */
     translate_movss,     //X86_INS_MOVSS,
     translate_movs,      /* X86_INS_MOVSW, */
     translate_movsx,     //X86_INS_MOVSX,
@@ -1095,7 +1095,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_popcnt,    //X86_INS_POPCNT,
     translate_popf,      //X86_INS_POPF,
     translate_popf,                //X86_INS_POPFD,
-    NULL,                //X86_INS_POPFQ,
+    translate_popf,                /* X86_INS_POPFQ, */
     translate_prefetch,  //X86_INS_PREFETCH,
     translate_prefetchnta,//X86_INS_PREFETCHNTA,
     translate_prefetcht0,//X86_INS_PREFETCHT0,
@@ -1116,7 +1116,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_pusha,     //X86_INS_PUSHAL,
     translate_pushf,     //X86_INS_PUSHF,
     translate_pushf,                //X86_INS_PUSHFD,
-    NULL,                //X86_INS_PUSHFQ,
+    translate_pushf,                /* X86_INS_PUSHFQ, */
     translate_rcl,       //X86_INS_RCL,
     translate_rcpps,     //X86_INS_RCPPS,
     translate_rcpss,     //X86_INS_RCPSS,
@@ -2022,8 +2022,8 @@ static bool (*translate_functions[])(IR1_INST *) = {
     NULL,                //X86_INS_VCMPGT_OQPD,
     NULL,                //X86_INS_VCMPTRUE_USPD,
     translate_ud0,       /* X86_INS_UD0, */
-    translate_endbr32,   //X86_INS_ENDBR32,
-    NULL,                //X86_INS_ENDBR64,
+    translate_endbr32,   /* X86_INS_ENDBR32, */
+    translate_endbr64,   /* X86_INS_ENDBR64 */
     NULL,                //X86_INS_ENDING, // mark the end of the list of insn
 };
 

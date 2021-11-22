@@ -224,6 +224,9 @@ int ir1_opnd_is_seg(IR1_OPND *opnd);
 int ir1_opnd_is_mmx(IR1_OPND *opnd);
 int ir1_opnd_is_xmm(IR1_OPND *opnd);
 int ir1_opnd_is_ymm(IR1_OPND *opnd);
+#ifdef TARGET_X86_64
+int ir1_opnd_is_pc_relative(IR1_OPND *opnd);
+#endif
 int ir1_opnd_has_base(IR1_OPND *opnd);
 int ir1_opnd_has_index(IR1_OPND *opnd);
 int ir1_opnd_has_seg(IR1_OPND *opnd);
@@ -330,6 +333,7 @@ int latxs_ir1_opnd_get_dr_num(IR1_OPND *opnd);
 
 int latxs_ir1_has_prefix_lock(IR1_INST *ir1);
 int latxs_ir1_has_prefix_opsize(IR1_INST *ir1);
+int latxs_ir1_has_prefix_addrsize(IR1_INST *ir1);
 int latxs_ir1_has_prefix_rep(IR1_INST *ir1);
 int latxs_ir1_has_prefix_repe(IR1_INST *ir1);
 int latxs_ir1_has_prefix_repne(IR1_INST *ir1);

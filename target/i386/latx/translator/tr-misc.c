@@ -8,6 +8,7 @@
 #include "translate.h"
 
 bool translate_endbr32(IR1_INST *pir1) { return true; }
+bool translate_endbr64(IR1_INST *pir1) { return true; }
 
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }

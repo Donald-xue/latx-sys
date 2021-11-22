@@ -20,6 +20,8 @@ void latxs_sys_eflags_register_ir1(void)
     latxs_register_ir1(X86_INS_PUSHFD);
     latxs_register_ir1(X86_INS_POPF);
     latxs_register_ir1(X86_INS_POPFD);
+    latxs_register_ir1(X86_INS_PUSHFQ);
+    latxs_register_ir1(X86_INS_POPFQ);
 
     latxs_register_ir1(X86_INS_CLTS);
 
@@ -202,7 +204,15 @@ bool latxs_translate_popf(IR1_INST *pir1)
     CHECK_EXCP_POPF(pir1);
 
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (td->sys.code64) {
+        lsassert(data_size == 16 || data_size == 64);
+    } else {
+        lsassert(data_size == 16 || data_size == 32);
+    }
+#else
     lsassert(data_size == 16 || data_size == 32);
+#endif
 
     /*
      * popf
@@ -270,6 +280,12 @@ bool latxs_translate_popf(IR1_INST *pir1)
 
     /* 3. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D,
+                &esp_opnd, &esp_opnd, (data_size >> 3));
+    }
+#endif
     if (lsenv->tr_data->sys.ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_W,
                 &esp_opnd, &esp_opnd, (data_size >> 3));
@@ -293,7 +309,15 @@ bool latxs_translate_pushf(IR1_INST *pir1)
     CHECK_EXCP_PUSHF(pir1);
 
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (td->sys.code64) {
+        lsassert(data_size == 16 || data_size == 64);
+    } else {
+        lsassert(data_size == 16 || data_size == 32);
+    }
+#else
     lsassert(data_size == 16 || data_size == 32);
+#endif
 
     /*
      * pushf
@@ -359,6 +383,12 @@ bool latxs_translate_pushf(IR1_INST *pir1)
 
     /* 3. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D,
+                &esp_opnd, &esp_opnd, 0 - (data_size >> 3));
+    }
+#endif
     if (lsenv->tr_data->sys.ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_W,
                 &esp_opnd, &esp_opnd, 0 - (data_size >> 3));

@@ -20,22 +20,27 @@ void latxs_sys_string_register_ir1(void)
     latxs_register_ir1(X86_INS_MOVSB);
     latxs_register_ir1(X86_INS_MOVSD);
     latxs_register_ir1(X86_INS_MOVSW);
+    latxs_register_ir1(X86_INS_MOVSQ);
 
     latxs_register_ir1(X86_INS_SCASB);
     latxs_register_ir1(X86_INS_SCASD);
     latxs_register_ir1(X86_INS_SCASW);
+    latxs_register_ir1(X86_INS_SCASQ);
 
     latxs_register_ir1(X86_INS_CMPSB);
     latxs_register_ir1(X86_INS_CMPSD);
     latxs_register_ir1(X86_INS_CMPSW);
+    latxs_register_ir1(X86_INS_CMPSQ);
 
     latxs_register_ir1(X86_INS_LODSB);
     latxs_register_ir1(X86_INS_LODSD);
     latxs_register_ir1(X86_INS_LODSW);
+    latxs_register_ir1(X86_INS_LODSQ);
 
     latxs_register_ir1(X86_INS_STOSB);
     latxs_register_ir1(X86_INS_STOSD);
     latxs_register_ir1(X86_INS_STOSW);
+    latxs_register_ir1(X86_INS_STOSQ);
 }
 
 static void latxs_load_string_step_to_ir2(IR2_OPND *setp,
@@ -64,6 +69,11 @@ static void latxs_load_string_step_to_ir2(IR2_OPND *setp,
     case 32:
         bits = 7;
         break;
+#ifdef TARGET_X86_64
+    case 64:
+        bits = 6;
+        break;
+#endif
     default:
         lsassert(0);
         break;
@@ -87,6 +97,13 @@ static void latxs_tr_gen_string_loop_start(IR1_INST *pir1,
     if (latxs_ir1_has_prefix_rep(pir1) || latxs_ir1_has_prefix_repne(pir1)) {
         IR2_OPND ecx_opnd = latxs_ra_alloc_gpr(ecx_index);
         int addr_size = latxs_ir1_addr_size(pir1);
+#ifdef TARGET_X86_64
+        if (addr_size == 8) {
+            /* RCX */
+            latxs_append_ir2_opnd3(LISA_BEQ,
+                    &ecx_opnd, &latxs_zero_ir2_opnd, &label_exit);
+        } else
+#endif
         if (addr_size == 4) {
             /* ECX */
             latxs_append_ir2_opnd3(LISA_BEQ,
@@ -125,6 +142,17 @@ static void latxs_tr_gen_string_loop_end(IR1_INST *pir1,
         if (latxs_ir1_has_prefix_rep(pir1)) {
             IR2_OPND ecx_opnd = latxs_ra_alloc_gpr(ecx_index);
             int addr_size = latxs_ir1_addr_size(pir1);
+#ifdef TARGET_X86_64
+            if (addr_size == 8) {
+                /* RCX */
+                latxs_append_ir2_opnd2i(LISA_ADDI_D, &ecx_opnd, &ecx_opnd, -1);
+                latxs_append_ir2_opnd3(LISA_BNE,
+                        &ecx_opnd, &latxs_zero_ir2_opnd, &label_loop);
+                if (option_by_hand) {
+                    latxs_ir2_opnd_set_emb(&ecx_opnd, EXMode_N, 64);
+                }
+            } else
+#endif
             if (addr_size == 4) {
                 /* ECX */
                 latxs_append_ir2_opnd2i(LISA_ADDI_W, &ecx_opnd, &ecx_opnd, -1);
@@ -425,6 +453,15 @@ bool latxs_translate_movs(IR1_INST *pir1)
     latxs_store_ir2_to_ir1_mem(&src_value, opnd0, addr_size);
 
     /* 3. adjust (E)SI and (E)DI */
+#ifdef TARGET_X86_64
+    if (addr_size == 8) {
+        /* RSI and RDI */
+        IR2_OPND esi = latxs_ra_alloc_gpr(esi_index);
+        IR2_OPND edi = latxs_ra_alloc_gpr(edi_index);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &esi, &esi, &setp);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &edi, &edi, &setp);
+    } else
+#endif
     if (addr_size == 4) {
         /* ESI and EDI */
         IR2_OPND esi = latxs_ra_alloc_gpr(esi_index);
@@ -486,6 +523,13 @@ bool latxs_translate_scas(IR1_INST *pir1)
             opnd1, EXMode_S, addr_size);
 
     /* 2.2 adjust EDI */
+#ifdef TARGET_X86_64
+    if (addr_size == 8) {
+        /* RDI */
+        IR2_OPND edi = latxs_ra_alloc_gpr(edi_index);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &edi, &edi, &setp);
+    } else
+#endif
     if (addr_size == 4) {
         /* EDI */
         IR2_OPND edi = latxs_ra_alloc_gpr(edi_index);
@@ -547,6 +591,15 @@ bool latxs_translate_cmps(IR1_INST *pir1)
     latxs_load_ir1_mem_to_ir2(&_edi_, opnd1, EXMode_S, addr_size);
 
     /* 2.2 adjust ESI and EDI */
+#ifdef TARGET_X86_64
+    if (addr_size == 8) {
+        /* RSI and RDI */
+        IR2_OPND esi = latxs_ra_alloc_gpr(esi_index);
+        IR2_OPND edi = latxs_ra_alloc_gpr(edi_index);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &esi, &esi, &setp);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &edi, &edi, &setp);
+    } else
+#endif
     if (addr_size == 4) {
         /* ESI and EDI */
         IR2_OPND esi = latxs_ra_alloc_gpr(esi_index);
@@ -620,6 +673,13 @@ bool latxs_translate_lods(IR1_INST *pir1)
     latxs_load_ir1_mem_to_ir2(&_esi_, opnd1, em, addr_size);
 
     /* 3 adjust (E)SI */
+#ifdef TARGET_X86_64
+    if (addr_size == 8) {
+        /* RSI*/
+        IR2_OPND esi = latxs_ra_alloc_gpr(esi_index);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &esi, &esi, &step);
+    } else
+#endif
     if (addr_size == 4) {
         /* ESI */
         IR2_OPND esi = latxs_ra_alloc_gpr(esi_index);
@@ -673,6 +733,13 @@ bool latxs_translate_stos(IR1_INST *pir1)
     latxs_store_ir2_to_ir1_mem(&eax_value_opnd, opnd0, addr_size);
 
     /* 3. adjust (E)DI */
+#ifdef TARGET_X86_64
+    if (addr_size == 8) {
+        /* RDI*/
+        IR2_OPND edi = latxs_ra_alloc_gpr(edi_index);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &edi, &edi, &step);
+    } else
+#endif
     if (addr_size == 4) {
         /* EDI */
         IR2_OPND edi = latxs_ra_alloc_gpr(edi_index);

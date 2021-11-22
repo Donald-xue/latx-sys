@@ -678,9 +678,10 @@ longx ir1_opnd_simm(IR1_OPND *opnd)
             return (longx)((int16_t)(opnd->imm));
         case 32:
             return (longx)((int32_t)(opnd->imm));
-        /* case 64:
-         *     lsassert(0);
-         */
+#ifdef TARGET_X86_64
+        case 64:
+            return (longx)((int64_t)(opnd->imm));
+#endif
         default:
             lsassert(0);
         }
@@ -960,6 +961,23 @@ int ir1_opnd_is_ymm(IR1_OPND *opnd)
         return 0;
     }
 }
+
+#ifdef TARGET_X86_64
+int ir1_opnd_is_pc_relative(IR1_OPND *opnd)
+{
+    /* x86_64 : RIP/EIP relative addressing */
+    x86_reg base = ir1_opnd_base_reg(opnd);
+    if (base == X86_REG_RIP) {
+        return 1;
+    } else if (base == X86_REG_EIP) {
+        /* legal but strange */
+        lsassert(0);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+#endif
 
 int ir1_opnd_has_base(IR1_OPND *opnd)
 {
@@ -1862,6 +1880,10 @@ int latxs_ir1_has_prefix_lock(IR1_INST *ir1)
 int latxs_ir1_has_prefix_opsize(IR1_INST *ir1)
 {
     return ir1->info->detail->x86.prefix[2] == X86_PREFIX_OPSIZE;
+}
+int latxs_ir1_has_prefix_addrsize(IR1_INST *ir1)
+{
+    return ir1->info->detail->x86.prefix[3] == X86_PREFIX_ADDRSIZE;
 }
 int latxs_ir1_has_prefix_rep(IR1_INST *ir1)
 {

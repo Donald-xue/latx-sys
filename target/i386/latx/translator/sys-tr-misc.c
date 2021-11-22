@@ -81,12 +81,18 @@ void latxs_sys_misc_register_ir1(void)
 
     latxs_register_ir1(X86_INS_UD2);
     latxs_register_ir1(X86_INS_ENDBR32);
+    latxs_register_ir1(X86_INS_ENDBR64);
 }
 
 int latxs_get_sys_stack_addr_size(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
-
+#ifdef TARGET_X86_64
+    /* in 64-bit mode, the size of the stack pointer is always 64 bits. */
+    if (td->sys.code64) {
+        return 8;
+    }
+#endif
     if (td->sys.ss32) {
         return 4;
     } else {
@@ -349,7 +355,15 @@ bool latxs_translate_call(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int data_size = latxs_ir1_data_size(pir1);
     int opnd_size = ir1_opnd_size(opnd0);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(opnd_size == 64);
+    } else {
+        lsassert(opnd_size == 16 || opnd_size == 32);
+    }
+#else
     lsassert(opnd_size == 16 || opnd_size == 32);
+#endif
     lsassert(data_size == opnd_size);
     (void)data_size; /* to avoid compile warning */
 
@@ -949,7 +963,15 @@ bool latxs_translate_pop(IR1_INST *pir1)
     int esp_inc   = data_size >> 3;
 
     int opnd_size = ir1_opnd_size(opnd0);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(opnd_size == 16 || opnd_size == 64);
+    } else {
+        lsassert(opnd_size == 16 || opnd_size == 32);
+    }
+#else
     lsassert(opnd_size == 16 || opnd_size == 32);
+#endif
     if (!ir1_opnd_is_seg(opnd0)) {
         lsassert(data_size == opnd_size);
     }
@@ -990,6 +1012,12 @@ bool latxs_translate_pop(IR1_INST *pir1)
     /* 2. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
     if (is_gpr_esp) {
+#ifdef TARGET_X86_64
+        if (lsenv->tr_data->sys.code64) {
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd, esp_inc);
+            return true;
+        }
+#endif
         if (ss32) {
             latxs_append_ir2_opnd2i(LISA_ADDI_W,
                     &esp_opnd, &esp_opnd, esp_inc);
@@ -1020,6 +1048,12 @@ bool latxs_translate_pop(IR1_INST *pir1)
      * This executing order is the same as that in TCG.
      */
     if (!is_gpr_esp) {
+#ifdef TARGET_X86_64
+        if (lsenv->tr_data->sys.code64) {
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd, esp_inc);
+            return true;
+        }
+#endif
         if (ss32) {
             latxs_append_ir2_opnd2i(LISA_ADDI_D,
                     &esp_opnd, &esp_opnd, esp_inc);
@@ -1054,7 +1088,15 @@ bool latxs_translate_push(IR1_INST *pir1)
     int esp_dec   = 0 - (data_size >> 3);
 
     int opnd_size = ir1_opnd_size(opnd0);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(opnd_size == 16 || opnd_size == 64);
+    } else {
+        lsassert(opnd_size == 16 || opnd_size == 32);
+    }
+#else
     lsassert(opnd_size == 16 || opnd_size == 32);
+#endif
     if (!ir1_opnd_is_seg(opnd0)) {
         lsassert(data_size == opnd_size);
     }
@@ -1093,6 +1135,12 @@ bool latxs_translate_push(IR1_INST *pir1)
 
     /* 3. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd, esp_dec);
+        return true;
+    }
+#endif
     if (ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd, &esp_opnd, esp_dec);
         if (option_by_hand) {

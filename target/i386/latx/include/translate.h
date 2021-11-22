@@ -118,6 +118,7 @@ bool translate_ud2(IR1_INST *pir1);
 bool translate_femms(IR1_INST *pir1);
 bool translate_nop(IR1_INST *pir1);
 bool translate_endbr32(IR1_INST *pir1);
+bool translate_endbr64(IR1_INST *pir1);
 bool translate_wrmsr(IR1_INST *pir1);
 bool translate_rdtsc(IR1_INST *pir1);
 bool translate_rdmsr(IR1_INST *pir1);
