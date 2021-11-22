@@ -325,34 +325,104 @@ int ir1_opnd_index_reg_num(IR1_OPND *opnd)
     case X86_REG_AH:
     case X86_REG_AX:
     case X86_REG_EAX:
+#ifdef TARGET_X86_64
+    case X86_REG_RAX:
+#endif
         return eax_index;
     case X86_REG_BL:
     case X86_REG_BH:
     case X86_REG_BX:
     case X86_REG_EBX:
+#ifdef TARGET_X86_64
+    case X86_REG_RBX:
+#endif
         return ebx_index;
     case X86_REG_CL:
     case X86_REG_CH:
     case X86_REG_CX:
     case X86_REG_ECX:
+#ifdef TARGET_X86_64
+    case X86_REG_RCX:
+#endif
         return ecx_index;
     case X86_REG_DL:
     case X86_REG_DH:
     case X86_REG_DX:
     case X86_REG_EDX:
+#ifdef TARGET_X86_64
+    case X86_REG_RDX:
+#endif
         return edx_index;
     case X86_REG_BP:
     case X86_REG_EBP:
+#ifdef TARGET_X86_64
+    case X86_REG_RBP:
+    case X86_REG_BPL:
+#endif
         return ebp_index;
     case X86_REG_SI:
     case X86_REG_ESI:
+#ifdef TARGET_X86_64
+    case X86_REG_RSI:
+    case X86_REG_SIL:
+#endif
         return esi_index;
     case X86_REG_DI:
     case X86_REG_EDI:
+#ifdef TARGET_X86_64
+    case X86_REG_RDI:
+    case X86_REG_DIL:
+#endif
         return edi_index;
     case X86_REG_SP:
     case X86_REG_ESP:
+#ifdef TARGET_X86_64
+    case X86_REG_RSP:
+    case X86_REG_SPL:
+#endif
         return esp_index;
+#ifdef TARGET_X86_64
+    case X86_REG_R8B:
+    case X86_REG_R8W:
+    case X86_REG_R8D:
+    case X86_REG_R8:
+        return r8_index;
+    case X86_REG_R9B:
+    case X86_REG_R9W:
+    case X86_REG_R9D:
+    case X86_REG_R9:
+        return r9_index;
+    case X86_REG_R10B:
+    case X86_REG_R10W:
+    case X86_REG_R10D:
+    case X86_REG_R10:
+        return r10_index;
+    case X86_REG_R11B:
+    case X86_REG_R11W:
+    case X86_REG_R11D:
+    case X86_REG_R11:
+        return r11_index;
+    case X86_REG_R12B:
+    case X86_REG_R12W:
+    case X86_REG_R12D:
+    case X86_REG_R12:
+        return r12_index;
+    case X86_REG_R13B:
+    case X86_REG_R13W:
+    case X86_REG_R13D:
+    case X86_REG_R13:
+        return r13_index;
+    case X86_REG_R14B:
+    case X86_REG_R14W:
+    case X86_REG_R14D:
+    case X86_REG_R14:
+        return r14_index;
+    case X86_REG_R15B:
+    case X86_REG_R15W:
+    case X86_REG_R15D:
+    case X86_REG_R15:
+        return r15_index;
+#endif
     case X86_REG_CS:
         return cs_index;
     case X86_REG_DS:
@@ -384,34 +454,104 @@ int ir1_opnd_base_reg_num(IR1_OPND *opnd)
     case X86_REG_AH:
     case X86_REG_AX:
     case X86_REG_EAX:
+#ifdef TARGET_X86_64
+    case X86_REG_RAX:
+#endif
         return eax_index;
     case X86_REG_BL:
     case X86_REG_BH:
     case X86_REG_BX:
     case X86_REG_EBX:
+#ifdef TARGET_X86_64
+    case X86_REG_RBX:
+#endif
         return ebx_index;
     case X86_REG_CL:
     case X86_REG_CH:
     case X86_REG_CX:
     case X86_REG_ECX:
+#ifdef TARGET_X86_64
+    case X86_REG_RCX:
+#endif
         return ecx_index;
     case X86_REG_DL:
     case X86_REG_DH:
     case X86_REG_DX:
     case X86_REG_EDX:
+#ifdef TARGET_X86_64
+    case X86_REG_RDX:
+#endif
         return edx_index;
     case X86_REG_BP:
     case X86_REG_EBP:
+#ifdef TARGET_X86_64
+    case X86_REG_RBP:
+    case X86_REG_BPL:
+#endif
         return ebp_index;
     case X86_REG_SI:
     case X86_REG_ESI:
+#ifdef TARGET_X86_64
+    case X86_REG_RSI:
+    case X86_REG_SIL:
+#endif
         return esi_index;
     case X86_REG_DI:
     case X86_REG_EDI:
+#ifdef TARGET_X86_64
+    case X86_REG_RDI:
+    case X86_REG_DIL:
+#endif
         return edi_index;
     case X86_REG_SP:
     case X86_REG_ESP:
+#ifdef TARGET_X86_64
+    case X86_REG_RSP:
+    case X86_REG_SPL:
+#endif
         return esp_index;
+#ifdef TARGET_X86_64
+    case X86_REG_R8B:
+    case X86_REG_R8W:
+    case X86_REG_R8D:
+    case X86_REG_R8:
+        return r8_index;
+    case X86_REG_R9B:
+    case X86_REG_R9W:
+    case X86_REG_R9D:
+    case X86_REG_R9:
+        return r9_index;
+    case X86_REG_R10B:
+    case X86_REG_R10W:
+    case X86_REG_R10D:
+    case X86_REG_R10:
+        return r10_index;
+    case X86_REG_R11B:
+    case X86_REG_R11W:
+    case X86_REG_R11D:
+    case X86_REG_R11:
+        return r11_index;
+    case X86_REG_R12B:
+    case X86_REG_R12W:
+    case X86_REG_R12D:
+    case X86_REG_R12:
+        return r12_index;
+    case X86_REG_R13B:
+    case X86_REG_R13W:
+    case X86_REG_R13D:
+    case X86_REG_R13:
+        return r13_index;
+    case X86_REG_R14B:
+    case X86_REG_R14W:
+    case X86_REG_R14D:
+    case X86_REG_R14:
+        return r14_index;
+    case X86_REG_R15B:
+    case X86_REG_R15W:
+    case X86_REG_R15D:
+    case X86_REG_R15:
+        return r15_index;
+#endif
     case X86_REG_CS:
         return cs_index;
     case X86_REG_DS:
@@ -472,6 +612,40 @@ int ir1_opnd_base_reg_num(IR1_OPND *opnd)
         return 6;
     case X86_REG_YMM7:
         return 7;
+#ifdef TARGET_X86_64
+    case X86_REG_XMM8:
+        return 8;
+    case X86_REG_XMM9:
+        return 9;
+    case X86_REG_XMM10:
+        return 10;
+    case X86_REG_XMM11:
+        return 11;
+    case X86_REG_XMM12:
+        return 12;
+    case X86_REG_XMM13:
+        return 13;
+    case X86_REG_XMM14:
+        return 14;
+    case X86_REG_XMM15:
+        return 15;
+    case X86_REG_YMM8:
+        return 8;
+    case X86_REG_YMM9:
+        return 9;
+    case X86_REG_YMM10:
+        return 10;
+    case X86_REG_YMM11:
+        return 11;
+    case X86_REG_YMM12:
+        return 12;
+    case X86_REG_YMM13:
+        return 13;
+    case X86_REG_YMM14:
+        return 14;
+    case X86_REG_YMM15:
+        return 15;
+#endif
     case X86_REG_ST0:
         return 0;
     case X86_REG_ST1:
@@ -543,16 +717,40 @@ int ir1_opnd_is_8h(IR1_OPND *opnd)
 
 int ir1_opnd_is_8l(IR1_OPND *opnd)
 {
+#ifndef TARGET_X86_64
     return opnd->type == X86_OP_REG && opnd->size == 1 &&
            (opnd->reg == X86_REG_AL || opnd->reg == X86_REG_BL ||
             opnd->reg == X86_REG_CL || opnd->reg == X86_REG_DL);
+#else
+    return opnd->type == X86_OP_REG && opnd->size == 1 &&
+           (opnd->reg == X86_REG_AL   || opnd->reg == X86_REG_BL   ||
+            opnd->reg == X86_REG_CL   || opnd->reg == X86_REG_DL   ||
+            opnd->reg == X86_REG_R8B  || opnd->reg == X86_REG_R9B  ||
+            opnd->reg == X86_REG_R10B || opnd->reg == X86_REG_R11B ||
+            opnd->reg == X86_REG_R12B || opnd->reg == X86_REG_R13B ||
+            opnd->reg == X86_REG_R14B || opnd->reg == X86_REG_R15B ||
+            opnd->reg == X86_REG_SPL  || opnd->reg == X86_REG_BPL  ||
+            opnd->reg == X86_REG_SIL  || opnd->reg == X86_REG_DIL);
+#endif
 }
 
 int ir1_opnd_is_16l(IR1_OPND *opnd)
 {
+#ifndef TARGET_X86_64
     return opnd->type == X86_OP_REG && opnd->size == 2 &&
            (opnd->reg == X86_REG_AX || opnd->reg == X86_REG_BX ||
             opnd->reg == X86_REG_CX || opnd->reg == X86_REG_DX);
+#else
+    return opnd->type == X86_OP_REG && opnd->size == 2 &&
+           (opnd->reg == X86_REG_AX   || opnd->reg == X86_REG_BX   ||
+            opnd->reg == X86_REG_CX   || opnd->reg == X86_REG_DX   ||
+            opnd->reg == X86_REG_R8W  || opnd->reg == X86_REG_R9W  ||
+            opnd->reg == X86_REG_R10W || opnd->reg == X86_REG_R11W ||
+            opnd->reg == X86_REG_R12W || opnd->reg == X86_REG_R13W ||
+            opnd->reg == X86_REG_R14W || opnd->reg == X86_REG_R15W ||
+            opnd->reg == X86_REG_SP   || opnd->reg == X86_REG_BP   ||
+            opnd->reg == X86_REG_SI   || opnd->reg == X86_REG_DI);
+#endif
 }
 
 int ir1_opnd_is_gpr(IR1_OPND *opnd)
@@ -586,6 +784,26 @@ int ir1_opnd_is_gpr(IR1_OPND *opnd)
     case X86_REG_EDI:
     case X86_REG_SP:
     case X86_REG_ESP:
+#ifdef TARGET_X86_64
+    case X86_REG_RAX:
+    case X86_REG_RBX:
+    case X86_REG_RCX:
+    case X86_REG_RDX:
+
+    case X86_REG_R8 ... X86_REG_R15:
+    case X86_REG_R8D ... X86_REG_R15D:
+    case X86_REG_R8W ... X86_REG_R15W:
+    case X86_REG_R8B ... X86_REG_R15B:
+
+    case X86_REG_RBP:
+    case X86_REG_RSI:
+    case X86_REG_RDI:
+    case X86_REG_RSP:
+    case X86_REG_BPL:
+    case X86_REG_SIL:
+    case X86_REG_DIL:
+    case X86_REG_SPL:
+#endif
         return 1;
     default:
         return 0;
@@ -609,6 +827,11 @@ int ir1_opnd_is_gpr_used(IR1_OPND *opnd, uint8_t gpr_index)
         return ir1_opnd_base_reg_num(opnd) == gpr_index;
     } else if (ir1_opnd_is_mem(opnd)) {
         if (ir1_opnd_has_base(opnd)) {
+#ifdef TARGET_X86_64
+            if (ir1_opnd_base_reg(opnd) == X86_REG_RIP) {
+                lsassert(0);
+            }
+#endif
             return ir1_opnd_base_reg_num(opnd) == gpr_index;
         }
         if (ir1_opnd_has_index(opnd)) {
@@ -692,6 +915,16 @@ int ir1_opnd_is_xmm(IR1_OPND *opnd)
     case X86_REG_XMM5:
     case X86_REG_XMM6:
     case X86_REG_XMM7:
+#ifdef TARGET_X86_64
+    case X86_REG_XMM8:
+    case X86_REG_XMM9:
+    case X86_REG_XMM10:
+    case X86_REG_XMM11:
+    case X86_REG_XMM12:
+    case X86_REG_XMM13:
+    case X86_REG_XMM14:
+    case X86_REG_XMM15:
+#endif
         return 1;
     default:
         return 0;
@@ -712,6 +945,16 @@ int ir1_opnd_is_ymm(IR1_OPND *opnd)
     case X86_REG_YMM5:
     case X86_REG_YMM6:
     case X86_REG_YMM7:
+#ifdef TARGET_X86_64
+    case X86_REG_YMM8:
+    case X86_REG_YMM9:
+    case X86_REG_YMM10:
+    case X86_REG_YMM11:
+    case X86_REG_YMM12:
+    case X86_REG_YMM13:
+    case X86_REG_YMM14:
+    case X86_REG_YMM15:
+#endif
         return 1;
     default:
         return 0;
@@ -1392,6 +1635,10 @@ void ir1_make_ins_JMP(IR1_INST *ir1, ADDRX addr, int32 off)
     info->detail->x86.operands[0].imm = (int64_t)off + (int64_t)addr;
     info->detail->x86.operands[0].size = 4;
     info->id = X86_INS_JMP;
+#ifdef TARGET_X86_64
+    /* addr/operand size ? */
+    lsassert(0);
+#endif
     // TODO : other field in ir1 and detail->x86
     // another way : use capstone to disasm 0xe9 | off
     ir1->info = info;

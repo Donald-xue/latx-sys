@@ -20,6 +20,24 @@ extern csh handle64;
 #define ebp_index 5
 #define esi_index 6
 #define edi_index 7
+#ifdef TARGET_X86_64
+#define rax_index eax_index
+#define rcx_index ecx_index
+#define rdx_index edx_index
+#define rbx_index ebx_index
+#define rsp_index esp_index
+#define rbp_index ebp_index
+#define rsi_index esi_index
+#define rdi_index edi_index
+#define r8_index  8
+#define r9_index  9
+#define r10_index 10
+#define r11_index 11
+#define r12_index 12
+#define r13_index 13
+#define r14_index 14
+#define r15_index 15
+#endif
 
 #define es_index 0
 #define cs_index 1

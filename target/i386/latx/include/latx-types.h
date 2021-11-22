@@ -2,6 +2,7 @@
 #define _TYPES_H_
 
 #include <inttypes.h>
+#include "qemu/osdep.h"
 
 typedef char int8;
 typedef short int16;
@@ -35,24 +36,20 @@ typedef unsigned long ADDR;
 #error Must define N32, O32, or N64 in Makefile
 #endif
 
-#ifndef IA32
-#define IA32
-#endif
-
-#if defined IA32
-typedef int32 longx;
-typedef uint32 ulongx;
-typedef uint32 ADDRX;
-#define PRIADDRX PRIx32
-#define PRILONGX PRIx32
-#elif defined X64
+#if defined(TARGET_X86_64)
 typedef int64 longx;
 typedef uint64 ulongx;
 typedef uint64 ADDRX;
 #define PRIADDRX PRIx64
 #define PRILONGX PRIx64
+#elif defined(TARGET_I386) && !defined(TARGET_X86_64)
+typedef int32 longx;
+typedef uint32 ulongx;
+typedef uint32 ADDRX;
+#define PRIADDRX PRIx32
+#define PRILONGX PRIx32
 #else
-#error Must define IA32 or X64 in Makefile
+#error "TARGET_I386 or TARGET_X86_64"
 #endif
 
 #endif
