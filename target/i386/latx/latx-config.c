@@ -238,6 +238,14 @@ static void xtm_capstone_init(void)
         exit(-1);
     }
     cs_option(handle16, CS_OPT_DETAIL, CS_OPT_ON);
+#ifdef TARGET_X86_64
+    if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle64) != CS_ERR_OK) {
+        fprintf(stderr, "%s %s %d error : cs_open\n",
+                __FILE__, __func__, __LINE__);
+        exit(-1);
+    }
+    cs_option(handle64, CS_OPT_DETAIL, CS_OPT_ON);
+#endif
 #endif
 }
 

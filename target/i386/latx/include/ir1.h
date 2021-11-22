@@ -7,6 +7,9 @@
 extern csh handle;
 #ifdef CONFIG_SOFTMMU
 extern csh handle16;
+#ifdef TARGET_X86_64
+extern csh handle64;
+#endif
 #endif
 
 #define eax_index 0

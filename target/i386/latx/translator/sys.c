@@ -159,7 +159,13 @@ void latxs_ir1_make_ins_ILLEGAL(IR1_INST *ir1,
     TRANSLATION_DATA *td = lsenv->tr_data;
     if (td->sys.code32) {
         info = cs_malloc(handle);
-    } else {
+    }
+#ifdef TARGET_X86_64
+    else if (td->sys.code64) {
+        info = cs_malloc(handle64);
+    }
+#endif
+    else {
         info = cs_malloc(handle16);
     }
 
@@ -231,6 +237,10 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     td->sys.cpuid_ext3_features = env->features[FEAT_8000_0001_ECX];
     td->sys.cpuid_7_0_ebx_features = env->features[FEAT_7_0_EBX];
     td->sys.cpuid_xsave_features = env->features[FEAT_XSAVE];
+#ifdef TARGET_X86_64
+    td->sys.lma = (flags >> HF_LMA_SHIFT) & 1;
+    td->sys.code64 = (flags >> HF_CS64_SHIFT) & 1;
+#endif
 
     td->sys.flags = flags;
     td->sys.cflags = cflags;
@@ -241,6 +251,10 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     if (option_dump) {
         fprintf(stderr, "SYS.PE     = %d\n", td->sys.pe);
         fprintf(stderr, "SYS.code32 = %d\n", td->sys.code32);
+#ifdef TARGET_X86_64
+        fprintf(stderr, "SYS.lma    = %d\n", td->sys.lma);
+        fprintf(stderr, "SYS.code64 = %d\n", td->sys.code64);
+#endif
         fprintf(stderr, "SYS.ss32   = %d\n", td->sys.ss32);
         fprintf(stderr, "SYS.addseg = %d\n", td->sys.addseg);
         fprintf(stderr, "SYS.vm86   = %d\n", td->sys.vm86);

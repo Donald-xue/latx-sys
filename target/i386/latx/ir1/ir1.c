@@ -74,6 +74,9 @@ IR1_OPND edi_mem32_ir1_opnd;
 csh handle;
 #ifdef CONFIG_SOFTMMU
 csh handle16;
+#ifdef TARGET_X86_64
+csh handle64;
+#endif
 #endif
 
 static IR1_OPND ir1_opnd_new_static_reg(IR1_OPND_TYPE opnd_type, int size,

@@ -19,11 +19,16 @@ ADDRX latxs_ir1_disasm(IR1_INST *ir1,
     cs_insn *info;
 
     void *pir1_base = latxs_insn_info;
-
+#ifdef TARGET_X86_64
+    if (td->sys.code64) {
+        count = cs_disasm(handle64, addr, 15, (uint64_t)t_eip, 1,
+                          &info, ir1_num, pir1_base);
+    } else
+#endif
     if (td->sys.code32) {
         count = cs_disasm(handle, addr, 15, (uint64_t)t_eip, 1,
                           &info, ir1_num, pir1_base);
-    } else{
+    } else {
         count = cs_disasm(handle16, addr, 15, (uint64_t)t_eip, 1,
                           &info, ir1_num, pir1_base);
     }

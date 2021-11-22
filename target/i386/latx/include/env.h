@@ -140,6 +140,10 @@ typedef struct TRANSLATION_DATA {
         ADDRX cs_base;
         int pe;     /* protected mode */
         int code32; /* 32 bit code segment */
+#ifdef TARGET_X86_64
+        int lma;    /* long mode active */
+        int code64; /* 64 bit code segment */
+#endif
         int ss32;   /* 32 bit stack segment */
         int addseg; /* non zero if either DS/ES/SS have a non zero base */
         int f_st;   /* currently unused */
