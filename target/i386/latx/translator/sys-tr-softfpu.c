@@ -1291,6 +1291,8 @@ bool latxs_translate_fcomi_softfpu(IR1_INST *pir1)
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
+
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &zero_ir2_opnd, 0x34);
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int reg_num = ir1_opnd_base_reg_num(opnd0);
     latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_fmov_FT0_STN, reg_num,
@@ -1304,6 +1306,7 @@ bool latxs_translate_fcomip_softfpu(IR1_INST *pir1)
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &zero_ir2_opnd, 0x34);
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int reg_num = ir1_opnd_base_reg_num(opnd0);
     latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_fmov_FT0_STN, reg_num,
@@ -1318,6 +1321,7 @@ bool latxs_translate_fucomi_softfpu(IR1_INST *pir1)
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &zero_ir2_opnd, 0x34);
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int reg_num = ir1_opnd_base_reg_num(opnd0);
     latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_fmov_FT0_STN, reg_num,
@@ -1331,6 +1335,7 @@ bool latxs_translate_fucomip_softfpu(IR1_INST *pir1)
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
         return true;
     }
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &zero_ir2_opnd, 0x34);
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int reg_num = ir1_opnd_base_reg_num(opnd0);
     latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_fmov_FT0_STN, reg_num,
