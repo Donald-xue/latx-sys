@@ -73,13 +73,13 @@ int gen_latxs_scs_prologue_cfg(
     /* FPU TOP will be stored outside */
     if ((cfg.sv_allgpr)) {
         latxs_tr_gen_static_save_registers_to_env(
-                0xff, 0xff, 0xff, 0xff, 0x2);
+                0xffffffff, 0xff, 0xffffffff, 0x2);
     } else {
+        lsassert(0);
         latxs_tr_gen_static_save_registers_to_env(
                 GPR_USEDEF_TO_SAVE,
                 FPR_USEDEF_TO_SAVE,
                 XMM_LO_USEDEF_TO_SAVE,
-                XMM_HI_USEDEF_TO_SAVE,
                 0x2);
     }
 
@@ -135,13 +135,13 @@ int gen_latxs_scs_epilogue_cfg(
     /* FPU TOP will be loaded outside */
     if (cfg.sv_allgpr) {
         latxs_tr_gen_static_load_registers_from_env(
-                0xff, 0xff, 0xff, 0xff, 0x2);
+                0xffffffff, 0xff, 0xffffffff, 0x2);
     } else {
+        lsassert(0);
         latxs_tr_gen_static_load_registers_from_env(
                 GPR_USEDEF_TO_SAVE,
                 FPR_USEDEF_TO_SAVE,
                 XMM_LO_USEDEF_TO_SAVE,
-                XMM_HI_USEDEF_TO_SAVE,
                 0x2);
     }
 
@@ -197,10 +197,9 @@ int gen_latxs_scs_epilogue_cfg(
 }
 
 void latxs_tr_gen_static_save_registers_to_env(
-        uint8_t gpr_to_save,
+        uint32_t gpr_to_save,
         uint8_t fpr_to_save,
-        uint8_t xmm_lo_to_save,
-        uint8_t xmm_hi_to_save,
+        uint32_t xmm_to_save,
         uint8_t vreg_to_save)
 {
     latxs_tr_save_gprs_to_env(gpr_to_save);
@@ -209,19 +208,18 @@ void latxs_tr_gen_static_save_registers_to_env(
         latxs_tr_fpu_disable_top_mode();
     }
     latxs_tr_save_fprs_to_env(fpr_to_save, 0);
-    latxs_tr_save_xmms_to_env(xmm_lo_to_save, xmm_hi_to_save);
+    latxs_tr_save_xmms_to_env(xmm_to_save);
     latxs_tr_save_vreg_to_env(vreg_to_save);
 }
 
 void latxs_tr_gen_static_load_registers_from_env(
-        uint8_t gpr_to_load,
+        uint32_t gpr_to_load,
         uint8_t fpr_to_load,
-        uint8_t xmm_lo_to_load,
-        uint8_t xmm_hi_to_load,
+        uint32_t xmm_to_load,
         uint8_t vreg_to_load)
 {
     latxs_tr_load_vreg_from_env(vreg_to_load);
-    latxs_tr_load_xmms_from_env(xmm_lo_to_load, xmm_hi_to_load);
+    latxs_tr_load_xmms_from_env(xmm_to_load);
     latxs_tr_load_fprs_from_env(fpr_to_load, 0);
     if (option_lsfpu && !option_soft_fpu) {
         latxs_tr_load_lstop_from_env(&latxs_stmp1_ir2_opnd);

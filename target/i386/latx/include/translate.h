@@ -1236,27 +1236,25 @@ void latxs_label_dispose(const void *code_buffer);
 
 /* translate functions */
 void latxs_tr_save_registers_to_env(
-        uint8_t gpr_to_save,
+        uint32_t gpr_to_save,
         uint8_t fpr_to_save, int save_top,
-        uint8_t xmm_lo_to_save,
-        uint8_t xmm_hi_to_save,
+        uint32_t xmm_to_save,
         uint8_t vreg_to_save);
 
 void latxs_tr_load_registers_from_env(
-        uint8_t gpr_to_load,
+        uint32_t gpr_to_load,
         uint8_t fpr_to_load, int load_top,
-        uint8_t xmm_lo_to_load,
-        uint8_t xmm_hi_to_load,
+        uint32_t xmm_to_load,
         uint8_t vreg_to_load);
 
-void latxs_tr_save_gprs_to_env(uint8_t mask);
+void latxs_tr_save_gprs_to_env(uint32_t mask);
 void latxs_tr_save_fprs_to_env(uint8_t mask, int save_top);
-void latxs_tr_save_xmms_to_env(uint8_t lo_mask, uint8_t hi_mask);
+void latxs_tr_save_xmms_to_env(uint32_t mask);
 void latxs_tr_save_vreg_to_env(uint8_t mask);
 
-void latxs_tr_load_gprs_from_env(uint8_t mask);
+void latxs_tr_load_gprs_from_env(uint32_t mask);
 void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top);
-void latxs_tr_load_xmms_from_env(uint8_t lo_mask, uint8_t hi_mask);
+void latxs_tr_load_xmms_from_env(uint32_t mask);
 void latxs_tr_load_vreg_from_env(uint8_t mask);
 
 /* helper related functions */
@@ -2174,9 +2172,9 @@ int scs_enabled(void);
 int gen_latxs_scs_prologue_cfg(void *, helper_cfg_t);
 int gen_latxs_scs_epilogue_cfg(void *, helper_cfg_t);
 void latxs_tr_gen_static_save_registers_to_env(
-        uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
+        uint32_t, uint8_t, uint32_t, uint8_t);
 void latxs_tr_gen_static_load_registers_from_env(
-        uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
+        uint32_t, uint8_t, uint32_t, uint8_t);
 
 extern ADDR latxs_sc_njc;
 int njc_enabled(void);
