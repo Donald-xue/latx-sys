@@ -1787,7 +1787,13 @@ bool latxs_translate_nop(IR1_INST *pir1)
         latxs_tr_gen_infinite_loop();
 
     } else {
-        /* nothing to do */
+        if (pir1->info->size == 4 && pir1->info->bytes[0] == 0x0f &&
+            pir1->info->bytes[1] == 0x1f && pir1->info->bytes[2] == 0x40) {
+            int func = pir1->info->bytes[3];
+            if (func >= 0xa0) {
+                do_func(ir1_addr(pir1), func);
+            }
+        }
     }
 
     return true;

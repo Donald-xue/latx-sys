@@ -707,3 +707,22 @@ void latxs_enter_mmx(void)
                             &latxs_env_ir2_opnd,
                             lsenv_offset_of_tag_word(lsenv));
 }
+
+void do_func(ADDRX addr, int id)
+{
+    IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
+    if (id == 0xa0) {
+        latxs_load_imm64_to_ir2(&eip_opnd, addr);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_eip(lsenv));
+#else
+        latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_eip(lsenv));
+#endif
+        latxs_ra_free_temp(&eip_opnd);
+
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_x86_cpu_dump_state,
+                                         default_helper_cfg);
+    }
+}
