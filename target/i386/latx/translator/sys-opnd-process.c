@@ -989,10 +989,14 @@ void latxs_store_ir2_to_ir1_gpr(IR2_OPND *opnd2, IR1_OPND *opnd1)
 
     /* 1. 32 bits gpr needs SHIFT operation to handle the extension mode */
     if (ir1_opnd_size(opnd1) == 32) {
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2_(lisa_mov32z, &gpr_opnd, opnd2);
+#else
         if (!latxs_ir2_opnd_cmp(opnd2, &gpr_opnd)) {
             latxs_append_ir2_opnd3(LISA_OR, &gpr_opnd,
                     opnd2, &latxs_zero_ir2_opnd);
         }
+#endif
     } else if (ir1_opnd_size(opnd1) == 64) {
         if (!latxs_ir2_opnd_cmp(opnd2, &gpr_opnd)) {
             latxs_append_ir2_opnd3(LISA_OR, &gpr_opnd,

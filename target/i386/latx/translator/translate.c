@@ -866,7 +866,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_loopz,     //X86_INS_LOOPE,
     translate_loopnz,    //X86_INS_LOOPNE,
     translate_retf,      //X86_INS_RETF,
-    NULL,                //X86_INS_RETFQ,
+    translate_retf,      /* X86_INS_RETFQ, */
     translate_lsl,       //X86_INS_LSL,
     translate_lss,       //X86_INS_LSS,
     translate_ltr,       //X86_INS_LTR,

@@ -1526,6 +1526,7 @@ bool latxs_translate_into(IR1_INST *pir1);
 bool latxs_translate_cwd(IR1_INST *pir1);
 bool latxs_translate_cdq(IR1_INST *pir1);
 bool latxs_translate_cwde(IR1_INST *pir1);
+bool latxs_translate_cdqe(IR1_INST *pir1);
 bool latxs_translate_cbw(IR1_INST *pir1);
 
 bool latxs_translate_lds(IR1_INST *pir1);
@@ -1667,6 +1668,7 @@ bool latxs_translate_bswap(IR1_INST *pir1);
 bool latxs_translate_mov(IR1_INST *pir1);
 bool latxs_translate_movzx(IR1_INST *pir1);
 bool latxs_translate_movsx(IR1_INST *pir1);
+bool latxs_translate_movsxd(IR1_INST *pir1);
 
 bool latxs_translate_mov_byhand(IR1_INST *pir1);
 bool latxs_translate_movzx_byhand(IR1_INST *pir1);

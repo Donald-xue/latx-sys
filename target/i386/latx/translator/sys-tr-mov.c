@@ -14,6 +14,7 @@ void latxs_sys_mov_register_ir1(void)
     latxs_register_ir1(X86_INS_MOVABS);
     latxs_register_ir1(X86_INS_MOVZX);
     latxs_register_ir1(X86_INS_MOVSX);
+    latxs_register_ir1(X86_INS_MOVSXD);
     latxs_register_ir1(X86_INS_LEA);
     latxs_register_ir1(X86_INS_MOVQ);
     latxs_register_ir1(X86_INS_MOVD);
@@ -74,6 +75,18 @@ bool latxs_translate_movsx(IR1_INST *pir1)
 {
     if (option_by_hand) {
         return latxs_translate_movsx_byhand(pir1);
+    }
+
+    IR2_OPND src = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&src, ir1_get_opnd(pir1, 1), EXMode_S);
+    latxs_store_ir2_to_ir1(&src, ir1_get_opnd(pir1, 0));
+    return true;
+}
+
+bool latxs_translate_movsxd(IR1_INST *pir1)
+{
+    if (option_by_hand) {
+        lsassert(0);
     }
 
     IR2_OPND src = latxs_ra_alloc_itemp();
@@ -268,7 +281,7 @@ bool latxs_translate_xlat(IR1_INST *pir1)
 #define CMOVCC_ASSERT(pir1, os0, os1) \
     do { \
         lsassertm_illop(ir1_addr(pir1), \
-            (os0 == 16 || os1 == 32) && os0 == os1, \
+            (os0 == 16 || os1 == 32 || os0 == 64) && os0 == os1, \
             "cmov opnd size0 %d size1 %d is unsupported.\n", \
             os0, os1); \
     } while (0)

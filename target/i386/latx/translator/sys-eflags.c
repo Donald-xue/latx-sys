@@ -284,7 +284,7 @@ bool latxs_translate_popf(IR1_INST *pir1)
     if (lsenv->tr_data->sys.code64) {
         latxs_append_ir2_opnd2i(LISA_ADDI_D,
                 &esp_opnd, &esp_opnd, (data_size >> 3));
-    }
+    } else
 #endif
     if (lsenv->tr_data->sys.ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_W,
@@ -387,7 +387,7 @@ bool latxs_translate_pushf(IR1_INST *pir1)
     if (lsenv->tr_data->sys.code64) {
         latxs_append_ir2_opnd2i(LISA_ADDI_D,
                 &esp_opnd, &esp_opnd, 0 - (data_size >> 3));
-    }
+    } else
 #endif
     if (lsenv->tr_data->sys.ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_W,

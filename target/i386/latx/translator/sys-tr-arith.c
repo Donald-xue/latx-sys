@@ -48,7 +48,12 @@ bool latxs_translate_add(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd3(LISA_ADD_D, &dest, &src0, &src1);
+#else
     latxs_append_ir2_opnd3(LISA_ADD_W, &dest, &src0, &src1);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -83,8 +88,14 @@ bool latxs_translate_adc(IR1_INST *pir1)
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_load_eflags_cf_to_ir2(&dest);
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd3(LISA_ADD_D, &dest, &dest, &src0);
+    latxs_append_ir2_opnd3(LISA_ADD_D, &dest, &dest, &src1);
+#else
     latxs_append_ir2_opnd3(LISA_ADD_W, &dest, &dest, &src0);
     latxs_append_ir2_opnd3(LISA_ADD_W, &dest, &dest, &src1);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -118,7 +129,12 @@ bool latxs_translate_sub(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd3(LISA_SUB_D, &dest, &src0, &src1);
+#else
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &src0, &src1);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -153,8 +169,14 @@ bool latxs_translate_sbb(IR1_INST *pir1)
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_load_eflags_cf_to_ir2(&dest);
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd3(LISA_SUB_D, &dest, &src0, &dest);
+    latxs_append_ir2_opnd3(LISA_SUB_D, &dest, &dest, &src1);
+#else
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &src0, &dest);
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &dest, &src1);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -184,7 +206,12 @@ bool latxs_translate_inc(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &dest, &src0, 1);
+#else
     latxs_append_ir2_opnd2i(LISA_ADDI_W, &dest, &src0, 1);
+#endif
 
     IR2_OPND imm1 = latxs_ir2_opnd_new(IR2_OPND_IMMH, 1);
 
@@ -215,7 +242,12 @@ bool latxs_translate_dec(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &dest, &src0, -1);
+#else
     latxs_append_ir2_opnd2i(LISA_ADDI_W, &dest, &src0, -1);
+#endif
 
     IR2_OPND imm1 = latxs_ir2_opnd_new(IR2_OPND_IMMH, 1);
 
@@ -248,7 +280,11 @@ bool latxs_translate_neg(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd3(LISA_SUB_D, &dest, zero, &src0);
+#else
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, zero, &src0);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -281,7 +317,12 @@ bool latxs_translate_cmp(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src1, opnd1, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd3(LISA_SUB_D, &dest, &src0, &src1);
+#else
     latxs_append_ir2_opnd3(LISA_SUB_W, &dest, &src0, &src1);
+#endif
 
     latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
 
@@ -305,6 +346,9 @@ bool latxs_translate_mul(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_Z);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+#ifdef TARGET_X86_64
+    IR2_OPND dest_hi = latxs_ra_alloc_itemp();
+#endif
 
     int opnd_size = ir1_opnd_size(opnd0);
     switch (opnd_size) {
@@ -327,14 +371,24 @@ bool latxs_translate_mul(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &dest, &dest, 32);
         latxs_store_ir2_to_ir1(&dest, &edx_ir1_opnd);
         break;
+#ifdef TARGET_X86_64
+    case 64:
+        latxs_load_ir1_gpr_to_ir2(&src1, &rax_ir1_opnd, EXMode_Z);
+        latxs_append_ir2_opnd3(LISA_MUL_D, &dest, &src1, &src0);
+        latxs_append_ir2_opnd3(LISA_MULH_DU, &dest_hi, &src1, &src0);
+        latxs_store_ir2_to_ir1(&dest, &rax_ir1_opnd);
+        latxs_store_ir2_to_ir1(&dest_hi, &rdx_ir1_opnd);
+        break;
+#endif
     default:
-        lsassertm_illop(ir1_addr(pir1), 0,
-                "64-bit translate_mul is unimplemented.\n");
+        lsassert(0);
         break;
     }
 
     latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
-
+#ifdef TARGET_X86_64
+    latxs_ra_free_temp(&dest_hi);
+#endif
     latxs_ra_free_temp(&dest);
     latxs_ra_free_temp(&src0);
     latxs_ra_free_temp(&src1);
@@ -412,9 +466,16 @@ bool latxs_translate_imul(IR1_INST *pir1)
 
     int opnd_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
 
+#ifndef TARGET_X86_64
     lsassertm_illop(ir1_addr(pir1), opnd_size != 64,
             "64-bit translate_imul is unimplemented.\n");
+#endif
 
+#ifdef TARGET_X86_64
+    if (opnd_size == 64) {
+        latxs_append_ir2_opnd3(LISA_MUL_D, &dest, &src1, &src0);
+    } else
+#endif
     if (opnd_size == 32) {
         latxs_append_ir2_opnd3(LISA_MUL_D, &dest, &src1, &src0);
     } else {
@@ -504,6 +565,19 @@ bool latxs_translate_div(IR1_INST *pir1)
 
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_Z);
 
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && (ir1_opnd_size(opnd0) == 64)) {
+        latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+        latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &src0);
+        latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                                &latxs_env_ir2_opnd);
+        latxs_tr_gen_call_to_helper((ADDR)helper_divq_EAX);
+        latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+        return true;
+    }
+#endif
+
     /* 1. if div zero, generate DIVZ exception */
     IR2_OPND label_not_zero = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BNE, &src0,
@@ -587,8 +661,8 @@ bool latxs_translate_div(IR1_INST *pir1)
         latxs_store_ir2_to_ir1(&div_res, &eax_ir1_opnd);
         break;
     default:
-        lsassertm_illop(ir1_addr(pir1), 0,
-                "64-bit translate_div is unimplemented.\n");
+        /* 64 bit div : call helper at the begin of translate_div */
+        lsassert(0);
         break;
     }
 
@@ -609,6 +683,19 @@ bool latxs_translate_idiv(IR1_INST *pir1)
     IR2_OPND src2 = latxs_ra_alloc_itemp();
 
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && (ir1_opnd_size(opnd0) == 64)) {
+        latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+        latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &src0);
+        latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                                &latxs_env_ir2_opnd);
+        latxs_tr_gen_call_to_helper((ADDR)helper_idivq_EAX);
+        latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+        return true;
+    }
+#endif
 
     /* 1. if div zero, generate DIVZ exception */
     IR2_OPND label_not_zero = latxs_ir2_opnd_new_label();

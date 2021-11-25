@@ -1976,8 +1976,8 @@ int latxs_ir1_is_repz_nop(IR1_INST *ir1)
 int latxs_ir1_is_iret(IR1_INST *ir1)
 {
     IR1_OPCODE opcode = ir1_opcode(ir1);
-    return opcode == X86_INS_IRET ||
-           opcode == X86_INS_IRETD ;
+    return opcode == X86_INS_IRET || opcode == X86_INS_IRETD ||
+           opcode == X86_INS_IRETQ;
 }
 int latxs_ir1_is_lmsw(IR1_INST *ir1)
 {
@@ -1985,7 +1985,8 @@ int latxs_ir1_is_lmsw(IR1_INST *ir1)
 }
 int latxs_ir1_is_retf(IR1_INST *ir1)
 {
-    return ir1_opcode(ir1) == X86_INS_RETF;
+    IR1_OPCODE opcode = ir1_opcode(ir1);
+    return opcode == X86_INS_RETF || opcode == X86_INS_RETFQ;
 }
 int latxs_ir1_is_clts(IR1_INST *ir1)
 {

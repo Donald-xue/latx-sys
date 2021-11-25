@@ -12,7 +12,14 @@ bool translate_endbr64(IR1_INST *pir1) { return true; }
 
 bool translate_bound(IR1_INST *pir1) { return false; }
 bool translate_arpl(IR1_INST *pir1) { return false; }
-bool translate_cdqe(IR1_INST *pir1) { return false; }
+bool translate_cdqe(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cdqe(pir1);
+#else
+    return false;
+#endif
+}
 
 bool translate_cqo(IR1_INST *pir1) { return false; }
 
@@ -548,7 +555,14 @@ bool translate_vmptrld(IR1_INST *pir1) { return false; }
 bool translate_vmclear(IR1_INST *pir1) { return false; }
 bool translate_vmxon(IR1_INST *pir1) { return false; }
 // bool translate_wait(IR1_INST *pir1) { return false; }
-bool translate_movsxd(IR1_INST *pir1) { return false; }
+bool translate_movsxd(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_movsxd(pir1);
+#else
+    return false;
+#endif
+}
 
 bool translate_ret_without_ss_opt(IR1_INST *pir1);
 bool translate_ret_with_ss_opt(IR1_INST *pir1);

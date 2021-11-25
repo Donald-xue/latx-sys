@@ -349,7 +349,7 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
      {__ZF, 0, 0},         /* loopz, */                //X86_INS_LOOPE,
     {__ZF, 0, 0},         /* loopnz, */                //X86_INS_LOOPNE,
     {0, 0, 0},                                 /* retf, */                  //X86_INS_RETF,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_RETFQ,
+    {0, 0, 0},                /* X86_INS_RETFQ, */
     {0, 0, 0},                                       /* lsl, */             //X86_INS_LSL,
     {0, 0, 0},                                       /* lss, */             //X86_INS_LSS,
     {0, 0, 0},                                       /* ltr, */             //X86_INS_LTR,

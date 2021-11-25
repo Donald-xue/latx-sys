@@ -188,8 +188,16 @@ bool latxs_translate_shl(IR1_INST *pir1)
     IR2_OPND src_shift = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src_shift , opnd1, EXMode_Z);
 
+    int shift_mask = 0x1f;
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_opnd_size(opnd0) == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+
     IR2_OPND shift = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, 0x1f);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, shift_mask);
     latxs_ra_free_temp(&src_shift);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
@@ -197,7 +205,15 @@ bool latxs_translate_shl(IR1_INST *pir1)
             &latxs_zero_ir2_opnd, &label_exit);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_opnd_size(opnd0) == 64) {
+        latxs_append_ir2_opnd3(LISA_SLL_D, &dest, &src, &shift);
+    } else {
+        latxs_append_ir2_opnd3(LISA_SLL_W, &dest, &src, &shift);
+    }
+#else
     latxs_append_ir2_opnd3(LISA_SLL_W, &dest, &src, &shift);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -215,6 +231,14 @@ bool latxs_translate_shl(IR1_INST *pir1)
     }
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
 
     return true;
 }
@@ -240,8 +264,16 @@ bool latxs_translate_shr(IR1_INST *pir1)
     IR2_OPND src_shift = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&src_shift, opnd1, EXMode_Z);
 
+    int shift_mask = 0x1f;
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_opnd_size(opnd0) == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+
     IR2_OPND shift = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, 0x1f);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, shift_mask);
     latxs_ra_free_temp(&src_shift);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
@@ -249,7 +281,16 @@ bool latxs_translate_shr(IR1_INST *pir1)
             &latxs_zero_ir2_opnd, &label_exit);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_opnd_size(opnd0) == 64) {
+        latxs_append_ir2_opnd3(LISA_SRL_D, &dest, &src, &shift);
+    } else {
+        latxs_append_ir2_opnd3(LISA_SRL_W, &dest, &src, &shift);
+    }
+#else
     latxs_append_ir2_opnd3(LISA_SRL_W, &dest, &src, &shift);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -267,6 +308,13 @@ bool latxs_translate_shr(IR1_INST *pir1)
     }
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -290,8 +338,16 @@ bool latxs_translate_sar(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src , opnd0, EXMode_S);
     latxs_load_ir1_to_ir2(&src_shift , opnd1, EXMode_Z);
 
+    int shift_mask = 0x1f;
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_opnd_size(opnd0) == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+
     IR2_OPND shift = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, 0x1f);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &src_shift, shift_mask);
     latxs_ra_free_temp(&src_shift);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
@@ -299,7 +355,16 @@ bool latxs_translate_sar(IR1_INST *pir1)
             &latxs_zero_ir2_opnd, &label_exit);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_opnd_size(opnd0) == 64) {
+        latxs_append_ir2_opnd3(LISA_SRA_D, &dest, &src, &shift);
+    } else {
+        latxs_append_ir2_opnd3(LISA_SRA_W, &dest, &src, &shift);
+    }
+#else
     latxs_append_ir2_opnd3(LISA_SRA_W, &dest, &src, &shift);
+#endif
 
     if (ir1_opnd_is_mem(opnd0)) {
         latxs_store_ir2_to_ir1(&dest, opnd0);
@@ -317,6 +382,13 @@ bool latxs_translate_sar(IR1_INST *pir1)
     }
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -331,12 +403,20 @@ bool latxs_translate_rol(IR1_INST *pir1)
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&dest, opnd0, EXMode_Z);
 
+    int opnd_size = ir1_opnd_size(opnd0);
+    int shift_mask = 0x1f;
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && opnd_size == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+
     IR2_OPND rotate = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &rotate, &src_rotate, 0x1f);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &rotate, &src_rotate, shift_mask);
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BEQ, &rotate, &zero_ir2_opnd, &label_exit);
 
-    int opnd_size = ir1_opnd_size(opnd0);
     if (ir1_need_calculate_any_flag(pir1)) {
         switch (opnd_size) {
         case 8:
@@ -348,7 +428,13 @@ bool latxs_translate_rol(IR1_INST *pir1)
         case 32:
             latxs_append_ir2_opnd2(LISA_X86ROTL_W, &dest, &src_rotate);
             break;
+#ifdef TARGET_X86_64
+        case 64:
+            latxs_append_ir2_opnd2(LISA_X86ROTL_D, &dest, &src_rotate);
+            break;
+#endif
         default:
+            lsassert(0);
             break;
         }
     }
@@ -391,6 +477,14 @@ bool latxs_translate_rol(IR1_INST *pir1)
     latxs_ra_free_temp(&rotate);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (opnd_size == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -404,14 +498,22 @@ bool latxs_translate_ror(IR1_INST *pir1)
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
     latxs_load_ir1_to_ir2(&dest, opnd0, EXMode_Z);
+    int opnd_size = ir1_opnd_size(opnd0);
+
+    int shift_mask = 0x1f;
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && opnd_size == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
 
     IR2_OPND rotate = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_ANDI, &rotate, &src_rotate, 0x1f);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &rotate, &src_rotate, shift_mask);
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BEQ, &rotate,
             &latxs_zero_ir2_opnd, &label_exit);
 
-    int opnd_size = ir1_opnd_size(opnd0);
     if (ir1_need_calculate_any_flag(pir1)) {
         switch (opnd_size) {
         case 8:
@@ -423,7 +525,13 @@ bool latxs_translate_ror(IR1_INST *pir1)
         case 32:
             latxs_append_ir2_opnd2(LISA_X86ROTR_W, &dest, &src_rotate);
             break;
+#ifdef TARGET_X86_64
+        case 64:
+            latxs_append_ir2_opnd2(LISA_X86ROTR_D, &dest, &src_rotate);
+            break;
+#endif
         default:
+            lsassert(0);
             break;
         }
     }
@@ -465,6 +573,14 @@ bool latxs_translate_ror(IR1_INST *pir1)
     latxs_ra_free_temp(&rotate);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (opnd_size == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -499,6 +615,8 @@ bool latxs_translate_rcl(IR1_INST *pir1)
 
     IR2_OPND cf = latxs_ra_alloc_itemp();
     latxs_get_eflag_condition(&cf, pir1);
+
+    lsassert(opnd_size != 64);
 
     if (opnd_size == 32) {
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &cf, &cf, 32);
@@ -543,6 +661,14 @@ bool latxs_translate_rcl(IR1_INST *pir1)
     latxs_ra_free_temp(&final_dest);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (opnd_size == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -578,6 +704,7 @@ bool latxs_translate_rcr(IR1_INST *pir1)
     IR2_OPND cf = latxs_ra_alloc_itemp();
     latxs_get_eflag_condition(&cf, pir1);
 
+    lsassert(opnd_size != 64);
     if (opnd_size == 32) {
         latxs_append_ir2_opnd2i(LISA_SLLI_D, &cf, &cf, 32);
     } else {
@@ -621,6 +748,14 @@ bool latxs_translate_rcr(IR1_INST *pir1)
     latxs_ra_free_temp(&final_dest);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (opnd_size == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -639,7 +774,14 @@ static bool latxs_translate_shrd_cl(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&shift, opnd2, EXMode_Z);
 
     int opnd_size = ir1_opnd_size(opnd0);
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &shift, 0x1f);
+
+    int shift_mask = 0x1f;
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && opnd_size == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &shift, shift_mask);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BEQ, &shift,
@@ -683,6 +825,14 @@ static bool latxs_translate_shrd_cl(IR1_INST *pir1)
     latxs_ra_free_temp(&final_dest);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (opnd_size == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -695,7 +845,15 @@ static bool latxs_translate_shrd_imm(IR1_INST *pir1)
     lsassertm_illop(ir1_addr(pir1), ir1_opnd_is_imm(opnd2),
             "shrd imm operand2 is not imm.\n");
 
-    int shift = ir1_opnd_simm(opnd2) & 0x1f;
+    int opnd_size = ir1_opnd_size(opnd0);
+    int shift_mask = 0x1f;
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && opnd_size == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+
+    int shift = ir1_opnd_simm(opnd2) & shift_mask;
     if (!shift) {
         return true;
     }
@@ -705,8 +863,6 @@ static bool latxs_translate_shrd_imm(IR1_INST *pir1)
 
     latxs_load_ir1_to_ir2(&dest, opnd0, EXMode_Z);
     latxs_load_ir1_to_ir2(&src , opnd1, EXMode_Z);
-
-    int opnd_size = ir1_opnd_size(opnd0);
 
     IR2_OPND low_dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_SRLI_D, &low_dest, &dest, shift);
@@ -772,7 +928,13 @@ static bool latxs_translate_shld_cl(IR1_INST *pir1)
 
     int opnd_size = ir1_opnd_size(opnd0);
 
-    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &shift, 0x1f);
+    int shift_mask = 0x1f;
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && opnd_size == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+    latxs_append_ir2_opnd2i(LISA_ANDI, &shift, &shift, shift_mask);
 
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd3(LISA_BEQ, &shift,
@@ -813,6 +975,14 @@ static bool latxs_translate_shld_cl(IR1_INST *pir1)
     latxs_ra_free_temp(&final_dest);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (opnd_size == 32 && ir1_opnd_is_gpr(opnd0)) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     return true;
 }
 
@@ -825,7 +995,14 @@ static bool latxs_translate_shld_imm(IR1_INST *pir1)
     lsassertm_illop(ir1_addr(pir1), ir1_opnd_is_imm(opnd2),
             "shld imm operand2 is not imm.\n");
 
-    int shift = ir1_opnd_simm(opnd2) & 0x1f;
+    int opnd_size = ir1_opnd_size(opnd0);
+    int shift_mask = 0x1f;
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && opnd_size == 64) {
+        shift_mask = 0x3f;
+    }
+#endif
+    int shift = ir1_opnd_simm(opnd2) & shift_mask;
     if (!shift) {
         return true;
     }
@@ -835,8 +1012,6 @@ static bool latxs_translate_shld_imm(IR1_INST *pir1)
 
     latxs_load_ir1_to_ir2(&dest, opnd0, EXMode_Z);
     latxs_load_ir1_to_ir2(&src , opnd1, EXMode_Z);
-
-    int opnd_size = ir1_opnd_size(opnd0);
 
     IR2_OPND high_dest = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_SLLI_D, &high_dest, &dest, shift);
