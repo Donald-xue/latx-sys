@@ -1110,7 +1110,12 @@ static void latxs_generate_zf(IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
 {
     IR1_INST *pir1 = lsenv->tr_data->curr_ir1_inst;
     int opnd_size = ir1_opnd_size(ir1_get_opnd(pir1, 0));
+#ifdef TARGET_X86_64
+    lsassert(opnd_size == 8 || opnd_size == 16 || opnd_size == 32 ||
+             opnd_size == 64);
+#else
     lsassert(opnd_size == 8 || opnd_size == 16 || opnd_size == 32);
+#endif
 
     IR2_OPND extended_dest_opnd = latxs_ra_alloc_itemp();
     switch (opnd_size) {
@@ -1123,6 +1128,11 @@ static void latxs_generate_zf(IR2_OPND *dest, IR2_OPND *src0, IR2_OPND *src1)
     case 32:
         latxs_append_ir2_opnd2_(lisa_mov32z, &extended_dest_opnd, dest);
         break;
+#ifdef TARGET_X86_64
+    case 64:
+        latxs_append_ir2_opnd2_(lisa_mov, &extended_dest_opnd, dest);
+        break;
+#endif
     default:
         lsassert(0);
         break;

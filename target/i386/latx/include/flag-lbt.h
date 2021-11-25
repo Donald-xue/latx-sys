@@ -18,6 +18,9 @@ void get_eflag_condition(IR2_OPND *value, IR1_INST *pir1);
     else if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32){ \
         la_append_ir2_opnd1(ir2_opcode + 2, src0); \
     } \
+    else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) { \
+        la_append_ir2_opnd1(ir2_opcode + 3, src0); \
+    } \
 } while(0)
 
 #define GENERATE_EFLAG_IR2_2(ir2_opcode) do{ \
@@ -33,6 +36,9 @@ void get_eflag_condition(IR2_OPND *value, IR1_INST *pir1);
     } \
     else if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32){ \
         la_append_ir2_opnd2(ir2_opcode + 2, src0, src1); \
+    } \
+    else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) { \
+        la_append_ir2_opnd2(ir2_opcode + 3, src0, src1); \
     } \
     if (ir2_opnd_is_imm(&src1)) { \
         ra_free_temp(src1); \
@@ -52,6 +58,9 @@ void get_eflag_condition(IR2_OPND *value, IR1_INST *pir1);
     } \
     else if(ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32){ \
         la_append_ir2_opnd2_em(ir2_opcode + 2, src0, src1); \
+    } \
+    else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) { \
+        la_append_ir2_opnd2_em(ir2_opcode + 3, src0, src1); \
     } \
     if (ir2_opnd_is_imm(&src1)) { \
         ra_free_temp(src1); \
@@ -74,6 +83,8 @@ void latxs_get_eflag_condition(
         latxs_append_ir2_opnd1(ir2_opcode + 1, src0); \
     } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) { \
         latxs_append_ir2_opnd1(ir2_opcode + 2, src0); \
+    } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) { \
+        latxs_append_ir2_opnd1(ir2_opcode + 3, src0); \
     } \
 } while (0)
 
@@ -88,6 +99,8 @@ void latxs_get_eflag_condition(
         latxs_append_ir2_opnd2(ir2_opcode + 1, src0, _src1); \
     } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 32) { \
         latxs_append_ir2_opnd2(ir2_opcode + 2, src0, _src1); \
+    } else if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) { \
+        latxs_append_ir2_opnd2(ir2_opcode + 3, src0, _src1); \
     } \
     if (latxs_ir2_opnd_is_imm(_src1)) { \
         latxs_ra_free_temp(_src1); \
