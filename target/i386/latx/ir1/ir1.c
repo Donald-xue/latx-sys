@@ -1400,8 +1400,20 @@ void ir1_make_ins_LIBFUNC(IR1_INST *ir1, ADDRX addr) { lsassert(0); }
 
 int ir1_dump(IR1_INST *ir1)
 {
+#ifdef CONFIG_SOFTMMU
+    fprintf(stderr, "0x%" PRIx64 ": ", ir1->info->address);
+    int i = 0;
+    for (; i < ir1->info->size; i++) {
+        fprintf(stderr, "%02x ", ir1->info->bytes[i]);
+    }
+    for (; i < 10; i++) {
+        fprintf(stderr, "   ");
+    }
+    fprintf(stderr, "%s\t\t%s\n", ir1->info->mnemonic, ir1->info->op_str);
+#else
     fprintf(stderr, "0x%" PRIx64 ":\t%s\t\t%s\n", ir1->info->address,
             ir1->info->mnemonic, ir1->info->op_str);
+#endif
     return 0;
 }
 
