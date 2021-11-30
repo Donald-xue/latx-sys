@@ -338,7 +338,11 @@ void latxs_tr_gen_sys_eob(IR1_INST *pir1)
 
     /* t9: next x86 instruction's address */
     ADDRX next_eip = ir1_addr_next(pir1);
+#ifdef TARGET_X86_64
+    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 64);
+#else
     latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 32);
+#endif
 
     /* jump to context switch */
     latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, 0);
@@ -406,8 +410,13 @@ void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env, ADDRX eip,
             lsassert(0);
             break;
         }
-        latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
-                                lsenv_offset_of_eip(lsenv));
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#else
+    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#endif
         latxs_ra_free_temp(&eip_opnd);
     }
 
@@ -478,7 +487,11 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
 
     /* t9: next x86 instruction's address */
     ADDRX next_eip = ir1_addr_next(pir1);
+#ifdef TARGET_X86_64
+    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 64);
+#else
     latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 32);
+#endif
 
     /* jump to context switch */
     latxs_tr_gen_exit_tb_j_context_switch(&tbptr, can_link, succ_id);

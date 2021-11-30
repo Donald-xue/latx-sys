@@ -488,11 +488,18 @@ void latxs_tr_gen_tb_end(void)
 
     latxs_tr_gen_exit_tb_load_tb_addr(&tb_ptr_opnd, tb_addr);
 
-    int eip = tb->pc - tb->cs_base;
-    latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
+    ADDRX eip = tb->pc - tb->cs_base;
 
+#ifdef TARGET_X86_64
+    latxs_load_imm64_to_ir2(&eip_opnd, eip);
+    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
+                        lsenv_offset_of_eip(lsenv));
+#else
+    latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
     latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
                         lsenv_offset_of_eip(lsenv));
+#endif
+
     latxs_ra_free_temp(&eip_opnd);
 
     if (!option_lsfpu && !option_soft_fpu) {

@@ -578,8 +578,13 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
                     offsetof(TranslationBlock, pc));
             IR2_OPND eip = latxs_ra_alloc_itemp();
+#ifdef TARGET_X86_64
+            latxs_append_ir2_opnd2i(LISA_LD_D, &eip, &latxs_env_ir2_opnd,
+                                    lsenv_offset_of_eip(lsenv));
+#else
             latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, &latxs_env_ir2_opnd,
                                     lsenv_offset_of_eip(lsenv));
+#endif
             latxs_append_ir2_opnd3(LISA_BNE, &param0, &eip, &njc_miss);
             latxs_ra_free_temp(&eip);
 

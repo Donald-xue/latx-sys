@@ -386,9 +386,13 @@ void latxs_tr_gen_save_curr_eip(void)
     ADDRX curr_eip = ir1_addr(pir1);
     IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_opnd, curr_eip);
-
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
                             lsenv_offset_of_eip(lsenv));
+#endif
 
     latxs_ra_free_temp(&eip_opnd);
 }
@@ -402,8 +406,13 @@ void latxs_tr_gen_save_next_eip(void)
     IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_opnd, next_eip);
 
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
                             lsenv_offset_of_eip(lsenv));
+#endif
 
     latxs_ra_free_temp(&eip_opnd);
 }

@@ -311,8 +311,14 @@ static void translate_jmp_far_real_mem(IR1_INST *pir1, IR1_OPND *opnd0)
 
     latxs_ra_free_temp(&dest);
 
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &next_eip, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip, &latxs_env_ir2_opnd,
                             lsenv_offset_of_eip(lsenv));
+#endif
+
     latxs_tr_generate_exit_tb(pir1, 1);
 }
 
@@ -509,8 +515,13 @@ bool latxs_translate_callin(IR1_INST *pir1)
     }
 
     /* 5. go to next TB */
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &next_eip_opnd, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip_opnd, &latxs_env_ir2_opnd,
                             lsenv_offset_of_eip(lsenv));
+#endif
 
     latxs_tr_generate_exit_tb(pir1, 0);
 
@@ -537,8 +548,13 @@ bool latxs_translate_jmpin(IR1_INST *pir1)
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 16) {
         latxs_append_ir2_opnd2_(lisa_mov16z, &next_eip, &next_eip);
     }
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &next_eip, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &next_eip, &latxs_env_ir2_opnd,
                             lsenv_offset_of_eip(lsenv));
+#endif
     latxs_tr_generate_exit_tb(pir1, 1);
     return true;
 }
@@ -1852,8 +1868,14 @@ static void latxs_do_translate_ret_far_real(
             &mem_ir1_opnd, EXMode_Z, ss_addr_size);
 
     /* 4. update env->eip */
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &tmp_new_eip, &latxs_env_ir2_opnd,
+            lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &tmp_new_eip, &latxs_env_ir2_opnd,
             lsenv_offset_of_eip(lsenv));
+#endif
+
     /* 5. update env->cs.base, env->cs.selector */
     latxs_append_ir2_opnd2i(LISA_ST_W, &tmp_new_cs, &latxs_env_ir2_opnd,
             lsenv_offset_of_seg_selector(lsenv, cs_index));
@@ -1865,8 +1887,19 @@ static void latxs_do_translate_ret_far_real(
     esp_inc += opnd_size >> 2; /* (opnd_size >> 3) << 1 */
 
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd, esp_inc);
+        if (option_by_hand) {
+            lsassert(0);
+        }
+    } else
+#endif
     if (lsenv->tr_data->sys.ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd, esp_inc);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2_(lisa_mov32z, &esp_opnd, &esp_opnd);
+#endif
     } else {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, &esp_opnd, esp_inc);

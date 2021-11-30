@@ -23,8 +23,13 @@ int gen_latxs_njc_lookup_tb(void *code_ptr)
     /* s0: &CPUX86State */
     /* a2: pc loaded from env, any reg should be ok */
     IR2_OPND gpc = latxs_ir2_opnd_new(IR2_OPND_GPR, 0x7);
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_LD_D, &gpc, &latxs_env_ir2_opnd,
+        lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_LD_WU, &gpc, &latxs_env_ir2_opnd,
         lsenv_offset_of_eip(lsenv));
+#endif
     IR2_OPND tmp = latxs_ir2_opnd_new(IR2_OPND_GPR, 0x7); /* a3 */
 
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd; /* $a4 */

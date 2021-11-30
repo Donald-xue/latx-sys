@@ -40,8 +40,13 @@ static void latxs_tr_gen_raise_exception(
     ADDRX ir1_eip = ir1_addr(ir1);
     IR2_OPND eip_reg = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_reg, ir1_eip);
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_reg,
+            &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &eip_reg,
             &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+#endif
     latxs_ra_free_temp(&eip_reg);
 
     /*
@@ -71,8 +76,13 @@ static void latxs_tr_gen_raise_exception_addr(
     /* 1. save exception instruction's EIP */
     IR2_OPND eip_reg = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_reg, addr);
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_reg,
+            &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &eip_reg,
             &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+#endif
 
     /* 2. call helper raise exception */
     helper_cfg_t cfg = default_helper_cfg;
