@@ -525,6 +525,11 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
 void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 {
     int      next_eip_size = 32;
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        next_eip_size = 64;
+    }
+#endif
     ADDRX    next_eip;
     ADDRX    curr_eip;
 
