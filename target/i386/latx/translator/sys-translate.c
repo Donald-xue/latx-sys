@@ -456,8 +456,8 @@ void latxs_tr_gen_tb_end(void)
 
     latxs_append_ir2_opnd1(LISA_LABEL, &td->exitreq_label);
 
-    IR2_OPND tb_ptr_opnd = ra_alloc_dbt_arg1();
-    IR2_OPND eip_opnd = ra_alloc_dbt_arg2();
+    IR2_OPND tb_ptr_opnd = latxs_ra_alloc_dbt_arg1();
+    IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
 
     ADDR tb_addr = (ADDR)tb;
 
@@ -465,6 +465,10 @@ void latxs_tr_gen_tb_end(void)
 
     int eip = tb->pc - tb->cs_base;
     latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
+
+    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                        lsenv_offset_of_eip(lsenv));
+    latxs_ra_free_temp(&eip_opnd);
 
     if (!option_lsfpu && !option_soft_fpu) {
         /* FPU top shoud be TB's top_in, not top_out. */
