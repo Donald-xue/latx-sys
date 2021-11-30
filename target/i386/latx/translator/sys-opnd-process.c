@@ -66,6 +66,7 @@ void latxs_load_imm32_to_ir2(IR2_OPND *opnd2, uint32_t value, EXMode em)
     latxs_load_imm64(opnd2, value);
 }
 
+/* TODO: remove this function, work was done by latxs_load_imm64*/
 void latxs_load_imm64_to_ir2(IR2_OPND *opnd2, uint64_t value)
 {
     lsassertm(latxs_ir2_opnd_is_gpr(opnd2),
@@ -81,7 +82,7 @@ void latxs_load_imm64_to_ir2(IR2_OPND *opnd2, uint64_t value)
     } else if (high_32_bits == -1) {
         /* 2. ffff ffff xxxx xxxx */
         if (low_32_bits < 0) {
-            latxs_load_imm32_to_ir2(opnd2, low_32_bits, EXMode_S);
+            latxs_load_imm64(opnd2, value);
             return;
         } else {
             latxs_load_imm32_to_ir2(opnd2, ~low_32_bits, EXMode_Z);
