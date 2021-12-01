@@ -449,6 +449,7 @@ bool latxs_translate_movs(IR1_INST *pir1)
 
     /* 2. load memory value at ESI, and store into memory at EDI */
     IR2_OPND src_value = latxs_ra_alloc_itemp();
+
     latxs_load_ir1_to_ir2(&src_value, opnd1, EXMode_S);
     latxs_store_ir2_to_ir1_mem(&src_value, opnd0, addr_size);
 

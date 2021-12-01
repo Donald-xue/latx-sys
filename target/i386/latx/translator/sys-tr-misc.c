@@ -361,6 +361,11 @@ bool latxs_translate_call(IR1_INST *pir1)
     bool ss32 = lsenv->tr_data->sys.ss32;
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
     int opnd_size = ir1_opnd_size(opnd0);
 #ifdef TARGET_X86_64
     if (lsenv->tr_data->sys.code64) {
@@ -425,6 +430,11 @@ bool latxs_translate_callnext(IR1_INST *pir1)
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
     int opnd_size = ir1_opnd_size(opnd0);
     lsassert(opnd_size == 16 || opnd_size == 32);
     lsassert(data_size == opnd_size);
@@ -471,8 +481,21 @@ bool latxs_translate_callin(IR1_INST *pir1)
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
     int opnd_size = ir1_opnd_size(opnd0);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(opnd_size == 16 || opnd_size == 64);
+    } else {
+        lsassert(opnd_size == 16 || opnd_size == 32);
+    }
+#else
     lsassert(opnd_size == 16 || opnd_size == 32);
+#endif
     lsassert(data_size == opnd_size);
     (void)data_size; /* to avoid compile warning */
 
@@ -986,6 +1009,11 @@ bool latxs_translate_pop(IR1_INST *pir1)
     }
 
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
     int esp_inc   = data_size >> 3;
 
     int opnd_size = ir1_opnd_size(opnd0);
@@ -1110,6 +1138,13 @@ bool latxs_translate_push(IR1_INST *pir1)
     bool ss32 = lsenv->tr_data->sys.ss32;
 
     int data_size = latxs_ir1_data_size(pir1);
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
+
     int esp_dec   = 0 - (data_size >> 3);
 
     int opnd_size = ir1_opnd_size(opnd0);
@@ -1205,6 +1240,11 @@ bool latxs_translate_ret(IR1_INST *pir1)
      */
 
     int data_size = latxs_ir1_data_size(pir1);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
     int addr_size = latxs_ir1_addr_size(pir1);
 #ifdef TARGET_X86_64
     if (lsenv->tr_data->sys.code64) {
@@ -2260,6 +2300,9 @@ static IR1_OPND latxs_pa_get_gpr(int id, int size)
 
 static bool latxs_do_translate_pusha(IR1_INST *pir1, int size)
 {
+#ifdef TARGET_X86_64
+    lsassert(!lsenv->tr_data->sys.code64);
+#endif
     lsassert(size == 2 || size == 4);
 
     int data_size = latxs_ir1_data_size(pir1);
@@ -2343,6 +2386,9 @@ static bool latxs_do_translate_pusha(IR1_INST *pir1, int size)
 
 static bool latxs_do_translate_popa(IR1_INST *pir1, int size)
 {
+#ifdef TARGET_X86_64
+    lsassert(!lsenv->tr_data->sys.code64);
+#endif
     lsassert(size == 2 || size == 4);
 
     int data_size = latxs_ir1_data_size(pir1);
@@ -2588,6 +2634,12 @@ bool latxs_translate_enter(IR1_INST *pir1)
 
     int data_size = latxs_ir1_data_size(pir1);
 
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
+
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
     IR2_OPND ebp_opnd = latxs_ra_alloc_gpr(ebp_index);
 
@@ -2660,6 +2712,12 @@ bool latxs_translate_leave(IR1_INST *pir1)
 
     int ss_addr_size = latxs_get_sys_stack_addr_size();
     int data_size = latxs_ir1_data_size(pir1);
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
+    }
+#endif
 
     /* 1. load value from MEM(SS:EBP) */
     IR1_OPND mem_ir1_opnd;

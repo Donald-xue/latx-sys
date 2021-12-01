@@ -142,15 +142,15 @@ int latxs_ir1_data_size(IR1_INST *ir1)
     int prefix_opsize = latxs_ir1_has_prefix_opsize(ir1);
 #ifdef TARGET_X86_64
     if (td->sys.code64) {
-        if (prefix_opsize) {
-            lsassert(0);
-            return 2 << 3;
-        } else {
-            return 8 << 3;
-        }
+        /*
+         * In 64-bit mode, the default data size is 32-bit.  Select 64-bit
+         *  data with rex_w, and 16-bit data with 0x66; rex_w takes precedence
+         * over 0x66 if both are present.
+         */
+        return (ir1->info->detail->x86.rex & 0x8) ? 64
+               : prefix_opsize                    ? 16
+                                                  : 32;
     }
-#else
-
 #endif
     if (td->sys.code32 ^ prefix_opsize) {
         /*  code32 && !prefix_opsize  */

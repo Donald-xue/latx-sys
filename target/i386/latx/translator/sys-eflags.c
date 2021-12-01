@@ -204,8 +204,10 @@ bool latxs_translate_popf(IR1_INST *pir1)
     CHECK_EXCP_POPF(pir1);
 
     int data_size = latxs_ir1_data_size(pir1);
+
 #ifdef TARGET_X86_64
     if (td->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
         lsassert(data_size == 16 || data_size == 64);
     } else {
         lsassert(data_size == 16 || data_size == 32);
@@ -309,8 +311,10 @@ bool latxs_translate_pushf(IR1_INST *pir1)
     CHECK_EXCP_PUSHF(pir1);
 
     int data_size = latxs_ir1_data_size(pir1);
+
 #ifdef TARGET_X86_64
     if (td->sys.code64) {
+        data_size = (data_size == 16) ? 16 : 64;
         lsassert(data_size == 16 || data_size == 64);
     } else {
         lsassert(data_size == 16 || data_size == 32);
