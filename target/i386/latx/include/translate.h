@@ -1317,6 +1317,7 @@ void latxs_fpu_fix_cpu_loop_exit(void);
 /* FPU FCSR */
 void latxs_set_fpu_fcsr(IR2_OPND *new_fcsr);
 IR2_OPND latxs_set_fpu_fcsr_rounding_field_by_x86(void);
+void latxs_update_fcsr_by_cw(IR2_OPND cw);
 
 /* opnd process */
 void latxs_load_imm64(IR2_OPND *, int64_t);

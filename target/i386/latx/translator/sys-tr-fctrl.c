@@ -166,7 +166,7 @@ static void latxs_update_fcsr_rm(IR2_OPND control_word, IR2_OPND fcsr)
     latxs_ra_free_temp(&temp_cw);
 }
 
-static void latxs_update_fcsr_by_cw(IR2_OPND cw)
+void latxs_update_fcsr_by_cw(IR2_OPND cw)
 {
     IR2_OPND old_fcsr = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &old_fcsr,
