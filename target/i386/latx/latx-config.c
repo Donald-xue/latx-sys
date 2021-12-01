@@ -374,13 +374,21 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
     switch (option_trace_simple) {
     case 2: /* Print with FPU state */
         fprintf(stderr, "TOP=%d / ",  env->fpstt);
-        fprintf(stderr, "TOPin=%d / ",  tb->_top_in);
-        fprintf(stderr, "TOPot=%d / ", tb->_top_out);
-        fprintf(stderr, "FP=0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx,0x%lx / ",
-                env->fpregs[0].d.low, env->fpregs[1].d.low,
-                env->fpregs[2].d.low, env->fpregs[3].d.low,
-                env->fpregs[4].d.low, env->fpregs[5].d.low,
-                env->fpregs[6].d.low, env->fpregs[7].d.low);
+        if (!option_lsfpu) {
+            fprintf(stderr, "TOPin=%d / ", tb->_top_in);
+            fprintf(stderr, "TOPot=%d / ", tb->_top_out);
+        }
+        fprintf(stderr, "RM=%d / ", env->fp_status.float_rounding_mode);
+        fprintf(stderr, "FP=0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx"
+                           "0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx / ",
+                           env->fpregs[0].d.high, env->fpregs[0].d.low,
+                           env->fpregs[1].d.high, env->fpregs[1].d.low,
+                           env->fpregs[2].d.high, env->fpregs[2].d.low,
+                           env->fpregs[3].d.high, env->fpregs[3].d.low,
+                           env->fpregs[4].d.high, env->fpregs[4].d.low,
+                           env->fpregs[5].d.high, env->fpregs[5].d.low,
+                           env->fpregs[6].d.high, env->fpregs[6].d.low,
+                           env->fpregs[7].d.high, env->fpregs[7].d.low);
         break;
     default:
         break;
