@@ -277,9 +277,12 @@ bool latxs_translate_fist(IR1_INST *pir1)
         return true;
     }
 
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
+
     /* 1. load rounding_mode from x86_control_word to mips_fcsr */
     IR2_OPND tmp_fcsr = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp_fcsr, &fcsr_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp_fcsr, fcsr);
 
     lsassert(ir1_get_opnd_num(pir1) == 1);
 
@@ -325,26 +328,26 @@ bool latxs_translate_fist(IR1_INST *pir1)
     latxs_ra_free_temp(&bounder_opnd);
 
     /*is unorder? */
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &fcc0_ir2_opnd,
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
             &dest_opnd, &dest_opnd, FCMP_COND_CUN);
     IR2_OPND label_flow = latxs_ir2_opnd_new_label();
-    latxs_append_ir2_opnd2(LISA_BCNEZ, &fcc0_ir2_opnd, &label_flow);
+    latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_flow);
 
     /* is underflow or overflow? */
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) != 64) {
-        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &fcc0_ir2_opnd,
+        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
                 &f_high_bounder_opnd, &dest_opnd, FCMP_COND_CLE);
-        latxs_append_ir2_opnd2(LISA_BCNEZ, &fcc0_ir2_opnd, &label_flow);
-        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &fcc0_ir2_opnd,
+        latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_flow);
+        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
                 &dest_opnd, &f_low_bounder_opnd, FCMP_COND_CLE);
-        latxs_append_ir2_opnd2(LISA_BCNEZ, &fcc0_ir2_opnd, &label_flow);
+        latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_flow);
     } else {
-        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &fcc0_ir2_opnd,
+        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
                 &f_high_bounder_opnd, &dest_opnd, FCMP_COND_CLT);
-        latxs_append_ir2_opnd2(LISA_BCNEZ, &fcc0_ir2_opnd, &label_flow);
-        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &fcc0_ir2_opnd,
+        latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_flow);
+        latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
                 &dest_opnd, &f_low_bounder_opnd, FCMP_COND_CLT);
-        latxs_append_ir2_opnd2(LISA_BCNEZ, &fcc0_ir2_opnd, &label_flow);
+        latxs_append_ir2_opnd2(LISA_BCNEZ, fcc0, &label_flow);
     }
     latxs_ra_free_temp(&f_low_bounder_opnd);
     latxs_ra_free_temp(&f_high_bounder_opnd);
@@ -378,7 +381,7 @@ bool latxs_translate_fist(IR1_INST *pir1)
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_end);
 
-    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &fcsr_ir2_opnd, &tmp_fcsr);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &tmp_fcsr);
     latxs_ra_free_temp(&tmp_fcsr);
 
     latxs_store_ir2_to_ir1(&dest_int, ir1_get_opnd(pir1, 0));

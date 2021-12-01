@@ -36,6 +36,59 @@ void latxs_sys_fctrl_register_ir1(void)
     latxs_register_ir1(X86_INS_EMMS);
 }
 
+#if defined(LATX_SYS_FCSR_EXCP)
+/*
+ * disabled in common.h:
+ *      For now, just ignore fcsr exception in sys-mode.
+ * TODO: support fcsr exception in sys-mode
+ */
+
+static void latxs_update_fcsr_flag(IR2_OPND status_word, IR2_OPND fcsr)
+{
+    IR2_OPND temp = latxs_ra_alloc_itemp();
+    IR2_OPND zero_ir2_opnd = latxs_zero_ir2_opnd;
+
+    /* reset flags*/
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &zero_ir2_opnd,
+                            FCSR_OFF_FLAGS_V, FCSR_OFF_FLAGS_I);
+    /* IE */
+    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &status_word,
+                            X87_SR_OFF_IE, X87_SR_OFF_IE);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
+                            FCSR_OFF_FLAGS_V, FCSR_OFF_FLAGS_V);
+    /* ZE */
+    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &status_word,
+                            X87_SR_OFF_ZE, X87_SR_OFF_ZE);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
+                            FCSR_OFF_FLAGS_Z, FCSR_OFF_FLAGS_Z);
+    /* OE */
+    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &status_word,
+                            X87_SR_OFF_OE, X87_SR_OFF_OE);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
+                            FCSR_OFF_FLAGS_O, FCSR_OFF_FLAGS_O);
+    /* UE */
+    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &status_word,
+                            X87_SR_OFF_UE, X87_SR_OFF_UE);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
+                            FCSR_OFF_FLAGS_U, FCSR_OFF_FLAGS_U);
+    /* PE */
+    latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &status_word,
+                            X87_SR_OFF_PE, X87_SR_OFF_PE);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
+                            FCSR_OFF_FLAGS_I, FCSR_OFF_FLAGS_I);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr_ir2_opnd, &fcsr);
+
+    latxs_ra_free_temp(&temp);
+}
+
+static void latxs_update_fcsr_by_sw(IR2_OPND sw)
+{
+    IR2_OPND old_fcsr = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &old_fcsr, &latxs_fcsr_ir2_opnd);
+    latxs_update_fcsr_flag(sw, old_fcsr);
+    latxs_ra_free_temp(&old_fcsr);
+}
+
 static void latxs_update_fcsr_enable(
         IR2_OPND control_word, IR2_OPND fcsr)
 {
@@ -47,37 +100,38 @@ static void latxs_update_fcsr_enable(
     /* IM */
     latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &control_word,
             X87_CR_OFF_IM, X87_CR_OFF_IM);
-    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &control_word, 1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 1);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
             FCSR_OFF_EN_V, FCSR_OFF_EN_V);
     /* DM */
     latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &control_word,
             X87_CR_OFF_DM, X87_CR_OFF_DM);
-    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &control_word, 1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 1);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
             FCSR_OFF_EN_I, FCSR_OFF_EN_I);
     /* ZM */
     latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &control_word,
             X87_CR_OFF_ZM, X87_CR_OFF_ZM);
-    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &control_word, 1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 1);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
             FCSR_OFF_EN_Z, FCSR_OFF_EN_Z);
     /* OM */
     latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &control_word,
             X87_CR_OFF_OM, X87_CR_OFF_OM);
-    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &control_word, 1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 1);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
             FCSR_OFF_EN_O, FCSR_OFF_EN_O);
     /* UM */
     latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &temp, &control_word,
             X87_CR_OFF_UM, X87_CR_OFF_UM);
-    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &control_word, 1);
+    latxs_append_ir2_opnd2i(LISA_XORI, &temp, &temp, 1);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &temp,
             FCSR_OFF_EN_U, FCSR_OFF_EN_U);
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &fcsr_ir2_opnd, &fcsr);
 
     latxs_ra_free_temp(&temp);
 }
+#endif
 
 static void latxs_update_fcsr_rm(IR2_OPND control_word, IR2_OPND fcsr)
 {
@@ -107,7 +161,7 @@ static void latxs_update_fcsr_rm(IR2_OPND control_word, IR2_OPND fcsr)
     /* set rounding mode in LA FCSR */
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &fcsr, &control_word,
             FCSR_OFF_RM + 1, FCSR_OFF_RM);
-    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &fcsr_ir2_opnd, &fcsr);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr_ir2_opnd, &fcsr);
 
     latxs_ra_free_temp(&temp_cw);
 }
@@ -117,8 +171,9 @@ static void latxs_update_fcsr_by_cw(IR2_OPND cw)
     IR2_OPND old_fcsr = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &old_fcsr,
             &latxs_fcsr_ir2_opnd);
-    latxs_update_fcsr_enable(cw, old_fcsr);
+    /* latxs_update_fcsr_enable(cw, old_fcsr); */
     latxs_update_fcsr_rm(cw, old_fcsr);
+    latxs_ra_free_temp(&old_fcsr);
 }
 
 bool latxs_translate_fnstcw(IR1_INST *pir1)
@@ -162,7 +217,6 @@ bool latxs_translate_fldcw(IR1_INST *pir1)
             lsenv_offset_of_control_word(lsenv));
 
     latxs_update_fcsr_by_cw(new_cw);
-    /* tr_gen_call_to_helper1((ADDR)update_fp_status); */
 
     return true;
 }

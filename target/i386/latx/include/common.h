@@ -6,6 +6,9 @@
 #include "mem.h"
 #include "error.h"
 
+#define LATX_SYS_FCSR
+/* #define LATX_SYS_FCSR_EXCP */
+
 #define BITS_ARE_SET_ANY(value, bits) (((value) & (bits)) != 0)
 #define BITS_ARE_SET_ALL(value, bits) (((value) & (bits)) == (bits))
 #define BITS_ARE_SET(value, bits) BITS_ARE_SET_ALL(value, bits)
