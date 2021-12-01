@@ -615,8 +615,9 @@ bool latxs_translate_fnop(IR1_INST *pir1)
     if (option_soft_fpu) {
         return latxs_translate_fnop_softfpu(pir1);
     }
-    helper_cfg_t cfg = all_helper_cfg;
-    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fwait, cfg);
+    /* TODO: support fpu exception */
+    /* helper_cfg_t cfg = all_helper_cfg; */
+    /* latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fwait, cfg); */
     return true;
 }
 
