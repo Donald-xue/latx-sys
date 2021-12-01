@@ -1160,7 +1160,7 @@ for opt do
   ;;
   --enable-latx-flag-pattern) latx_flag_pattern="yes"
   ;;
-  --enable-latx-flag-reduction) latx_flag_reduction="yes"
+  --enable-latx-flag-reduction) latx_flag_reduction="no"
   ;;
   --disable-guest-base) guest_base="no"
   ;;
