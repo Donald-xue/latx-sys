@@ -816,6 +816,8 @@ bool latxs_translate_fninit(IR1_INST *pir1)
         latxs_tr_set_xtm_fpu_top_in_env(pir1);
     }
 
+    latxs_tr_reset_fcsr_rm();
+
     return true;
 }
 

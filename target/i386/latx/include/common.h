@@ -7,7 +7,14 @@
 #include "error.h"
 
 #define LATX_SYS_FCSR
-/* #define LATX_SYS_FCSR_EXCP */
+#define LATX_SYS_FCSR_SIMD
+/* #define LATX_SYS_FCSR_EXCP TODO */
+
+/*
+ * LATX_SYS_FCSR      : map x86 FPU FCSR => LA FCSR
+ * LATX_SYS_FCSR_SIMD : enabled assert for x86 SIMD FCSR
+ * LATX_SYS_FCSR_EXCP : enable x86 FPU exception TODO
+ */
 
 #define BITS_ARE_SET_ANY(value, bits) (((value) & (bits)) != 0)
 #define BITS_ARE_SET_ALL(value, bits) (((value) & (bits)) == (bits))

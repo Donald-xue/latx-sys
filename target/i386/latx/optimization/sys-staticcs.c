@@ -34,6 +34,42 @@ int gen_latxs_scs_prologue_cfg(
             &latxs_env_ir2_opnd,
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
 
+#if defined(LATX_SYS_FCSR)
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+#if defined(LATX_SYS_FCSR_SIMD)
+    /* save into env->fcsr or env->fcsr_simd */
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, stmp1, zero, &fcsr_is_simd);
+
+    /* LA FCSR => env->fcsr */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, stmp1, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, stmp1, env,
+            lsenv_offset_of_fcsr(lsenv));
+    IR2_OPND label_next = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_B, &label_next);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+
+    /* LA FCSR => env->fcsr_is_simd */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, stmp1, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, stmp1, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_next);
+#else
+    /* save into env->fcsr */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, stmp1, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, stmp1, env,
+            lsenv_offset_of_fcsr(lsenv));
+#endif
+#endif
+
     /* FPU TOP will be stored outside */
     if ((cfg.sv_allgpr)) {
         latxs_tr_gen_static_save_registers_to_env(
@@ -54,6 +90,12 @@ int gen_latxs_scs_prologue_cfg(
     if (cfg.cvt_fp80) {
         lsassertm(0, "cvtfp not supported in staticcs.\n");
     }
+
+#if defined(LATX_SYS_FCSR)
+    /* load DBT's fcsr from stack */
+    latxs_append_ir2_opnd2i(LISA_LD_D, stmp1, &latxs_sp_ir2_opnd, 128);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, stmp1);
+#endif
 
     latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd,
             &latxs_env_ir2_opnd,
@@ -102,6 +144,44 @@ int gen_latxs_scs_epilogue_cfg(
                 XMM_HI_USEDEF_TO_SAVE,
                 0x2);
     }
+
+#if defined(LATX_SYS_FCSR)
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+#if defined(LATX_SYS_FCSR_SIMD)
+    /* load env->fcsr or env->fcsr_simd */
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, stmp1, zero, &fcsr_is_simd);
+
+    /* LA FCSR <= env->fcsr */
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            lsenv_offset_of_fcsr(lsenv));
+    IR2_OPND label_finish = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_B, &label_finish);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+
+    /* LA FCSR <= env->fcsr_simd */
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
+
+    latxs_append_ir2_opnd2i(LISA_ANDI, stmp1, stmp1, 0x340);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, stmp1);
+#else
+    /* load env->fcsr */
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            lsenv_offset_of_fcsr(lsenv));
+    latxs_append_ir2_opnd2i(LISA_ANDI, stmp1, stmp1, 0x340);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, stmp1);
+#endif
+#endif
 
     latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd,
             &latxs_env_ir2_opnd,

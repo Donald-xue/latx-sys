@@ -127,7 +127,14 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     latxs_append_ir2_opnd3(LISA_OR, &latxs_env_ir2_opnd, arg1, zero);
 
     /* 2.1 set native code FCSR (#31) */
+#if defined(LATX_SYS_FCSR)
+    latxs_append_ir2_opnd2i(LISA_LD_W, &fcsr_value,
+            &latxs_env_ir2_opnd, lsenv_offset_of_fcsr(lsenv));
+    /* bit 6 is zero will disable LSFPU TOP Mode */
+    latxs_append_ir2_opnd2i(LISA_ANDI, &fcsr_value, &fcsr_value, 0x300);
+#else
     latxs_append_ir2_opnd3(LISA_OR, &fcsr_value, &fcsr_value, zero);
+#endif
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &fcsr_value);
 
     /* 2.2 set f3 = 32 */
@@ -234,6 +241,14 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
     latxs_append_ir2_opnd2i(LISA_ST_D, &tb_ptr_opnd,
             &latxs_env_ir2_opnd,
             lsenv_offset_of_last_executed_tb(lsenv));
+
+#if defined(LATX_SYS_FCSR)
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp,
+            &latxs_env_ir2_opnd, lsenv_offset_of_fcsr(lsenv));
+    latxs_ra_free_temp(&tmp);
+#endif
 
     /* 3. save x86 mapping registers */
     int save_top = (option_lsfpu && !option_soft_fpu) ? 1 : 0;

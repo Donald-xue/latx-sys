@@ -131,6 +131,41 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
         return;
     }
 
+#if defined(LATX_SYS_FCSR)
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+#if defined(LATX_SYS_FCSR_SIMD)
+    /* save into env->fscr or env->fcsr_simd  */
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, &tmp, zero, &fcsr_is_simd);
+
+    /* LA FCSR => env->fcsr */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp, env,
+            lsenv_offset_of_fcsr(lsenv));
+    IR2_OPND label_finish = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_B, &label_finish);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+    /* LA FCSR => env->fcsr_simd */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
+#else
+    /* save into env->fcsr */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, &tmp, env,
+            lsenv_offset_of_fcsr(lsenv));
+#endif
+#endif
+
     if (likely(cfg.sv_allgpr)) {
         latxs_tr_save_registers_to_env(0xff, 0xff, !option_soft_fpu, 0xff, 0xff,
                                        0x2);
@@ -139,6 +174,12 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
                                        !option_soft_fpu, XMM_LO_USEDEF_TO_SAVE,
                                        XMM_HI_USEDEF_TO_SAVE, 0x2);
     }
+
+#if defined(LATX_SYS_FCSR)
+    latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, &latxs_sp_ir2_opnd, 128);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &tmp);
+    latxs_ra_free_temp(&tmp);
+#endif
 
     if (likely(cfg.sv_eflags)) {
         latxs_tr_save_eflags();
@@ -198,6 +239,46 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
             latxs_td_set_reg_extmb_after_cs(GPR_USEDEF_TO_SAVE);
         }
     }
+
+#if defined(LATX_SYS_FCSR)
+    {
+        IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND *env = &latxs_env_ir2_opnd;
+#if defined(LATX_SYS_FCSR_SIMD)
+        /* load env->fcsr or env->fcsr_simd */
+        IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+        IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                offsetof(CPUX86State, is_fcsr_simd));
+        latxs_append_ir2_opnd3(LISA_BNE, &tmp, zero, &fcsr_is_simd);
+
+        /* LA FCSR <= env->fcsr */
+        latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                offsetof(CPUX86State, fcsr));
+        IR2_OPND label_finish = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd1(LISA_B, &label_finish);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+        /* LA FCSR <= env->fcsr_simd */
+        latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                offsetof(CPUX86State, fcsr_simd));
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, &tmp, &tmp, 0x340);
+        latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &tmp);
+#else
+        /* load env->fcsr */
+        latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                offsetof(CPUX86State, fcsr));
+        latxs_append_ir2_opnd2i(LISA_ANDI, &tmp, &tmp, 0x340);
+        latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &tmp);
+#endif
+        latxs_ra_free_temp(&tmp);
+    }
+#endif
 }
 
 /* helper with zero arg */

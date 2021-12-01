@@ -28,6 +28,10 @@
 #include "fpu/softfloat-macros.h"
 #include "helper-tcg.h"
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+#include "latx-config.h"
+#endif
+
 #ifdef CONFIG_SOFTMMU
 #include "hw/irq.h"
 #endif
@@ -743,6 +747,9 @@ void update_fp_status(CPUX86State *env)
         break;
     }
     set_floatx80_rounding_precision(rnd_type, &env->fp_status);
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    latxs_update_fcsr(env);
+#endif
 }
 
 void helper_fldcw(CPUX86State *env, uint32_t val)

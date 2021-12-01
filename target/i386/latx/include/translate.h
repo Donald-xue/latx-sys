@@ -1101,6 +1101,7 @@ void tr_load_registers_from_env(uint8 gpr_to_load, uint8 fpr_to_load,
 void tr_save_fcsr_to_env(void);
 void tr_load_fcsr_from_env(void);
 void update_fcsr_by_sw(IR2_OPND sw);
+void latxs_tr_reset_fcsr_rm(void);
 
 void tr_load_guest_base(void);
 

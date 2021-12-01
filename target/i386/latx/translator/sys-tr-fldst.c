@@ -279,14 +279,14 @@ bool latxs_translate_fist(IR1_INST *pir1)
 
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
     IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
-    IR2_OPND *env = &latxs_env_ir2_opnd;
 
     /* 1. load rounding_mode from x86_control_word to mips_fcsr */
     IR2_OPND tmp_fcsr = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp_fcsr, fcsr);
 
-#if 1
+#if !defined(LATX_SYS_FCSR)
     {
+        IR2_OPND *env = &latxs_env_ir2_opnd;
         IR2_OPND cw = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_LD_W, &cw, env,
                 lsenv_offset_of_control_word(lsenv));

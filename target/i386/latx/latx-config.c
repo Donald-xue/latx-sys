@@ -573,6 +573,20 @@ void latxs_fix_after_excp_or_int(void)
     CPUX86State *env = lsenv->cpu_state;
     env->sigint_flag = 1;
 
+#if defined(LATX_SYS_FCSR) && defined(LATX_SYS_FCSR_SIMD)
+    /*
+     * Some SIMD instructions will use env->mxcsr's RM:
+     *  1> read current LA's FCSR into temp register @tmp
+     *  2> call set() to set LA's FCSR RM according to env->mxcsr
+     *  3> do SIMD operation
+     *  4> call reset() to set LA's FCSR according to @tmp
+     *
+     * TODO: what if exception occurs in step<3> ?
+     * More details in latx/translator/sys-fpu.c
+     */
+    lsassertm(!env->is_fcsr_simd, "simd fcsr exception\n");
+#endif
+
     if (lsenv->after_exec_tb_fixed) {
         return;
     }
