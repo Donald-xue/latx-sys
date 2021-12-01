@@ -21,14 +21,35 @@ bool translate_cdqe(IR1_INST *pir1)
 #endif
 }
 
-bool translate_cqo(IR1_INST *pir1) { return false; }
+bool translate_cqo(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cqo(pir1);
+#else
+    return false;
+#endif
+}
 
 bool translate_salc(IR1_INST *pir1) { return false; }
 
 bool translate_lar(IR1_INST *pir1) { return false; }
 bool translate_lsl(IR1_INST *pir1) { return false; }
-bool translate_syscall(IR1_INST *pir1) { return false; }
-bool translate_sysret(IR1_INST *pir1) { return false; }
+bool translate_syscall(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_syscall(pir1);
+#else
+    return false;
+#endif
+}
+bool translate_sysret(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_sysret(pir1);
+#else
+    return false;
+#endif
+}
 bool translate_femms(IR1_INST *pir1) { return false; }
 bool translate_getsec(IR1_INST *pir1) { return false; }
 bool translate_verr(IR1_INST *pir1) { return false; }
@@ -48,7 +69,14 @@ bool translate_vmsave(IR1_INST *pir1) { return false; }
 bool translate_stgi(IR1_INST *pir1) { return false; }
 bool translate_clgi(IR1_INST *pir1) { return false; }
 bool translate_skinit(IR1_INST *pir1) { return false; }
-bool translate_swapgs(IR1_INST *pir1) { return false; }
+bool translate_swapgs(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_swapgs(pir1);
+#else
+    return false;
+#endif
+}
 bool translate_pi2fw(IR1_INST *pir1) { return false; }
 bool translate_pi2fd(IR1_INST *pir1) { return false; }
 bool translate_pf2iw(IR1_INST *pir1) { return false; }
@@ -266,7 +294,14 @@ bool translate_vpinsrw(IR1_INST *pir1) { return false; }
 bool translate_vpextrw(IR1_INST *pir1) { return false; }
 bool translate_vshufps(IR1_INST *pir1) { return false; }
 bool translate_vshufpd(IR1_INST *pir1) { return false; }
-bool translate_cmpxchg16b(IR1_INST *pir1) { return false; }
+bool translate_cmpxchg16b(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_cmpxchg16b(pir1);
+#else
+    return false;
+#endif
+}
 bool translate_vmptrst(IR1_INST *pir1) { return false; }
 bool translate_vaddsubpd(IR1_INST *pir1) { return false; }
 bool translate_vaddsubps(IR1_INST *pir1) { return false; }

@@ -1023,7 +1023,7 @@ static void latxs_generate_cf(
         } else {
             IR2_OPND t_dest = latxs_ra_alloc_itemp();
             latxs_append_ir2_opnd2i(LISA_ADDI_D, &t_dest, src1, -1);
-            latxs_append_ir2_opnd3(LISA_SLL_W,   &t_dest, src0, &t_dest);
+            latxs_append_ir2_opnd3(LISA_SLL_D,   &t_dest, src0, &t_dest);
             latxs_append_ir2_opnd2i(LISA_SRLI_D, &t_dest, &t_dest,
                 /* 64bit not handled */
                 ir1_opnd_size(ir1_get_opnd(pir1, 0)) - 1);

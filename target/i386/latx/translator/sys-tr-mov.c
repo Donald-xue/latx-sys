@@ -120,6 +120,41 @@ bool latxs_translate_movq(IR1_INST *pir1)
 
     /* XMM */
 
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_gpr(src)) {
+            IR2_OPND gpr_src = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(src));
+            IR2_OPND xmm_dest = latxs_ra_alloc_xmm(ir1_opnd_base_reg_num(dest));
+
+            IR2_OPND temp = latxs_ra_alloc_ftemp();
+            latxs_append_ir2_opnd2i(LISA_VINSGR2VR_D, &temp, &gpr_src, 0);
+            latxs_append_ir2_opnd2i(LISA_XVPICKVE_D, &xmm_dest, &temp, 0);
+
+            return true;
+        }
+        if (ir1_opnd_is_xmm(src) && ir1_opnd_is_gpr(dest)) {
+            IR2_OPND gpr_dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(dest));
+            IR2_OPND xmm_src = latxs_ra_alloc_xmm(ir1_opnd_base_reg_num(src));
+            latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_DU, &gpr_dest, &xmm_src, 0);
+            return true;
+        }
+        if (ir1_opnd_is_mmx(dest) && ir1_opnd_is_gpr(src)) {
+            IR2_OPND gpr_src = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(src));
+            IR2_OPND mm_dest = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(dest));
+
+            latxs_append_ir2_opnd2i(LISA_VINSGR2VR_D, &mm_dest, &gpr_src, 0);
+
+            return true;
+        }
+        if (ir1_opnd_is_mmx(src) && ir1_opnd_is_gpr(dest)) {
+            IR2_OPND gpr_dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(dest));
+            IR2_OPND mm_src = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(src));
+            latxs_append_ir2_opnd2i(LISA_VPICKVE2GR_DU, &gpr_dest, &mm_src, 0);
+            return true;
+        }
+    }
+#endif
+
     if (ir1_opnd_is_xmm(dest) && ir1_opnd_is_mem(src)) {
         IR2_OPND temp = latxs_ra_alloc_itemp();
         latxs_load_ir1_mem_to_ir2(&temp, src, EXMode_Z, -1);
@@ -209,6 +244,9 @@ bool latxs_translate_movd(IR1_INST *pir1)
         IR2_OPND gpr_dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(dest));
         IR2_OPND xmm_src  = latxs_ra_alloc_xmm(ir1_opnd_base_reg_num(src));
         latxs_append_ir2_opnd2(LISA_MOVFR2GR_S, &gpr_dest, &xmm_src);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2_(lisa_mov32z, &gpr_dest, &gpr_dest);
+#endif
         return true;
     }
 
@@ -224,6 +262,9 @@ bool latxs_translate_movd(IR1_INST *pir1)
         IR2_OPND gpr_dest = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(dest));
         IR2_OPND mmx_src  = latxs_ra_alloc_mmx(ir1_opnd_base_reg_num(src));
         latxs_append_ir2_opnd2(LISA_MOVFR2GR_S, &gpr_dest, &mmx_src);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2_(lisa_mov32z, &gpr_dest, &gpr_dest);
+#endif
         return true;
     }
 
@@ -254,7 +295,16 @@ bool latxs_translate_xlat(IR1_INST *pir1)
     /* TODO: error when FS/GS override */
     lsassert(!lsenv->tr_data->sys.addseg);
     int addr_size = latxs_ir1_addr_size(pir1);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(addr_size == 8 || addr_size == 4);
+
+    } else {
+        lsassert(addr_size == 4);
+    }
+#else
     lsassert(addr_size == 4);
+#endif
 
     IR2_OPND addr = latxs_ra_alloc_itemp();
     IR2_OPND data = latxs_ra_alloc_itemp();
@@ -263,7 +313,15 @@ bool latxs_translate_xlat(IR1_INST *pir1)
     IR2_OPND ebx_opnd = latxs_ra_alloc_gpr(ebx_index);
     latxs_append_ir2_opnd2_(lisa_mov8z, &addr, &eax_opnd);
     latxs_append_ir2_opnd3(LISA_ADD_D, &addr, &addr, &ebx_opnd);
-    latxs_append_ir2_opnd2_(lisa_mov32z, &addr, &addr);
+
+
+#ifdef TARGET_X86_64
+        if (!lsenv->tr_data->sys.code64) {
+            latxs_append_ir2_opnd2_(lisa_mov32z, &addr, &addr);
+        }
+#else
+        latxs_append_ir2_opnd2_(lisa_mov32z, &addr, &addr);
+#endif
 
     IR2_OPND mem;
     latxs_ir2_opnd_build_mem(&mem, latxs_ir2_opnd_reg(&addr), 0);
@@ -314,7 +372,13 @@ bool latxs_translate_cmovo(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -338,7 +402,13 @@ bool latxs_translate_cmovno(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -362,7 +432,13 @@ bool latxs_translate_cmovb(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -386,7 +462,13 @@ bool latxs_translate_cmovae(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -410,7 +492,13 @@ bool latxs_translate_cmovz(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -434,7 +522,13 @@ bool latxs_translate_cmovnz(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -458,7 +552,13 @@ bool latxs_translate_cmovbe(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -482,7 +582,13 @@ bool latxs_translate_cmova(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -506,7 +612,13 @@ bool latxs_translate_cmovs(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -530,7 +642,13 @@ bool latxs_translate_cmovns(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -554,7 +672,13 @@ bool latxs_translate_cmovp(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -578,7 +702,13 @@ bool latxs_translate_cmovnp(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -602,7 +732,13 @@ bool latxs_translate_cmovl(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -626,7 +762,13 @@ bool latxs_translate_cmovge(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -650,7 +792,13 @@ bool latxs_translate_cmovle(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BEQZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }
@@ -674,7 +822,13 @@ bool latxs_translate_cmovg(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_BNEZ, &condition, &no_mov);
     CMOVCC_STORE_IR2_TO_IR1(src_opnd, opnd0);
     latxs_append_ir2_opnd1(LISA_LABEL, &no_mov);
-
+#ifdef TARGET_X86_64
+    /* make sure high 32 bits set to zero. TODO: simplify */
+    if (ir1_opnd_size(opnd0) == 32) {
+        IR2_OPND dest_opnd = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+        latxs_append_ir2_opnd2_(lisa_mov32z, &dest_opnd, &dest_opnd);
+    }
+#endif
     latxs_ra_free_temp(&condition);
     return true;
 }

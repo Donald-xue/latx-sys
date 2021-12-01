@@ -2012,6 +2012,14 @@ int latxs_ir1_is_sysexit(IR1_INST *ir1)
 {
     return ir1_opcode(ir1) == X86_INS_SYSEXIT;
 }
+int latxs_ir1_is_syscall(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_SYSCALL;
+}
+int latxs_ir1_is_sysret(IR1_INST *ir1)
+{
+    return ir1_opcode(ir1) == X86_INS_SYSRET;
+}
 int latxs_ir1_is_xrstor(IR1_INST *ir1)
 {
     return ir1_opcode(ir1) == X86_INS_XRSTOR;

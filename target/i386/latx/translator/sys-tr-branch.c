@@ -429,6 +429,12 @@ bool latxs_translate_loopnz(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
         latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd);
         break;
+#ifdef TARGET_X86_64
+    case 8:
+        ir2_xcx = latxs_ra_alloc_gpr(ecx_index);
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &ir2_xcx, &ir2_xcx, -1);
+        break;
+#endif
     default:
         lsassert(0);
         break;
@@ -480,6 +486,12 @@ bool latxs_translate_loopz(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
         latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd);
         break;
+#ifdef TARGET_X86_64
+    case 8:
+        ir2_xcx = latxs_ra_alloc_gpr(ecx_index);
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &ir2_xcx, &ir2_xcx, -1);
+        break;
+#endif
     default:
         lsassert(0);
         break;
@@ -530,6 +542,12 @@ bool latxs_translate_loop(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &ir2_xcx, &ir2_xcx, -1);
         latxs_store_ir2_to_ir1(&ir2_xcx, &ecx_ir1_opnd);
         break;
+#ifdef TARGET_X86_64
+    case 8:
+        ir2_xcx = latxs_ra_alloc_gpr(ecx_index);
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &ir2_xcx, &ir2_xcx, -1);
+        break;
+#endif
     default:
         lsassert(0);
         break;

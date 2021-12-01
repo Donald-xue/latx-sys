@@ -7,6 +7,22 @@
 #include "flag-lbt.h"
 #include "sys-excp.h"
 
+#ifdef TARGET_X86_64
+#define LATXS_MOV_ADDR_TO_ARG(argx, src)                       \
+    do {                                                       \
+        if (lsenv->tr_data->sys.code64) {                      \
+            latxs_append_ir2_opnd2_(lisa_mov, &argx, &src);    \
+        } else {                                               \
+            latxs_append_ir2_opnd2_(lisa_mov32z, &argx, &src); \
+        }                                                      \
+    } while (0)
+#else
+#define LATXS_MOV_ADDR_TO_ARG(argx, src)                   \
+    do {                                                   \
+        latxs_append_ir2_opnd2_(lisa_mov32s, &argx, &src); \
+    } while (0)
+#endif
+
 bool latxs_translate_fld_softfpu(IR1_INST *pir1)
 {
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {
@@ -48,7 +64,7 @@ bool latxs_translate_fld_softfpu(IR1_INST *pir1)
         IR2_OPND temp = latxs_ra_alloc_itemp();
         latxs_convert_mem_opnd_no_offset(&temp, opnd);
         latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-        latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+        LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
         latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                                 &latxs_env_ir2_opnd);
         latxs_tr_gen_call_to_helper((ADDR)helper_fldt_ST0);
@@ -95,7 +111,7 @@ bool latxs_translate_fbld_softfpu(IR1_INST *pir1)
     latxs_convert_mem_opnd_no_offset(&temp, opnd);
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_tr_gen_call_to_helper((ADDR)helper_fbld_ST0);
@@ -199,7 +215,7 @@ bool latxs_translate_fstp_softfpu(IR1_INST *pir1)
         latxs_convert_mem_opnd_no_offset(&temp, opnd);
         latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
 
-        latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+        LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
         latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                                 &latxs_env_ir2_opnd);
         latxs_tr_gen_call_to_helper((ADDR)helper_fstt_ST0);
@@ -250,7 +266,7 @@ bool latxs_translate_fbstp_softfpu(IR1_INST *pir1)
     latxs_convert_mem_opnd_no_offset(&temp, opnd);
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_tr_gen_call_to_helper((ADDR)helper_fbst_ST0);
@@ -1559,7 +1575,7 @@ bool latxs_translate_fnstenv_softfpu(IR1_INST *pir1)
     int data32 = data_size == 32 ? 1 : 0;
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
@@ -1584,7 +1600,7 @@ bool latxs_translate_fldenv_softfpu(IR1_INST *pir1)
     int data32 = data_size == 32 ? 1 : 0;
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
@@ -1609,7 +1625,7 @@ bool latxs_translate_fnsave_softfpu(IR1_INST *pir1)
     int data32 = data_size == 32 ? 1 : 0;
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
@@ -1634,7 +1650,7 @@ bool latxs_translate_frstor_softfpu(IR1_INST *pir1)
     int data32 = data_size == 32 ? 1 : 0;
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
@@ -1714,7 +1730,7 @@ bool latxs_translate_fxsave_softfpu(IR1_INST *pir1)
     latxs_convert_mem_opnd_no_offset(&temp, opnd);
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_tr_gen_call_to_helper((ADDR)helper_fxsave);
@@ -1734,7 +1750,7 @@ bool latxs_translate_fxrstor_softfpu(IR1_INST *pir1)
     latxs_convert_mem_opnd_no_offset(&temp, opnd);
 
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &temp);
+    LATXS_MOV_ADDR_TO_ARG(latxs_arg1_ir2_opnd, temp);
     latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                             &latxs_env_ir2_opnd);
     latxs_tr_gen_call_to_helper((ADDR)helper_fxrstor);

@@ -197,9 +197,9 @@ static const IR1_EFLAG_USEDEF ir1_opcode_eflag_usedef[] = {
     {0, 0, 0},                                       /* fnstenv, */         //X86_INS_FNSTENV,
     {0, 0, 0},                                       /* fxam, */            //X86_INS_FXAM,
     {0, 0, 0},                                       /* fxrstor, */         //X86_INS_FXRSTOR,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_FXRSTOR64,
+    {0, 0, 0},                /* X86_INS_FXRSTOR64 */
     {0, 0, 0},                                       /* fxsave, */          //X86_INS_FXSAVE,
-    {__INVALID, __INVALID, __INVALID},                //X86_INS_FXSAVE64,
+    {0, 0, 0},                /* X86_INS_FXSAVE64 */
     {0, 0, 0},                                       /* fxtract, */         //X86_INS_FXTRACT,
     {0, 0, 0},                                       /* fyl2x, */           //X86_INS_FYL2X,
     {0, 0, 0},                                       /* fyl2xp1, */         //X86_INS_FYL2XP1,

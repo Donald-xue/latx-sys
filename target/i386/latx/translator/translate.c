@@ -714,9 +714,9 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_fnstenv,   //X86_INS_FNSTENV,
     translate_fxam,      //X86_INS_FXAM,
     translate_fxrstor,   //X86_INS_FXRSTOR,
-    NULL,                //X86_INS_FXRSTOR64,
+    translate_fxrstor,   /* X86_INS_FXRSTOR64, */
     translate_fxsave,    //X86_INS_FXSAVE,
-    NULL,                //X86_INS_FXSAVE64,
+    translate_fxsave,    /* X86_INS_FXSAVE64, */
     translate_fxtract,   //X86_INS_FXTRACT,
     translate_fyl2x,     //X86_INS_FYL2X,
     translate_fyl2xp1,   //X86_INS_FYL2XP1,
@@ -756,7 +756,7 @@ static bool (*translate_functions[])(IR1_INST *) = {
     translate_invvpid,   //X86_INS_INVVPID,
     translate_iret,      //X86_INS_IRET,
     translate_iret,      //X86_INS_IRETD,
-    NULL,                //X86_INS_IRETQ,
+    translate_iret,      /* X86_INS_IRETQ */
     translate_fisttp,    //X86_INS_FISTTP,
     translate_fist,      //X86_INS_FIST,
     translate_fistp,     //X86_INS_FISTP,

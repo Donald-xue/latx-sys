@@ -240,9 +240,11 @@ bool latxs_generate_eflag_by_lbt(IR2_OPND *dest,
     case X86_INS_CMPSB:
     case X86_INS_CMPSW:
     case X86_INS_CMPSD:
+    case X86_INS_CMPSQ:
     case X86_INS_SCASB:
     case X86_INS_SCASW:
     case X86_INS_SCASD:
+    case X86_INS_SCASQ:
     case X86_INS_CMPXCHG:
     case X86_INS_NEG:
     case X86_INS_CMP:

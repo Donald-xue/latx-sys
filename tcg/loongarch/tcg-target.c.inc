@@ -1947,8 +1947,8 @@ void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
             upper = ((jmp_offset + (1 << 15)) >> 16) & 0xfffff;
             lower = (jmp_offset & 0xffff);
             /* $t0 -> temp reg, was not used at end of tb */
-            i1 = 0x1e000000 | upper << 5 | TCG_REG_T0;       /* pcaddu18i */
-            i2 = 0x4c000000 | lower << 10 | TCG_REG_T0 << 5; /* jirl */
+            i1 = 0x1e000000 | upper << 5 | TCG_REG_A0;       /* pcaddu18i */
+            i2 = 0x4c000000 | lower << 10 | TCG_REG_A0 << 5; /* jirl */
             qatomic_set((uint32_t *)jmp_rw, i1);
             qatomic_set((uint32_t *)(jmp_rw + 4), i2);
             flush_idcache_range(jmp_rx, jmp_rw, 8);

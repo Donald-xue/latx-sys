@@ -2188,8 +2188,20 @@ bool latxs_translate_cvtss2si(IR1_INST *pir1)
     helper_cfg_t cfg = default_helper_cfg;
     uint64_t src_addr =
         (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2si, src_addr,
-                                        0, cfg);
+
+#ifdef TARGET_X86_64
+    if (ir1_opnd_size(opnd0) == 64) {
+        latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2sq, src_addr, 0,
+                                             cfg);
+    } else {
+        latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2si, src_addr, 0,
+                                             cfg);
+    }
+#else
+    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2si, src_addr, 0,
+                                         cfg);
+#endif
+
     latxs_store_ir2_to_ir1(&latxs_ret0_ir2_opnd, opnd0);
     return true;
 }
@@ -2536,14 +2548,23 @@ bool latxs_translate_cvttss2si(IR1_INST *pir1)
 
     IR2_OPND temp_over_flow  = latxs_ra_alloc_itemp();
     IR2_OPND ftemp_over_flow = latxs_ra_alloc_ftemp();
-    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_over_flow, zero, 0x41e);
+    /*
+     * if 32 bits, check data is 0x41e0_0000_0000_0000
+     * if 64 bits, check data is 0x43e0_0000_0000_0000
+     */
+    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_over_flow, zero,
+                            0x3fe + ir1_opnd_size(opnd0));
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp_over_flow,
                                             &temp_over_flow);
 
     IR2_OPND temp_under_flow  = latxs_ra_alloc_itemp();
     IR2_OPND ftemp_under_flow = latxs_ra_alloc_ftemp();
+    /*
+     * if 32 bits, check data is 0xc1e0_0000_0000_0000
+     * if 64 bits, check data is 0xc3e0_0000_0000_0000
+     */
     latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_under_flow, zero,
-                            0xc1e << 20 >> 20);
+                            (0xbfe + ir1_opnd_size(opnd0)) << 20 >> 20);
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp_under_flow,
                                             &temp_under_flow);
 
@@ -2590,7 +2611,15 @@ bool latxs_translate_cvttss2si(IR1_INST *pir1)
     IR2_OPND label_for_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
     latxs_append_ir2_opnd1(LISA_LABEL, &label_for_flow);
+#ifdef TARGET_X86_64
+    if (ir1_opnd_size(opnd0) == 64) {
+        latxs_load_imm64_to_ir2(&temp_fcsr, 0x8000000000000000UL);
+    } else {
+        latxs_load_imm32_to_ir2(&temp_fcsr, 0x80000000, EXMode_Z);
+    }
+#else
     latxs_load_imm32_to_ir2(&temp_fcsr, 0x80000000, EXMode_Z);
+#endif
     latxs_append_ir2_opnd1(LISA_LABEL, &label_for_exit);
     latxs_store_ir2_to_ir1(&temp_fcsr, opnd0);
 
@@ -3228,7 +3257,16 @@ bool latxs_translate_maskmovdqu(IR1_INST *pir1)
     IR2_OPND one_byte = latxs_ra_alloc_itemp();
 
     int addr_size = latxs_ir1_addr_size(pir1);
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(addr_size == 4 || addr_size == 8);
+    } else {
+        lsassert(addr_size == 2 || addr_size == 4);
+    }
+#else
     lsassert(addr_size == 2 || addr_size == 4);
+#endif
 
     IR1_OPND mem_ir1_opnd;
 
@@ -3274,7 +3312,16 @@ bool latxs_translate_maskmovq(IR1_INST *pir1)
     IR2_OPND one_byte = latxs_ra_alloc_itemp();
 
     int addr_size = latxs_ir1_addr_size(pir1);
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(addr_size == 4 || addr_size == 8);
+    } else {
+        lsassert(addr_size == 2 || addr_size == 4);
+    }
+#else
     lsassert(addr_size == 2 || addr_size == 4);
+#endif
 
     IR1_OPND mem_ir1_opnd;
 
@@ -4308,20 +4355,30 @@ bool latxs_translate_cvttsd2si(IR1_INST *pir1)
     IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
 
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR2_OPND src_lo = XMM_LOAD128(ir1_get_opnd(pir1, 1));
 
     IR2_OPND temp_over_flow  = latxs_ra_alloc_itemp();
     IR2_OPND ftemp_over_flow = latxs_ra_alloc_ftemp();
 
-    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_over_flow, zero, 0x41e);
+    /*
+     * if 32 bits, check data is 0x41e0_0000_0000_0000
+     * if 64 bits, check data is 0x43e0_0000_0000_0000
+     */
+    latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_over_flow, zero,
+                            0x3fe + ir1_opnd_size(opnd0));
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp_over_flow,
                                             &temp_over_flow);
 
     IR2_OPND temp_under_flow  = latxs_ra_alloc_itemp();
     IR2_OPND ftemp_under_flow = latxs_ra_alloc_ftemp();
 
+    /*
+     * if 32 bits, check data is 0xc1e0_0000_0000_0000
+     * if 64 bits, check data is 0xc3e0_0000_0000_0000
+     */
     latxs_append_ir2_opnd2i(LISA_LU52I_D, &temp_under_flow, zero,
-                            0xc1e << 20 >> 20);
+                            (0xbfe + ir1_opnd_size(opnd0)) << 20 >> 20);
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp_under_flow,
                                             &temp_under_flow);
 
@@ -4364,7 +4421,15 @@ bool latxs_translate_cvttsd2si(IR1_INST *pir1)
     IR2_OPND label_for_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
     latxs_append_ir2_opnd1(LISA_LABEL, &label_for_flow);
+#ifdef TARGET_X86_64
+    if (ir1_opnd_size(opnd0) == 64) {
+        latxs_load_imm64_to_ir2(&temp_fcsr, 0x8000000000000000UL);
+    } else {
+        latxs_load_imm32_to_ir2(&temp_fcsr, 0x80000000, EXMode_Z);
+    }
+#else
     latxs_load_imm32_to_ir2(&temp_fcsr, 0x80000000, EXMode_Z);
+#endif
     latxs_append_ir2_opnd1(LISA_LABEL, &label_for_exit);
     latxs_store_ir2_to_ir1(&temp_fcsr, ir1_get_opnd(pir1, 0));
 

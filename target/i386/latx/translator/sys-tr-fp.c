@@ -14,7 +14,9 @@ void latxs_sys_fp_register_ir1(void)
     latxs_register_ir1(X86_INS_FSETPM);
 
     latxs_register_ir1(X86_INS_FXSAVE);
+    latxs_register_ir1(X86_INS_FXSAVE64);
     latxs_register_ir1(X86_INS_FXRSTOR);
+    latxs_register_ir1(X86_INS_FXRSTOR64);
     latxs_register_ir1(X86_INS_FNSTENV);
     latxs_register_ir1(X86_INS_FLDENV);
     latxs_register_ir1(X86_INS_FNSAVE);

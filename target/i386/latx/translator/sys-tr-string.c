@@ -190,6 +190,16 @@ static void latxs_tr_gen_string_loop_end(IR1_INST *pir1,
         /*     3>    ecx == 0            */
         IR2_OPND ecx_opnd = latxs_ra_alloc_gpr(ecx_index);
         int addr_size = latxs_ir1_addr_size(pir1);
+#ifdef TARGET_X86_64
+        if (addr_size == 8) {
+                /* RCX */
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &ecx_opnd, &ecx_opnd, -1);
+            latxs_append_ir2_opnd2i(LISA_SLTUI,  &condition, &ecx_opnd, 1);
+                if (option_by_hand) {
+                    lsassert(0);
+                }
+        } else
+#endif
         if (addr_size == 4) {
             /* ECX */
             latxs_append_ir2_opnd2i(LISA_ADDI_W, &ecx_opnd, &ecx_opnd, -1);
@@ -701,11 +711,13 @@ bool latxs_translate_lods(IR1_INST *pir1)
         latxs_ra_free_temp(&si);
     }
 
-    /* 4. loop ends */
-    latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
+    /* if xcx = 0, just end */
 
     /* 5. store the load value to dest */
     latxs_store_ir2_to_ir1_gpr(&_esi_, opnd0);
+
+    /* 4. loop ends */
+    latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
 
     latxs_ra_free_temp(&step);
 

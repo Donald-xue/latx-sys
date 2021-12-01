@@ -460,8 +460,15 @@ bool latxs_translate_btx(IR1_INST *pir1)
         latxs_append_ir2_opnd3(LISA_ADD_D, &mem, &mem, &byte_nr);
         latxs_ra_free_temp(&byte_nr);
 
+#ifdef TARGET_X86_64
+        if (!lsenv->tr_data->sys.code64) {
+            /* byte_nr is sx, make sure mem is 32zx */
+            latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
+        }
+#else
         /* byte_nr is sx, make sure mem is 32zx */
         latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
+#endif
 
         gen_ldst_softmmu_helper(LISA_LD_HU, &bit_base, &mem_no_offset, 1);
     }

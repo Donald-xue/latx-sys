@@ -61,13 +61,46 @@ uint8_t latxs_cpu_read_code_via_qemu(CPUX86State *env, ADDRX pc)
     return cpu_ldub_code(env, (target_ulong)pc);
 }
 
+static inline int ir1_is_rdsspd(uint8_t *inst_cache)
+{
+    if (inst_cache[0] == 0xf3 && inst_cache[1] == 0x0f &&
+        inst_cache[2] == 0x1e && ((inst_cache[3] & 0xf8) == 0xc8)) {
+        return 4;
+    } else {
+        return 0;
+    }
+}
+
+static inline int ir1_is_rdssp_rex(uint8_t *inst_cache)
+{
+    if (inst_cache[0] == 0xf3 && ((inst_cache[1] & 0xf0) == 0x40) &&
+        inst_cache[2] == 0x0f && inst_cache[3] == 0x1e &&
+        (((inst_cache[4] & 0xf8)) == 0xc8)) {
+        return 5;
+    } else {
+        return 0;
+    }
+}
+
 static void __latxs_disasm_do_error_sys(IR1_INST *pir1,
         uint8_t *inst_cache, ADDRX pc, ADDRX *next_pc)
 {
-    if (inst_cache[0] == 0xf3 &&
-        inst_cache[1] == 0x0f &&
-        inst_cache[2] == 0x1e &&
-        inst_cache[3] == 0xc9) {
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64 && ir1_is_rdssp_rex(inst_cache)) {
+        latxs_ir1_make_ins_ILLEGAL(pir1, pc, 5, LATXS_IR1_FLAGS_GENNOP);
+        *next_pc = pc + 5;
+    } else if (ir1_is_rdsspd(inst_cache)) {
+        latxs_ir1_make_ins_ILLEGAL(pir1, pc, 4, LATXS_IR1_FLAGS_GENNOP);
+        *next_pc = pc + 4;
+    } else
+#else
+    if (ir1_is_rdsspd(inst_cache)) {
+        latxs_ir1_make_ins_ILLEGAL(pir1, pc, 4, LATXS_IR1_FLAGS_GENNOP);
+        *next_pc = pc + 4;
+    } else
+#endif
+    if (inst_cache[0] == 0xf3 && inst_cache[1] == 0x0f &&
+            inst_cache[2] == 0x1e && inst_cache[3] == 0xc9) {
         /* endbr32 */
         latxs_ir1_make_ins_ILLEGAL(pir1, pc, 4, LATXS_IR1_FLAGS_GENNOP);
         *next_pc = pc + 4;

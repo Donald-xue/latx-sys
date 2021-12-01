@@ -403,6 +403,10 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
         EC_CPLEQ_GP_AND_RETURN(0);
         break;
     /* ///////End of AMD SVM(Secure Virtual Machine) Extension////////// */
+#ifdef TARGET_X86_64
+    case X86_INS_FXSAVE64:
+    case X86_INS_FXRSTOR64:
+#endif
     case X86_INS_FXSAVE:
     case X86_INS_FXRSTOR:
         if (!(td->sys.cpuid_features & CPUID_FXSR)) {

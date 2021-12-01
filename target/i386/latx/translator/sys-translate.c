@@ -384,25 +384,30 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 
 #ifdef TARGET_X86_64
         if (td->sys.code64) {
-            lsassert(!latxs_ir1_has_prefix_addrsize(pir1));
+            lsassert(((CPUX86State *)lsenv->cpu_state)->segs[cs_index].base ==
+                     0);
+            lsassert(((CPUX86State *)lsenv->cpu_state)->segs[ds_index].base ==
+                     0);
+            lsassert(((CPUX86State *)lsenv->cpu_state)->segs[es_index].base ==
+                     0);
+            lsassert(((CPUX86State *)lsenv->cpu_state)->segs[ss_index].base ==
+                     0);
+            if (ir1_opcode(pir1) != X86_INS_CALL) {
+                if (latxs_ir1_has_prefix_addrsize(pir1)) {
+                    ir1_dump(pir1);
+                }
+            }
             int opnd_num = ir1_opnd_num(pir1);
             for (size_t i = 0; i < opnd_num; i++) {
                 IR1_OPND *op = ir1_get_opnd(pir1, i);
-                if (ir1_opnd_is_pc_relative(op)) {
-                    /* pc relative and seg override prefix ? */
-                    lsassert(!ir1_opnd_seg_reg(op));
-                }
                 if (ir1_opnd_is_mem(op) && ir1_opnd_has_seg(op) &&
                     !latxs_ir1_is_nop(pir1)) {
                     int seg_num = ir1_opnd_get_seg_index(op);
-                    lsassert(seg_num != cs_index);
-                    lsassert(seg_num != ds_index);
-                    lsassert(seg_num != es_index);
-                    lsassert(seg_num != ss_index);
+                    if (seg_num == cs_index || seg_num == ds_index ||
+                        seg_num == es_index || seg_num == ss_index) {
+                        lsassert(!lsenv->tr_data->sys.addseg);
+                    }
                 }
-            }
-            if (ir1_opcode(pir1) != X86_INS_ENDBR64) {
-                lsassert(latxs_ir1_addr_size(pir1) == 8);
             }
         }
 #endif

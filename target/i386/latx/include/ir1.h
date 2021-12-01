@@ -362,6 +362,8 @@ int latxs_ir1_is_invlpg(IR1_INST *ir1);
 int latxs_ir1_is_pause(IR1_INST *ir1);
 int latxs_ir1_is_sysenter(IR1_INST *ir1);
 int latxs_ir1_is_sysexit(IR1_INST *ir1);
+int latxs_ir1_is_syscall(IR1_INST *ir1);
+int latxs_ir1_is_sysret(IR1_INST *ir1);
 int latxs_ir1_is_xrstor(IR1_INST *ir1);
 int latxs_ir1_is_xsetbv(IR1_INST *ir1);
 int latxs_ir1_is_mwait(IR1_INST *ir1);

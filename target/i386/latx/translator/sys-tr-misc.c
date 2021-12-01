@@ -30,6 +30,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_XCHG);
     latxs_register_ir1(X86_INS_CMPXCHG);
     latxs_register_ir1(X86_INS_CMPXCHG8B);
+    latxs_register_ir1(X86_INS_CMPXCHG16B);
     latxs_register_ir1(X86_INS_RSM);
     latxs_register_ir1(X86_INS_INVD);
     latxs_register_ir1(X86_INS_WBINVD);
@@ -37,15 +38,18 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PAUSE);
     latxs_register_ir1(X86_INS_IRET);
     latxs_register_ir1(X86_INS_IRETD);
+    latxs_register_ir1(X86_INS_IRETQ);
     latxs_register_ir1(X86_INS_INT);
     latxs_register_ir1(X86_INS_INT1);
     latxs_register_ir1(X86_INS_INT3);
     latxs_register_ir1(X86_INS_INTO);
     latxs_register_ir1(X86_INS_RETF);
     latxs_register_ir1(X86_INS_RETFQ);
-    latxs_register_ir1(X86_INS_CDQ);
     latxs_register_ir1(X86_INS_CWD);
+    latxs_register_ir1(X86_INS_CDQ);
+    latxs_register_ir1(X86_INS_CQO);
     latxs_register_ir1(X86_INS_CWDE);
+    latxs_register_ir1(X86_INS_CDQE);
     latxs_register_ir1(X86_INS_CBW);
     latxs_register_ir1(X86_INS_LCALL);
     latxs_register_ir1(X86_INS_POPAW);
@@ -73,6 +77,8 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_PREFETCHNTA);
     latxs_register_ir1(X86_INS_SYSENTER);
     latxs_register_ir1(X86_INS_SYSEXIT);
+    latxs_register_ir1(X86_INS_SYSCALL);
+    latxs_register_ir1(X86_INS_SYSRET);
     latxs_register_ir1(X86_INS_PREFETCHT0);
     latxs_register_ir1(X86_INS_PREFETCHT1);
     latxs_register_ir1(X86_INS_PREFETCHT2);
@@ -83,6 +89,7 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_UD2);
     latxs_register_ir1(X86_INS_ENDBR32);
     latxs_register_ir1(X86_INS_ENDBR64);
+    latxs_register_ir1(X86_INS_SWAPGS);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -352,11 +359,25 @@ bool latxs_translate_jmp_far(IR1_INST *pir1)
 
 bool latxs_translate_call(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_addrsize(pir1)) {
+        ir1_dump(pir1);
+    }
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        lsassert(!latxs_ir1_has_prefix_opsize(pir1));
+    }
+#endif
     if (ir1_is_indirect_call(pir1)) {
         return latxs_translate_callin(pir1);
     } else if (ir1_addr_next(pir1) == ir1_target_addr(pir1)) {
         return latxs_translate_callnext(pir1);
     }
+
+#ifdef TARGET_X86_64
+    if (ir1_target_addr(pir1) >> 32 && latxs_ir1_has_prefix_addrsize(pir1)) {
+        lsassert(0);
+    }
+#endif
 
     bool ss32 = lsenv->tr_data->sys.ss32;
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
@@ -523,6 +544,15 @@ bool latxs_translate_callin(IR1_INST *pir1)
 
     /* 4. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &esp_opnd, &esp_opnd,
+                                0 - (opnd_size >> 3));
+        if (option_by_hand) {
+            lsassert(0);
+        }
+    } else
+#endif
     if (ss32) {
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &esp_opnd,
                 &esp_opnd, 0 - (opnd_size >> 3));
@@ -668,7 +698,15 @@ bool latxs_translate_lidt(IR1_INST *pir1)
 
     /* 2. load 4 bytes for base address at MEM(addr + 2)*/
     IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        gen_ldst_softmmu_helper(LISA_LD_D, &base, &mem, save_temp);
+    } else {
+        gen_ldst_softmmu_helper(LISA_LD_WU, &base, &mem, save_temp);
+    }
+#else
     gen_ldst_softmmu_helper(LISA_LD_WU, &base, &mem, save_temp);
+#endif
 
     /* 3. 24-bits long base address in Real-Address mode and vm86 mode */
     if (!td->sys.pe || td->sys.vm86) {
@@ -683,8 +721,14 @@ bool latxs_translate_lidt(IR1_INST *pir1)
     }
 
     /* 4. store limit/base into IDTR */
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_idtr_base(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &base, &latxs_env_ir2_opnd,
             lsenv_offset_of_idtr_base(lsenv));
+#endif
+
     latxs_append_ir2_opnd2i(LISA_ST_W, &limit, &latxs_env_ir2_opnd,
             lsenv_offset_of_idtr_limit(lsenv));
 
@@ -705,8 +749,13 @@ bool latxs_translate_sidt(IR1_INST *pir1)
     IR2_OPND base = latxs_ra_alloc_itemp();
     IR2_OPND limit = latxs_ra_alloc_itemp();
 
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_LD_D, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_idtr_base(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_LD_W, &base, &latxs_env_ir2_opnd,
             lsenv_offset_of_idtr_base(lsenv));
+#endif
     latxs_append_ir2_opnd2i(LISA_LD_W, &limit, &latxs_env_ir2_opnd,
             lsenv_offset_of_idtr_limit(lsenv));
 
@@ -719,7 +768,15 @@ bool latxs_translate_sidt(IR1_INST *pir1)
     if (latxs_ir1_addr_size(pir1) == 2) {
         latxs_append_ir2_opnd2_(lisa_mov24z, &base, &base);
     }
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        gen_ldst_softmmu_helper(LISA_ST_D, &base, &mem, save_temp);
+    } else {
+        gen_ldst_softmmu_helper(LISA_ST_W, &base, &mem, save_temp);
+    }
+#else
     gen_ldst_softmmu_helper(LISA_ST_W, &base, &mem, save_temp);
+#endif
 
     latxs_ra_free_temp(&base);
     latxs_ra_free_temp(&limit);
@@ -749,7 +806,15 @@ bool latxs_translate_lgdt(IR1_INST *pir1)
 
     /* 2. load 4 bytes for base address at MEM(addr + 2)*/
     IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        gen_ldst_softmmu_helper(LISA_LD_D, &base, &mem, save_temp);
+    } else {
+        gen_ldst_softmmu_helper(LISA_LD_WU, &base, &mem, save_temp);
+    }
+#else
     gen_ldst_softmmu_helper(LISA_LD_WU, &base, &mem, save_temp);
+#endif
 
     /* 3. 24-bits long base address in Real-Address mode and vm86 mode */
     if (!td->sys.pe || td->sys.vm86) {
@@ -764,8 +829,13 @@ bool latxs_translate_lgdt(IR1_INST *pir1)
     }
 
     /* 4. store limit/base into GDTR */
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_ST_D, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_gdtr_base(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_ST_W, &base, &latxs_env_ir2_opnd,
             lsenv_offset_of_gdtr_base(lsenv));
+#endif
     latxs_append_ir2_opnd2i(LISA_ST_W, &limit, &latxs_env_ir2_opnd,
             lsenv_offset_of_gdtr_limit(lsenv));
 
@@ -795,12 +865,26 @@ bool latxs_translate_sgdt(IR1_INST *pir1)
 
     /* 3. load gdtr.base  from env */
     IR2_OPND base = latxs_ra_alloc_itemp();
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2i(LISA_LD_D, &base, &latxs_env_ir2_opnd,
+            lsenv_offset_of_gdtr_base(lsenv));
+#else
     latxs_append_ir2_opnd2i(LISA_LD_W, &base, &latxs_env_ir2_opnd,
             lsenv_offset_of_gdtr_base(lsenv));
+#endif
 
     /* 4. store 32-bit base at MEM(addr + 2) */
     IR2_OPND mem = latxs_convert_mem_ir2_opnd_plus_2(&mem_opnd);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        gen_ldst_softmmu_helper(LISA_ST_D, &base, &mem, save_temp);
+    } else {
+        gen_ldst_softmmu_helper(LISA_ST_W, &base, &mem, save_temp);
+    }
+#else
     gen_ldst_softmmu_helper(LISA_ST_W, &base, &mem, save_temp);
+#endif
+
     latxs_ra_free_temp(&base);
 
     return true;
@@ -878,6 +962,10 @@ bool latxs_translate_sldt(IR1_INST *pir1)
     IR2_OPND selector = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2i(LISA_LD_W, &selector, &latxs_env_ir2_opnd,
             lsenv_offset_of_ldtr_selector(lsenv));
+
+    if (ir1_opnd_is_mem(opnd0)) {
+        lsassert(ir1_opnd_size(opnd0) == 16);
+    }
 
     latxs_store_ir2_to_ir1(&selector, opnd0);
 
@@ -1158,7 +1246,18 @@ bool latxs_translate_push(IR1_INST *pir1)
     lsassert(opnd_size == 16 || opnd_size == 32);
 #endif
     if (!ir1_opnd_is_seg(opnd0)) {
+#ifdef TARGET_X86_64
+        /*
+         * TODO: capstone bug
+         * 66 68 00
+         * push imm with 0x66 prefix, operand size mistake
+         */
+        if (!ir1_opnd_is_imm(opnd0)) {
+            lsassert(data_size == opnd_size);
+        }
+#else
         lsassert(data_size == opnd_size);
+#endif
     }
 
     (void)opnd_size; /* to avoid compile warning */
@@ -1368,6 +1467,13 @@ bool latxs_translate_xchg(IR1_INST *pir1)
              ir1_opnd_base_reg_num(opnd1)) &&
             (ir1_opnd_base_reg_bits_start(opnd0) ==
              ir1_opnd_base_reg_bits_start(opnd1))) {
+#ifdef TARGET_X86_64
+            if (ir1_opnd_size(opnd0) == 32) {
+                IR2_OPND reg_opnd =
+                    latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+                latxs_append_ir2_opnd2_(lisa_mov32z, &reg_opnd, &reg_opnd);
+            }
+#endif
             return true;
         }
     }
@@ -1408,9 +1514,14 @@ bool latxs_translate_cmpxchg(IR1_INST *pir1)
     case 32:
         reg_ir1 = &eax_ir1_opnd;
         break;
+#ifdef TARGET_X86_64
+    case 64:
+        lsassert(lsenv->tr_data->sys.code64);
+        reg_ir1 = &rax_ir1_opnd;
+        break;
+#endif
     default:
-        lsassertm_illop(ir1_addr(pir1), 0,
-                "cmpxchg opnd size %d is unsupported.\n", opnd_size);
+        lsassert(0);
         break;
     }
 
@@ -1510,6 +1621,71 @@ bool latxs_translate_cmpxchg8b(IR1_INST *pir1)
     latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
 
     return true;
+}
+
+bool latxs_translate_cmpxchg16b(IR1_INST *pir1)
+{
+#ifdef TARGET_X86_64
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_ARPL(pir1);
+
+    /* 1. check illegal operation exception */
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    lsassert_illop(ir1_addr(pir1), ir1_opnd_is_mem(opnd0));
+
+    /* 2. get memory address */
+    IR2_OPND mem_opnd;
+    latxs_convert_mem_opnd(&mem_opnd, opnd0, -1);
+    int mem_no_offset_new_tmp = 0;
+    IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(
+            &mem_opnd, &mem_no_offset_new_tmp);
+    IR2_OPND address = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
+    if (mem_no_offset_new_tmp) {
+        latxs_ra_free_temp(&mem_opnd);
+    }
+
+    /* 3. select helper function */
+    ADDR helper_addr = 0;
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+            td->sys.cflags & CF_PARALLEL) {
+        /*
+         * target/i386/mem_helper.c
+         * void helper_cmpxchg8b(
+         *      CPUX86State *env,
+         *      target_ulong a0)
+         * >> EAX, ECX is used
+         */
+        helper_addr = (ADDR)helper_cmpxchg16b;
+    } else {
+        /*
+         * target/i386/mem_helper.c
+         * void helper_cmpxchg8b_unlocked(
+         *      CPUX86State *env,
+         *      target_ulong a0)
+         * >> EAX, ECX is used
+         */
+        helper_addr = (ADDR)helper_cmpxchg16b_unlocked;
+    }
+
+    /* 4. call that helper */
+
+    /* 4.1 save context */
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    /* 4.2 arg1: address */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd,
+                                      &address);
+    /* 4.3 arg0: env */
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                                      &latxs_env_ir2_opnd);
+    /* 4.4 call helper */
+    latxs_tr_gen_call_to_helper(helper_addr);
+    /* 4.5 restore context */
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    return true;
+#else
+    return false;
+#endif
 }
 
 /* End of TB in system-mode */
@@ -1630,8 +1806,15 @@ static bool latxs_do_translate_iret(IR1_INST *pir1, int size)
     TRANSLATION_DATA *td = lsenv->tr_data;
     CHECK_EXCP_IRET(pir1);
 
-    /* only supported 16-bit and 32-bit now */
+#ifdef TARGET_X86_64
+        if (lsenv->tr_data->sys.code64) {
+            lsassert(size == 0 || size == 1 || size == 2);
+        } else {
+            lsassert(size == 0 || size == 1);
+        }
+#else
     lsassert(size == 0 || size == 1);
+#endif
 
     /* 1. save complete context */
     helper_cfg_t cfg = default_helper_cfg;
@@ -1698,9 +1881,18 @@ bool latxs_translate_iret(IR1_INST *pir1)
     } else if (opc == X86_INS_IRETD) {
         /* 32-bit opnd size */
         return latxs_do_translate_iret(pir1, 1);
+    } else if (opc == X86_INS_IRETQ) {
+#ifdef TARGET_X86_64
+        if (lsenv->tr_data->sys.code64) {
+            return latxs_do_translate_iret(pir1, 2);
+        } else {
+            lsassert(0);
+        }
+#else
+        lsassert(0);
+#endif
     } else {
-        lsassertm(0, "%s not implemented in sys.\n",
-                ir1_name(opc));
+        lsassert(0);
     }
 
     return false;
@@ -2020,6 +2212,14 @@ bool latxs_translate_cdq(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_cqo(IR1_INST *pir1)
+{
+    IR2_OPND rax = latxs_ra_alloc_gpr(eax_index);
+    IR2_OPND rdx = latxs_ra_alloc_gpr(edx_index);
+    latxs_append_ir2_opnd2i(LISA_SRAI_D, &rdx, &rax, 63);
+    return true;
+}
+
 bool latxs_translate_cwde(IR1_INST *pir1)
 {
     /*
@@ -2037,6 +2237,9 @@ bool latxs_translate_cwde(IR1_INST *pir1)
         /* EAX = signed extension(ax) */
         IR2_OPND eax_opnd = latxs_ra_alloc_gpr(eax_index);
         latxs_append_ir2_opnd2_(lisa_mov16s, &eax_opnd, &eax_opnd);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2_(lisa_mov32z, &eax_opnd, &eax_opnd);
+#endif
     } else {
         lsassertm(0, "unknown data size of cwde.\n");
     }
@@ -2673,6 +2876,7 @@ bool latxs_translate_enter(IR1_INST *pir1)
                     0 - (data_size >> 3) * (i + 1), 0, 0);
             latxs_store_ir2_to_ir1_mem(&value,
                     &mem_ir1_opnd, ss_addr_size);
+            latxs_ra_free_temp(&value);
         }
         /* push current FrameTemp as the last level */
         latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
@@ -2682,6 +2886,11 @@ bool latxs_translate_enter(IR1_INST *pir1)
                 &mem_ir1_opnd, ss_addr_size);
     }
 
+#ifdef TARGET_X86_64
+    if (td->sys.code64) {
+        latxs_store_ir2_to_ir1_gpr(&frametemp, &rbp_ir1_opnd);
+    } else
+#endif
     /* copy FrameTemp vlaue to EBP */
     if (td->sys.ss32) {
         latxs_store_ir2_to_ir1_gpr(&frametemp, &ebp_ir1_opnd);
@@ -2695,6 +2904,11 @@ bool latxs_translate_enter(IR1_INST *pir1)
             &frametemp, -(esp_addend + (data_size >> 3) * level));
 
     latxs_ra_free_temp(&frametemp);
+#ifdef TARGET_X86_64
+    if (td->sys.code64) {
+        latxs_store_ir2_to_ir1_gpr(&final_esp, &rsp_ir1_opnd);
+    } else
+#endif
     if (td->sys.ss32) {
         latxs_store_ir2_to_ir1_gpr(&final_esp, &esp_ir1_opnd);
     } else {
@@ -2729,9 +2943,28 @@ bool latxs_translate_leave(IR1_INST *pir1)
             EXMode_Z, ss_addr_size);
 
     IR2_OPND new_esp = latxs_ra_alloc_itemp();
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &new_esp, &ebp_opnd,
+                                data_size >> 3);
+    } else {
+        latxs_append_ir2_opnd2i(LISA_ADDI_W, &new_esp, &ebp_opnd,
+                                data_size >> 3);
+    }
+#else
     latxs_append_ir2_opnd2i(LISA_ADDI_W, &new_esp, &ebp_opnd, data_size >> 3);
+#endif
 
     /* 2. update EBP according to data_size */
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2_(lisa_mov, &ebp_opnd, &new_ebp);
+        if (option_by_hand) {
+            lsassert(0);
+        }
+    } else
+#endif
     if (data_size == 32) {
         latxs_append_ir2_opnd2_(lisa_mov, &ebp_opnd, &new_ebp);
         if (option_by_hand) {
@@ -2742,6 +2975,14 @@ bool latxs_translate_leave(IR1_INST *pir1)
     }
 
     /* 3. update ESP according to ss_addr_size */
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2_(lisa_mov, &esp_opnd, &new_esp);
+        if (option_by_hand) {
+            lsassert(0);
+        }
+    } else
+#endif
     if (ss_addr_size == 4) {
         latxs_append_ir2_opnd2_(lisa_mov, &esp_opnd, &new_esp);
         if (option_by_hand) {
@@ -2922,8 +3163,16 @@ bool latxs_translate_invlpg(IR1_INST *pir1)
     /* 2.1 arg1: address */
     /* latxs_append_ir2_opnd3(LISA_OR, &latxs_arg1_ir2_opnd, */
             /* &addr_opnd, &latxs_zero_ir2_opnd); */
-    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd,
-                                         &addr_opnd);
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &addr_opnd);
+    } else {
+        latxs_append_ir2_opnd2_(lisa_mov32z, &latxs_arg1_ir2_opnd, &addr_opnd);
+    }
+#else
+    latxs_append_ir2_opnd2_(lisa_mov32s, &latxs_arg1_ir2_opnd, &addr_opnd);
+#endif
+
     latxs_ra_free_temp(&addr_opnd);
     /* 2.2 arg0: env */
     latxs_append_ir2_opnd3(LISA_OR, &latxs_arg0_ir2_opnd,
@@ -3058,6 +3307,38 @@ bool latxs_translate_sysexit(IR1_INST *pir1)
     return true;
 }
 
+bool latxs_translate_syscall(IR1_INST *pir1)
+{
+#ifdef TARGET_X86_64
+    IR2_OPND cur_eip = latxs_ra_alloc_itemp();
+    latxs_load_addrx_to_ir2(&cur_eip, ir1_addr(pir1));
+    latxs_append_ir2_opnd2i(LISA_ST_D, &cur_eip, &latxs_env_ir2_opnd,
+                            lsenv_offset_of_eip(lsenv));
+    latxs_tr_gen_call_to_helper2_cfg(
+        (ADDR)helper_syscall, latxs_ir1_inst_size(pir1), default_helper_cfg);
+    lsenv->tr_data->ignore_eip_update = 1;
+    return true;
+#else
+    return false;
+#endif
+}
+bool latxs_translate_sysret(IR1_INST *pir1)
+{
+#ifdef TARGET_X86_64
+    if (!lsenv->tr_data->sys.pe) {
+        /* TODO: should raise EXCP0D_GPF */
+        lsassert(0);
+    }
+    int data_size = latxs_ir1_data_size(pir1);
+    latxs_tr_gen_call_to_helper2_cfg((ADDR)helper_sysret, data_size / 32,
+                                     default_helper_cfg);
+    lsenv->tr_data->ignore_eip_update = 1;
+    return true;
+#else
+    return false;
+#endif
+}
+
 bool latxs_translate_prefetchnta(IR1_INST *pir1) { return true; }
 bool latxs_translate_prefetcht0(IR1_INST *pir1) { return true; }
 bool latxs_translate_prefetcht1(IR1_INST *pir1) { return true; }
@@ -3074,6 +3355,8 @@ bool latxs_translate_tzcnt(IR1_INST *pir1)
         pir1->info->id = X86_INS_BSF;
         return latxs_translate_bsf(pir1);
     }
+
+    lsassert(0);
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* r16,   r32   */
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 2); /* r/m16, r/m32 */
@@ -3196,5 +3479,36 @@ bool latxs_translate_ud2(IR1_INST *pir1)
             ir1_addr(pir1) - lsenv->tr_data->sys.cs_base, /* EIP */
             1 /* translation end with exception */
     );
+    return true;
+}
+
+bool latxs_translate_swapgs(IR1_INST *pir1)
+{
+#ifdef TARGET_X86_64
+    if (!lsenv->tr_data->sys.code64) {
+        /* TODO: should gen illegal op */
+        lsassert(0);
+    } else if (lsenv->tr_data->sys.cpl != 0) {
+        /* TODO: should gen EXCP0D_GPF */
+        lsassert(0);
+    } else {
+        IR2_OPND gs_base = latxs_ra_alloc_itemp();
+        IR2_OPND kernel_gs_base = latxs_ra_alloc_itemp();
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &gs_base, &latxs_env_ir2_opnd,
+                                offsetof(CPUX86State, segs[gs_index].base));
+        latxs_append_ir2_opnd2i(LISA_LD_D, &kernel_gs_base,
+                                &latxs_env_ir2_opnd,
+                                offsetof(CPUX86State, kernelgsbase));
+        latxs_append_ir2_opnd2i(LISA_ST_D, &kernel_gs_base,
+                                &latxs_env_ir2_opnd,
+                                offsetof(CPUX86State, segs[gs_index].base));
+        latxs_append_ir2_opnd2i(LISA_ST_D, &gs_base, &latxs_env_ir2_opnd,
+                                offsetof(CPUX86State, kernelgsbase));
+    }
+#else
+        /* TODO: should gen illegal op */
+        lsassert(0);
+#endif
     return true;
 }

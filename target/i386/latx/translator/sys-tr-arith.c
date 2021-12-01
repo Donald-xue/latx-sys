@@ -405,6 +405,9 @@ static bool latxs_translate_imul_1_opnd(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 
     IR2_OPND dest = latxs_ra_alloc_itemp();
+#ifdef TARGET_X86_64
+    IR2_OPND dest_hi = latxs_ra_alloc_itemp();
+#endif
 
     /* Destination is always GPR, no exception will generate */
     int opnd_size = ir1_opnd_size(opnd0);
@@ -431,11 +434,24 @@ static bool latxs_translate_imul_1_opnd(IR1_INST *pir1)
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &dest, &dest, 32);
         latxs_store_ir2_to_ir1(&dest, &edx_ir1_opnd);
         break;
+#ifdef TARGET_X86_64
+    case 64:
+        latxs_load_ir1_gpr_to_ir2(&src1, &rax_ir1_opnd, EXMode_Z);
+        latxs_append_ir2_opnd3(LISA_MUL_D, &dest, &src1, &src0);
+        latxs_generate_eflag_calculation(&dest, &src0, &src1, pir1, true);
+        latxs_append_ir2_opnd3(LISA_MULH_D, &dest_hi, &src1, &src0);
+        latxs_store_ir2_to_ir1(&dest, &rax_ir1_opnd);
+        latxs_store_ir2_to_ir1(&dest_hi, &rdx_ir1_opnd);
+        break;
+#endif
     default:
-        lsassertm_illop(ir1_addr(pir1), 0,
-                "64-bit translate_imul_1_opnd is unimplemented.\n");
+        lsassert(0);
         break;
     }
+
+#ifdef TARGET_X86_64
+    latxs_ra_free_temp(&dest_hi);
+#endif
 
     latxs_ra_free_temp(&dest);
     latxs_ra_free_temp(&src0);
@@ -891,7 +907,11 @@ bool latxs_translate_xadd(IR1_INST *pir1)
 
     if (ir1_opnd_is_gpr(opnd0)) {
         latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd3(LISA_ADD_D, &sum, &src0, &src1);
+#else
         latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
+#endif
         latxs_store_ir2_to_ir1(&src0, opnd1);
         latxs_store_ir2_to_ir1(&sum, opnd0);
     } else {
@@ -906,7 +926,11 @@ bool latxs_translate_xadd(IR1_INST *pir1)
             lsassertm(0, "compile flag parallel not supported.\n");
         } else {
             latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+#ifdef TARGET_X86_64
+            latxs_append_ir2_opnd3(LISA_ADD_D, &sum, &src0, &src1);
+#else
             latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
+#endif
             latxs_store_ir2_to_ir1(&sum, opnd0);
         }
         latxs_store_ir2_to_ir1(&src0, opnd1);

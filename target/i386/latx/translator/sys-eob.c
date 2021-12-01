@@ -143,6 +143,8 @@ int latxs_ir1_is_eob_in_sys(IR1_INST *ir1)
            latxs_ir1_is_pop_eflags(ir1) ||        /* popf */
            latxs_ir1_is_sysenter(ir1) ||          /* sysenter */
            latxs_ir1_is_sysexit(ir1) ||           /* sysexit */
+           latxs_ir1_is_syscall(ir1) ||           /* syscall */
+           latxs_ir1_is_sysret(ir1) ||            /* sysret */
            latxs_ir1_is_rsm(ir1) ||               /* rsm */
            latxs_ir1_is_sti(ir1) ||               /* sti */
            latxs_ir1_is_mov_to_seg_eob(ir1) ||    /* mov es/cs/ss/ds, src */
@@ -289,7 +291,9 @@ void latxs_tr_gen_eob(void)
     }
 
     /* reset to 32s for TB-Link */
+#ifndef TARGET_X86_64
     latxs_tr_reset_extmb(0xFF);
+#endif
 }
 
 /*

@@ -1511,6 +1511,7 @@ bool latxs_translate_pusha(IR1_INST *pir1);
 bool latxs_translate_xchg(IR1_INST *pir1);
 bool latxs_translate_cmpxchg(IR1_INST *pir1);
 bool latxs_translate_cmpxchg8b(IR1_INST *pir1);
+bool latxs_translate_cmpxchg16b(IR1_INST *pir1);
 
 bool latxs_translate_rsm(IR1_INST *pir1);
 bool latxs_translate_invd(IR1_INST *pir1);
@@ -1525,6 +1526,8 @@ bool latxs_translate_into(IR1_INST *pir1);
 
 bool latxs_translate_cwd(IR1_INST *pir1);
 bool latxs_translate_cdq(IR1_INST *pir1);
+bool latxs_translate_cqo(IR1_INST *pir1);
+
 bool latxs_translate_cwde(IR1_INST *pir1);
 bool latxs_translate_cdqe(IR1_INST *pir1);
 bool latxs_translate_cbw(IR1_INST *pir1);
@@ -1551,6 +1554,9 @@ bool latxs_translate_sfence(IR1_INST *pir1);
 
 bool latxs_translate_sysenter(IR1_INST *pir1);
 bool latxs_translate_sysexit(IR1_INST *pir1);
+bool latxs_translate_syscall(IR1_INST *pir1);
+bool latxs_translate_sysret(IR1_INST *pir1);
+
 bool latxs_translate_prefetchnta(IR1_INST *pir1);
 bool latxs_translate_prefetcht0(IR1_INST *pir1);
 bool latxs_translate_prefetcht1(IR1_INST *pir1);
@@ -1562,6 +1568,8 @@ bool latxs_translate_tzcnt(IR1_INST *pir1);
 bool latxs_translate_invalid(IR1_INST *pir1);
 bool latxs_translate_ud0(IR1_INST *pir1);
 bool latxs_translate_ud2(IR1_INST *pir1);
+
+bool latxs_translate_swapgs(IR1_INST *pir1);
 
 /* sys-io */
 void latxs_tr_gen_io_check(IR1_INST *, IR1_OPND *, int);

@@ -369,6 +369,23 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
         int64_t offset = ir1_addr_next(lsenv->tr_data->curr_ir1_inst) +
                          ir1_opnd_simm(opnd1) + bias;
         latxs_load_imm64_to_ir2(&ea, offset);
+
+        if (ir1_opnd_has_seg(opnd1)) {
+            int seg_reg = ir1_opnd_get_seg_index(opnd1);
+            if (seg_reg != gs_index && seg_reg != fs_index) {
+                lsassert(!lsenv->tr_data->sys.addseg);
+            } else {
+                IR2_OPND seg_base = latxs_ra_alloc_itemp();
+                /* TODO */
+                latxs_append_ir2_opnd2i(LISA_LD_D, &seg_base,
+                        &latxs_env_ir2_opnd,
+                        lsenv_offset_of_seg_base(lsenv, seg_reg));
+
+                latxs_append_ir2_opnd3(LISA_ADD_D, &ea, &ea, &seg_base);
+                latxs_ra_free_temp(&seg_base);
+            }
+        }
+
         /* construct IR2_OPND_MEM */
         int mem_base = latxs_ir2_opnd_reg(&ea);
         latxs_ir2_opnd_build_mem(opnd2, mem_base, 0);
@@ -494,9 +511,15 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
         /* 2.1 need segment base */
         IR2_OPND seg_base = latxs_ra_alloc_itemp();
         int seg_reg = ir1_opnd_get_seg_index(opnd1);
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2i(LISA_LD_D, &seg_base,
+                &latxs_env_ir2_opnd,
+                lsenv_offset_of_seg_base(lsenv, seg_reg));
+#else
         latxs_append_ir2_opnd2i(LISA_LD_WU, &seg_base,
                 &latxs_env_ir2_opnd,
                 lsenv_offset_of_seg_base(lsenv, seg_reg));
+#endif
 
         latxs_append_ir2_opnd3(LISA_ADD_D, &ea, &ea, &seg_base);
         latxs_ra_free_temp(&seg_base);
