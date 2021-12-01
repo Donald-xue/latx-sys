@@ -226,6 +226,7 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
         latxs_append_ir2_opnd2i(LISA_ST_D, &tmp,
                 &latxs_env_ir2_opnd,
                 offsetof(CPUX86State, sigint_flag));
+        latxs_ra_free_temp(&tmp);
     }
 
     /* 1. store the last executed TB ($10) into env */
