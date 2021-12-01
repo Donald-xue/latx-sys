@@ -102,9 +102,15 @@ static void tr_gen_lookup_qemu_tlb(
     IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(mem_opnd,
             &mem_no_offset_new_tmp);
     IR2_OPND mem = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
+#ifdef TARGET_X86_64
+    if (!lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
+    }
+#else
     if (mem_no_offset_new_tmp) {
         latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
     }
+#endif
 
     /* 1. load f[mmu].mask */
 #ifndef TARGET_X86_64
@@ -463,7 +469,15 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
 
     /* 3.1 arg1: mem address */
     /* latxs_append_ir2_opnd2_(lisa_mov, arg1, &mem); */
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2_(lisa_mov, arg1, &mem);
+    } else {
+        latxs_append_ir2_opnd2_(lisa_mov32z, arg1, &mem);
+    }
+#else
     latxs_append_ir2_opnd2_(lisa_mov32s, arg1, &mem);
+#endif
     if (mem_no_offset_new_tmp) {
         latxs_ra_free_temp(&mem_no_offset);
     }
