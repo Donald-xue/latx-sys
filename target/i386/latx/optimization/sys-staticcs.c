@@ -147,7 +147,8 @@ int gen_latxs_scs_epilogue_cfg(
 
 #if defined(LATX_SYS_FCSR)
     IR2_OPND *env = &latxs_env_ir2_opnd;
-    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
+    IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
 #if defined(LATX_SYS_FCSR_SIMD)
     /* load env->fcsr or env->fcsr_simd */
@@ -172,14 +173,16 @@ int gen_latxs_scs_epilogue_cfg(
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
 
-    latxs_append_ir2_opnd2i(LISA_ANDI, stmp1, stmp1, 0x340);
-    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, stmp1);
+    /* latxs_append_ir2_opnd2i(LISA_ANDI, stmp1, stmp1, 0x340); */
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, stmp1);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
 #else
     /* load env->fcsr */
     latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
             lsenv_offset_of_fcsr(lsenv));
-    latxs_append_ir2_opnd2i(LISA_ANDI, stmp1, stmp1, 0x340);
-    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, stmp1);
+    /* latxs_append_ir2_opnd2i(LISA_ANDI, stmp1, stmp1, 0x340); */
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, stmp1);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
 #endif
 #endif
 

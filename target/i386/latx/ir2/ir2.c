@@ -4900,6 +4900,9 @@ LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_env_ir2_opnd,    23); /* S0 */
 /* Floating Point  Register */
 LATXS_REG_ALLOC_DEFINE_IR2(latxs_f32_ir2_opnd, IR2_OPND_FPR, 8);
 LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcsr_ir2_opnd, IR2_OPND_FCSR, 0);
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcsr1_ir2_opnd, IR2_OPND_FCSR, 1);
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcsr2_ir2_opnd, IR2_OPND_FCSR, 2);
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcsr3_ir2_opnd, IR2_OPND_FCSR, 3);
 LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcc0_ir2_opnd, IR2_OPND_CC, 0);
 LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcc1_ir2_opnd, IR2_OPND_CC, 1);
 LATXS_REG_ALLOC_DEFINE_IR2(latxs_fcc2_ir2_opnd, IR2_OPND_CC, 2);

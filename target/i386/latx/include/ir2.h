@@ -178,6 +178,9 @@ extern IR2_OPND latxs_env_ir2_opnd;
 
 extern IR2_OPND latxs_f32_ir2_opnd;
 extern IR2_OPND latxs_fcsr_ir2_opnd;
+extern IR2_OPND latxs_fcsr1_ir2_opnd;
+extern IR2_OPND latxs_fcsr2_ir2_opnd;
+extern IR2_OPND latxs_fcsr3_ir2_opnd;
 extern IR2_OPND latxs_fcc0_ir2_opnd;
 extern IR2_OPND latxs_fcc1_ir2_opnd;
 extern IR2_OPND latxs_fcc2_ir2_opnd;

@@ -96,6 +96,8 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
     IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
+    IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
 
     TRANSLATION_DATA *td = lsenv->tr_data;
 
@@ -130,12 +132,14 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 #if defined(LATX_SYS_FCSR)
     latxs_append_ir2_opnd2i(LISA_LD_W, &fcsr_value,
             &latxs_env_ir2_opnd, lsenv_offset_of_fcsr(lsenv));
-    /* bit 6 is zero will disable LSFPU TOP Mode */
-    latxs_append_ir2_opnd2i(LISA_ANDI, &fcsr_value, &fcsr_value, 0x300);
+    /* set RM */
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, &fcsr_value);
+    /* disable exception TODO support fpu exception */
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
 #else
     latxs_append_ir2_opnd3(LISA_OR, &fcsr_value, &fcsr_value, zero);
-#endif
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &fcsr_value);
+#endif
 
     /* 2.2 set f3 = 32 */
     IR2_OPND temp = latxs_ra_alloc_itemp();
