@@ -134,6 +134,22 @@ fix_up_2:
             }
         }
     }
+
+#ifdef TARGET_X86_64
+    if (lsenv->tr_data->sys.code64) {
+        if (ir1_opcode(ir1) == X86_INS_MOVD) {
+            IR1_OPND *opnd0 = ir1_get_opnd(ir1, 0);
+            IR1_OPND *opnd1 = ir1_get_opnd(ir1, 1);
+            if ((ir1_opnd_is_gpr(opnd0) && ir1_opnd_size(opnd0) == 64) ||
+                (ir1_opnd_is_gpr(opnd1) && ir1_opnd_size(opnd1) == 64)) {
+                ir1->info->id = X86_INS_MOVQ;
+                ir1_dump(ir1);
+                return;
+            }
+        }
+    }
+#endif
+
 }
 
 int latxs_ir1_data_size(IR1_INST *ir1)
