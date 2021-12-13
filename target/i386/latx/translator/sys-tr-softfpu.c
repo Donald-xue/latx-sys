@@ -10,7 +10,7 @@
 #ifdef TARGET_X86_64
 #define LATXS_MOV_ADDR_TO_ARG(argx, src)                       \
     do {                                                       \
-        if (lsenv->tr_data->sys.code64) {                      \
+        if (latxs_ir1_addr_size(pir1) == 8) {                  \
             latxs_append_ir2_opnd2_(lisa_mov, &argx, &src);    \
         } else {                                               \
             latxs_append_ir2_opnd2_(lisa_mov32z, &argx, &src); \

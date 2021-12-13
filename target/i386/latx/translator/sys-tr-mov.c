@@ -316,7 +316,7 @@ bool latxs_translate_xlat(IR1_INST *pir1)
 
 
 #ifdef TARGET_X86_64
-        if (!lsenv->tr_data->sys.code64) {
+        if (addr_size != 8) {
             latxs_append_ir2_opnd2_(lisa_mov32z, &addr, &addr);
         }
 #else

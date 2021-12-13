@@ -99,7 +99,7 @@ void latxs_load_imm64_to_ir2(IR2_OPND *opnd2, uint64_t value)
 void latxs_load_addrx_to_ir2(IR2_OPND *opnd, ADDRX addrx)
 {
 #ifdef TARGET_X86_64
-    if (lsenv->tr_data->sys.code64) {
+    if (latxs_ir1_addr_size(lsenv->tr_data->curr_ir1_inst) == 8) {
         latxs_load_imm64_to_ir2(opnd, addrx);
     } else {
         latxs_load_imm32_to_ir2(opnd, (uint32_t)addrx, EXMode_Z);
@@ -524,8 +524,7 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
         latxs_append_ir2_opnd3(LISA_ADD_D, &ea, &ea, &seg_base);
         latxs_ra_free_temp(&seg_base);
 #ifdef TARGET_X86_64
-        /* there is no !64 bit addr, assertion has be done in translate */
-        if (!td->sys.code64) {
+        if (addr_size != 8) {
             latxs_append_ir2_opnd2_(lisa_mov32z, &ea, &ea);
         }
 #else
