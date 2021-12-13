@@ -90,6 +90,10 @@ uint32_t latxs_ir2_assemble(IR2_INST *pir2)
 static
 void latxs_ir2_op_check_imm(IR2_OPND *opnd, GM_OPERAND_TYPE opnd_type)
 {
+#ifndef TARGET_X86_64
+    /* TODO: check imm on 32bit mode */
+    return;
+#endif
     IR2_OPND_TYPE t = ir2_opnd_type(opnd);
 
     if (t != IR2_OPND_IMMH && t != IR2_OPND_IMMD) {
