@@ -156,11 +156,16 @@ static void latxs_tr_gen_string_loop_end(IR1_INST *pir1,
             if (addr_size == 4) {
                 /* ECX */
                 latxs_append_ir2_opnd2i(LISA_ADDI_W, &ecx_opnd, &ecx_opnd, -1);
+#ifdef TARGET_X86_64
+                latxs_append_ir2_opnd2_(lisa_mov32z, &ecx_opnd, &ecx_opnd);
+#endif
                 latxs_append_ir2_opnd3(LISA_BNE,
                         &ecx_opnd, &latxs_zero_ir2_opnd, &label_loop);
+#ifndef TARGET_X86_64
                 if (option_by_hand) {
                     latxs_ir2_opnd_set_emb(&ecx_opnd, EXMode_S, 32);
                 }
+#endif
             } else {
                 /* CX */
                 IR2_OPND cx_temp = latxs_ra_alloc_itemp();
@@ -203,10 +208,15 @@ static void latxs_tr_gen_string_loop_end(IR1_INST *pir1,
         if (addr_size == 4) {
             /* ECX */
             latxs_append_ir2_opnd2i(LISA_ADDI_W, &ecx_opnd, &ecx_opnd, -1);
+#ifdef TARGET_X86_64
+            latxs_append_ir2_opnd2_(lisa_mov32z, &ecx_opnd, &ecx_opnd);
+#endif
             latxs_append_ir2_opnd2i(LISA_SLTUI,  &condition, &ecx_opnd, 1);
+#ifndef TARGET_X86_64
             if (option_by_hand) {
                 latxs_ir2_opnd_set_emb(&ecx_opnd, EXMode_S, 32);
             }
+#endif
         } else {
             /* CX */
             IR2_OPND cx_temp = latxs_ra_alloc_itemp();
