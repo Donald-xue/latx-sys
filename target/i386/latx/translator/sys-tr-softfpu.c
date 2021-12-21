@@ -1184,7 +1184,7 @@ bool latxs_translate_fcom_softfpu(IR1_INST *pir1)
         latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                                 &latxs_env_ir2_opnd);
         latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &temp);
-        latxs_tr_gen_call_to_helper((ADDR)helper_flds_FT0);
+        latxs_tr_gen_call_to_helper((ADDR)helper_fldl_FT0);
         latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
         latxs_ra_free_temp(&temp);
         latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fcom_ST0_FT0,
@@ -1234,7 +1234,7 @@ bool latxs_translate_fcomp_softfpu(IR1_INST *pir1)
         latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
                                 &latxs_env_ir2_opnd);
         latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &temp);
-        latxs_tr_gen_call_to_helper((ADDR)helper_flds_FT0);
+        latxs_tr_gen_call_to_helper((ADDR)helper_fldl_FT0);
         latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
         latxs_ra_free_temp(&temp);
         latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fcom_ST0_FT0,
