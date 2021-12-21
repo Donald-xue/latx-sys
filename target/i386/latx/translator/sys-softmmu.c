@@ -80,7 +80,7 @@ static int get_ldst_align_bits(IR2_OPCODE opc)
 static void tr_gen_lookup_qemu_tlb(
         IR2_OPCODE op,
         IR2_OPND *gpr_opnd,
-        IR2_OPND *mem_opnd,
+        IR2_OPND *mem,
         int mmu_index,
         bool is_load,
         IR2_OPND label_slow_path)
@@ -96,22 +96,6 @@ static void tr_gen_lookup_qemu_tlb(
     int add_off   = offsetof(CPUTLBEntry, addend); /* 64-bit */
     int tag_off   = (is_load ? offsetof(CPUTLBEntry, addr_read)
                    : offsetof(CPUTLBEntry, addr_write)); /* 32-bit */
-
-    /* 0. format the mem opnd */
-    int mem_no_offset_new_tmp = 0;
-    IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(mem_opnd,
-            &mem_no_offset_new_tmp);
-    IR2_OPND mem = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
-#ifdef TARGET_X86_64
-    /* TODO: addr_size */
-    if (!lsenv->tr_data->sys.code64) {
-        latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
-    }
-#else
-    if (mem_no_offset_new_tmp) {
-        latxs_append_ir2_opnd2_(lisa_mov32z, &mem, &mem);
-    }
-#endif
 
     /* 1. load f[mmu].mask */
 #ifndef TARGET_X86_64
@@ -135,7 +119,7 @@ static void tr_gen_lookup_qemu_tlb(
 #endif
     /* 2.1 index = address >> shift */
     int shift = TARGET_PAGE_BITS - CPU_TLB_ENTRY_BITS;
-    latxs_append_ir2_opnd2i(LISA_SRLI_W, &index_opnd, &mem, shift);
+    latxs_append_ir2_opnd2i(LISA_SRLI_W, &index_opnd, mem, shift);
 
     /* 2.2 index = index & mask */
     latxs_append_ir2_opnd3(LISA_AND, &index_opnd, &index_opnd, &mask_opnd);
@@ -190,7 +174,7 @@ static void tr_gen_lookup_qemu_tlb(
 #else
     IR2_OPND cmp_opnd = latxs_arg1_ir2_opnd;
 #endif
-    latxs_append_ir2_opnd2_(lisa_mov, &cmp_opnd, &mem);
+    latxs_append_ir2_opnd2_(lisa_mov, &cmp_opnd, mem);
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &cmp_opnd, zero,
             TARGET_PAGE_BITS - 1, align_bits);
 
@@ -205,7 +189,7 @@ static void tr_gen_lookup_qemu_tlb(
                 zero, latxs_ir2_opnd_reg(&tag_opnd));
         /* latxs_arg4/5/6_ir2_opnd is itemp in x86_64, please be careful */
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg4_ir2_opnd,
-                zero, latxs_ir2_opnd_reg(&mem));
+                zero, latxs_ir2_opnd_reg(mem));
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg5_ir2_opnd,
                 zero, mmu_index);
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg6_ir2_opnd,
@@ -248,37 +232,37 @@ static void tr_gen_lookup_qemu_tlb(
     /* 9. get hvaddr if not branch */
     switch (op) {
     case LISA_LD_B:
-        latxs_append_ir2_opnd3(LISA_LDX_B, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_B, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_LD_H:
-        latxs_append_ir2_opnd3(LISA_LDX_H, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_H, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_LD_W:
-        latxs_append_ir2_opnd3(LISA_LDX_W, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_W, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_LD_D:
-        latxs_append_ir2_opnd3(LISA_LDX_D, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_D, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_LD_BU:
-        latxs_append_ir2_opnd3(LISA_LDX_BU, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_BU, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_LD_HU:
-        latxs_append_ir2_opnd3(LISA_LDX_HU, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_HU, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_LD_WU:
-        latxs_append_ir2_opnd3(LISA_LDX_WU, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_LDX_WU, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_ST_B:
-        latxs_append_ir2_opnd3(LISA_STX_B, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_STX_B, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_ST_H:
-        latxs_append_ir2_opnd3(LISA_STX_H, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_STX_H, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_ST_W:
-        latxs_append_ir2_opnd3(LISA_STX_W, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_STX_W, gpr_opnd, mem, &add_opnd);
         break;
     case LISA_ST_D:
-        latxs_append_ir2_opnd3(LISA_STX_D, gpr_opnd, &mem, &add_opnd);
+        latxs_append_ir2_opnd3(LISA_STX_D, gpr_opnd, mem, &add_opnd);
         break;
     default:
         lsassertm(0, "wrong in softmmu\n");
@@ -287,10 +271,6 @@ static void tr_gen_lookup_qemu_tlb(
 #ifndef TARGET_X86_64
     latxs_ra_free_temp(&add_opnd);
 #endif
-
-    if (mem_no_offset_new_tmp) {
-        latxs_ra_free_temp(&mem_no_offset);
-    }
 }
 
 static void td_rcd_softmmu_slow_path(
@@ -385,12 +365,30 @@ static void __gen_ldst_softmmu_helper_native(
     bool is_load  = latxs_ir2_opcode_is_load(op);
 
     /*
+     * 0. format the mem opnd
+     */
+    int mem_no_offset_new_tmp = 0;
+    IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(opnd_mem,
+            &mem_no_offset_new_tmp);
+    IR2_OPND base_ony_mem = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
+#ifdef TARGET_X86_64
+    /* TODO: addr_size */
+    if (!lsenv->tr_data->sys.code64) {
+        latxs_append_ir2_opnd2_(lisa_mov32z, &base_ony_mem, &base_ony_mem);
+    }
+#else
+    if (mem_no_offset_new_tmp) {
+        latxs_append_ir2_opnd2_(lisa_mov32z, &base_ony_mem, &base_ony_mem);
+    }
+#endif
+
+    /*
      * 1. lookup QEMU TLB in native code
      *    and finish memory access if TLB hit
      *    temp register is free to use inside.
      */
     IR2_OPND label_slow_path = latxs_ir2_opnd_new_label();
-    tr_gen_lookup_qemu_tlb(op, opnd_gpr, opnd_mem, mmu_index,
+    tr_gen_lookup_qemu_tlb(op, opnd_gpr, &base_ony_mem, mmu_index,
                            is_load, label_slow_path);
 
     /* 2. memory access finish. jump slow path. */
@@ -401,12 +399,16 @@ static void __gen_ldst_softmmu_helper_native(
      *    Here we just record the data to generate slow path
      *    The real slow path will be generated at the end of TB
      */
-    tr_gen_ldst_slow_path(op, opnd_gpr, opnd_mem,
+    tr_gen_ldst_slow_path(op, opnd_gpr, &base_ony_mem,
             &label_slow_path, &label_exit,
             mmu_index, is_load, save_temp);
 
     /* 4. exit from fast path or return from slow path */
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+    if (mem_no_offset_new_tmp) {
+        latxs_ra_free_temp(&mem_no_offset);
+    }
 }
 
 static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
@@ -459,12 +461,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
      * helper arg4 :          |  retaddr
      */
 
-    /* 2.1 get mem address */
-    int mem_no_offset_new_tmp = 0;
-    IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(
-            &sp->mem_ir2_opnd, &mem_no_offset_new_tmp);
-    IR2_OPND mem = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
-    /* 2.2 convert memop */
+    IR2_OPND mem = sp->mem_ir2_opnd;
     MemOp memop = convert_to_tcgmemop(sp->op);
     TCGMemOpIdx memopidx = (memop << 4) | sp->mmu_index;
 
@@ -480,9 +477,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
 #else
     latxs_append_ir2_opnd2_(lisa_mov32s, arg1, &mem);
 #endif
-    if (mem_no_offset_new_tmp) {
-        latxs_ra_free_temp(&mem_no_offset);
-    }
+
     /* 3.2 arg0 : env */
     latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
     /* 3.3 arg2 : memop(LOAD) data(STORE) */
