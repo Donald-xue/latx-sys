@@ -2334,7 +2334,8 @@ void helper_fcos(CPUX86State *env)
         /* the above code is for |arg| < 2**63 only */
     }
 }
-#ifdef CONFIG_LATX
+/* latx-sys with option softfpu need qemu's helper */
+#if defined(CONFIG_LATX) && !defined(CONFIG_SOFTMMU)
 /*
  * QEMU 4.1 version
  * LATX temporaly use QEMU 4.1 version
