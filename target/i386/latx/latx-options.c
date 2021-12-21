@@ -46,6 +46,7 @@ int option_cross_page_jmp_link;
 int option_large_code_cache;
 int option_intb_link;
 int option_soft_fpu;
+int option_fast_fpr_ldst;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -193,6 +194,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_large_code_cache 10
 #define LATXS_OPT_intb_link     11
 #define LATXS_OPT_soft_fpu 12
+#define LATXS_OPT_fast_fpr_ldst 13
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -244,6 +246,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "softfpu",
             .type = QEMU_OPT_BOOL,
             .help = "use soft float for x87 emulation",
+        }, {
+            .name = "ffldst",
+            .type = QEMU_OPT_BOOL,
+            .help = "fast fpr load/store",
         }, {
             .name = "njc",
             .type = QEMU_OPT_BOOL,
@@ -340,6 +346,9 @@ void set_options(int index, int v)
         break;
     case LATXS_OPT_soft_fpu:
         option_soft_fpu = v;
+        break;
+    case LATXS_OPT_fast_fpr_ldst:
+        option_fast_fpr_ldst = v;
         break;
     case LATXS_OPT_njc:
         option_njc = v;
@@ -494,6 +503,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_bool(LATXS_OPT_soft_fpu, opt->value.boolean);
     }
 
+    opt = qemu_opt_find(opts, "ffldst");
+    if (opt) {
+        parse_options_bool(LATXS_OPT_fast_fpr_ldst, opt->value.boolean);
+    }
+
     opt = qemu_opt_find(opts, "njc");
     if (opt) parse_options_bool(LATXS_OPT_njc, opt->value.boolean);
 
@@ -608,6 +622,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] staticcs = %d\n", option_staticcs);
     printf("[LATXS-OPT] large code cache = %d\n", option_large_code_cache);
     printf("[LATXS-OPT] large code cache = %d\n", option_soft_fpu);
+    printf("[LATXS-OPT] fast frp ldst = %d\n", option_fast_fpr_ldst);
     printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_njc);
 #ifdef CONFIG_SOFTMMU
     printf("[LATXS-OPT] monitor 1 simple    counter = %d\n", option_monitor_sc);
@@ -641,6 +656,7 @@ void latxs_options_init(void)
     option_cross_page_jmp_link = 0;
     option_large_code_cache = 0;
     option_soft_fpu = 0;
+    option_fast_fpr_ldst = 0;
 
     option_smmu_slow = 0;
 

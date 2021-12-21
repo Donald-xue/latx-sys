@@ -2040,6 +2040,17 @@ uint64_t helper_le_ldq_mmu(CPUArchState *env, target_ulong addr,
                        helper_le_ldq_mmu);
 }
 
+#if defined(TARGET_I386) && defined(CONFIG_LATX)
+void latxs_helper_le_lddq_mmu(CPUArchState *env, target_ulong addr,
+                           TCGMemOpIdx oi, uintptr_t retaddr)
+{
+    uint64_t low = helper_le_ldq_mmu(env, addr, oi, retaddr);
+    *(uint64_t *)((void *)(&env->temp_xmm)) = low;
+    uint64_t high = helper_le_ldq_mmu(env, addr + 8, oi, retaddr);
+    *(uint64_t *)((void *)(&env->temp_xmm) + 8) = high;
+}
+#endif
+
 uint64_t helper_be_ldq_mmu(CPUArchState *env, target_ulong addr,
                            TCGMemOpIdx oi, uintptr_t retaddr)
 {
@@ -2519,6 +2530,17 @@ void helper_le_stq_mmu(CPUArchState *env, target_ulong addr, uint64_t val,
 {
     store_helper(env, addr, val, oi, retaddr, MO_LEQ);
 }
+
+#if defined(TARGET_I386) && defined(CONFIG_LATX)
+void latxs_helper_le_stdq_mmu(CPUArchState *env, target_ulong addr,
+                              uint64_t val, TCGMemOpIdx oi, uintptr_t retaddr)
+{
+    uint64_t low = *(uint64_t *)((void *)(&env->temp_xmm));
+    helper_le_stq_mmu(env, addr, low, oi, retaddr);
+    uint64_t high = *(uint64_t *)((void *)(&env->temp_xmm) + 8);
+    helper_le_stq_mmu(env, addr + 8, high, oi, retaddr);
+}
+#endif
 
 void helper_be_stq_mmu(CPUArchState *env, target_ulong addr, uint64_t val,
                        TCGMemOpIdx oi, uintptr_t retaddr)

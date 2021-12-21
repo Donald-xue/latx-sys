@@ -8,6 +8,18 @@
 
 static int is_ldst_realized_by_softmmu(IR2_OPCODE op)
 {
+    if (option_fast_fpr_ldst) {
+        switch (op) {
+        default:
+        case LISA_VLD:
+        case LISA_VST:
+        case LISA_FLD_S:
+        case LISA_FLD_D:
+        case LISA_FST_S:
+        case LISA_FST_D:
+            return true;
+        }
+    }
     switch (op) {
     case LISA_LD_B:
     case LISA_LD_BU:
@@ -41,11 +53,18 @@ static int convert_to_tcgmemop(IR2_OPCODE op)
         return MO_LEUW;
     case LISA_LD_W:
         return MO_LESL;
+    case LISA_FLD_S:
+    case LISA_FST_S:
     case LISA_LD_WU:
     case LISA_ST_W:
         return MO_LEUL;
+    case LISA_FLD_D:
+    case LISA_FST_D:
     case LISA_LD_D:
     case LISA_ST_D:
+        return MO_LEQ;
+    case LISA_VLD:
+    case LISA_VST:
         return MO_LEQ;
     default:
         lsassertm(0, "not support IR2 %d in convert_to_tcgmemop.\n", op);
@@ -55,6 +74,17 @@ static int convert_to_tcgmemop(IR2_OPCODE op)
 
 static int get_ldst_align_bits(IR2_OPCODE opc)
 {
+    if (option_fast_fpr_ldst) {
+        if (opc == LISA_VLD || opc == LISA_VST) {
+            return 4;
+        }
+        if (opc == LISA_FLD_S || opc == LISA_FST_S) {
+            return 2;
+        }
+        if (opc == LISA_FLD_D || opc == LISA_FST_D) {
+            return 3;
+        }
+    }
     switch (opc) {
     case LISA_LD_B:
     case LISA_LD_BU:
@@ -264,6 +294,25 @@ static void tr_gen_lookup_qemu_tlb(
     case LISA_ST_D:
         latxs_append_ir2_opnd3(LISA_STX_D, gpr_opnd, mem, &add_opnd);
         break;
+    /* option_fast_fpr_ldst */
+    case LISA_VLD:
+        latxs_append_ir2_opnd3(LISA_VLDX, gpr_opnd, mem, &add_opnd);
+        break;
+    case LISA_VST:
+        latxs_append_ir2_opnd3(LISA_VSTX, gpr_opnd, mem, &add_opnd);
+        break;
+    case LISA_FLD_S:
+        latxs_append_ir2_opnd3(LISA_FLDX_S, gpr_opnd, mem, &add_opnd);
+        break;
+    case LISA_FLD_D:
+        latxs_append_ir2_opnd3(LISA_FLDX_D, gpr_opnd, mem, &add_opnd);
+        break;
+    case LISA_FST_S:
+        latxs_append_ir2_opnd3(LISA_FSTX_S, gpr_opnd, mem, &add_opnd);
+        break;
+    case LISA_FST_D:
+        latxs_append_ir2_opnd3(LISA_FSTX_D, gpr_opnd, mem, &add_opnd);
+        break;
     default:
         lsassertm(0, "wrong in softmmu\n");
         break;
@@ -352,7 +401,7 @@ static void tr_gen_ldst_slow_path(
 }
 
 
-
+/* option_fast_fpr_ldst : opnd_gpr can be fpr */
 static void __gen_ldst_softmmu_helper_native(
         IR2_OPCODE op,
         IR2_OPND *opnd_gpr,
@@ -370,15 +419,15 @@ static void __gen_ldst_softmmu_helper_native(
     int mem_no_offset_new_tmp = 0;
     IR2_OPND mem_no_offset = latxs_convert_mem_ir2_opnd_no_offset(opnd_mem,
             &mem_no_offset_new_tmp);
-    IR2_OPND base_ony_mem = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
+    IR2_OPND base_only_mem = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
 #ifdef TARGET_X86_64
     /* TODO: addr_size */
     if (!lsenv->tr_data->sys.code64) {
-        latxs_append_ir2_opnd2_(lisa_mov32z, &base_ony_mem, &base_ony_mem);
+        latxs_append_ir2_opnd2_(lisa_mov32z, &base_only_mem, &base_only_mem);
     }
 #else
     if (mem_no_offset_new_tmp) {
-        latxs_append_ir2_opnd2_(lisa_mov32z, &base_ony_mem, &base_ony_mem);
+        latxs_append_ir2_opnd2_(lisa_mov32z, &base_only_mem, &base_only_mem);
     }
 #endif
 
@@ -388,7 +437,7 @@ static void __gen_ldst_softmmu_helper_native(
      *    temp register is free to use inside.
      */
     IR2_OPND label_slow_path = latxs_ir2_opnd_new_label();
-    tr_gen_lookup_qemu_tlb(op, opnd_gpr, &base_ony_mem, mmu_index,
+    tr_gen_lookup_qemu_tlb(op, opnd_gpr, &base_only_mem, mmu_index,
                            is_load, label_slow_path);
 
     /* 2. memory access finish. jump slow path. */
@@ -399,7 +448,7 @@ static void __gen_ldst_softmmu_helper_native(
      *    Here we just record the data to generate slow path
      *    The real slow path will be generated at the end of TB
      */
-    tr_gen_ldst_slow_path(op, opnd_gpr, &base_ony_mem,
+    tr_gen_ldst_slow_path(op, opnd_gpr, &base_only_mem,
             &label_slow_path, &label_exit,
             mmu_index, is_load, save_temp);
 
@@ -444,6 +493,13 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
 
     int i = 0;
 
+    /* option_fast_fpr_ldst : mov fpr to ftemp, avoid top mode */
+    IR2_OPND ftemp = latxs_zero_ir2_opnd;
+    if (sp->op == LISA_FST_S || sp->op == LISA_FST_D) {
+        ftemp = latxs_ra_alloc_ftemp();
+        latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp, &sp->gpr_ir2_opnd);
+    }
+
     /* 1. save native context */
     helper_cfg_t cfg = default_helper_cfg;
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
@@ -484,7 +540,18 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     if (sp->is_load) {
         latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, memopidx);
     } else {
-        latxs_append_ir2_opnd2_(lisa_mov, arg2, &sp->gpr_ir2_opnd);
+        if (sp->op == LISA_VST) {
+            latxs_append_ir2_opnd2i(LISA_VST, &sp->gpr_ir2_opnd,
+                                    &latxs_env_ir2_opnd,
+                                    offsetof(CPUX86State, temp_xmm));
+        } else if (sp->op == LISA_FST_S) {
+            /* option_fast_fpr_ldst : data mov to ftemp before prologue */
+            latxs_append_ir2_opnd2(LISA_MOVFR2GR_S, arg2, &ftemp);
+        } else if (sp->op == LISA_FST_D) {
+            latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, arg2, &ftemp);
+        } else {
+            latxs_append_ir2_opnd2_(lisa_mov, arg2, &sp->gpr_ir2_opnd);
+        }
     }
     /* 3.4 arg3 : retaddr(LOAD) memop(STORE) */
     if (sp->is_load) {
@@ -503,9 +570,11 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     case LISA_ST_H:
         latxs_tr_gen_call_to_helper((ADDR)helper_le_stw_mmu);
         break;
+    case LISA_FST_S:
     case LISA_ST_W:
         latxs_tr_gen_call_to_helper((ADDR)helper_le_stl_mmu);
         break;
+    case LISA_FST_D:
     case LISA_ST_D:
         latxs_tr_gen_call_to_helper((ADDR)helper_le_stq_mmu);
         break;
@@ -524,11 +593,19 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     case LISA_LD_W:
         latxs_tr_gen_call_to_helper((ADDR)helper_le_ldsl_mmu);
         break;
+    case LISA_FLD_S:
     case LISA_LD_WU:
         latxs_tr_gen_call_to_helper((ADDR)helper_le_ldul_mmu);
         break;
+    case LISA_FLD_D:
     case LISA_LD_D:
         latxs_tr_gen_call_to_helper((ADDR)helper_le_ldq_mmu);
+        break;
+    case LISA_VLD:
+        latxs_tr_gen_call_to_helper((ADDR)latxs_helper_le_lddq_mmu);
+        break;
+    case LISA_VST:
+        latxs_tr_gen_call_to_helper((ADDR)latxs_helper_le_stdq_mmu);
         break;
     default:
         lsassert(0);
@@ -571,8 +648,20 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     }
 
     if (sp->is_load) {
-        latxs_append_ir2_opnd2_(lisa_mov, &sp->gpr_ir2_opnd,
-                &latxs_ret0_ir2_opnd);
+        if (sp->op == LISA_VLD) {
+            latxs_append_ir2_opnd2i(LISA_VLD, &sp->gpr_ir2_opnd,
+                                    &latxs_env_ir2_opnd,
+                                    offsetof(CPUX86State, temp_xmm));
+        } else if (sp->op == LISA_FLD_S) {
+            latxs_append_ir2_opnd2(LISA_MOVGR2FR_W, &sp->gpr_ir2_opnd,
+                                   &latxs_ret0_ir2_opnd);
+        } else if (sp->op == LISA_FLD_D) {
+            latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &sp->gpr_ir2_opnd,
+                                   &latxs_ret0_ir2_opnd);
+        } else {
+            latxs_append_ir2_opnd2_(lisa_mov, &sp->gpr_ir2_opnd,
+                                    &latxs_ret0_ir2_opnd);
+        }
     }
 
     td->itemp_mask = tmp_mask_bak;
@@ -582,6 +671,11 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     }
 
     latxs_append_ir2_opnd1(LISA_B, &sp->label_exit);
+
+    /* option_fast_fpr_ldst : free ftemp */
+    if (sp->op == LISA_FST_S || sp->op == LISA_FST_D) {
+        latxs_ra_free_temp(&ftemp);
+    }
 }
 
 void tr_gen_softmmu_slow_path(void)
@@ -623,6 +717,11 @@ void gen_ldst_c1_softmmu_helper(
         IR2_OPND *opnd_mem,
         int save_temp)
 {
+    if (option_fast_fpr_ldst) {
+        gen_ldst_softmmu_helper(op, opnd_fpr, opnd_mem, 1);
+        return;
+    }
+
     IR2_OPCODE ldst_op = LISA_INVALID;
     IR2_OPCODE mfmt_op = LISA_INVALID;
 

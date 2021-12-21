@@ -1587,6 +1587,11 @@ void latxs_load_freg128_from_ir1_mem(IR2_OPND *opnd2, IR1_OPND *opnd1)
         latxs_ra_free_temp(&mem_opnd);
     }
 
+    if (option_fast_fpr_ldst) {
+        gen_ldst_softmmu_helper(LISA_VLD, opnd2, &mem_no_offset, 1);
+        return;
+    }
+
     static uint64_t freg128_space[4];
     IR2_OPND data_addr = latxs_ra_alloc_itemp();
     latxs_load_imm64_to_ir2(&data_addr, (uint64_t)&freg128_space[0]);
@@ -1617,6 +1622,11 @@ void latxs_store_freg128_to_ir1_mem(IR2_OPND *opnd2, IR1_OPND *opnd1)
     IR2_OPND mem_base = latxs_ir2_opnd_mem_get_base(&mem_no_offset);
     if (new_tmp) {
         latxs_ra_free_temp(&mem_opnd);
+    }
+
+    if (option_fast_fpr_ldst) {
+        gen_ldst_softmmu_helper(LISA_VST, opnd2, &mem_no_offset, 1);
+        return;
     }
 
     static uint64_t freg128_space[4];

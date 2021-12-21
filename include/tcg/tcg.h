@@ -1384,6 +1384,13 @@ void helper_be_stl_mmu(CPUArchState *env, target_ulong addr, uint32_t val,
 void helper_be_stq_mmu(CPUArchState *env, target_ulong addr, uint64_t val,
                        TCGMemOpIdx oi, uintptr_t retaddr);
 
+#if defined(TARGET_I386) && defined(CONFIG_LATX)
+void latxs_helper_le_lddq_mmu(CPUArchState *env, target_ulong addr,
+                           TCGMemOpIdx oi, uintptr_t retaddr);
+void latxs_helper_le_stdq_mmu(CPUArchState *env, target_ulong addr,
+                              uint64_t val, TCGMemOpIdx oi, uintptr_t retaddr);
+#endif
+
 /* Temporary aliases until backends are converted.  */
 #ifdef TARGET_WORDS_BIGENDIAN
 # define helper_ret_ldsw_mmu  helper_be_ldsw_mmu
