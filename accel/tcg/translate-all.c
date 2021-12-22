@@ -64,6 +64,9 @@
 
 #if defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
+#if defined(CONFIG_LATX)
+#include "latx-test-sys.h"
+#endif
 #endif
 
 /* #define DEBUG_TB_INVALIDATE */

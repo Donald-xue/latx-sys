@@ -677,7 +677,7 @@ int latxs_tb_encode_search(TranslationBlock *tb, uint8_t *block)
             p = encode_sleb128(p, this_data - prev_data);
             if (option_dump) {
                 fprintf(stderr, "[%3d][%d] = 0x%x\n",
-                        i, j, this_data - prev_data);
+                        i, j, (int)(this_data - prev_data));
             }
         }
 
@@ -685,7 +685,7 @@ int latxs_tb_encode_search(TranslationBlock *tb, uint8_t *block)
         this_data = td->x86_ins_lisa_nr[i] * 4;
         p = encode_sleb128(p, this_data - prev_data);
         if (option_dump) {
-            fprintf(stderr, "[%3d]OFF = 0x%x\n", i, this_data);
+            fprintf(stderr, "[%3d]OFF = 0x%x\n", i, (int)this_data);
         }
     }
 

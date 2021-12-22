@@ -110,7 +110,7 @@ static int tt_get_ir1_array(IR1_INST *ir1_array, int ir1_max)
     do {
         pc = latxs_ir1_disasm(&ir1[ir1_nr], inst + pc, pc, &error, ir1_nr);
         if (error) {
-            fprintf(stderr, "Cannot disasm at %d.\n", pc);
+            fprintf(stderr, "Cannot disasm at %"PRIADDRX".\n", pc);
             exit(-1);
         }
         ir1_dump(&ir1[ir1_nr]);

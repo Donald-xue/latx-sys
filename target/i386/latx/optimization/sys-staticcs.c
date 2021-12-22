@@ -150,10 +150,9 @@ int gen_latxs_scs_epilogue_cfg(
     IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
     IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
 #if defined(LATX_SYS_FCSR_SIMD)
     /* load env->fcsr or env->fcsr_simd */
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
-
     IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
             offsetof(CPUX86State, is_fcsr_simd));

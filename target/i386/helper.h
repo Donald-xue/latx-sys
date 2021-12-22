@@ -229,3 +229,7 @@ DEF_HELPER_3(rcrq, tl, env, tl, tl)
 #endif
 
 DEF_HELPER_1(rdrand, tl, env)
+
+#ifdef CONFIG_SOFTMMU
+DEF_HELPER_1(x86_cpu_dump_state, void, env)
+#endif

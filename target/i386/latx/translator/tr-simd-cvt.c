@@ -373,6 +373,8 @@ bool translate_cvttpd2dq(IR1_INST *pir1)
 #endif
 }
 
+#if !defined(CONFIG_SOFTMMU)
+/* TODO x87 FPU and MMX */
 static void tr_x87_to_mmx(void)
 {
     //reset top
@@ -382,6 +384,7 @@ static void tr_x87_to_mmx(void)
 
     tr_gen_top_mode_init();
 }
+#endif
 
 bool translate_cvtpd2pi(IR1_INST *pir1)
 {

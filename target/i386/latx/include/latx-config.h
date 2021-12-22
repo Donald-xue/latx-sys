@@ -32,12 +32,15 @@ void latx_set_tls_ibtc_table(CPUArchState *env);
 ETB *etb_find(ADDRX pc);
 
 #ifdef CONFIG_SOFTMMU
+/* For Functions defined in latx and used outside */
 int target_latxs_static_codes(void *code_ptr);
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
         int max_insns, void *code_highwater, int *search_size);
 void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb);
 void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb);
 void latxs_fix_after_excp_or_int(void);
+void latxs_init_rr_thread_signal(CPUState *cpu);
+void latxs_rr_interrupt_self(CPUState *cpu);
 
 void latxs_update_fcsr(void *env);
 #endif

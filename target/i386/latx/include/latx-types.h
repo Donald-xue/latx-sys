@@ -52,4 +52,6 @@ typedef uint32 ADDRX;
 #error "TARGET_I386 or TARGET_X86_64"
 #endif
 
+#include "exec/cpu-defs.h"
+
 #endif

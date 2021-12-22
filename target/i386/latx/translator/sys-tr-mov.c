@@ -295,6 +295,7 @@ bool latxs_translate_xlat(IR1_INST *pir1)
     /* TODO: error when FS/GS override */
     lsassert(!lsenv->tr_data->sys.addseg);
     int addr_size = latxs_ir1_addr_size(pir1);
+    (void)addr_size; /* avoid compile warning */
 #ifdef TARGET_X86_64
     if (lsenv->tr_data->sys.code64) {
         lsassert(addr_size == 8 || addr_size == 4);

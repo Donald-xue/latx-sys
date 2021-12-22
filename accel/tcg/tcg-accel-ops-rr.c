@@ -38,6 +38,7 @@
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
 #include "latx-options.h"
+#include "latx-config.h"
 #endif
 #if defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"

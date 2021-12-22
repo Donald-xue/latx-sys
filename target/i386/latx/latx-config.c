@@ -324,7 +324,7 @@ static void latxs_break_point(CPUX86State *env, TranslationBlock *tb)
             latxs_sc_bpc &&
             tb->pc == option_break_point_addrx) {
         latxs_bpc_tb_cnt += 1;
-        fprintf(stderr, "[debug] BP at TB 0x%x cnt = %lld\n",
+        fprintf(stderr, "[debug] BP at TB 0x"TARGET_FMT_lx" cnt = %lld\n",
                 tb->pc, latxs_bpc_tb_cnt);
 
         if (latxs_bpc_tb_cnt >= option_break_point_count) {
@@ -376,8 +376,8 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
     uint32_t eflags = cpu_compute_eflags(env);
 
     fprintf(stderr, "[tracesp] ");
-    fprintf(stderr, "PC=0x%x / ", tb->pc);
-    fprintf(stderr, "CS=0x%x / ", tb->cs_base);
+    fprintf(stderr, "PC=0x"TARGET_FMT_lx" / ", tb->pc);
+    fprintf(stderr, "CS=0x"TARGET_FMT_lx" / ", tb->cs_base);
     fprintf(stderr, "EF=0x%x / ", eflags);
     switch (option_trace_simple) {
     case 2: /* Print with FPU state */
@@ -401,7 +401,10 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
     default:
         break;
     }
-    fprintf(stderr, "REGS=0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x\n",
+    fprintf(stderr, "REGS=0x"TARGET_FMT_lx",0x"TARGET_FMT_lx
+                        ",0x"TARGET_FMT_lx",0x"TARGET_FMT_lx
+                        ",0x"TARGET_FMT_lx",0x"TARGET_FMT_lx
+                        ",0x"TARGET_FMT_lx",0x"TARGET_FMT_lx"\n",
             env->regs[0], env->regs[1], env->regs[2], env->regs[3],
             env->regs[4], env->regs[5], env->regs[6], env->regs[7]);
 }

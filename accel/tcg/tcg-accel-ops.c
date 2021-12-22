@@ -40,6 +40,9 @@
 
 #if defined(CONFIG_SOFTMMU)
 #include "trace.h"
+#if defined(CONFIG_LATX)
+#include "latx-config.h"
+#endif
 #if defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif

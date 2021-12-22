@@ -24,6 +24,8 @@
 #include "hw/i386/apic_internal.h"
 #endif
 
+#include "exec/helper-proto.h"
+
 /***********************************************************/
 /* x86 debug */
 
