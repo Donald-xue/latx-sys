@@ -2411,7 +2411,20 @@ static void do_fstenv(CPUX86State *env, target_ulong ptr, int data32,
     uint64_t mant;
     CPU_LDoubleU tmp;
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    if ((!option_lsfpu) && (!option_soft_fpu)) {
+        /*
+         * env->fpstt contains rotated top value.
+         * should be fixed with top_bias.
+         */
+        int top_bias = latxs_get_top_bias_from_env(env);
+        fpus = (env->fpus & ~0x3800) | ((env->fpstt + top_bias) & 0x7) << 11;
+    } else {
+        fpus = (env->fpus & ~0x3800) | (env->fpstt & 0x7) << 11;
+    }
+#else
     fpus = (env->fpus & ~0x3800) | (env->fpstt & 0x7) << 11;
+#endif
     fptag = 0;
     for (i = 7; i >= 0; i--) {
         fptag <<= 2;
@@ -2561,7 +2574,20 @@ static void do_xsave_fpu(CPUX86State *env, target_ulong ptr, uintptr_t ra)
     int fpus, fptag, i;
     target_ulong addr;
 
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    if ((!option_lsfpu) && (!option_soft_fpu)) {
+        /*
+         * env->fpstt contains rotated top value.
+         * should be fixed with top_bias.
+         */
+        int top_bias = latxs_get_top_bias_from_env(env);
+        fpus = (env->fpus & ~0x3800) | ((env->fpstt + top_bias) & 0x7) << 11;
+    } else {
+        fpus = (env->fpus & ~0x3800) | (env->fpstt & 0x7) << 11;
+    }
+#else
     fpus = (env->fpus & ~0x3800) | (env->fpstt & 0x7) << 11;
+#endif
     fptag = 0;
     for (i = 0; i < 8; i++) {
         fptag |= (env->fptags[i] << i);

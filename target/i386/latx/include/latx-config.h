@@ -43,6 +43,9 @@ void latxs_init_rr_thread_signal(CPUState *cpu);
 void latxs_rr_interrupt_self(CPUState *cpu);
 
 void latxs_update_fcsr(void *env);
+
+/* This is used in target/i386/fpu_helper.c */
+int latxs_get_top_bias_from_env(CPUX86State *env);
 #endif
 
 #endif /* _LATX_CONFIG_H_ */

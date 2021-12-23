@@ -615,4 +615,10 @@ void latxs_fix_after_excp_or_int(void)
     lsenv->after_exec_tb_fixed = 1;
 }
 
+/* This is used in target/i386/fpu_helper.c */
+int latxs_get_top_bias_from_env(CPUX86State *env)
+{
+    return (int)env->vregs[3];
+}
+
 #endif
