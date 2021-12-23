@@ -42,6 +42,9 @@
 #include "latx-options.h"
 #include "latx-config.h"
 #endif
+#ifdef CONFIG_HAMT
+#include "hamt.h"
+#endif
 #if defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"
 #endif
@@ -174,6 +177,13 @@ static void rr_deal_with_unplugged_cpus(void)
 static void *rr_cpu_thread_fn(void *arg)
 {
     CPUState *cpu = arg;
+
+#ifdef CONFIG_HAMT
+    if (hamt_enable()) {
+        hamt_enter();
+	    printf("here we in hamt mode\n");
+    }
+#endif
 
     assert(tcg_enabled());
     rcu_register_thread();

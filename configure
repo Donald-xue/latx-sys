@@ -378,6 +378,7 @@ linux="no"
 solaris="no"
 profiler="no"
 latx="no"
+hamt="no"
 latx_flag_pattern="no"
 latx_flag_reduction="no"
 latx_llsc="no"
@@ -1165,6 +1166,8 @@ for opt do
   ;;
   --enable-latx-llsc) latx_llsc="no"
   ;;
+  --enable-hamt) hamt="yes"
+  ;;
   --disable-guest-base) guest_base="no"
   ;;
   --disable-cocoa) cocoa="disabled"
@@ -1813,6 +1816,7 @@ Advanced options (experts only):
   --enable-gprof           QEMU profiling with gprof
   --enable-profiler        profiler support
   --enable-latx            loongarch fast x86-transaction support
+  --enable-hamt            loongarch hardware assisted memory translation
   --disable-guest-base     set guest base to zero
   --enable-debug-stack-usage
                            track the maximum stack usage of stacks created by qemu_alloc_stack
@@ -5593,6 +5597,9 @@ if test "$latx" = "yes" ; then
   if test "$latx_llsc" = "yes" ; then
     echo "CONFIG_LATX_LLSC=y" >> $config_host_mak
   fi
+fi
+if test "$hamt" = "yes" ; then
+  echo "CONFIG_HAMT=y" >> $config_host_mak
 fi
 if test "$guest_base" = "no" ; then
   echo "CONFIG_GUEST_BASE_ZERO=y" >> $config_host_mak

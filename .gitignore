@@ -1,5 +1,7 @@
 *.swp
 build_*
+.nvimrc
+.ccls-cache/
 /GNUmakefile
 /build/
 *.pyc

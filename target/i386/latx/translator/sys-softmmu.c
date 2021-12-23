@@ -5,6 +5,9 @@
 #include "latx-options.h"
 #include "translate.h"
 #include <string.h>
+#ifdef CONFIG_HAMT
+#include "hamt.h"
+#endif
 
 static int is_ldst_realized_by_softmmu(IR2_OPCODE op)
 {
@@ -718,7 +721,29 @@ void gen_ldst_softmmu_helper(
         int save_temp)
 {
     if (is_ldst_realized_by_softmmu(op)) {
-        __gen_ldst_softmmu_helper_native(op, opnd_gpr, opnd_mem, save_temp);
+#ifdef CONFIG_HAMT
+        if (hamt_enable()) {
+            IR2_OPND mem_new_base = latxs_ra_alloc_itemp();
+            IR2_OPND real_addr = latxs_ra_alloc_itemp();
+
+            int mem_offset = latxs_ir2_opnd_mem_get_offset(opnd_mem);
+            IR2_OPND mem_old_base = latxs_ir2_opnd_mem_get_base(opnd_mem);
+            latxs_append_ir2_opnd2i(LISA_ADDI_D, &mem_new_base, &mem_old_base,
+                                mem_offset);
+
+            latxs_load_imm64_to_ir2(&real_addr, 0x8000000000ULL);
+            latxs_append_ir2_opnd3(LISA_ADD_D, &real_addr, &real_addr,
+                               &mem_new_base);
+            latxs_append_ir2_opnd2i(op, opnd_gpr, &real_addr, 0);
+
+            latxs_ra_free_temp(&real_addr);
+            latxs_ra_free_temp(&mem_new_base);
+	} else {
+#endif
+            __gen_ldst_softmmu_helper_native(op, opnd_gpr, opnd_mem, save_temp);
+#ifdef CONFIG_HAMT
+	}
+#endif
         return;
     }
 

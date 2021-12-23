@@ -5268,4 +5268,12 @@ SRST
     Simple test interface for LATX.
 ERST
 
+DEF("hamt", 0, QEMU_OPTION_hamt,
+    "\n",
+    QEMU_ARCH_I386)
+SRST
+``-hamt``
+    Enable loongarch hardware assisted memory translation.
+ERST
+
 HXCOMM This is the last statement. Insert new options before this line!

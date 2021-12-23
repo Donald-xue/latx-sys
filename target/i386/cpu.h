@@ -2247,6 +2247,11 @@ void x86_cpu_set_default_version(X86CPUVersion version);
 /* cpu-dump.c */
 void x86_cpu_dump_local_apic_state(CPUState *cs, int flags);
 
+#ifdef CONFIG_HAMT
+/* excp_helper.c */
+hwaddr get_hphys(CPUState *cs, hwaddr gphys, MMUAccessType access_type, int *prot);
+#endif
+
 /* cpu.c */
 bool cpu_is_bsp(X86CPU *cpu);
 

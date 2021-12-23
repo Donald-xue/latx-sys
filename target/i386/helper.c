@@ -27,6 +27,9 @@
 #include "sysemu/hw_accel.h"
 #include "monitor/monitor.h"
 #endif
+#ifdef CONFIG_HAMT
+#include "hamt.h"
+#endif
 
 void cpu_sync_bndcs_hflags(CPUX86State *env)
 {
@@ -152,12 +155,27 @@ void cpu_x86_update_cr0(CPUX86State *env, uint32_t new_cr0)
    the PDPT */
 void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
 {
+#ifdef CONFIG_HAMT
+    target_ulong old_cr3 = env->cr[3];
+#endif
+
     env->cr[3] = new_cr3;
     if (env->cr[0] & CR0_PG_MASK) {
+
+#ifdef CONFIG_HAMT
+        if (hamt_enable() && (old_cr3 == new_cr3))
+            delete_pgtable(old_cr3);
+#endif
+
         qemu_log_mask(CPU_LOG_MMU,
                         "CR3 update: CR3=" TARGET_FMT_lx "\n", new_cr3);
         tlb_flush(env_cpu(env));
     }
+
+#ifdef CONFIG_HAMT
+    if (hamt_enable())
+        hamt_set_context(new_cr3);
+#endif
 }
 
 void cpu_x86_update_cr4(CPUX86State *env, uint32_t new_cr4)

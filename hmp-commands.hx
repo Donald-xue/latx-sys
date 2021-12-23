@@ -1725,3 +1725,16 @@ ERST
         .flags      = "p",
     },
 
+    {
+        .name       = "hamt",
+        .args_type  = "",
+        .params     = "",
+        .help       = "show hamt statistics",
+        .cmd        = hmp_hamt,
+    },
+
+SRST
+``hamt``
+  show hamt statistics
+ERST
+

@@ -2173,6 +2173,9 @@ foreach target : target_dirs
     if 'CONFIG_LATX' in config_host
       target_inc += include_directories('target/i386/latx/include')
     endif
+    if 'CONFIG_HAMT' in config_host
+      target_inc += include_directories('target/i386/hamt/')
+    endif
   else
     abi = config_target['TARGET_ABI_DIR']
     target_type='user'
@@ -2204,6 +2207,9 @@ foreach target : target_dirs
     endif
     if 'CONFIG_LATX' in config_host
       target_inc += include_directories('target/i386/latx/include')
+    endif
+    if 'CONFIG_HAMT' in config_host
+      target_inc += include_directories('target/i386/hamt/')
     endif
   endif
 
@@ -2541,6 +2547,7 @@ summary_info += {'QEMU_CFLAGS':       config_host['QEMU_CFLAGS']}
 summary_info += {'QEMU_LDFLAGS':      config_host['QEMU_LDFLAGS']}
 summary_info += {'profiler':          config_host.has_key('CONFIG_PROFILER')}
 summary_info += {'latx':              config_host.has_key('CONFIG_LATX')}
+summary_info += {'hamt':              config_host.has_key('CONFIG_HAMT')}
 summary_info += {'link-time optimization (LTO)': get_option('b_lto')}
 summary_info += {'PIE':               get_option('b_pie')}
 summary_info += {'static build':      config_host.has_key('CONFIG_STATIC')}

@@ -62,6 +62,10 @@
 #include "hw/core/tcg-cpu-ops.h"
 #include "internal.h"
 
+#ifdef CONFIG_HAMT
+#include "hamt.h"
+#endif
+
 #if defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
 #if defined(CONFIG_LATX)
@@ -1793,6 +1797,10 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
     ok = alloc_code_gen_buffer(size_code_gen_buffer(tb_size),
                                splitwx, &error_fatal);
     assert(ok);
+
+#ifdef CONFIG_HAMT
+    if (hamt_enable()) alloc_target_addr_space(); 
+#endif
 
 #if defined(CONFIG_SOFTMMU)
     /* There's no guest base to take into account, so go ahead and
