@@ -5177,6 +5177,9 @@ int latxs_ir2_opnd_to_string(IR2_OPND *opnd, char *str, bool hex)
         strcpy(str, latxs_ir2_name(40 + reg_num));
         return strlen(str);
     }
+    case IR2_OPND_SCR: {
+        return sprintf(str, "$scr%d", reg_num);
+    }
     case IR2_OPND_FCSR: {
         return sprintf(str, "$c%d", reg_num);
     }

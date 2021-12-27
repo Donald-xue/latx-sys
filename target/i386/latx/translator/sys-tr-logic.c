@@ -34,6 +34,11 @@ void latxs_sys_logic_register_ir1(void)
 
 bool latxs_translate_xor(IR1_INST *pir1)
 {
+#ifdef TARGET_X86_64
+    if (option_by_hand_64 && latxs_translate_xor_byhand64(pir1)) {
+        return true;
+    }
+#endif
     if (option_by_hand) {
         return latxs_translate_xor_byhand(pir1);
     }
@@ -98,6 +103,11 @@ bool latxs_translate_and(IR1_INST *pir1)
 
 bool latxs_translate_test(IR1_INST *pir1)
 {
+#ifdef TARGET_X86_64
+    if (option_by_hand_64 && latxs_translate_test_byhand64(pir1)) {
+        return true;
+    }
+#endif
     if (option_by_hand) {
         return latxs_translate_test_byhand(pir1);
     }

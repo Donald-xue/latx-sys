@@ -392,6 +392,11 @@ int latxs_ir1_data_size(IR1_INST *ir1); /* Operand Size */
 void latxs_ir1_make_ins_ILLEGAL(IR1_INST *ir1,
         ADDRX addr, int size, int flags);
 
+/* byhand use */
+int latxs_ir1_opnd_is_gpr32(IR1_OPND *opnd);
+int latxs_ir1_opnd_is_gpr64(IR1_OPND *opnd);
+int latxs_ir1_opnd_is_gpr_not_8h(IR1_OPND *opnd);
+
 #endif
 
 #endif

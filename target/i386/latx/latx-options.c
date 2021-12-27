@@ -43,10 +43,11 @@ int option_njc;
 int option_sigint;
 int option_cross_page_check;
 int option_cross_page_jmp_link;
-int option_large_code_cache;
+int option_by_hand_64;
 int option_intb_link;
 int option_soft_fpu;
 int option_fast_fpr_ldst;
+int option_large_code_cache;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -195,6 +196,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_intb_link     11
 #define LATXS_OPT_soft_fpu 12
 #define LATXS_OPT_fast_fpr_ldst 13
+#define LATXS_OPT_by_hand_64 14
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -230,6 +232,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "intblink",
             .type = QEMU_OPT_BOOL,
             .help = "enable/disable indirect TB-link",
+        }, {
+            .name = "trbh64",
+            .type = QEMU_OPT_BOOL,
+            .help = "enable/disable translate by hand 64",
         }, {
             .name = "lsfpu",
             .type = QEMU_OPT_BOOL,
@@ -370,6 +376,9 @@ void set_options(int index, int v)
         break;
     case LATXS_OPT_intb_link:
         option_intb_link = v;
+        break;
+    case LATXS_OPT_by_hand_64:
+        option_by_hand_64 = v;
         break;
     default: break;
     }
@@ -521,6 +530,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_bool(LATXS_OPT_intb_link, opt->value.boolean);
     }
 
+    opt = qemu_opt_find(opts, "trbh64");
+    if (opt) {
+        parse_options_bool(LATXS_OPT_by_hand_64, opt->value.boolean);
+    }
+
 _OUT:
     if (verbose) dump_latxs_options();
 
@@ -624,6 +638,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] large code cache = %d\n", option_soft_fpu);
     printf("[LATXS-OPT] fast frp ldst = %d\n", option_fast_fpr_ldst);
     printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_njc);
+    printf("[LATXS-OPT] by_hand_64 = %d\n", option_by_hand_64);
 #ifdef CONFIG_SOFTMMU
     printf("[LATXS-OPT] monitor 1 simple    counter = %d\n", option_monitor_sc);
     printf("[LATXS-OPT] monitor 2 timer     counter = %d\n", option_monitor_tc);
@@ -657,6 +672,7 @@ void latxs_options_init(void)
     option_large_code_cache = 0;
     option_soft_fpu = 0;
     option_fast_fpr_ldst = 0;
+    option_by_hand_64 = 0;
 
     option_smmu_slow = 0;
 

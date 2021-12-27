@@ -5248,7 +5248,8 @@ DEF("latx", HAS_ARG, QEMU_OPTION_latx,
     "      [,verbose=on|off]\n"
     "      [,largecc=on|off]\n"
     "      [,softfpu=on|off]\n"
-    "      [,ffldst=on|off]\n",
+    "      [,ffldst=on|off]\n"
+    "      [,trbh64=on|off]\n",
     QEMU_ARCH_I386)
 SRST
 ``-latx [optm=none|select|all]``

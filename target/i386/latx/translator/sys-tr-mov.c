@@ -47,7 +47,11 @@ bool latxs_translate_mov(IR1_INST *pir1)
             /* tr_gen_io_start(); */
         /* } */
     /* } */
-
+#ifdef TARGET_X86_64
+    if (option_by_hand_64 && latxs_translate_mov_byhand64(pir1)) {
+        return true;
+    }
+#endif
     if (option_by_hand) {
         return latxs_translate_mov_byhand(pir1);
     }

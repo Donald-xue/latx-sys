@@ -2177,6 +2177,14 @@ bool latxs_translate_fnop_softfpu(IR1_INST *pir1);
 bool latxs_translate_fxsave_softfpu(IR1_INST *pir1);
 bool latxs_translate_fxrstor_softfpu(IR1_INST *pir1);
 
+#ifdef TARGET_X86_64
+bool latxs_translate_mov_byhand64(IR1_INST *pir1);
+bool latxs_translate_xor_byhand64(IR1_INST *pir1);
+bool latxs_translate_cmp_byhand64(IR1_INST *pir1);
+bool latxs_translate_test_byhand64(IR1_INST *pir1);
+bool latxs_translate_add_byhand64(IR1_INST *pir1);
+#endif
+
 /* optimization */
 extern ADDR latxs_sc_scs_prologue;
 extern ADDR latxs_sc_scs_epilogue;

@@ -2091,4 +2091,57 @@ int latxs_ir1_access_mmx(IR1_INST *ir1)
     return 0;
 }
 
+/* byhand use */
+int latxs_ir1_opnd_is_gpr32(IR1_OPND *opnd)
+{
+    if (opnd->type != X86_OP_REG) {
+        return 0;
+    }
+    switch (opnd->reg) {
+    case X86_REG_EAX:
+    case X86_REG_EBX:
+    case X86_REG_ECX:
+    case X86_REG_EDX:
+    case X86_REG_EBP:
+    case X86_REG_ESI:
+    case X86_REG_EDI:
+    case X86_REG_ESP:
+#ifdef TARGET_X86_64
+    case X86_REG_R8D ... X86_REG_R15D:
+#endif
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+
+int latxs_ir1_opnd_is_gpr64(IR1_OPND *opnd)
+{
+    if (opnd->type != X86_OP_REG) {
+        return 0;
+    }
+    switch (opnd->reg) {
+    case X86_REG_RAX:
+    case X86_REG_RBX:
+    case X86_REG_RCX:
+    case X86_REG_RDX:
+    case X86_REG_RBP:
+    case X86_REG_RSI:
+    case X86_REG_RDI:
+    case X86_REG_RSP:
+#ifdef TARGET_X86_64
+    case X86_REG_R8 ... X86_REG_R15:
+#endif
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int latxs_ir1_opnd_is_gpr_not_8h(IR1_OPND *opnd)
+{
+    return ir1_opnd_is_gpr(opnd) && !ir1_opnd_is_8h(opnd);
+}
+
 #endif

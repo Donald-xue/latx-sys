@@ -34,6 +34,11 @@ void latxs_sys_arith_register_ir1(void)
 
 bool latxs_translate_add(IR1_INST *pir1)
 {
+#ifdef TARGET_X86_64
+    if (option_by_hand_64 && latxs_translate_add_byhand64(pir1)) {
+        return true;
+    }
+#endif
     if (option_by_hand) {
         return latxs_translate_add_byhand(pir1);
     }
@@ -303,6 +308,11 @@ bool latxs_translate_neg(IR1_INST *pir1)
 
 bool latxs_translate_cmp(IR1_INST *pir1)
 {
+#ifdef TARGET_X86_64
+    if (option_by_hand_64 && latxs_translate_cmp_byhand64(pir1)) {
+        return true;
+    }
+#endif
     if (option_by_hand) {
         return latxs_translate_cmp_byhand(pir1);
     }
