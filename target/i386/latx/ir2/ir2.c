@@ -5080,6 +5080,9 @@ int latxs_ir2_opnd_is_reg_temp(IR2_OPND *opnd)
     case IR2_OPND_MEMY:
     case IR2_OPND_GPR: {
         reg = latxs_ir2_opnd_reg(opnd);
+#ifdef LATXS_ITMP_CONTINUS
+        return LATXS_ITMP_MIN <= reg && reg <= LATXS_ITMP_MAX;
+#else
         int i = 0;
         for (; i < latxs_itemp_status_num; i++) {
             if (reg == latxs_itemp_status_default[i].physical_id) {
@@ -5087,16 +5090,21 @@ int latxs_ir2_opnd_is_reg_temp(IR2_OPND *opnd)
             }
         }
         return 0;
+#endif
     }
     case IR2_OPND_FPR: {
         reg = latxs_ir2_opnd_reg(opnd);
+#ifdef LATXS_FTMP_CONTINUS
+        return LATXS_FTMP_MIN <= reg && reg <= LATXS_FTMP_MAX;
+#else
         int i = 0;
-        for (; i < latxs_itemp_status_num; i++) {
+        for (; i < ftemp_status_num; i++) {
             if (reg == ftemp_status_default[i].physical_id) {
                 return 1;
             }
         }
         return 0;
+#endif
     }
     default: {
         lsassert(0);

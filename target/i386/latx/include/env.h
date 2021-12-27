@@ -51,6 +51,9 @@ static const TEMP_REG_STATUS latxs_itemp_status_default[] = {
     {false, 12}, {false, 13}, {false, 14}, {false, 15},
     {false, 16}, {false, 17}, {false, 18}, {false, 19}
 };
+#define LATXS_ITMP_CONTINUS
+#define LATXS_ITMP_MIN 12
+#define LATXS_ITMP_MAX 19
 #endif
 
 #define latxs_itemp_status_num \
@@ -64,7 +67,9 @@ static const TEMP_REG_STATUS ftemp_status_default[] = {
     {false, FTEMP4_NUM}, {false, FTEMP5_NUM},
     {false, FTEMP6_NUM}
 };
-
+#define LATXS_FTMP_CONTINUS
+#define LATXS_FTMP_MIN      FTEMP0_NUM
+#define LATXS_FTMP_MAX      FTEMP6_NUM
 
 #define itemp_status_num \
     (sizeof(itemp_status_default) / sizeof(TEMP_REG_STATUS))
