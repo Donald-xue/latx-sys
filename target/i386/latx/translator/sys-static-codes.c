@@ -575,8 +575,13 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
                                              &njc_miss);
 
             /* check if PC == TB.PC */
+#ifdef TARGET_X86_64
+            latxs_append_ir2_opnd2i(LISA_LD_D, &param0, ret0,
+                    offsetof(TranslationBlock, pc));
+#else
             latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
                     offsetof(TranslationBlock, pc));
+#endif
             IR2_OPND eip = latxs_ra_alloc_itemp();
 #ifdef TARGET_X86_64
             latxs_append_ir2_opnd2i(LISA_LD_D, &eip, &latxs_env_ir2_opnd,
@@ -602,10 +607,17 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             latxs_append_ir2_opnd3(LISA_BNE, &param0, zero, &njc_miss);
 
             /* check next TB's CSBASE */
+#ifdef TARGET_X86_64
+            latxs_append_ir2_opnd2i(LISA_LD_D, &param0, ret0,
+                    offsetof(TranslationBlock, cs_base));
+            latxs_append_ir2_opnd2i(LISA_LD_D, &param1, env,
+                    offsetof(CPUX86State, segs[R_CS].base));
+#else
             latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
                     offsetof(TranslationBlock, cs_base));
             latxs_append_ir2_opnd2i(LISA_LD_WU, &param1, env,
                     offsetof(CPUX86State, segs[R_CS].base));
+#endif
             latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &njc_miss);
 
             /* check next TB's flags */
@@ -615,6 +627,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
              *                 VM_MASK | AC_MASK));
              */
             IR2_OPND eflags = latxs_ra_alloc_itemp();
+            /* eflags is target_ulong, but high 32 bits is all zeros */
             latxs_append_ir2_opnd2i(LISA_LD_WU, &eflags, &latxs_env_ir2_opnd,
                 lsenv_offset_of_eflags(lsenv));
             latxs_load_imm64_to_ir2(&param0, (IOPL_MASK | TF_MASK | RF_MASK |
