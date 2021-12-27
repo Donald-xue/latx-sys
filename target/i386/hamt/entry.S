@@ -13,31 +13,11 @@ csrwr    t0, LOONGARCH_CSR_TLBRSAVE
 csrwr    t1, LOONGARCH_CSR_KS0
 csrwr    t2, LOONGARCH_CSR_KS1
 
-// t0: bad vaddr t1: 0x8000000000
+// t0: bad vaddr t1: 0x1000000000
 csrrd    t0, LOONGARCH_CSR_TLBRBADV
 or       t1, zero, zero
-lu32i.d  t1, MAPPING_BASE_ADDRESS>>32
-bltu     t0, t1, qemu_space
-// t1 -> 0x80ffffffff
-addi.w   t2, zero, -1
-lu32i.d  t2, 0>>32
-add.d    t1, t1, t2
-bgtu     t0, t1, qemu_space
-
-hamt_space:
-csrrd  t0, LOONGARCH_CSR_TLBREHI
-
-// set TLBREHI.PS
-srli.d t0, t0, 0x6
-slli.d t0, t0, 0x6
-ori    t1, t0, TLB_PS_4K
-
-csrwr  t1, LOONGARCH_CSR_TLBREHI
-csrwr  zero, LOONGARCH_CSR_TLBRELO0
-csrwr  zero, LOONGARCH_CSR_TLBRELO1
-tlbfill
-
-b tlbr_restore
+lu32i.d  t1, 0x100000000>>32
+bltu     t0, t1, hamt_space 
 
 qemu_space:
 csrrd t0, LOONGARCH_CSR_TLBREHI
@@ -60,6 +40,21 @@ csrwr t1, LOONGARCH_CSR_TLBRELO0
 csrrd t1, LOONGARCH_CSR_KS7
 add.d t1, t1, t0
 csrwr t1, LOONGARCH_CSR_TLBRELO1
+tlbfill
+
+b tlbr_restore
+
+hamt_space:
+csrrd  t0, LOONGARCH_CSR_TLBREHI
+
+// set TLBREHI.PS
+srli.d t0, t0, 0x6
+slli.d t0, t0, 0x6
+ori    t1, t0, TLB_PS_4K
+
+csrwr  t1, LOONGARCH_CSR_TLBREHI
+csrwr  zero, LOONGARCH_CSR_TLBRELO0
+csrwr  zero, LOONGARCH_CSR_TLBRELO1
 tlbfill
 
 tlbr_restore:
@@ -386,7 +381,7 @@ switch_stack:
 // 参考 emulate_fork_by_two_vcpu 中在 stack 上设置的参数
 ENTRY (__do_simulate_clone)
 	/* Do the system call.  */
-	dli	a7,220 /* #define __NR_clone 220 */
+	li.d    a7,220 /* #define __NR_clone 220 */
 	syscall	0
 
 	beqz	a0, 1f
@@ -429,7 +424,7 @@ ENTRY (get_fpu_regs)
 	st.w	t0, a0, VCPU_VCSR
 
   __tmp = 12 /* #define t0 $r12 */
-	li              t0, VCPU_FPR0
+	li.d            t0, VCPU_FPR0
 	add.d t0,       a0, t0
 	.word (0xb3 << 22 | ((0 * VCPU_FPR_LEN) << 10) | __tmp  << 5 | 0)
 	.word (0xb3 << 22 | ((1 * VCPU_FPR_LEN) << 10) | __tmp  << 5 | 1)
