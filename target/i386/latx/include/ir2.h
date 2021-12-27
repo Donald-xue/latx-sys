@@ -209,6 +209,11 @@ extern IR2_OPND latxs_stmp2_ir2_opnd;
 
 extern IR2_OPND latxs_invalid_ir2_opnd;
 
+extern IR2_OPND latxs_scr0_ir2_opnd;
+extern IR2_OPND latxs_scr1_ir2_opnd;
+extern IR2_OPND latxs_scr2_ir2_opnd;
+extern IR2_OPND latxs_scr3_ir2_opnd;
+
 /* Functions to build IR2_OPND */
 IR2_OPND latxs_ir2_opnd_new(IR2_OPND_TYPE, int value);
 IR2_OPND latxs_ir2_opnd_new_inv(void);

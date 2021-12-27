@@ -4932,6 +4932,11 @@ LATXS_REG_ALLOC_DEFINE_IR2_GPR(latxs_stmp2_ir2_opnd, 9); /* a5 */
 /* Consist value */
 LATXS_REG_ALLOC_DEFINE_IR2(latxs_invalid_ir2_opnd, IR2_OPND_INV, 0);
 
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_scr0_ir2_opnd, IR2_OPND_SCR, 0);
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_scr1_ir2_opnd, IR2_OPND_SCR, 1);
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_scr2_ir2_opnd, IR2_OPND_SCR, 2);
+LATXS_REG_ALLOC_DEFINE_IR2(latxs_scr3_ir2_opnd, IR2_OPND_SCR, 3);
+
 /* Functions to build IR2_OPND */
 IR2_OPND latxs_ir2_opnd_new(IR2_OPND_TYPE type, int value)
 {

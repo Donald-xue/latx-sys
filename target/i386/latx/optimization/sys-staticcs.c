@@ -29,6 +29,13 @@ int gen_latxs_scs_prologue_cfg(
 
     latxs_tr_init(NULL);
 
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2(LISA_GR2SCR, &latxs_scr0_ir2_opnd,
+                           &latxs_stmp1_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_GR2SCR, &latxs_scr1_ir2_opnd,
+                           &latxs_stmp2_ir2_opnd);
+#endif
+
     int ra_reg_num = latxs_ir2_opnd_reg(&latxs_ra_ir2_opnd);
     latxs_append_ir2_opnd2i(LISA_ST_D, &latxs_ra_ir2_opnd,
             &latxs_env_ir2_opnd,
@@ -97,6 +104,13 @@ int gen_latxs_scs_prologue_cfg(
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, stmp1);
 #endif
 
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2(LISA_SCR2GR, &latxs_stmp1_ir2_opnd,
+                           &latxs_scr0_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_SCR2GR, &latxs_stmp2_ir2_opnd,
+                           &latxs_scr1_ir2_opnd);
+#endif
+
     latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd,
             &latxs_env_ir2_opnd,
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
@@ -145,6 +159,13 @@ int gen_latxs_scs_epilogue_cfg(
                 0x2);
     }
 
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2(LISA_GR2SCR, &latxs_scr0_ir2_opnd,
+                           &latxs_stmp1_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_GR2SCR, &latxs_scr1_ir2_opnd,
+                           &latxs_stmp2_ir2_opnd);
+#endif
+
 #if defined(LATX_SYS_FCSR)
     IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
@@ -183,6 +204,13 @@ int gen_latxs_scs_epilogue_cfg(
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, stmp1);
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
 #endif
+#endif
+
+#ifdef TARGET_X86_64
+    latxs_append_ir2_opnd2(LISA_SCR2GR, &latxs_stmp1_ir2_opnd,
+                           &latxs_scr0_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_SCR2GR, &latxs_stmp2_ir2_opnd,
+                           &latxs_scr1_ir2_opnd);
 #endif
 
     latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd,
