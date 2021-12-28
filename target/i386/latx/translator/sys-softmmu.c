@@ -373,7 +373,8 @@ static void td_rcd_softmmu_slow_path(
         sp->fpu_top = latxs_td_fpu_get_top();
     }
 
-    sp->tmp_mask = td->itemp_mask;
+    sp->itmp_mask = td->itemp_mask;
+    sp->ftmp_mask = td->ftemp_mask;
 
     if (option_by_hand) {
         int i = 0;
@@ -475,8 +476,10 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     latxs_append_ir2_opnd1(LISA_LABEL, &sp->label_slow_path);
 
     TRANSLATION_DATA *td = lsenv->tr_data;
-    int tmp_mask_bak = td->itemp_mask;
-    td->itemp_mask = sp->tmp_mask;
+    int itmp_mask_bak = td->itemp_mask;
+    int ftmp_mask_bak = td->ftemp_mask;
+    td->itemp_mask = sp->itmp_mask;
+    td->ftemp_mask = sp->ftmp_mask;
 
     int top_bak = 0;
     if (!option_lsfpu && !option_soft_fpu) {
@@ -485,7 +488,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     }
 
     if (sp->tmp_need_save) {
-        latxs_tr_save_temp_register_mask(sp->tmp_mask);
+        latxs_tr_save_temp_register_mask(sp->itmp_mask);
     }
 
     EXMode gpr_em_bak[CPU_NB_REGS];
@@ -644,7 +647,7 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     }
 
     if (sp->tmp_need_save) {
-        latxs_tr_restore_temp_register_mask(sp->tmp_mask);
+        latxs_tr_restore_temp_register_mask(sp->itmp_mask);
     }
 
     if (sp->is_load) {
@@ -664,7 +667,8 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
         }
     }
 
-    td->itemp_mask = tmp_mask_bak;
+    td->itemp_mask = itmp_mask_bak;
+    td->ftemp_mask = ftmp_mask_bak;
 
     if (!option_lsfpu && !option_soft_fpu) {
         latxs_td_fpu_set_top(top_bak);

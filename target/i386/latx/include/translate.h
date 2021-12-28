@@ -1372,7 +1372,8 @@ void latxs_reverse_ir2_ireg_opnd_endian(IR2_OPND *, int);
 /* Softmmu related */
 typedef struct softmmu_slow_path_rcd {
     int tmp_need_save;
-    int tmp_mask;
+    int itmp_mask;
+    int ftmp_mask;
 
     int is_load;
     IR2_OPCODE op;
