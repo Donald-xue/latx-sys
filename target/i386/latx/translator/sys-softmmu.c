@@ -500,7 +500,10 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
     IR2_OPND ftemp = latxs_zero_ir2_opnd;
     if (sp->op == LISA_FST_S || sp->op == LISA_FST_D) {
         ftemp = latxs_ra_alloc_ftemp();
-        latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp, &sp->gpr_ir2_opnd);
+        latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &latxs_ra_ir2_opnd,
+                &sp->gpr_ir2_opnd);
+        latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp,
+                &latxs_ra_ir2_opnd);
     }
 
     /* 1. save native context */
