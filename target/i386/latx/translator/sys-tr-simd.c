@@ -1972,134 +1972,12 @@ bool latxs_translate_cmpordss(IR1_INST *pir1)
 
 bool latxs_translate_comisd(IR1_INST *pir1)
 {
-    XMM_EXCP(pir1);
-
-    lsassert(ir1_opnd_num(pir1) == 2);
-    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
-
-    IR2_OPND dest = XMM_LOAD128(opnd0);
-    IR2_OPND src  = XMM_LOAD128(opnd1);
-
-    IR2_OPND label_nun  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_neq  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_exit = latxs_ir2_opnd_new_label();
-
-    IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
-
-    IR2_OPND allone = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd3(LISA_NOR, &allone, zero, zero);
-
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x3f);
-
-    /*  case 1: are they unordered? */
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
-                    &dest, &src, FCMP_COND_CUN);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_nun);
-    /* at least one of the operands is NaN */
-    /* set zf,pf,cf = 111 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0xb);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
-
-    /* case 2: not unordered. are they equal? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_nun);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
-                    &dest, &src, FCMP_COND_CEQ);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_neq);
-    /* two operands are equal */
-    /* set zf,pf,cf = 100 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x8);
-
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
-
-    /* case 3: not unordered, not equal. less than? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_neq);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0,
-                    &dest, &src, FCMP_COND_CLT);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_exit);
-    /* less than */
-    /* set zf.pf.cf = 001 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x1);
-
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
-
-    /* not unordered, not equal, not less than, so it's greater than */
-    /* set zf,pf,cf = 000, as we have set all eflags to 0, */
-    /* so just exit */
-
-    /* exit */
-    /* set of,sf,af = 000 */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
-
-    latxs_ra_free_temp(&allone);
-    return true;
+    return latxs_translate_ucomisd(pir1);
 }
 
 bool latxs_translate_comiss(IR1_INST *pir1)
 {
-    XMM_EXCP(pir1);
-
-    lsassert(ir1_opnd_num(pir1) == 2);
-    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
-    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
-
-    IR2_OPND dest = XMM_LOAD128(opnd0);
-    IR2_OPND src  = XMM_LOAD128(opnd1);
-
-    IR2_OPND label_nun  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_neq  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_exit = latxs_ir2_opnd_new_label();
-
-    IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
-
-    IR2_OPND allone = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd3(LISA_NOR, &allone, zero, zero);
-
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x3f);
-
-    /*  case 1: are they unordered? */
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, fcc0,
-                    &dest, &src, FCMP_COND_CUN);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_nun);
-    /* at least one of the operands is NaN */
-    /* set zf,pf,cf = 111 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0xb);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
-
-    /* case 2: not unordered. are they equal? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_nun);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, fcc0,
-                    &dest, &src, FCMP_COND_CEQ);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_neq);
-    /* two operands are equal */
-    /* set zf,pf,cf = 100 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x8);
-
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
-
-    /* case 3: not unordered, not equal. less than? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_neq);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, fcc0,
-                    &dest, &src, FCMP_COND_CLT);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_exit);
-    /* less than */
-    /* set zf.pf.cf = 001 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x1);
-
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
-
-    /* not unordered, not equal, not less than, so it's greater than */
-    /* set zf,pf,cf = 000, as we have set all eflags to 0, */
-    /* so just exit */
-
-    /* exit */
-    /* set of,sf,af = 000 */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
-
-    latxs_ra_free_temp(&allone);
-    return true;
+    return latxs_translate_ucomiss(pir1);
 }
 
 bool latxs_translate_cvtpi2ps(IR1_INST *pir1)
@@ -3632,65 +3510,46 @@ bool latxs_translate_ucomisd(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
 
+    /**
+     * (bit 6)ZF = 1 if EQ || UOR
+     * (bit 2)PF = 1 if UOR (= ZF & CF)
+     * (bit 0)CF = 1 if LT || UOR
+     */
+    lsassert(ir1_opnd_num(pir1) == 2);
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
-
-    IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
-
-    IR2_OPND allone = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd3(LISA_NOR, &allone, zero, zero);
-
-    lsassert(ir1_opnd_num(pir1) == 2);
     IR2_OPND dest = XMM_LOAD128(opnd0);
-    IR2_OPND src  = XMM_LOAD128(opnd1);
+    IR2_OPND src = XMM_LOAD128(opnd1);
+    /* 0. set flag = 0 */
+    IR2_OPND flag_zf = latxs_ra_alloc_itemp();
+    IR2_OPND flag_pf = latxs_ra_alloc_itemp();
+    IR2_OPND flag = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2_(lisa_mov, &flag, &latxs_zero_ir2_opnd);
 
-    IR2_OPND label_nun  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_neq  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_gt   = latxs_ir2_opnd_new_label();
-    IR2_OPND label_exit = latxs_ir2_opnd_new_label();
+    /* 1. check ZF, are they equal & unordered? */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &latxs_fcc0_ir2_opnd, &dest, &src,
+                            FCMP_COND_CUEQ);
+    latxs_append_ir2_opnd2(LISA_MOVCF2GR, &flag_zf, &latxs_fcc0_ir2_opnd);
 
-    /*  case 1: are they unordered? */
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0, &dest, &src,
-                                 FCMP_COND_CUN);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_nun);
-    /* at least one of the operands is NaN */
-    /* set zf,pf,cf = 111 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0xb);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* 2. check CF, are they less & unordered? */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, &latxs_fcc2_ir2_opnd, &dest, &src,
+                            FCMP_COND_CULT);
+    latxs_append_ir2_opnd2(LISA_MOVCF2GR, &flag, &latxs_fcc2_ir2_opnd);
 
-    /* case 2: not unordered. are they equal? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_nun);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0, &dest, &src,
-                                 FCMP_COND_CEQ);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_neq);
-    /* two operands are equal */
-    /* set zf,pf,cf = 100 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x8);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x3);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* 3. check PF, are they unordered? (= ZF & CF) */
+    latxs_append_ir2_opnd3(LISA_AND, &flag_pf, &flag, &flag_zf);
 
-    /* case 3: not unordered, not equal. less than? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_neq);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_D, fcc0, &dest, &src,
-                                 FCMP_COND_CLT);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_gt);
-    /* less than */
-    /* set zf.pf.cf = 001 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0xa);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x1);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &flag, &flag_zf, ZF_BIT_INDEX,
+                             ZF_BIT_INDEX);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &flag, &flag_pf, PF_BIT_INDEX,
+                             PF_BIT_INDEX);
 
-    /* not unordered, not equal, not less than, so it's greater than */
-    /* set zf,pf,cf = 000 */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_gt);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0xb);
+    /* 4. mov flag to EFLAGS */
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &flag, 0x3f);
 
-    /* exit */
-    /* set of,sf,af = 000 */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x34);
-
+    latxs_ra_free_temp(&flag_pf);
+    latxs_ra_free_temp(&flag_zf);
+    latxs_ra_free_temp(&flag);
     return true;
 }
 
@@ -3698,66 +3557,46 @@ bool latxs_translate_ucomiss(IR1_INST *pir1)
 {
     XMM_EXCP(pir1);
 
+    /**
+     * (bit 6)ZF = 1 if EQ || UOR
+     * (bit 2)PF = 1 if UOR (= ZF & CF)
+     * (bit 0)CF = 1 if LT || UOR
+     */
+    lsassert(ir1_opnd_num(pir1) == 2);
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
-
-    IR2_OPND *fcc0 = &latxs_fcc0_ir2_opnd;
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
-
-    IR2_OPND allone = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd3(LISA_NOR, &allone, zero, zero);
-
-    lsassert(ir1_opnd_num(pir1) == 2);
     IR2_OPND dest = XMM_LOAD128(opnd0);
-    IR2_OPND src  = XMM_LOAD128(opnd1);
+    IR2_OPND src = XMM_LOAD128(opnd1);
+    /* 0. set flag = 0 */
+    IR2_OPND flag_zf = latxs_ra_alloc_itemp();
+    IR2_OPND flag_pf = latxs_ra_alloc_itemp();
+    IR2_OPND flag = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2_(lisa_mov, &flag, &latxs_zero_ir2_opnd);
 
-    IR2_OPND label_nun  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_neq  = latxs_ir2_opnd_new_label();
-    IR2_OPND label_gt   = latxs_ir2_opnd_new_label();
-    IR2_OPND label_exit = latxs_ir2_opnd_new_label();
+    /* 1. check ZF, are they equal & unordered? */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, &latxs_fcc0_ir2_opnd, &dest, &src,
+                            FCMP_COND_CUEQ);
+    latxs_append_ir2_opnd2(LISA_MOVCF2GR, &flag_zf, &latxs_fcc0_ir2_opnd);
 
-    /* case 1: are they unordered? */
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, fcc0, &dest, &src,
-                                 FCMP_COND_CUN);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_nun);
-    /* at least one of the operands is NaN */
-    /* set zf,pf,cf = 111 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0xb);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* 2. check CF, are they less & unordered? */
+    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, &latxs_fcc2_ir2_opnd, &dest, &src,
+                            FCMP_COND_CULT);
+    latxs_append_ir2_opnd2(LISA_MOVCF2GR, &flag, &latxs_fcc2_ir2_opnd);
 
-    /* case 2: not unordered. are they equal? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_nun);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, fcc0, &dest, &src,
-                                 FCMP_COND_CEQ);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_neq);
-    /* two operands are equal */
-    /* set zf,pf,cf = 100 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x8);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x3);
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* 3. check PF, are they unordered? (= ZF & CF) */
+    latxs_append_ir2_opnd3(LISA_AND, &flag_pf, &flag, &flag_zf);
 
-    /* case 3: not unordered, not equal. less than? */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_neq);
-    latxs_append_ir2_opnd3i(LISA_FCMP_COND_S, fcc0, &dest, &src,
-                                 FCMP_COND_CLT);
-    latxs_append_ir2_opnd2(LISA_BCEQZ, fcc0, &label_gt);
-    /* less than */
-    /* set zf.pf.cf = 001 */
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0xa);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &allone, 0x1);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &flag, &flag_zf, ZF_BIT_INDEX,
+                             ZF_BIT_INDEX);
+    latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &flag, &flag_pf, PF_BIT_INDEX,
+                             PF_BIT_INDEX);
 
-    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* 4. mov flag to EFLAGS */
+    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, &flag, 0x3f);
 
-    /* not unordered, not equal, not less than, so it's greater than */
-    /* set zf,pf,cf = 000 */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_gt);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0xb);
-
-    /* exit*/
-    /* set of,sf,af = 000 */
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
-    latxs_append_ir2_opnd1i(LISA_X86MTFLAG, zero, 0x34);
-
+    latxs_ra_free_temp(&flag_pf);
+    latxs_ra_free_temp(&flag_zf);
+    latxs_ra_free_temp(&flag);
     return true;
 }
 
