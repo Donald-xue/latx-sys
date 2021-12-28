@@ -354,8 +354,101 @@ bool latxs_translate_xlat(IR1_INST *pir1)
         } \
     } while (0)
 
+#define LATXS_USE_CMOVCC_OPT
+
+#if defined(LATXS_USE_CMOVCC_OPT)
+/**
+ * @brief CMOVcc translation
+ *
+ * CMOVcc has:
+ * - CMOVO    // OF = 1
+ * - CMOVNO   // OF = 0
+ * - CMOVB    // CF = 1
+ * - CMOVAE   // CF = 0
+ * - CMOVE    // ZF = 1
+ * - CMOVNE   // ZF = 0
+ * - CMOVBE   // CF = 1 | ZF = 1
+ * - CMOVA    // CF = O & ZF = O
+ * - CMOVS    // SF = 1
+ * - CMOVNS   // SF = 0
+ * - CMOVP    // PF = 1
+ * - CMOVNP   // PF = 0
+ * - CMOVL    // SF <> OF
+ * - CMOVGE   // SF = OF
+ * - CMOVLE   // ZF = 1 | SF <> OF
+ * - CMOVG    // ZF = 0 & SF = OF
+ *
+ * @param pir1 input current inst
+ * @return true if transalte success
+ * @return false translate failure
+ */
+static bool __latxs_translate_cmovcc(IR1_INST *pir1)
+{
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* GPR     */
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* GPR/MEM */
+
+    IR2_OPND cond = latxs_ra_alloc_itemp();
+    latxs_get_eflag_condition(&cond, pir1);
+
+    int opnd_size_0 = ir1_opnd_size(opnd0);
+    int opnd_size_1 = ir1_opnd_size(opnd1);
+    CMOVCC_ASSERT(pir1, opnd_size_0, opnd_size_1);
+
+    IR2_OPND src = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&src, opnd1, EXMode_N);
+
+    int dest_gpr = ir1_opnd_base_reg_num(opnd0);
+    IR2_OPND dest = latxs_ra_alloc_gpr(dest_gpr);
+
+    IR2_OPND cond1 = latxs_ra_alloc_itemp();
+    IR2_OPND cond2 = latxs_ra_alloc_itemp();
+    switch (ir1_opcode(pir1)) {
+    case X86_INS_CMOVO:
+    case X86_INS_CMOVB:
+    case X86_INS_CMOVE:
+    case X86_INS_CMOVBE:
+    case X86_INS_CMOVS:
+    case X86_INS_CMOVP:
+    case X86_INS_CMOVL:
+    case X86_INS_CMOVLE:
+        /* CC = 1 */
+        latxs_append_ir2_opnd3(LISA_MASKNEZ, &cond1, &dest, &cond);
+        latxs_append_ir2_opnd3(LISA_MASKEQZ, &cond2, &src, &cond);
+        break;
+    case X86_INS_CMOVNO:
+    case X86_INS_CMOVAE:
+    case X86_INS_CMOVNE:
+    case X86_INS_CMOVA:
+    case X86_INS_CMOVNS:
+    case X86_INS_CMOVNP:
+    case X86_INS_CMOVGE:
+    case X86_INS_CMOVG:
+        /* CC = 0 */
+        latxs_append_ir2_opnd3(LISA_MASKEQZ, &cond1, &dest, &cond);
+        latxs_append_ir2_opnd3(LISA_MASKNEZ, &cond2, &src, &cond);
+        break;
+    default:
+        break;
+    }
+
+    latxs_append_ir2_opnd3(LISA_OR, &cond1, &cond1, &cond2);
+    latxs_store_ir2_to_ir1(&cond1, opnd0);
+    if (option_by_hand) {
+#if defined(TARGET_X86_64)
+        lsassertm(0, "%s TODO extension mode in x86\n", __func__);
+#endif
+        latxs_td_set_reg_extmb(dest_gpr, EXMode_N, 32);
+    }
+
+    return true;
+}
+#endif
+
 bool latxs_translate_cmovo(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* OF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -382,10 +475,14 @@ bool latxs_translate_cmovo(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovno(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* OF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -412,10 +509,14 @@ bool latxs_translate_cmovno(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovb(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* CF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -442,10 +543,14 @@ bool latxs_translate_cmovb(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovae(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* CF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -472,10 +577,14 @@ bool latxs_translate_cmovae(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovz(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* ZF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -502,10 +611,14 @@ bool latxs_translate_cmovz(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovnz(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* ZF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -532,10 +645,14 @@ bool latxs_translate_cmovnz(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovbe(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* ZF, CF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -562,10 +679,14 @@ bool latxs_translate_cmovbe(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmova(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* ZF, CF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -592,10 +713,14 @@ bool latxs_translate_cmova(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovs(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* SF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -622,10 +747,14 @@ bool latxs_translate_cmovs(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovns(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* SF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -652,10 +781,14 @@ bool latxs_translate_cmovns(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovp(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* PF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -682,10 +815,14 @@ bool latxs_translate_cmovp(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovnp(IR1_INST *pir1)
 {
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* PF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -712,10 +849,14 @@ bool latxs_translate_cmovnp(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovl(IR1_INST *pir1)
 { /* sf != of */
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* cond = SF xor OF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -742,10 +883,14 @@ bool latxs_translate_cmovl(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovge(IR1_INST *pir1)
 { /* sf == of */
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* cond = SF xor OF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -772,10 +917,14 @@ bool latxs_translate_cmovge(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovle(IR1_INST *pir1)
 { /* zf==1 || sf!=of */
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* ZF, OF xor SF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -802,10 +951,14 @@ bool latxs_translate_cmovle(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }
 
 bool latxs_translate_cmovg(IR1_INST *pir1)
 { /* zf==0 && sf==of */
+#ifdef LATXS_USE_CMOVCC_OPT
+    return __latxs_translate_cmovcc(pir1);
+#else
     IR2_OPND condition = latxs_ra_alloc_itemp(); /* ZF, OF xor SF */
     latxs_get_eflag_condition(&condition, pir1);
 
@@ -832,4 +985,5 @@ bool latxs_translate_cmovg(IR1_INST *pir1)
 #endif
     latxs_ra_free_temp(&condition);
     return true;
+#endif
 }

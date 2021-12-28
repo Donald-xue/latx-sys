@@ -392,10 +392,11 @@ void latxs_get_eflag_condition(
         IR2_OPND sf_opnd = latxs_ra_alloc_itemp();
         IR2_OPND of_opnd = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd1i(LISA_X86MFFLAG, &of_opnd, 0x30);
-        latxs_append_ir2_opnd2i(LISA_SRLI_W, &sf_opnd, &of_opnd, SF_BIT_INDEX);
-        latxs_append_ir2_opnd2i(LISA_SRLI_W, &of_opnd, &of_opnd, OF_BIT_INDEX);
-        latxs_append_ir2_opnd3(LISA_XOR, &sf_opnd, &sf_opnd, &of_opnd);
-        latxs_append_ir2_opnd2i(LISA_ANDI, cond, &sf_opnd, 1);
+        latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &sf_opnd,
+                &of_opnd, SF_BIT_INDEX, SF_BIT_INDEX);
+        latxs_append_ir2_opnd2ii(LISA_BSTRPICK_W, &of_opnd,
+                &of_opnd, OF_BIT_INDEX, OF_BIT_INDEX);
+        latxs_append_ir2_opnd3(LISA_XOR, cond, &sf_opnd, &of_opnd);
         latxs_ra_free_temp(&sf_opnd);
         latxs_ra_free_temp(&of_opnd);
         break;
