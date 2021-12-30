@@ -887,7 +887,7 @@ static void tcg_out_call_int(TCGContext *s, const tcg_insn_unit *arg, bool tail)
     } else if (TCG_TARGET_REG_BITS == 32 || offset == sextreg(offset, 0, 38)) {
         /* long jump: 38-bit */
         tcg_target_long imm = sextreg((tcg_target_long)offset, 0, 18);
-        tcg_target_long base = ((tcg_target_long)offset- imm) >> 6;
+        tcg_target_long base = ((tcg_target_long)offset + ((1 << 17))) >> 6;
         tcg_out_opc_upp(s, OPC_PCADDU18I, TCG_REG_TMP0, base);
         tcg_out_opc_jbr(s, OPC_JIRL, link, TCG_REG_TMP0, imm);
     } else if (TCG_TARGET_REG_BITS == 64) {
@@ -1321,6 +1321,8 @@ static void tcg_out_op(TCGContext *s, TCGOpcode opc,
             /* actual branch destination will be patched by
                tb_target_set_jmp_target later. */
             tcg_out_opc_djp(s, OPC_B, 0);
+            /* two insn for patch jmp large than 128MB */
+            tcg_out_opc_imm(s,OPC_ADDI, TCG_REG_ZERO, TCG_REG_ZERO, 0);
         } else {
             assert(s->tb_jmp_insn_offset == 0);
             /* indirect jump method */
@@ -1961,11 +1963,22 @@ void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
 
         if (offset == sextreg(offset, 0, 28)) {
             insn = encode_dj(OPC_B, offset);
-        } else { // TODO
-            tcg_debug_assert(0);
+            qatomic_set((uint32_t *)jmp_rw, insn);
+            flush_idcache_range(jmp_rx, jmp_rw, 4);
+        } else {
+            /* patch far jmp, two insns were preserved */
+            tcg_insn_unit i1, i2;
+            offset >>= 2;
+            int64_t upper, lower;
+            upper = ((offset + (1 << 15)) >> 16) & 0xfffff;
+            lower = (offset & 0xffff);
+            /* $a0 -> temp reg, was not used at end of tb */
+            i1 = 0x1e000000 | upper << 5 | TCG_REG_A0;       /* pcaddu18i */
+            i2 = 0x4c000000 | lower << 10 | TCG_REG_A0 << 5; /* jirl */
+            qatomic_set((uint32_t *)jmp_rw, i1);
+            qatomic_set((uint32_t *)(jmp_rw + 4), i2);
+            flush_idcache_range(jmp_rx, jmp_rw, 8);
         }
-        qatomic_set((uint32_t *)jmp_rw, insn);
-        flush_idcache_range(jmp_rx, jmp_rw, 4);
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     }
 #endif

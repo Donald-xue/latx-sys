@@ -1363,7 +1363,7 @@ static void page_lock_pair(PageDesc **ret_p1, tb_page_addr_t phys1,
      main executable is also within that region.  */
 # define MAX_CODE_GEN_BUFFER_SIZE  (128 * MiB)
 #elif defined(__loongarch__)
-# define MAX_CODE_GEN_BUFFER_SIZE  (128 * MiB)
+# define MAX_CODE_GEN_BUFFER_SIZE  (4 * GiB)
 #else
 # define MAX_CODE_GEN_BUFFER_SIZE  ((size_t)-1)
 #endif
