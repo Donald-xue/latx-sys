@@ -185,10 +185,6 @@ static void *rr_cpu_thread_fn(void *arg)
     cpu_thread_signal_created(cpu);
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
 
-#ifdef CONFIG_LATX
-    latx_lsenv_init(cpu->env_ptr);
-#endif
-
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
     latxs_init_rr_thread_signal(cpu);
@@ -238,7 +234,9 @@ static void *rr_cpu_thread_fn(void *arg)
         }
 
         while (cpu && cpu_work_list_empty(cpu) && !cpu->exit_request) {
-
+#ifdef CONFIG_LATX
+            latx_lsenv_init(cpu->env_ptr);
+#endif
             qatomic_mb_set(&rr_current_cpu, cpu);
             current_cpu = cpu;
 
