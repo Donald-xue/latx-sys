@@ -80,6 +80,8 @@
 #define CHECK_EXCP_STR(pir1)    CHECK_EXCP_PE_ILLOP(pir1)
 #define CHECK_EXCP_ARPL(pir1)   CHECK_EXCP_PE_ILLOP(pir1)
 #define CHECK_EXCP_LARLSL(pir1) CHECK_EXCP_PE_ILLOP(pir1)
+#define CHECK_EXCP_VERR(pir1)   CHECK_EXCP_PE_ILLOP(pir1)
+#define CHECK_EXCP_VERW(pir1)   CHECK_EXCP_PE_ILLOP(pir1)
 
 /* Only allowed in PE (not vm86) and CPL = 0 */
 #define CHECK_EXCP_LLDT(pir1) do { \

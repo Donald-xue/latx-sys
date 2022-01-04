@@ -52,10 +52,31 @@ bool translate_sysret(IR1_INST *pir1)
 }
 bool translate_femms(IR1_INST *pir1) { return false; }
 bool translate_getsec(IR1_INST *pir1) { return false; }
-bool translate_verr(IR1_INST *pir1) { return false; }
-bool translate_verw(IR1_INST *pir1) { return false; }
+bool translate_verr(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_verr(pir1);
+#else
+    return false;
+#endif
+}
+bool translate_verw(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_verw(pir1);
+#else
+    return false;
+#endif
+}
 bool translate_smsw(IR1_INST *pir1) { return false; }
-bool translate_lmsw(IR1_INST *pir1) { return false; }
+bool translate_lmsw(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_lmsw(pir1);
+#else
+    return false;
+#endif
+}
 bool translate_vmcall(IR1_INST *pir1) { return false; }
 bool translate_vmlaunch(IR1_INST *pir1) { return false; }
 bool translate_vmresume(IR1_INST *pir1) { return false; }

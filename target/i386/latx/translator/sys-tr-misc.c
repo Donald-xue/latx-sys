@@ -90,6 +90,11 @@ void latxs_sys_misc_register_ir1(void)
     latxs_register_ir1(X86_INS_ENDBR32);
     latxs_register_ir1(X86_INS_ENDBR64);
     latxs_register_ir1(X86_INS_SWAPGS);
+
+    latxs_register_ir1(X86_INS_LMSW);
+
+    latxs_register_ir1(X86_INS_VERR);
+    latxs_register_ir1(X86_INS_VERW);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -717,7 +722,7 @@ bool latxs_translate_lidt(IR1_INST *pir1)
 #endif
 
     /* 3. 24-bits long base address in Real-Address mode and vm86 mode */
-    if (!td->sys.pe || td->sys.vm86) {
+    if (latxs_ir1_data_size(pir1) == 16) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         IR2_OPND tmp1 = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_SRAI_D, &tmp, &base, 0x10);
@@ -825,7 +830,7 @@ bool latxs_translate_lgdt(IR1_INST *pir1)
 #endif
 
     /* 3. 24-bits long base address in Real-Address mode and vm86 mode */
-    if (!td->sys.pe || td->sys.vm86) {
+    if (latxs_ir1_data_size(pir1) == 16) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         IR2_OPND tmp1 = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_SRAI_D, &tmp, &base, 0x10);
@@ -3378,6 +3383,75 @@ bool latxs_translate_sysret(IR1_INST *pir1)
 #else
     return false;
 #endif
+}
+
+bool latxs_translate_lmsw(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_LMSW(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+
+    IR2_OPND msw = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&msw, opnd0, EXMode_N);
+
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &msw);
+
+    latxs_tr_gen_call_to_helper((ADDR)helper_lmsw);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    return true;
+}
+
+bool latxs_translate_verr(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_VERR(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+
+    IR2_OPND src = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&src, opnd0, EXMode_N);
+
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &src);
+
+    latxs_tr_gen_call_to_helper((ADDR)helper_verr);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    return true;
+}
+
+bool latxs_translate_verw(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_VERW(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+
+    IR2_OPND src = latxs_ra_alloc_itemp();
+    latxs_load_ir1_to_ir2(&src, opnd0, EXMode_N);
+
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &src);
+
+    latxs_tr_gen_call_to_helper((ADDR)helper_verw);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    return true;
 }
 
 bool latxs_translate_prefetchnta(IR1_INST *pir1) { return true; }
