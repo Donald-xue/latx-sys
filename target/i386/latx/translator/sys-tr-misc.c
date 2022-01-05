@@ -1488,6 +1488,11 @@ bool latxs_translate_cpuid(IR1_INST *pir1)
 
 bool latxs_translate_xchg(IR1_INST *pir1)
 {
+    /* processor’s locking protocol is automatically implemented  */
+    if ((lsenv->tr_data->sys.cflags & CF_PARALLEL) &&
+        ir1_opnd_is_mem(ir1_get_opnd(pir1, 0))) {
+        return latxs_translate_lock_xchg(pir1);
+    }
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
@@ -1530,6 +1535,10 @@ bool latxs_translate_xchg(IR1_INST *pir1)
 
 bool latxs_translate_cmpxchg(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_cmpxchg(pir1);
+    }
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
 
@@ -1596,6 +1605,10 @@ bool latxs_translate_cmpxchg(IR1_INST *pir1)
 
 bool latxs_translate_cmpxchg8b(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_cmpxchg8b(pir1);
+    }
     TRANSLATION_DATA *td = lsenv->tr_data;
     CHECK_EXCP_ARPL(pir1);
 
@@ -1658,6 +1671,10 @@ bool latxs_translate_cmpxchg8b(IR1_INST *pir1)
 bool latxs_translate_cmpxchg16b(IR1_INST *pir1)
 {
 #ifdef TARGET_X86_64
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_cmpxchg16b(pir1);
+    }
     TRANSLATION_DATA *td = lsenv->tr_data;
     CHECK_EXCP_ARPL(pir1);
 

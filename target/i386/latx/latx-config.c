@@ -15,6 +15,7 @@
 #include "translate.h"
 #include "latx-config.h"
 
+
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {
     counter_tb_tr += 1;
@@ -300,8 +301,10 @@ void latx_lsenv_init(CPUArchState *env)
 
     lsenv->tr_data->slow_path_rcd_max = 4;
     lsenv->tr_data->slow_path_rcd_nr  = 0;
-    lsenv->tr_data->slow_path_rcd =
-        mm_calloc(4, sizeof(softmmu_sp_rcd_t));
+    if (!lsenv->tr_data->slow_path_rcd) {
+        lsenv->tr_data->slow_path_rcd =
+            mm_calloc(4, sizeof(softmmu_sp_rcd_t));
+    }
 #endif
 }
 

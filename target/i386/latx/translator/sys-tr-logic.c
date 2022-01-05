@@ -34,6 +34,10 @@ void latxs_sys_logic_register_ir1(void)
 
 bool latxs_translate_xor(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_xor(pir1);
+    }
 #ifdef TARGET_X86_64
     if (option_by_hand_64 && latxs_translate_xor_byhand64(pir1)) {
         return true;
@@ -71,6 +75,10 @@ bool latxs_translate_xor(IR1_INST *pir1)
 
 bool latxs_translate_and(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_and(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_and_byhand(pir1);
     }
@@ -133,6 +141,10 @@ bool latxs_translate_test(IR1_INST *pir1)
 
 bool latxs_translate_or(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_or(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_or_byhand(pir1);
     }
@@ -165,6 +177,10 @@ bool latxs_translate_or(IR1_INST *pir1)
 
 bool latxs_translate_not(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_not(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_not_byhand(pir1);
     }

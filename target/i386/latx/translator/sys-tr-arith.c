@@ -34,6 +34,10 @@ void latxs_sys_arith_register_ir1(void)
 
 bool latxs_translate_add(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_add(pir1);
+    }
 #ifdef TARGET_X86_64
     if (option_by_hand_64 && latxs_translate_add_byhand64(pir1)) {
         return true;
@@ -78,6 +82,10 @@ bool latxs_translate_add(IR1_INST *pir1)
 
 bool latxs_translate_adc(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_adc(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_adc_byhand(pir1);
     }
@@ -120,6 +128,10 @@ bool latxs_translate_adc(IR1_INST *pir1)
 
 bool latxs_translate_sub(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_sub(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_sub_byhand(pir1);
     }
@@ -159,6 +171,10 @@ bool latxs_translate_sub(IR1_INST *pir1)
 
 bool latxs_translate_sbb(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_sbb(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_sbb_byhand(pir1);
     }
@@ -201,6 +217,10 @@ bool latxs_translate_sbb(IR1_INST *pir1)
 
 bool latxs_translate_inc(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_inc(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_inc_byhand(pir1);
     }
@@ -237,6 +257,10 @@ bool latxs_translate_inc(IR1_INST *pir1)
 
 bool latxs_translate_dec(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_dec(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_dec_byhand(pir1);
     }
@@ -273,6 +297,10 @@ bool latxs_translate_dec(IR1_INST *pir1)
 
 bool latxs_translate_neg(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_neg(pir1);
+    }
     if (option_by_hand) {
         return latxs_translate_neg_byhand(pir1);
     }
@@ -903,7 +931,10 @@ bool latxs_translate_das(IR1_INST *pir1)
 
 bool latxs_translate_xadd(IR1_INST *pir1)
 {
-    TRANSLATION_DATA *td = lsenv->tr_data;
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL)) {
+        return latxs_translate_lock_xadd(pir1);
+    }
 
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* dest: GPR/MEM */
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* src : GPR     */
@@ -925,24 +956,13 @@ bool latxs_translate_xadd(IR1_INST *pir1)
         latxs_store_ir2_to_ir1(&src0, opnd1);
         latxs_store_ir2_to_ir1(&sum, opnd0);
     } else {
-        if (latxs_ir1_has_prefix_lock(pir1) &&
-            td->sys.cflags & CF_PARALLEL) {
-            /*
-             * helper_atomic_fetch_addb
-             * helper_atomic_fetch_addw_le
-             * helper_atomic_fetch_addl_le
-             * helper_atomic_fetch_addq_le
-             */
-            lsassertm(0, "compile flag parallel not supported.\n");
-        } else {
-            latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
+        latxs_load_ir1_to_ir2(&src0, opnd0, EXMode_S);
 #ifdef TARGET_X86_64
-            latxs_append_ir2_opnd3(LISA_ADD_D, &sum, &src0, &src1);
+        latxs_append_ir2_opnd3(LISA_ADD_D, &sum, &src0, &src1);
 #else
-            latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
+        latxs_append_ir2_opnd3(LISA_ADD_W, &sum, &src0, &src1);
 #endif
-            latxs_store_ir2_to_ir1(&sum, opnd0);
-        }
+        latxs_store_ir2_to_ir1(&sum, opnd0);
         latxs_store_ir2_to_ir1(&src0, opnd1);
     }
 

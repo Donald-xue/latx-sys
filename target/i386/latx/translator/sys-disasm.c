@@ -8,11 +8,17 @@
 #include "translate.h"
 #include <string.h>
 
-static char latxs_insn_info[MAX_IR1_NUM_PER_TB * IR1_INST_SIZE] = {0};
+static __thread char latxs_insn_info[MAX_IR1_NUM_PER_TB * IR1_INST_SIZE] = {0};
+static QemuMutex cs_lock;
 
+static void __attribute__((__constructor__)) latxs_cs_lock_init(void)
+{
+    qemu_mutex_init(&cs_lock);
+}
 ADDRX latxs_ir1_disasm(IR1_INST *ir1,
         uint8_t *addr, ADDRX t_pc, int *error, int ir1_num)
 {
+    qemu_mutex_lock(&cs_lock);
     TRANSLATION_DATA *td = lsenv->tr_data;
     ADDRX t_eip = t_pc - td->sys.cs_base; /* EIP = PC - CS_BASE */
     int count = 0;
@@ -33,6 +39,7 @@ ADDRX latxs_ir1_disasm(IR1_INST *ir1,
                           &info, ir1_num, pir1_base);
     }
 
+    qemu_mutex_unlock(&cs_lock);
     ir1->info = info;
     ir1->info_count = count;
 
@@ -150,7 +157,7 @@ static ADDRX __latxs_disasm_one_ir1(IR1_INST *pir1, ADDRX pc, int ir1_num)
 
     CPUX86State *env = lsenv->cpu_state;
 
-    static uint8_t inst_cache[64];
+    uint8_t inst_cache[64];
     uint8_t  *pins = inst_cache;
     pins = inst_cache;
 

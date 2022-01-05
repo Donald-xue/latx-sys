@@ -390,6 +390,11 @@ bool latxs_translate_bsr(IR1_INST *pir1)
 
 bool latxs_translate_btx(IR1_INST *pir1)
 {
+    if (latxs_ir1_has_prefix_lock(pir1) &&
+        (lsenv->tr_data->sys.cflags & CF_PARALLEL) &&
+        ir1_opcode(pir1) != X86_INS_BT) {
+        return latxs_translate_lock_btx(pir1);
+    }
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* bit base   : GPR/MEM */
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* bit offset : GPR/imm */
 

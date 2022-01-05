@@ -2182,6 +2182,24 @@ bool latxs_translate_fnop_softfpu(IR1_INST *pir1);
 bool latxs_translate_fxsave_softfpu(IR1_INST *pir1);
 bool latxs_translate_fxrstor_softfpu(IR1_INST *pir1);
 
+bool latxs_translate_lock_add(IR1_INST *pir1);
+bool latxs_translate_lock_sub(IR1_INST *pir1);
+bool latxs_translate_lock_adc(IR1_INST *pir1);
+bool latxs_translate_lock_sbb(IR1_INST *pir1);
+bool latxs_translate_lock_inc(IR1_INST *pir1);
+bool latxs_translate_lock_dec(IR1_INST *pir1);
+bool latxs_translate_lock_xadd(IR1_INST *pir1);
+bool latxs_translate_lock_and(IR1_INST *pir1);
+bool latxs_translate_lock_or(IR1_INST *pir1);
+bool latxs_translate_lock_xor(IR1_INST *pir1);
+bool latxs_translate_lock_not(IR1_INST *pir1);
+bool latxs_translate_lock_neg(IR1_INST *pir1);
+bool latxs_translate_lock_btx(IR1_INST *pir1);
+bool latxs_translate_lock_cmpxchg(IR1_INST *pir1);
+bool latxs_translate_lock_cmpxchg8b(IR1_INST *pir1);
+bool latxs_translate_lock_cmpxchg16b(IR1_INST *pir1);
+bool latxs_translate_lock_xchg(IR1_INST *pir1);
+
 #ifdef TARGET_X86_64
 bool latxs_translate_mov_byhand64(IR1_INST *pir1);
 bool latxs_translate_xor_byhand64(IR1_INST *pir1);

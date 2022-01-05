@@ -63,6 +63,10 @@ static void *mttcg_cpu_thread_fn(void *arg)
     /* process any pending work */
     cpu->exit_request = 1;
 
+#if defined(CONFIG_LATX)
+    latx_lsenv_init(cpu->env_ptr);
+#endif
+
     do {
         if (cpu_can_run(cpu)) {
             int r;
