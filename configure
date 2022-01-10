@@ -380,6 +380,7 @@ profiler="no"
 latx="no"
 latx_flag_pattern="no"
 latx_flag_reduction="no"
+latx_llsc="no"
 guest_base="yes"
 cocoa="auto"
 softmmu="yes"
@@ -1161,6 +1162,8 @@ for opt do
   --enable-latx-flag-pattern) latx_flag_pattern="yes"
   ;;
   --enable-latx-flag-reduction) latx_flag_reduction="no"
+  ;;
+  --enable-latx-llsc) latx_llsc="no"
   ;;
   --disable-guest-base) guest_base="no"
   ;;
@@ -5586,6 +5589,9 @@ if test "$latx" = "yes" ; then
   fi
   if test "$latx_flag_reduction" = "yes" ; then
     echo "CONFIG_LATX_FLAG_REDUCTION=y" >> $config_host_mak
+  fi
+  if test "$latx_llsc" = "yes" ; then
+    echo "CONFIG_LATX_LLSC=y" >> $config_host_mak
   fi
 fi
 if test "$guest_base" = "no" ; then
