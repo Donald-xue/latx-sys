@@ -1999,14 +1999,18 @@ bool latxs_translate_cvtps2pi(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtps2pi,
-                                    dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_mmx(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtps2pi);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
@@ -2047,21 +2051,22 @@ bool latxs_translate_cvtss2si(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg1_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
 
 #ifdef TARGET_X86_64
     if (ir1_opnd_size(opnd0) == 64) {
-        latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2sq, src_addr, 0,
-                                             cfg);
+        latxs_tr_gen_call_to_helper((ADDR)helper_cvtss2sq);
     } else {
-        latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2si, src_addr, 0,
-                                             cfg);
+        latxs_tr_gen_call_to_helper((ADDR)helper_cvtss2si);
     }
 #else
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtss2si, src_addr, 0,
-                                         cfg);
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtss2si);
 #endif
 
     latxs_store_ir2_to_ir1(&latxs_ret0_ir2_opnd, opnd0);
@@ -2080,14 +2085,18 @@ bool latxs_translate_cvttps2pi(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttps2pi,
-                                    dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_mmx(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvttps2pi);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
@@ -2138,14 +2147,19 @@ bool latxs_translate_cvtpd2pi(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtpd2pi,
-                                dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_mmx(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtpd2pi);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
     return true;
 }
 
@@ -2159,11 +2173,16 @@ bool latxs_translate_cvtsd2si(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtsd2si, src_addr,
-                                        0, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg1_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtsd2si);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
     latxs_store_ir2_to_ir1(&latxs_ret0_ir2_opnd, opnd0);
     return true;
 }
@@ -2181,14 +2200,18 @@ bool latxs_translate_cvttpd2pi(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->fpregs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttpd2pi,
-                                dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_mmx(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvttpd2pi);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
@@ -2202,14 +2225,31 @@ bool latxs_translate_cvtpd2dq(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtpd2dq,
-                                dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_xmm(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtpd2dq);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_xmm(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtpd2dq);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
@@ -2223,14 +2263,18 @@ bool latxs_translate_cvtps2dq(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvtps2dq,
-                                dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_xmm(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvtps2dq);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
@@ -2244,14 +2288,18 @@ bool latxs_translate_cvttps2dq(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t)&(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttps2dq,
-                                dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_xmm(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvttps2dq);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
@@ -2265,14 +2313,18 @@ bool latxs_translate_cvttpd2dq(IR1_INST *pir1)
     latxs_append_ir2_opnd2i(LISA_VST, &src, &latxs_env_ir2_opnd,
                             offsetof(CPUX86State, temp_xmm));
 
-    helper_cfg_t cfg = default_helper_cfg;
-    int reg_index = ir1_opnd_base_reg_num(opnd0);
-    uint64_t dest_addr =
-        (uint64_t) &(((CPUX86State *)lsenv->cpu_state)->xmm_regs[reg_index]);
-    uint64_t src_addr =
-        (uint64_t) &(((CPUX86State *)lsenv->cpu_state)->temp_xmm);
-    latxs_tr_gen_call_to_helper3_u64_cfg((ADDR)helper_cvttpd2dq,
-                                dest_addr, src_addr, cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2i(
+        LISA_ADDI_D, &latxs_arg1_ir2_opnd, &latxs_env_ir2_opnd,
+        lsenv_offset_of_xmm(lsenv, ir1_opnd_base_reg_num(opnd0)));
+
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, &latxs_arg2_ir2_opnd,
+                            &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp_xmm));
+    latxs_tr_gen_call_to_helper((ADDR)helper_cvttpd2dq);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
     return true;
 }
 
