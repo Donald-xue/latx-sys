@@ -224,7 +224,7 @@ int latxs_tr_ir2_assemble(const void *code_base)
 
         if (ir2_opc == LISA_X86_INST) {
 
-            if (option_dump_host) {
+            if (option_dump_host && qemu_log_in_addr_range(tb->pc)) {
                 fprintf(stderr, "IR2 at %p LISA X86Ins = %x\n",
                         code_ptr, latxs_ir2_opnd_imm(&pir2->_opnd[0]));
             }
@@ -244,7 +244,7 @@ int latxs_tr_ir2_assemble(const void *code_base)
 
         if (ir2_opc != LISA_LABEL) {
             uint32_t ir2_binary = latxs_ir2_assemble(pir2);
-            if (option_dump_host) {
+            if (option_dump_host && (!tb || qemu_log_in_addr_range(tb->pc))) {
                 fprintf(stderr, "IR2 at %p LISA Binary = 0x%08x ",
                         code_ptr, ir2_binary);
                 latxs_ir2_dump(pir2);
@@ -377,7 +377,7 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
             /* latxs_tr_gen_io_start(); TODO for icount */
         /* } */
 
-        if (option_dump_ir1) {
+        if (option_dump_ir1 && qemu_log_in_addr_range(tb->pc)) {
             fprintf(stderr, "ir1 translate >>> ");
             ir1_dump(pir1);
         }

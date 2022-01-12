@@ -23,7 +23,7 @@ int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
     trace_xtm_tr_tb((void *)tb, (void *)tb->tc.ptr,
                     (void *)(unsigned long long)tb->pc);
 
-    if (option_dump) {
+    if (option_dump && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "=====================================\n");
         fprintf(stderr, "|| TB translation : %14p ||\n", tb);
         fprintf(stderr, "=====================================\n");

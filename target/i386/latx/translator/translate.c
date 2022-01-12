@@ -428,7 +428,9 @@ static void label_dispose(void)
 
 int tr_ir2_assemble(const void *code_start_addr)
 {
-    if (option_dump) {
+    if (option_dump &&
+        qemu_log_in_addr_range(
+            ((TranslationBlock *)(lsenv->tr_data->curr_tb))->pc)) {
         fprintf(stderr, "[LATX] Assemble IR2.\n");
     }
 
@@ -449,7 +451,9 @@ int tr_ir2_assemble(const void *code_start_addr)
             ir2_opcode(pir2) != LISA_X86_INST) {
             uint32 result = ir2_assemble(pir2);
 
-            if (option_dump_host) {
+            if (option_dump_host &&
+                qemu_log_in_addr_range(
+                    ((TranslationBlock *)(lsenv->tr_data->curr_tb))->pc)) {
                 fprintf(stderr, "IR2[%03d] at %p 0x%08x ",pir2->_id, code_addr,
                         result);
                 ir2_dump(pir2);
@@ -2142,7 +2146,7 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
     TRANSLATION_DATA *t = lsenv->tr_data;
     int ir1_nr = tb->icount;
 
-    if (option_dump) {
+    if (option_dump && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "[LATX] translation : generate IR2 from IR1.\n");
         fprintf(stderr, "IR1 num = %d\n", ir1_nr);
     }
@@ -2169,7 +2173,7 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
         pir1++;
     }
 
-    if (option_dump_ir1) {
+    if (option_dump_ir1 && qemu_log_in_addr_range(tb->pc)) {
         pir1 = tb->_ir1_instructions;
         for (i = 0; i < ir1_nr; ++i) {
              fprintf(stderr, "IR1[%d] ", i);
@@ -2178,7 +2182,7 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
          }
     }
 
-    if (option_dump_ir2) {
+    if (option_dump_ir2 && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "IR2 num = %d\n", lsenv->tr_data->ir2_inst_num_current);
         for (i = 0; i < t->ir2_inst_num_current; ++i) {
             IR2_INST *pir2 = &t->ir2_inst_array[i];
@@ -2201,13 +2205,15 @@ static inline const void *qm_tb_get_code_cache(void *tb)
 
 int tr_translate_tb(struct TranslationBlock *tb)
 {
-    if (option_dump)
+    if (option_dump && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "[LATX] start translation.\n");
+    }
 
     /* some initialization */
     tr_init(tb);
-    if (option_dump)
+    if (option_dump && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "tr_init OK. ready to translation.\n");
+    }
 
     /* generate ir2 from ir1 */
     bool translation_done = tr_ir2_generate(tb);
@@ -2230,8 +2236,9 @@ int tr_translate_tb(struct TranslationBlock *tb)
 
     /* finalize */
     tr_fini(translation_done);
-    if (option_dump)
+    if (option_dump && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "tr_fini OK. translation done.\n");
+    }
 
     return code_size;
 }
@@ -2317,13 +2324,17 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 
     switch (opcode) {
     case X86_INS_CALL:
-        if(ir1_is_indirect_call(branch)){
+        if (ir1_is_indirect_call(branch)) {
             goto indirect_call;
         }
         target_addr = ir1_target_addr(branch);
-        if (option_dump)
+        if (option_dump &&
+            qemu_log_in_addr_range(
+                ((TranslationBlock *)(lsenv->tr_data->curr_tb))->pc)) {
+
             fprintf(stderr, "[LATX] generate exit tb for CALL %lx\n",
                     target_addr);
+        }
         /* save next TB's eip in $25 */
         /* Mapping to LA 25->16*/
         load_ireg_from_imm32(ir2_opnd_new(IR2_OPND_IREG, 16), target_addr,

@@ -650,7 +650,7 @@ int latxs_tb_encode_search(TranslationBlock *tb, uint8_t *block)
     uint8_t *p = block;
     int i, j, n;
 
-    if (option_dump) {
+    if (option_dump && qemu_log_in_addr_range(tb->pc)) {
         fprintf(stderr, "encode search result:\n");
     }
 
@@ -675,7 +675,7 @@ int latxs_tb_encode_search(TranslationBlock *tb, uint8_t *block)
             this_data = (j == 0 ? this_addr : 0);
 
             p = encode_sleb128(p, this_data - prev_data);
-            if (option_dump) {
+            if (option_dump && qemu_log_in_addr_range(tb->pc)) {
                 fprintf(stderr, "[%3d][%d] = 0x%x\n",
                         i, j, (int)(this_data - prev_data));
             }
@@ -684,7 +684,7 @@ int latxs_tb_encode_search(TranslationBlock *tb, uint8_t *block)
         prev_data = (i == 0 ? 0 : td->x86_ins_lisa_nr[i - 1] * 4);
         this_data = td->x86_ins_lisa_nr[i] * 4;
         p = encode_sleb128(p, this_data - prev_data);
-        if (option_dump) {
+        if (option_dump && qemu_log_in_addr_range(tb->pc)) {
             fprintf(stderr, "[%3d]OFF = 0x%x\n", i, (int)this_data);
         }
     }
