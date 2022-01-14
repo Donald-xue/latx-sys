@@ -1592,20 +1592,19 @@ void latxs_load_freg128_from_ir1_mem(IR2_OPND *opnd2, IR1_OPND *opnd1)
         return;
     }
 
-    static __thread uint64_t freg128_space[4];
-    IR2_OPND data_addr = latxs_ra_alloc_itemp();
-    latxs_load_imm64_to_ir2(&data_addr, (uint64_t)&freg128_space[0]);
-
     IR2_OPND data64 = latxs_ra_alloc_itemp();
     gen_ldst_softmmu_helper(LISA_LD_D, &data64, &mem_no_offset, 1);
-    latxs_append_ir2_opnd2i(LISA_ST_D, &data64, &data_addr, 0);
+    latxs_append_ir2_opnd2i(LISA_ST_D, &data64, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp128));
     latxs_append_ir2_opnd2i(LISA_ADDI_D, &mem_base, &mem_base, 8);
 
     gen_ldst_softmmu_helper(LISA_LD_D, &data64, &mem_no_offset, 1);
-    latxs_append_ir2_opnd2i(LISA_ST_D, &data64, &data_addr, 8);
+    latxs_append_ir2_opnd2i(LISA_ST_D, &data64, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp128) + 8);
     latxs_ra_free_temp(&data64);
 
-    latxs_append_ir2_opnd2i(LISA_VLD, opnd2, &data_addr, 0);
+    latxs_append_ir2_opnd2i(LISA_VLD, opnd2, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp128));
 }
 
 void latxs_store_freg128_to_ir1_mem(IR2_OPND *opnd2, IR1_OPND *opnd1)
@@ -1629,18 +1628,17 @@ void latxs_store_freg128_to_ir1_mem(IR2_OPND *opnd2, IR1_OPND *opnd1)
         return;
     }
 
-    static __thread uint64_t freg128_space[4];
-    IR2_OPND data_addr = latxs_ra_alloc_itemp();
-    latxs_load_imm64_to_ir2(&data_addr, (uint64_t)&freg128_space[0]);
-
-    latxs_append_ir2_opnd2i(LISA_VST, opnd2, &data_addr, 0);
+    latxs_append_ir2_opnd2i(LISA_VST, opnd2, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp128));
 
     IR2_OPND data64 = latxs_ra_alloc_itemp();
-    latxs_append_ir2_opnd2i(LISA_LD_D, &data64, &data_addr, 0);
+    latxs_append_ir2_opnd2i(LISA_LD_D, &data64, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp128));
     gen_ldst_softmmu_helper(LISA_ST_D, &data64, &mem_no_offset, 1);
     latxs_append_ir2_opnd2i(LISA_ADDI_D, &mem_base, &mem_base, 8);
 
-    latxs_append_ir2_opnd2i(LISA_LD_D, &data64, &data_addr, 8);
+    latxs_append_ir2_opnd2i(LISA_LD_D, &data64, &latxs_env_ir2_opnd,
+                            offsetof(CPUX86State, temp128) + 8);
     gen_ldst_softmmu_helper(LISA_ST_D, &data64, &mem_no_offset, 1);
 
     latxs_ra_free_temp(&data64);
