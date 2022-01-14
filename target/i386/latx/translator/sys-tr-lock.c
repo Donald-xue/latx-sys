@@ -638,6 +638,7 @@ bool latxs_translate_lock_cmpxchg16b(IR1_INST *pir1)
     return true;
 #else
     lsassert(0);
+    return true;
 #endif
 }
 bool latxs_translate_lock_xchg(IR1_INST *pir1)
