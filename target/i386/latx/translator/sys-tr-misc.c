@@ -5,6 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include "sys-excp.h"
+#include "flag-lbt.h"
 #include <string.h>
 
 void latxs_sys_misc_register_ir1(void)
@@ -95,6 +96,8 @@ void latxs_sys_misc_register_ir1(void)
 
     latxs_register_ir1(X86_INS_VERR);
     latxs_register_ir1(X86_INS_VERW);
+
+    latxs_register_ir1(X86_INS_LSL);
 }
 
 int latxs_get_sys_stack_addr_size(void)
@@ -3467,6 +3470,43 @@ bool latxs_translate_verw(IR1_INST *pir1)
     latxs_tr_gen_call_to_helper((ADDR)helper_verw);
 
     latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    return true;
+}
+
+bool latxs_translate_lsl(IR1_INST *pir1)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    CHECK_EXCP_LSL(pir1);
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1);
+
+    IR2_OPND seg_selector = latxs_ra_alloc_itemp();
+
+    /* TODO: capstone mem opnd opsz should be 2 bytes */
+    latxs_load_ir1_to_ir2(&seg_selector, opnd1, EXMode_N);
+    latxs_append_ir2_opnd2_(lisa_mov16z, &seg_selector, &seg_selector);
+
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg0_ir2_opnd,
+                            &latxs_env_ir2_opnd);
+    latxs_append_ir2_opnd2_(lisa_mov, &latxs_arg1_ir2_opnd, &seg_selector);
+
+    latxs_tr_gen_call_to_helper((ADDR)helper_verw);
+
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    IR2_OPND zf = latxs_ra_alloc_itemp();
+    get_eflag_condition(&zf, pir1);
+
+    IR2_OPND exit = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd3(LISA_BEQ, &zf, &latxs_zero_ir2_opnd, &exit);
+
+    latxs_store_ir2_to_ir1_gpr(&latxs_ret0_ir2_opnd, opnd0);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &exit);
 
     return true;
 }

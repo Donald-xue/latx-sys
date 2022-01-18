@@ -1562,6 +1562,7 @@ bool latxs_translate_lmsw(IR1_INST *pir1);
 bool latxs_translate_verr(IR1_INST *pir1);
 bool latxs_translate_verw(IR1_INST *pir1);
 
+bool latxs_translate_lsl(IR1_INST *pir1);
 
 bool latxs_translate_prefetchnta(IR1_INST *pir1);
 bool latxs_translate_prefetcht0(IR1_INST *pir1);

@@ -33,7 +33,14 @@ bool translate_cqo(IR1_INST *pir1)
 bool translate_salc(IR1_INST *pir1) { return false; }
 
 bool translate_lar(IR1_INST *pir1) { return false; }
-bool translate_lsl(IR1_INST *pir1) { return false; }
+bool translate_lsl(IR1_INST *pir1)
+{
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_lsl(pir1);
+#else
+    return false;
+#endif
+}
 bool translate_syscall(IR1_INST *pir1)
 {
 #ifdef CONFIG_SOFTMMU

@@ -128,6 +128,7 @@ void get_eflag_condition(IR2_OPND *cond, IR1_INST *pir1) {
             la_append_ir2_opnd1i_em(LISA_X86MFFLAG, *cond, 0x2);
             break;
         }
+        case X86_INS_LSL:
         case X86_INS_SETNE:
         case X86_INS_SETE:
         case X86_INS_FCMOVNE:
