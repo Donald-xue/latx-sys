@@ -2383,6 +2383,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->flags = flags;
     tb->cflags = cflags;
     tb->trace_vcpu_dstate = *cpu->trace_dstate;
+    tb->slow_path_icount = 0;
     tcg_ctx->tb_cflags = cflags;
 
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
@@ -2606,6 +2607,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     }
 #endif
     tb->tc.size = gen_code_size;
+    tb->true_tc_size = gen_code_size - (tb->slow_path_icount << 2);
     qatomic_set(&tcg_ctx->code_gen_ptr, (void *)
         ROUND_UP((uintptr_t)gen_code_buf + gen_code_size + search_size,
                  CODE_GEN_ALIGN));

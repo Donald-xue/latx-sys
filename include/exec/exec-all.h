@@ -495,6 +495,8 @@ struct TranslationBlock {
     uint16_t icount;
 
     struct tb_tc tc;
+    uint64_t slow_path_icount;
+    uint64_t true_tc_size; /* no softmmu slow path */
 
     /* first and second physical page containing code. The lower bit
        of the pointer tells the index in page_next[].

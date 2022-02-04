@@ -690,6 +690,8 @@ void tr_gen_softmmu_slow_path(void)
     TRANSLATION_DATA *td = lsenv->tr_data;
     td->in_gen_slow_path = 1;
 
+    int real_ir2_before_slow_path = td->real_ir2_inst_num;
+
     int i = 0;
     int sp_nr = td->slow_path_rcd_nr;
 
@@ -700,6 +702,11 @@ void tr_gen_softmmu_slow_path(void)
         sp = &sp_array[i];
         __tr_gen_softmmu_sp_rcd(sp);
     }
+
+    int real_ir2_after_slow_path = td->real_ir2_inst_num;
+
+    TranslationBlock *curr_tb = td->curr_tb;
+    curr_tb->slow_path_icount = real_ir2_after_slow_path - real_ir2_before_slow_path;
 
     td->in_gen_slow_path = 0;
 }
