@@ -32,7 +32,7 @@ static uint64_t code_buffer_hi;
 
 int sigint_enabled(void)
 {
-    return option_sigint ? 2 : 0;
+    return option_sigint ? 1 : 0;
     /* return 1 : sigint */
     /* return 2 : old tcg sigint */
 }
