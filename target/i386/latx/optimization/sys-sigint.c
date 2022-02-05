@@ -69,6 +69,7 @@ void latxsigint_unlink_tb_recursive(TranslationBlock *tb)
     latxsigint_unlink_tb_recursive_2(tb, 1);
 }
 
+static
 void latxsigint_unlink_tb_all(CPUX86State *env)
 {
     lsassertm(sigint_enabled() == 2,
@@ -175,7 +176,7 @@ void latxs_rr_interrupt_self(CPUState *cpu)
     if (!sigint_enabled()) return;
 
     if (sigint_enabled() == 2) {
-        latxsigint_unlink_tb_all(cpu);
+        latxsigint_unlink_tb_all(lsenv->cpu_state);
         return;
     }
 
