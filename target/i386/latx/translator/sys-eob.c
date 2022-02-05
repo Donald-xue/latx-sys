@@ -716,7 +716,7 @@ indirect_jmp:
 
         can_link = can_link && option_intb_link;
 
-        if (sigint_enabled()) {
+        if (sigint_enabled() == 1) {
             if (can_link) {
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->real_ir2_inst_num << 2;

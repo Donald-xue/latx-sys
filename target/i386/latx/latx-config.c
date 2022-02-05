@@ -422,6 +422,10 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
     lsassertm(env->is_fcsr_simd == 0, "fcsr simd %s\n", __func__);
     env->is_fcsr_simd = 0;
 
+    if (sigint_enabled() == 2) {
+        env->latxs_int_tb = tb;
+    }
+
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
     latxs_np_tb_print(env);
@@ -461,10 +465,14 @@ void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb)
 
     lsenv->after_exec_tb_fixed = 1;
 
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         TranslationBlock *utb = lsenv->sigint_data.tb_unlinked;
         latxs_tb_relink(utb);
         lsenv->sigint_data.tb_unlinked = NULL;
+    }
+
+    if (sigint_enabled() == 2) {
+        env->latxs_int_tb = NULL;
     }
 }
 
@@ -608,7 +616,7 @@ void latxs_fix_after_excp_or_int(void)
         latxs_fpu_fix_cpu_loop_exit();
     }
 
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         TranslationBlock *utb = lsenv->sigint_data.tb_unlinked;
         latxs_tb_relink(utb);
         lsenv->sigint_data.tb_unlinked = NULL;

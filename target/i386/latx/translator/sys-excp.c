@@ -67,7 +67,11 @@ static void latxs_tr_gen_raise_exception(
         lsenv->tr_data->end_with_exception = 1;
     }
 
-    td->need_save_currtb_for_int = sigint_enabled();
+    if (sigint_enabled() == 1) {
+        td->need_save_currtb_for_int = 1;
+    } else {
+        td->need_save_currtb_for_int = 0;
+    }
 }
 
 static void latxs_tr_gen_raise_exception_addr(

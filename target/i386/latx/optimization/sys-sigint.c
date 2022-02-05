@@ -11,6 +11,14 @@
 #include <signal.h>
 #include <ucontext.h>
 
+static QemuSpin latx_sigint_slk;
+
+static
+void __attribute__((__constructor__)) latx_sigint_init_lock(void)
+{
+    qemu_spin_init(&latx_sigint_slk);
+}
+
 #include "sigint-i386-tcg-la.h"
 
 #define LATX_TRACE(name, ...) do {                  \
@@ -24,14 +32,68 @@ static uint64_t code_buffer_hi;
 
 int sigint_enabled(void)
 {
-    return option_sigint;
+    return option_sigint ? 2 : 0;
+    /* return 1 : sigint */
+    /* return 2 : old tcg sigint */
+}
+
+static void latxsigint_unlink_tb_recursive(TranslationBlock *tb);
+
+static
+void latxsigint_unlink_tb_recursive_2(TranslationBlock *tb, int n)
+{
+    TranslationBlock *tb_next =
+        (TranslationBlock *)tb->jmp_dest[n];
+
+    if (tb_next) {
+        tcgsigint_remove_tb_from_jmp_list(tb, n);
+        tb->jmp_dest[n] = (uintptr_t)NULL;
+
+        /* reset tb's jump link */
+        if (tb->jmp_reset_offset[n] !=
+                TB_JMP_RESET_OFFSET_INVALID)  {
+            uintptr_t addr =
+                (uintptr_t)(tb->tc.ptr +
+                            tb->jmp_reset_offset[n]);
+            tb_set_jmp_target(tb, n, addr);
+        }
+
+        latxsigint_unlink_tb_recursive(tb_next);
+    }
+}
+
+static
+void latxsigint_unlink_tb_recursive(TranslationBlock *tb)
+{
+    latxsigint_unlink_tb_recursive_2(tb, 0);
+    latxsigint_unlink_tb_recursive_2(tb, 1);
+}
+
+void latxsigint_unlink_tb_all(CPUX86State *env)
+{
+    lsassertm(sigint_enabled() == 2,
+            "SIGINT type is not 2\n");
+
+    TranslationBlock *tb;
+
+    qemu_spin_lock(&latx_sigint_slk);
+
+    tb = env->latxs_int_tb;
+    if (tb) {
+        env->latxs_int_tb = NULL;
+        latxsigint_unlink_tb_recursive(tb);
+    }
+
+    qemu_spin_unlock(&latx_sigint_slk);
 }
 
 /* no relink for direct jmp */
-#define SIGINT_NO_RELINK
+//#define SIGINT_NO_RELINK
 
 void latxs_tb_unlink(TranslationBlock *ctb)
 {
+    if (sigint_enabled() != 1) return;
+
     if (!ctb) {
         return;
     }
@@ -78,6 +140,8 @@ void latxs_tb_unlink(TranslationBlock *ctb)
 
 void latxs_tb_relink(TranslationBlock *utb)
 {
+    if (sigint_enabled() != 1) return;
+
     if (!utb) {
         return;
     }
@@ -108,6 +172,13 @@ void latxs_tb_relink(TranslationBlock *utb)
 
 void latxs_rr_interrupt_self(CPUState *cpu)
 {
+    if (!sigint_enabled()) return;
+
+    if (sigint_enabled() == 2) {
+        latxsigint_unlink_tb_all(cpu);
+        return;
+    }
+
     CPUX86State *env = cpu->env_ptr;
 
     TranslationBlock *ctb = NULL;
@@ -144,6 +215,11 @@ static void latxs_rr_interrupt_signal_handler(
         int n, siginfo_t *siginfo, void *ctx)
 {
     if (!sigint_enabled()) {
+        return;
+    }
+
+    if (sigint_enabled() == 2) {
+        latxsigint_unlink_tb_all(lsenv->cpu_state);
         return;
     }
 
@@ -243,18 +319,21 @@ void latxs_init_rr_thread_signal(CPUState *cpu)
     fprintf(stderr, "[SIGINT] thread %x set signal 63 handler\n",
             (unsigned int)tid);
 
-    /* 3. set the range of code buffer */
-    code_buffer_lo = (uint64_t)tcg_ctx->code_gen_buffer;
-    code_buffer_hi = (uint64_t)tcg_ctx->code_gen_buffer +
-                     (uint64_t)tcg_ctx->code_gen_buffer_size;
-
-    fprintf(stderr, "[SIGINT] monitor code buffer %llx to %llx\n",
-            (unsigned long long)code_buffer_lo,
-            (unsigned long long)code_buffer_hi);
+    if (sigint_enabled() == 1) {
+        /* 3. set the range of code buffer */
+        code_buffer_lo = (uint64_t)tcg_ctx->code_gen_buffer;
+        code_buffer_hi = (uint64_t)tcg_ctx->code_gen_buffer +
+                         (uint64_t)tcg_ctx->code_gen_buffer_size;
+        fprintf(stderr, "[SIGINT] monitor code buffer %llx to %llx\n",
+                (unsigned long long)code_buffer_lo,
+                (unsigned long long)code_buffer_hi);
+    }
 }
 
 void latxs_tr_gen_save_currtb_for_int(void)
 {
+    if (sigint_enabled() != 1) return;
+
     TRANSLATION_DATA *td = lsenv->tr_data;
     void *tb = td->curr_tb;
     if (tb && td->need_save_currtb_for_int) {
@@ -270,6 +349,8 @@ void latxs_tr_gen_save_currtb_for_int(void)
 void latxs_sigint_prepare_check_jmp_glue_2(
         IR2_OPND lst, IR2_OPND led)
 {
+    if (sigint_enabled() != 1) return;
+
     int code_nr = 0;
 
     int st_id = latxs_ir2_opnd_label_id(&lst);

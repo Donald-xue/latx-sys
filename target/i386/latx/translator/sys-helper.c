@@ -113,7 +113,7 @@ void latxs_tr_cvt_fp80_to_64(void)
  */
 void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 {
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         latxs_tr_gen_save_currtb_for_int();
     }
 

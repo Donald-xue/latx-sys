@@ -193,7 +193,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     latxs_tr_load_eflags();
 
     IR2_OPND sigint_label = latxs_ir2_opnd_new_label();
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         sigint_label = latxs_ir2_opnd_new_label();
 
         latxs_append_ir2_opnd2i(LISA_LD_W, &temp,
@@ -205,7 +205,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
         latxs_append_ir2_opnd0_(lisa_nop);
     }
 
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         /* 3.0 set sigint_flag in ENV to 0 */
         latxs_append_ir2_opnd2i(LISA_ST_D, zero,
                 &latxs_env_ir2_opnd,
@@ -216,7 +216,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     latxs_append_ir2_opnd2i(LISA_JIRL, zero, arg0, 0);
 
     latxs_append_ir2_opnd0_(lisa_nop);
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_ret0_ir2_opnd, zero,
@@ -271,7 +271,7 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
      */
     latxs_append_ir2_opnd3(LISA_OR, ret0, zero, zero);
 
-    if (sigint_enabled()) {
+    if (sigint_enabled() == 1) {
         /* 5.0 set sigint_flag in ENV to 1 */
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, zero, 1);
@@ -739,7 +739,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         IR2_OPND sigint_label;
         IR2_OPND sigint_check_label_start;
         IR2_OPND sigint_check_label_end;
-        if (sigint_enabled()) {
+        if (sigint_enabled() == 1) {
             sigint_check_label_start = latxs_ir2_opnd_new_label();
             sigint_check_label_end   = latxs_ir2_opnd_new_label();
 
@@ -760,7 +760,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
                 offsetof(struct tb_tc, ptr));
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
 
-        if (sigint_enabled()) {
+        if (sigint_enabled() == 1) {
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_end);
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
