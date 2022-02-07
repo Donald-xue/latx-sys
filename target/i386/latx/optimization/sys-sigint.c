@@ -186,19 +186,19 @@ void latxs_rr_interrupt_self(CPUState *cpu)
     TranslationBlock *otb = NULL;
 
     if (env->sigint_flag) {
-        LATX_TRACE(event, "noexectb", 0);
+        LATX_TRACE(event, "noexectb", 0, __func__);
         return;
     }
 
     ctb = env->latxs_int_tb;
-    LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
+    LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0, __func__);
 
     otb = lsenv->sigint_data.tb_unlinked;
     if (otb == ctb && !ctb) {
-        LATX_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0);
+        LATX_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0, __func__);
         return;
     } else {
-        LATX_TRACE(event, "relinkoldtb", otb ? otb->pc : 0);
+        LATX_TRACE(event, "relinkoldtb", otb ? otb->pc : 0, __func__);
         latxs_tb_relink(otb);
     }
 
@@ -239,14 +239,14 @@ static void latxs_rr_interrupt_signal_handler(
 
         if (ctb == NULL) {
             ctb = env->latxs_int_tb;
-            LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
+            LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0, __func__);
             if (native_jmp_glue_2_sigint_check_st <= pc &&
                 native_jmp_glue_2_sigint_check_ed >= pc) {
                 fprintf(stderr, "[warning] in %s unhandled case\n",
                         __func__);
             }
         } else {
-            LATX_TRACE(event, "tcglookuptb", ctb ? ctb->pc : 0);
+            LATX_TRACE(event, "tcglookuptb", ctb ? ctb->pc : 0, __func__);
         }
 
     } else {
@@ -261,22 +261,22 @@ static void latxs_rr_interrupt_signal_handler(
              *
              * And at this time, do unlink is meanless too.
              */
-            LATX_TRACE(event, "noexectb", 0);
+            LATX_TRACE(event, "noexectb", 0, __func__);
             return;
         }
 
         ctb = env->latxs_int_tb;
-        LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0);
+        LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0, __func__);
     }
 
     oldtb = lsenv->sigint_data.tb_unlinked;
     if (oldtb == ctb) {
         /* This TB is already unlinked */
-        LATX_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0);
+        LATX_TRACE(event, "alreadyunlinkedtb", ctb ? ctb->pc : 0, __func__);
         return;
     } else {
         /* Prev TB is unlinked and not relinked */
-        LATX_TRACE(event, "relinkoldtb", oldtb ? oldtb->pc : 0);
+        LATX_TRACE(event, "relinkoldtb", oldtb ? oldtb->pc : 0, __func__);
         latxs_tb_relink(oldtb);
     }
 
