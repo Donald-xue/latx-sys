@@ -212,6 +212,68 @@ static int sigint_check_jmp_glue_2_ed;
 static ADDR native_jmp_glue_2_sigint_check_st;
 static ADDR native_jmp_glue_2_sigint_check_ed;
 
+//#define LATXS_SIGINT_EXTRA_OVERHEAD
+
+#ifdef LATXS_SIGINT_EXTRA_OVERHEAD
+static int res[64];
+static
+int __attribute__((noinline)) signal_handler_extra_overhead(int asd)
+{
+    int qwe = 2;
+    /*
+     * ----------------- loop 100
+     *  2740 ns 3670 ns
+     * ----------------- loop 1,000
+     *  5560 ns 5500 ns
+     * ----------------- loop 2,000
+     *  7660 ns 8260 ns 7830 ns
+     * ----------------- loop   4,000
+     * 13070 ns 12530 ns 12610 ns
+     * ----------------- loop   8,000
+     * 22210 ns 22180 ns
+     * ----------------- loop  16,000
+     * 41330 ns
+     */
+    int loop = 128000;
+    int i = 1;
+    for (; i < loop; ++i) {
+        qwe = qwe * i + res[i & 0x3f];
+        res[i & 0x3f] = asd;
+    }
+    return qwe;
+//    struct timespec ts, ts1;
+//    ts.tv_sec  = 0;
+//    ts.tv_nsec = ns;
+//    nanosleep(&ts, &ts1);
+//    return ts1.tv_nsec;
+}
+
+static int avg_eo;
+static int avg_eo_nr;
+
+static
+void __attribute__((__constructor__)) latx_sigint_extra_overhead_test(void)
+{
+    int64_t st, ed;
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    st = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+
+    res[1] = res[0];
+    int r = signal_handler_extra_overhead(1);
+    res[0] = r;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    ed = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+
+    printf("SIGINT extra overhead test %ld ns\n", ed - st);
+
+    avg_eo = ed - st;
+    avg_eo_nr = 1;
+}
+#endif
+
 static void latxs_rr_interrupt_signal_handler(
         int n, siginfo_t *siginfo, void *ctx)
 {
@@ -227,6 +289,20 @@ static void latxs_rr_interrupt_signal_handler(
     ucontext_t *uc = ctx;
 
     uintptr_t pc = (uintptr_t)uc->uc_mcontext.__pc;
+
+#ifdef LATXS_SIGINT_EXTRA_OVERHEAD
+    struct timespec ts;
+    int64_t st, ed;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    st = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+    res[1] = res[0];
+    int r = signal_handler_extra_overhead(pc);
+    res[0] = r;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    ed = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+    avg_eo = (int)((double)avg_eo * ((double)avg_eo_nr / (double)(avg_eo_nr + 1)) + (double)(ed - st) / (double)(avg_eo_nr + 1));
+    avg_eo_nr += 1;
+#endif
 
     LATX_TRACE(handler, pc);
 
