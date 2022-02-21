@@ -195,7 +195,7 @@ static uint16_t find_first_unused_asid_value(void)
  */
 static inline void local_flush_tlb_all(void)
 {
-    uint32_t op = INVTLB_CURRENT_ALL;
+    uint32_t op = INVTLB_CURRENT_GFALSE;
 
     ++flush_tlb_all_count;
 

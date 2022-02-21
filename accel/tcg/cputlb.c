@@ -1020,13 +1020,6 @@ static void tlb_reset_dirty_range_locked(CPUTLBEntry *tlb_entry,
 {
     uintptr_t addr = tlb_entry->addr_write;
 
-#ifdef CONFIG_HAMT
-    if (hamt_enable() && hamt_started()) {
-        from_reset_dirty++;
-        hamt_flush_all();
-    }
-#endif
-
     if ((addr & (TLB_INVALID_MASK | TLB_MMIO |
                  TLB_DISCARD_WRITE | TLB_NOTDIRTY)) == 0) {
         addr &= TARGET_PAGE_MASK;
