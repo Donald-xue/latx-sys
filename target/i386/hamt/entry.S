@@ -202,92 +202,10 @@ lu52i.d t0, t0, 0x9000000000000000>>52
 ldptr.d t1, t0, (TRAP_CODE_INDEX*8)
 
 move    t2, t1
-xori    t2, t2, 0x0
-beq     t2, zero, tlb_search
-
-move    t2, t1
-xori    t2, t2, 0x1
-beq     t2, zero, tlb_write_indexed
-
-move    t2, t1
-xori    t2, t2, 0x2
-beq     t2, zero, tlb_write_random
-
-move    t2, t1
 xori    t2, t2, 0x3
 beq     t2, zero, restore_regs
 
 UNEXPECTED_TRAP
-
-tlb_search:
-ldptr.d t1, t0, (ASID_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_ASID
-ldptr.d t1, t0, (TLBEHI_INDEX*8) 
-csrwr   t1, LOONGARCH_CSR_TLBEHI
-tlbsrch
-csrrd   t1, LOONGARCH_CSR_TLBIDX
-
-stptr.d t1, t0, (TLBIDX_INDEX*8)
-blt     t1, zero, unmatch
-match:
-tlbrd
-csrrd   t1, LOONGARCH_CSR_TLBELO0
-stptr.d t1, t0, (TLBELO0_INDEX*8)
-csrrd   t1, LOONGARCH_CSR_TLBELO1
-stptr.d t1, t0, (TLBELO1_INDEX*8)
-unmatch:
-csrrd   t0, LOONGARCH_CSR_EPC
-addi.d  t0, t0, 4
-csrwr   t0, LOONGARCH_CSR_EPC
-
-csrrd   t2, LOONGARCH_CSR_KS2
-csrrd   t1, LOONGARCH_CSR_KS1
-csrrd   t0, LOONGARCH_CSR_KS0
-ertn
-
-tlb_write_indexed:
-ldptr.d t1, t0, (ASID_INDEX*8) 
-csrwr   t1, LOONGARCH_CSR_ASID
-ldptr.d t1, t0, (TLBELO0_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBELO0
-ldptr.d t1, t0, (TLBELO1_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBELO1
-ldptr.d t1, t0, (TLBEHI_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBEHI
-ldptr.d t1, t0, (TLBIDX_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBIDX
-tlbwr
-
-csrrd   t0, LOONGARCH_CSR_EPC
-addi.d  t0, t0, 4
-csrwr   t0, LOONGARCH_CSR_EPC
-
-csrrd   t2, LOONGARCH_CSR_KS2
-csrrd   t1, LOONGARCH_CSR_KS1
-csrrd   t0, LOONGARCH_CSR_KS0
-ertn
-
-tlb_write_random:
-ldptr.d t1, t0, (ASID_INDEX*8) 
-csrwr   t1, LOONGARCH_CSR_ASID
-ldptr.d t1, t0, (TLBELO0_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBELO0
-ldptr.d t1, t0, (TLBELO1_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBELO1
-ldptr.d t1, t0, (TLBEHI_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBEHI
-ldptr.d t1, t0, (TLBIDX_INDEX*8)
-csrwr   t1, LOONGARCH_CSR_TLBIDX
-tlbfill
-
-csrrd   t0, LOONGARCH_CSR_EPC
-addi.d  t0, t0, 4
-csrwr   t0, LOONGARCH_CSR_EPC
-
-csrrd   t2, LOONGARCH_CSR_KS2
-csrrd   t1, LOONGARCH_CSR_KS1
-csrrd   t0, LOONGARCH_CSR_KS0
-ertn
 
 restore_regs:
 ld.d    ra, t0, 8*1

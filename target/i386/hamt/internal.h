@@ -230,6 +230,12 @@
 #endif
 #endif
 
+#define LOONGARCH_CSR_CRMD      0x0
+#define  CSR_CRMD_PG_SHIFT      4
+#define  CSR_CRMD_PG            (_ULCAST_(0x1) << CSR_CRMD_PG_SHIFT)
+#define  CSR_CRMD_DA_SHIFT      3
+#define  CSR_CRMD_DA            (_ULCAST_(0x1) << CSR_CRMD_DA_SHIFT)
+
 /* TLB refill registers */
 #define LOONGARCH_CSR_TLBREBASE 0x88 /* TLB refill exception base address */
 #define LOONGARCH_CSR_TLBRBADV  0x89 /* TLB refill badvaddr */

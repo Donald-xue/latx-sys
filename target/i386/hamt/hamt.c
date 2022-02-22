@@ -428,6 +428,29 @@ static inline void set_attr(int r, int w, int x, uint64_t *addr)
     if (w) set_bit(1, addr);
     else clear_bit(1, addr);
 }
+
+static inline void enable_pg(void)
+{
+    __asm__ __volatile__(
+            "ori $t0, $zero, %0\n\t"
+            "csrwr $t0, %1\n\t"
+            :
+            : "i"(CSR_CRMD_PG), "i"(LOONGARCH_CSR_CRMD)
+            : "$t0"
+            );
+}
+
+static inline void disable_pg(void)
+{
+    __asm__ __volatile__(
+            "ori $t0, $zero, %0\n\t"
+            "csrwr $t0, %1\n\t"
+            :
+            : "i"(CSR_CRMD_DA), "i"(LOONGARCH_CSR_CRMD)
+            : "$t0"
+            );
+}
+
 /*
  * mode:
  *     true: hamt_set_tlb fills in valid pte entry
@@ -443,24 +466,26 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
 {
     uint64_t csr_tlbehi, csr_tlbelo0, csr_tlbelo1;
     int32_t csr_tlbidx;
-    uint32_t csr_asid;
+    uint32_t csr_asid = asid_value;
 
     int w = prot & PAGE_WRITE ? 1 : 0;
     int r = prot & PAGE_READ  ? 1 : 0;
     int x = prot & PAGE_EXEC  ? 1 : 0;
 
-    csr_tlbehi = (vaddr >> 13) << 13;
-    csr_asid = asid_value;
-    ((uint64_t *)data_storage)[TRAP_CODE_INDEX] = 0x0;
-    ((uint64_t *)data_storage)[ASID_INDEX] = csr_asid;
-    ((uint64_t *)data_storage)[TLBEHI_INDEX] = csr_tlbehi;
+    disable_pg();
 
-    __asm__ volatile(
-        "break 0"
-    );
+    // to see whether there is already a valid adjacent tlb entry
+    csr_tlbehi = vaddr & ~0x1fffULL;
+    write_csr_tlbehi(csr_tlbehi);
+    write_csr_asid(csr_asid);
+    tlb_probe();
+    csr_tlbidx = read_csr_tlbidx();
+    if (csr_tlbidx >= 0) {
+        tlb_read();
+        csr_tlbelo0 = read_csr_tlbelo0();
+        csr_tlbelo1 = read_csr_tlbelo1();
+    }
 
-    csr_tlbidx = *((uint64_t *)data_storage + TLBIDX_INDEX);
-    
     //FIX
     if (csr_tlbidx == 0xc00083f) {
         local_flush_tlb_all();
@@ -469,27 +494,29 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
     }
 
     if (valid_index(csr_tlbidx)) {
+
         if (vaddr & 0x1000) {
-            csr_tlbelo0 = ((uint64_t *)data_storage)[TLBELO0_INDEX];
 
             if (mode) {
                 csr_tlbelo1 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
                 set_attr(r, w, x, &csr_tlbelo1);
             }
             else csr_tlbelo1 = 0; 
+
         } else {
+
             if (mode) {
                 csr_tlbelo0 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
                 set_attr(r, w, x, &csr_tlbelo0);
             }
             else csr_tlbelo0 = 0;
 
-            csr_tlbelo1 = ((uint64_t *)data_storage)[TLBELO1_INDEX];
-        }   
+        }
 
-        ((uint64_t *)data_storage)[TRAP_CODE_INDEX] = 0x1; 
     } else {
+
         if (vaddr & 0x1000) {
+
             csr_tlbelo0 = 0;
 
             if (mode) {
@@ -497,7 +524,9 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
                 set_attr(r, w, x, &csr_tlbelo1);
             }
             else csr_tlbelo1 = 0; 
+
         } else {
+
             if (mode) {
                 csr_tlbelo0 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
                 set_attr(r, w, x, &csr_tlbelo0);
@@ -505,23 +534,23 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
             else csr_tlbelo0 = 0;
 
             csr_tlbelo1 = 0;
+
         }
 
-        ((uint64_t *)data_storage)[TRAP_CODE_INDEX] = 0x2; 
     }
+
     // set page size 4K
     csr_tlbidx &= 0xc0ffffff;
     csr_tlbidx |= PS_4K << PS_SHIFT;
+    write_csr_asid(csr_asid);
+    write_csr_tlbehi(csr_tlbehi);
+    write_csr_tlbelo0(csr_tlbelo0);
+    write_csr_tlbelo1(csr_tlbelo1);
+    write_csr_tlbidx(csr_tlbidx);
 
-    ((uint64_t *)data_storage)[ASID_INDEX] = csr_asid;
-    ((uint64_t *)data_storage)[TLBELO1_INDEX] = csr_tlbelo1;
-    ((uint64_t *)data_storage)[TLBELO0_INDEX] = csr_tlbelo0;
-    ((uint64_t *)data_storage)[TLBEHI_INDEX] = csr_tlbehi;
-    ((uint64_t *)data_storage)[TLBIDX_INDEX] = csr_tlbidx;
+    valid_index(csr_tlbidx) ? tlb_write_indexed() : tlb_write_random();
 
-    __asm__ __volatile__(
-        "break 0"
-    );
+    enable_pg();
 }
 
 void hamt_invlpg_helper(uint32_t i386_addr)
