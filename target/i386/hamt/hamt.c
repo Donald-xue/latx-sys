@@ -82,21 +82,19 @@ static uint64_t other_source = 0;
 uint64_t from_tlb_flush = 0;
 uint64_t from_tlb_flush_page_locked = 0;
 uint64_t from_by_mmuidx = 0;
-uint64_t from_reset_dirty = 0;
 static uint64_t tlb_lsm = 0;
 static uint64_t page_fault = 0;
 void hmp_hamt(Monitor *mon, const QDict *qdict)
 {
     monitor_printf(mon, "hamt statistics\n");
+    monitor_printf(mon, "delete a pgtable : %ld\n", delete_some_pgtable);
     monitor_printf(mon, "flush tlb all: %ld\n", flush_tlb_all_count);
     monitor_printf(mon, "--new round of asid: %ld\n", new_round_asid);
-    monitor_printf(mon, "--delete a pgtable : %ld\n", delete_some_pgtable);
     monitor_printf(mon, "--write 2111st mtlb: %ld\n", write_2111);
     monitor_printf(mon, "--other source     : %ld\n", other_source);
     monitor_printf(mon, "----tlb flush            : %ld\n", from_tlb_flush);
     monitor_printf(mon, "----tlb flush page locked: %ld\n", from_tlb_flush_page_locked);
     monitor_printf(mon, "----tlb flush by mmuidx  : %ld\n", from_by_mmuidx);
-    monitor_printf(mon, "----tlb flush reset dirty: %ld\n", from_reset_dirty);
     monitor_printf(mon, "asid version : %ld\n", asid_version);
     monitor_printf(mon, "tlb load/store/modify: %ld\n", tlb_lsm);
     monitor_printf(mon, "page fault: %ld\n", page_fault);
@@ -125,6 +123,28 @@ static inline void tlb_write_indexed(void)
 static inline void tlb_write_random(void)
 {
 	__asm__ __volatile__("tlbfill");
+}
+
+static inline void enable_pg(void)
+{
+    __asm__ __volatile__(
+            "ori $t0, $zero, %0\n\t"
+            "csrwr $t0, %1\n\t"
+            :
+            : "i"(CSR_CRMD_PG), "i"(LOONGARCH_CSR_CRMD)
+            : "$t0"
+            );
+}
+
+static inline void disable_pg(void)
+{
+    __asm__ __volatile__(
+            "ori $t0, $zero, %0\n\t"
+            "csrwr $t0, %1\n\t"
+            :
+            : "i"(CSR_CRMD_DA), "i"(LOONGARCH_CSR_CRMD)
+            : "$t0"
+            );
 }
 
 void alloc_target_addr_space(void)
@@ -205,6 +225,19 @@ static inline void local_flush_tlb_all(void)
 		: "i"(op)
 		:
 		);
+}
+
+static inline void local_flush_tlb_asid(uint16_t asid)
+{
+    uint32_t op = INVTLB_GFALSE_AND_ASID;
+
+    __asm__ __volatile__(
+        "parse_r asid, %1\n\t"
+        ".word ((0x6498000) | (0 << 10) | (asid << 5) | %0)\n\t"
+        :
+        : "i"(op), "r"(asid)
+        :
+        );
 }
 
 static uint16_t allocate_new_asid_value(void)
@@ -315,11 +348,11 @@ void delete_pgtable(uint64_t cr3)
      *    currently I simply flush all tlb
 	 */
 
-    local_flush_tlb_all();
-
     delete_some_pgtable++;
 
     struct pgtable_head *dest_pghead = check_cr3_in_htable(cr3);
+
+    local_flush_tlb_asid(dest_pghead->asid);
 
     QLIST_REMOVE(dest_pghead, entry);
 
@@ -427,28 +460,6 @@ static inline void set_attr(int r, int w, int x, uint64_t *addr)
 
     if (w) set_bit(1, addr);
     else clear_bit(1, addr);
-}
-
-static inline void enable_pg(void)
-{
-    __asm__ __volatile__(
-            "ori $t0, $zero, %0\n\t"
-            "csrwr $t0, %1\n\t"
-            :
-            : "i"(CSR_CRMD_PG), "i"(LOONGARCH_CSR_CRMD)
-            : "$t0"
-            );
-}
-
-static inline void disable_pg(void)
-{
-    __asm__ __volatile__(
-            "ori $t0, $zero, %0\n\t"
-            "csrwr $t0, %1\n\t"
-            :
-            : "i"(CSR_CRMD_DA), "i"(LOONGARCH_CSR_CRMD)
-            : "$t0"
-            );
 }
 
 /*

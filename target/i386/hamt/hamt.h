@@ -27,6 +27,5 @@ void hamt_set_context(uint64_t new_cr3);
 extern uint64_t from_tlb_flush;
 extern uint64_t from_tlb_flush_page_locked;
 extern uint64_t from_by_mmuidx;
-extern uint64_t from_reset_dirty;
 
 #endif
