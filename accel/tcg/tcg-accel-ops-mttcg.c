@@ -65,6 +65,7 @@ static void *mttcg_cpu_thread_fn(void *arg)
 
 #if defined(CONFIG_LATX)
     latx_lsenv_init(cpu->env_ptr);
+    latxs_init_rr_thread_signal(cpu);
 #endif
 
     do {
@@ -130,6 +131,9 @@ void mttcg_start_vcpu_thread(CPUState *cpu)
 
     qemu_thread_create(cpu->thread, thread_name, mttcg_cpu_thread_fn,
                        cpu, QEMU_THREAD_JOINABLE);
+#if defined(CONFIG_LATX)
+    latxs_sigint_cpu_id(cpu);
+#endif
 
 #ifdef _WIN32
     cpu->hThread = qemu_thread_get_handle(cpu->thread);

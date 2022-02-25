@@ -12,11 +12,13 @@
 #include <ucontext.h>
 
 static QemuSpin latx_sigint_slk;
+static QemuSpin latx_sigint_link_lock;
 
 static
 void __attribute__((__constructor__)) latx_sigint_init_lock(void)
 {
     qemu_spin_init(&latx_sigint_slk);
+    qemu_spin_init(&latx_sigint_link_lock);
 }
 
 #include "sigint-i386-tcg-la.h"
@@ -91,6 +93,33 @@ void latxsigint_unlink_tb_all(CPUX86State *env)
 /* no relink for direct jmp */
 //#define SIGINT_NO_RELINK
 
+static
+void latxs_sigint_block_signal(void)
+{
+    sigset_t sigset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, 63);
+    sigprocmask(SIG_BLOCK,&sigset,NULL);
+}
+
+static
+void latxs_sigint_unblock_signal(void)
+{
+    sigset_t sigset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, 63);
+    sigprocmask(SIG_UNBLOCK,&sigset,NULL);
+}
+
+void latxs_sigint_cpu_id(CPUState *cpu)
+{
+    static int cpu_id = 0;
+    qemu_spin_lock(&latx_sigint_slk);
+    cpu->sigint_id = cpu_id;
+    cpu_id += 1;
+    qemu_spin_unlock(&latx_sigint_slk);
+}
+
 void latxs_tb_unlink(TranslationBlock *ctb)
 {
     if (sigint_enabled() != 1) return;
@@ -98,6 +127,24 @@ void latxs_tb_unlink(TranslationBlock *ctb)
     if (!ctb) {
         return;
     }
+
+    latxs_sigint_block_signal();
+    qemu_spin_lock(&latx_sigint_link_lock);
+    
+    int sid = current_cpu->sigint_id;
+    if (ctb->sigint_link_flag[sid] == -1) {
+        ctb->sigint_link_flag[sid] = sid;
+    } else {
+        lsassertm(0, "unexpected sigint");
+    }
+
+    sid = sid ? 0 : 1;
+    if (ctb->sigint_link_flag[sid] != -1) {
+        fprintf(stderr, "SIGINT unlink conflict\n");
+    }
+//    else {
+//        fprintf(stderr, "0");
+//    }
 
     LATX_TRACE(unlink, ctb->pc, ctb->is_indir_tb);
 
@@ -137,6 +184,9 @@ void latxs_tb_unlink(TranslationBlock *ctb)
         }
 #endif
     }
+
+    qemu_spin_unlock(&latx_sigint_link_lock);
+    latxs_sigint_unblock_signal();
 }
 
 void latxs_tb_relink(TranslationBlock *utb)
@@ -147,15 +197,31 @@ void latxs_tb_relink(TranslationBlock *utb)
         return;
     }
 
+    latxs_sigint_block_signal();
+    qemu_spin_lock(&latx_sigint_link_lock);
+
+    int sid = current_cpu->sigint_id;
+    int i = 0;
+    for (; i < 4; ++i) {
+        if (i == sid) {
+            continue;
+        }
+        if (utb->sigint_link_flag[i] != -1) {
+            /* Other thread also unink it */
+            goto relink_done;
+        }
+    }
+    utb->sigint_link_flag[sid] = -1;
+
     LATX_TRACE(relink, utb->pc, utb->is_indir_tb);
 
     if (utb->is_indir_tb) {
         tb_set_jmp_target(utb, 0, native_jmp_glue_2);
-        return;
+        goto relink_done;
     }
 
 #ifdef SIGINT_NO_RELINK
-    return;
+    goto relink_done;
 #endif
 
     TranslationBlock *utb_next = NULL;
@@ -169,6 +235,10 @@ void latxs_tb_relink(TranslationBlock *utb)
     if (utb_next && !(tb_cflags(utb_next) & CF_INVALID)) {
         latx_tb_set_jmp_target(utb, 1, utb_next);
     }
+
+relink_done:
+    qemu_spin_unlock(&latx_sigint_link_lock);
+    latxs_sigint_unblock_signal();
 }
 
 void latxs_rr_interrupt_self(CPUState *cpu)

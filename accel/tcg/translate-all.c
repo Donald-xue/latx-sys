@@ -2403,6 +2403,10 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->is_indir_tb = 0;
     tb->fastcs_ctx = 0; /* FASTCS_CTX_NON */
     tb->fastcs_jmp_glue_checker = 0;
+    tb->sigint_link_flag[0] = -1;
+    tb->sigint_link_flag[1] = -1;
+    tb->sigint_link_flag[2] = -1;
+    tb->sigint_link_flag[3] = -1;
 #endif
 #endif
 
