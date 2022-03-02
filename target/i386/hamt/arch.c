@@ -205,6 +205,8 @@ extern void syscall_entry_begin(void);
 extern void syscall_entry_end(void);
 extern void break_entry_begin(void);
 extern void break_entry_end(void);
+extern void ine_entry_begin(void);
+extern void ine_entry_end(void);
 
 static void init_ebase(struct kvm_cpu *cpu)
 {
@@ -278,6 +280,11 @@ static void init_ebase(struct kvm_cpu *cpu)
     assert((break_entry_end - break_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_BP, break_entry_begin,
             break_entry_end - break_entry_begin);
+
+    // EXCCODE_INE 13
+    assert((ine_entry_end - ine_entry_begin) < 512);
+    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_INE, ine_entry_begin,
+            ine_entry_end - ine_entry_begin);
 
     //EXCCODE_FPE 18
     assert((fpe_entry_end - fpe_entry_begin) < 512);

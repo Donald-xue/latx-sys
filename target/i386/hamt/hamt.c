@@ -217,16 +217,17 @@ static uint16_t find_first_unused_asid_value(void)
  */
 static inline void local_flush_tlb_all(void)
 {
-    uint32_t op = INVTLB_CURRENT_GFALSE;
+    int32_t csr_tlbidx;
 
     ++flush_tlb_all_count;
 
-    __asm__ __volatile__(
-		".word ((0x6498000) | (0 << 10) | (0 << 5) | %0)\n\t"
-		:
-		: "i"(op)
-		:
-		);
+    disable_pg();
+    csr_tlbidx = read_csr_tlbidx();
+    csr_tlbidx &= 0xffff0000;
+    csr_tlbidx += 0x800;
+    write_csr_tlbidx(csr_tlbidx);
+    __asm__ __volatile__("tlbflush");
+    enable_pg();
 }
 
 static inline void local_flush_tlb_asid(uint16_t asid)

@@ -278,6 +278,13 @@ csrwr t0, LOONGARCH_CSR_EPC
 ertn
 syscall_entry_end:
 
+// EXCCODE_INE 13
+.global ine_entry_begin
+.global ine_entry_end
+ine_entry_begin:
+UNEXPECTED_INE
+ine_entry_end:
+
 //EXCP_FPE 18
 .global fpe_entry_begin
 .global fpe_entry_end

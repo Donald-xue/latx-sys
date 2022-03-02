@@ -459,6 +459,7 @@
 #define UNEXPECTED_ADE   .word(0x002b8008)
 #define UNEXPECTED_ALE   .word(0x002b8009)
 #define UNEXPECTED_TRAP  .word(0x002b800a)
+#define UNEXPECTED_INE   .word(0x002b800d)
 
 // copied arch/loongarch/include/asm/asm.h
 /*
