@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include <pthread.h>
+
 #include "qemu/osdep.h"
 #include "qemu/compiler.h"
 #include "qemu/host-utils.h"
@@ -37,7 +39,7 @@
 
 bool hamt_enabled = false;
 
-bool in_hamt = false;
+pthread_key_t in_hamt;
 
 void hamt_exception_handler(uint64_t x86_vaddr, CPUX86State *env, uint32_t *epc);
 
@@ -1436,4 +1438,24 @@ void enable_x86vm_hamt(void)
 
     build_tlb_invalid_trampoline();
 
+}
+
+static void __attribute__((constructor)) in_hamt_init(void)
+{
+    pthread_key_create(&in_hamt, NULL);
+}
+
+bool hamt_started(void)
+{
+    return (bool)pthread_getspecific(in_hamt);
+}
+
+void start_hamt(bool *enable)
+{
+    pthread_setspecific(in_hamt, enable);
+}
+
+void stop_hamt(bool *disable)
+{
+    pthread_setspecific(in_hamt, disable);
 }

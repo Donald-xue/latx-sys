@@ -378,10 +378,13 @@ struct kvm_cpu *emulate_fork(struct kvm_cpu *parent_cpu, int sysno)
 
 void host_loop(struct kvm_cpu *vcpu)
 {
+    bool hamt_status = false;
 	while (true) {
-        start_hamt();
+        hamt_status = true;
+        start_hamt(&hamt_status);
 		long err = ioctl(vcpu->vcpu_fd, KVM_RUN, 0);
-        stop_hamt();
+        hamt_status = false;
+        stop_hamt(&hamt_status);
 		u64 sysno = arch_get_sysno(vcpu);
 		struct kvm_regs regs;
 

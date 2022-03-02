@@ -2,6 +2,7 @@
 #define __HAMT_H
 #include <stdbool.h>
 #include <stdint.h>
+#include <pthread.h>
 
 int dune_enter(void);
 #define hamt_enter() (dune_enter())
@@ -9,10 +10,10 @@ int dune_enter(void);
 extern bool hamt_enabled;
 #define hamt_enable() (hamt_enabled) 
 
-extern bool in_hamt;
-#define hamt_started() (in_hamt) 
-#define start_hamt()   (in_hamt = true)
-#define stop_hamt()    (in_hamt = false)
+extern pthread_key_t in_hamt;
+bool hamt_started(void);
+void start_hamt(bool *enable);
+void stop_hamt(bool *disable);
 
 void hamt_invlpg_helper(uint32_t i386_addr);
 
