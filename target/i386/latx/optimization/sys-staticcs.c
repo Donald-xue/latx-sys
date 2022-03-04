@@ -27,6 +27,11 @@ int gen_latxs_scs_prologue_cfg(
         return 0;
     }
 
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
+
     latxs_tr_init(NULL);
 
 #ifdef TARGET_X86_64
@@ -41,13 +46,36 @@ int gen_latxs_scs_prologue_cfg(
             &latxs_env_ir2_opnd,
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
 
+    /* print context switch type */
+    if (option_native_printer == LATXS_NP_CS) {
+        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS);
+        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
+                env, offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS_SPRO);
+        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
+                offsetof(lsenv_fastcs_t, cs_type));
+
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = latxs_sc_scs_prologue + offset;
+        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        fprintf(stderr, "static prologue %ld\n", ins_offset);
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero, stmp2,
+                offsetof(lsenv_np_data_t, np_type));
+    }
+
 #if defined(LATX_SYS_FCSR)
-    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
-    IR2_OPND *env = &latxs_env_ir2_opnd;
 #if defined(LATX_SYS_FCSR_SIMD)
     /* save into env->fcsr or env->fcsr_simd */
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
 
     IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
@@ -131,12 +159,43 @@ int gen_latxs_scs_epilogue_cfg(
         return 0;
     }
 
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
+
     latxs_tr_init(NULL);
 
     int ra_reg_num = latxs_ir2_opnd_reg(&ra_ir2_opnd);
     latxs_append_ir2_opnd2i(LISA_ST_D, &latxs_ra_ir2_opnd,
             &latxs_env_ir2_opnd,
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
+
+    /* print context switch type */
+    if (option_native_printer == LATXS_NP_CS) {
+        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS);
+        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
+                env, offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS_SEPI);
+        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
+                offsetof(lsenv_fastcs_t, cs_type));
+
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = latxs_sc_scs_epilogue + offset;
+        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        fprintf(stderr, "static epilogue %ld\n", ins_offset);
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero, stmp2,
+                offsetof(lsenv_np_data_t, np_type));
+    }
 
     if (cfg.cvt_fp80) {
         lsassertm(0, "cvtfp not supported in staticcs.\n");
@@ -167,11 +226,8 @@ int gen_latxs_scs_epilogue_cfg(
 #endif
 
 #if defined(LATX_SYS_FCSR)
-    IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
     IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
-    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
 #if defined(LATX_SYS_FCSR_SIMD)
     /* load env->fcsr or env->fcsr_simd */
     IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();

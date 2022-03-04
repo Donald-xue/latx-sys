@@ -90,6 +90,7 @@ static int gen_latxs_sc_bpc(void *code_ptr)
 static int gen_latxs_sc_prologue(void *code_ptr)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *sp = &latxs_sp_ir2_opnd;
     IR2_OPND *fp = &latxs_fp_ir2_opnd;
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
@@ -127,6 +128,39 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 
     /* 2. set up native context */
     latxs_append_ir2_opnd3(LISA_OR, &latxs_env_ir2_opnd, arg1, zero);
+
+    /* print context switch type */
+    if (option_native_printer == LATXS_NP_CS) {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND ptr = latxs_ra_alloc_itemp();
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS_PRO);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_fastcs_t, cs_type));
+
+        latxs_ra_free_temp(&tmp);
+
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = context_switch_bt_to_native + offset;
+        int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
+        fprintf(stderr, "prologue %ld\n", ins_offset);
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_ra_free_temp(&ptr);
+    }
 
     /* 2.1 set native code FCSR (#31) */
 #if defined(LATX_SYS_FCSR)
@@ -213,6 +247,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 static int gen_latxs_sc_epilogue(void *code_ptr)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *sp = &latxs_sp_ir2_opnd;
     IR2_OPND *fp = &latxs_fp_ir2_opnd;
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
@@ -259,6 +294,39 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
     latxs_tr_save_registers_to_env(0xffffffff, 0xff, save_top, 0xffffffff,
                                    0x00);
     latxs_tr_save_eflags();
+
+    /* print context switch type */
+    if (option_native_printer == LATXS_NP_CS) {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND ptr = latxs_ra_alloc_itemp();
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS_EPI);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_fastcs_t, cs_type));
+
+        latxs_ra_free_temp(&tmp);
+
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = context_switch_native_to_bt_ret_0 + offset;
+        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        fprintf(stderr, "epilogue %ld\n", ins_offset);
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_ra_free_temp(&ptr);
+    }
 
     /* 4. restore bt's context */
     /* 4.1. restore DBT FCSR (#31) */
@@ -422,6 +490,15 @@ static int gen_latxs_sc_fpu_rotate(void *code_base)
 static void latxs_native_printer_helper(lsenv_np_data_t *npd,
         int type, int r1, int r2, int r3, int r4, int r5)
 {
+    switch(npd->np_type) {
+    case LATXS_NP_CS:
+        latxs_native_printer_cs(npd, type,
+                r1, r2, r3, r4, r5);
+        return;
+    default:
+        break;
+    }
+
     switch(type) {
     case LATXS_NP_TLBCMP:
         latxs_native_printer_tlbcmp(npd, type,

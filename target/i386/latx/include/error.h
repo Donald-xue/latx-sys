@@ -8,6 +8,8 @@
 
 void print_stack_trace(void);
 
+#define CONFIG_LATX_DEBUG
+
 #ifdef CONFIG_LATX_DEBUG
 #define lsassert(cond)                                                  \
     do {                                                                \
@@ -16,6 +18,7 @@ void print_stack_trace(void);
                     "\033[31m assertion failed in <%s> %s:%d \033[m\n", \
                     __FUNCTION__, __FILE__, __LINE__);                  \
             print_stack_trace();                                        \
+            int *asd = 0; *asd = 0; \
             abort();                                                    \
         }                                                               \
     } while (0)
@@ -27,6 +30,7 @@ void print_stack_trace(void);
                     __FUNCTION__, __FILE__, __LINE__);                        \
             fprintf(stderr, __VA_ARGS__);                                     \
             print_stack_trace();                                              \
+            int *asd = 0; *asd = 0; \
             abort();                                                          \
         }                                                                     \
     } while (0)

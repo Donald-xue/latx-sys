@@ -1449,6 +1449,8 @@ typedef struct CPUX86State {
     uint64_t temp128[2];
     /* native printer */
     void *np_data_ptr;
+    /* Fast Context Switch Data */
+    void *fastcs_ptr;
 #endif
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)

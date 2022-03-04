@@ -1,5 +1,5 @@
 #ifndef _TRANSLATE_H_
-#define _TAANSLATE_H_
+#define _TRANSLATE_H_
 
 #include "common.h"
 #include "ir1.h"
@@ -1207,11 +1207,19 @@ static inline ADDR cpu_get_guest_base(void)
 extern ADDR latxs_sc_bpc;
 extern ADDR latxs_native_printer;
 void latxs_np_env_init(CPUX86State *env);
+/* optimization/sys-fastcs.c */
+void latxs_native_printer_cs(lsenv_np_data_t *npd,
+        int, int, int, int, int, int);
 /* translator/sys-softmmu.c */
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
         int, int, int, int, int, int);
 
 #define LATXS_NP_TLBCMP     1
+#define LATXS_NP_CS         2
+#define LATXS_NP_CS_PRO         1
+#define LATXS_NP_CS_EPI         2
+#define LATXS_NP_CS_SPRO        3
+#define LATXS_NP_CS_SEPI        4
 
 /* main translation procees */
 uint8_t latxs_cpu_read_code_via_qemu(CPUX86State *env, ADDRX pc);
@@ -2234,6 +2242,8 @@ void latxs_tr_gen_save_currtb_for_int(void);
 void latxs_sigint_prepare_check_jmp_glue_2(IR2_OPND, IR2_OPND);
 void latxs_enter_mmx(void);
 void do_func(ADDRX addr, int func);
+
+void latxs_fastcs_env_init(CPUX86State *env);
 #endif
 
 #endif

@@ -206,6 +206,11 @@ typedef struct {
     uint32_t np_type;
     uint64_t np_regs[32];
 } lsenv_np_data_t;
+
+typedef struct {
+    void *env;
+    uint32_t cs_type; /*   1,2,3,4   */
+} lsenv_fastcs_t;
 #endif
 
 typedef struct ENV {
@@ -220,6 +225,8 @@ typedef struct ENV {
         void *tb_unlinked;
     } sigint_data;
     int after_exec_tb_fixed;
+    /* FASTCS */
+    lsenv_fastcs_t fastcs_data;
     /* Native Printer */
     lsenv_np_data_t np_data;
 #endif
