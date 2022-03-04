@@ -419,62 +419,33 @@ static int gen_latxs_sc_fpu_rotate(void *code_base)
     return code_nr_all;
 }
 
-static void latxs_native_printer_helper(CPUX86State *env,
+static void latxs_native_printer_helper(lsenv_np_data_t *npd,
         int type, int r1, int r2, int r3, int r4, int r5)
 {
-    /* Up to now, only SoftTLB Compare is supported */
-    lsassert(type == LATXS_NP_TLBCMP);
-
-    /* r1: reg number of cmp_opnd */
-    uint64_t addr_cmp = env->mips_regs[r1];
-    /* r2: reg number of tag_opnd */
-    uint64_t addr_tag = env->mips_regs[r2];
-    /* r3: reg number of address */
-    uint64_t addr_x86 = env->mips_regs[r3];
-    /* r4: mmu index */
-    int mmu_index = r4;
-    /* r5: load or store */
-    int is_load = r5;
-
-    CPUState *cpu = env_cpu(env);
-    X86CPU *xcpu = (X86CPU *)cpu;
-
-    uint64_t mask = xcpu->neg.tlb.f[mmu_index].mask;
-    int tlb_index = (addr_x86 >> TARGET_PAGE_BITS) &
-                    (mask >> CPU_TLB_ENTRY_BITS);
-    CPUTLBEntry *tlb = &xcpu->neg.tlb.f[mmu_index].table[tlb_index];
-
-    int is_hit = addr_cmp == addr_tag;
-
-    if (is_load) {
-        fprintf(stderr,
-                "load  tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
-                (unsigned int)addr_cmp, (unsigned int)addr_tag,
-                (unsigned int)addr_x86,
-                mmu_index,
-                (unsigned int)tlb->addr_code,
-                (unsigned int)tlb->addr_read,
-                (unsigned int)tlb->addr_write,
-                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
-                         -1);
-        if (is_hit) {
-            fprintf(stderr, "tlb %p fast hit addend %x\n",
-                    (void *)tlb, (unsigned int)tlb->addend);
-        }
-    } else {
-        fprintf(stderr,
-                "store tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
-                (unsigned int)addr_cmp, (unsigned int)addr_tag,
-                (unsigned int)addr_x86,
-                mmu_index,
-                (unsigned int)tlb->addr_code,
-                (unsigned int)tlb->addr_read,
-                (unsigned int)tlb->addr_write,
-                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
-                        -1);
+    switch(type) {
+    case LATXS_NP_TLBCMP:
+        latxs_native_printer_tlbcmp(npd, type,
+                r1, r2, r3, r4, r5);
+        break;
+    default:
+        lsassertm(0, "unsupported native printer type");
+        break;
     }
 }
 
+void latxs_np_env_init(CPUX86State *env)
+{
+    env->np_data_ptr = &lsenv->np_data;
+    lsenv->np_data.env = env;
+}
+
+/*
+ * native printer usage:
+ * > lisa_bl latxs_native_printer
+ *
+ * note:
+ * > all GPRs and only GPRs will be saved/restored
+ */
 static int gen_latxs_native_printer(void *code_ptr)
 {
     /* IR2_OPND *zero = &latxs_zero_ir2_opnd; */
@@ -487,13 +458,18 @@ static int gen_latxs_native_printer(void *code_ptr)
 
     latxs_tr_init(NULL);
 
+    latxs_append_ir2_opnd2i(LISA_LD_D, env, env,
+            offsetof(CPUX86State, np_data_ptr));
+
     /* save all native registers */
     for (i = 1; i < 32; ++i) {
         reg = latxs_ir2_opnd_new(IR2_OPND_GPR, i);
         latxs_append_ir2_opnd2i(LISA_ST_D, &reg, env,
-                lsenv_offset_of_mips_regs(lsenv, i));
+                offsetof(lsenv_np_data_t, np_regs) +
+                sizeof(uint64_t) * i);
     }
 
+    /* reset env = &CPUX86State */
     latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
     latxs_tr_gen_call_to_helper((ADDR)latxs_native_printer_helper);
 
@@ -502,8 +478,13 @@ static int gen_latxs_native_printer(void *code_ptr)
     for (i = 1; i < 32; ++i) {
         reg = latxs_ir2_opnd_new(IR2_OPND_GPR, i);
         latxs_append_ir2_opnd2i(LISA_LD_D, &reg, env,
-                lsenv_offset_of_mips_regs(lsenv, i));
+                offsetof(lsenv_np_data_t, np_regs) +
+                sizeof(uint64_t) * i);
     }
+
+    latxs_append_ir2_opnd2i(LISA_LD_D, env, env, 0);
+
+    /* return */
     latxs_append_ir2_opnd0_(lisa_return);
 
     i = latxs_tr_ir2_assemble(code_ptr);
@@ -812,6 +793,15 @@ int target_latxs_static_codes(void *code_base)
     code_ptr = code_base + (code_nr_all << 2);      \
 } while (0)
 
+    /* print something in native codes */
+    if (option_native_printer) {
+        latxs_native_printer = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_native_printer, code_ptr);
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs do something %p\n",
+                (void *)latxs_native_printer);
+    }
+
     /* epilogue */
     context_switch_native_to_bt_ret_0 = (ADDR)code_ptr;
     context_switch_native_to_bt = (ADDR)code_ptr + 4;
@@ -860,15 +850,6 @@ int target_latxs_static_codes(void *code_base)
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs SCS: static CS epilogue %p\n",
                 (void *)latxs_sc_scs_epilogue);
-    }
-
-    /* do something */
-    if (option_native_printer) {
-        latxs_native_printer = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_native_printer, code_ptr);
-        LATXS_DUMP_STATIC_CODES_INFO(
-                "latxs do something %p\n",
-                (void *)latxs_native_printer);
     }
 
     /* Native Jmp Cache Lookup */

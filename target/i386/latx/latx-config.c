@@ -297,6 +297,8 @@ void latx_lsenv_init(CPUArchState *env)
     env->latxs_fpu = LATXS_FPU_RESET_VALUE;
     lsenv->sigint_data.tb_unlinked = NULL;
 
+    latxs_np_env_init(env);
+
     lsenv->after_exec_tb_fixed = 1;
 
     lsenv->tr_data->slow_path_rcd_max = 4;

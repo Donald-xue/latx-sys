@@ -209,7 +209,7 @@ static void tr_gen_lookup_qemu_tlb(
             TARGET_PAGE_BITS - 1, align_bits);
 
     /* 6.5 do something before tlb compare */
-    if (option_native_printer) {
+    if (option_native_printer == LATXS_NP_TLBCMP) {
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
                 zero, LATXS_NP_TLBCMP);
 
@@ -765,5 +765,61 @@ void gen_ldst_c1_softmmu_helper(
         latxs_append_ir2_opnd2(mfmt_op, &tmp, opnd_fpr);
         /* 2. store GPR to to memory */
         gen_ldst_softmmu_helper(ldst_op, &tmp, opnd_mem, save_temp);
+    }
+}
+
+void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
+        int type, int r1, int r2, int r3, int r4, int r5)
+{
+    CPUX86State *env = npd->env;
+    uint64_t *gprs = npd->np_regs;
+
+    /* r1: reg number of cmp_opnd */
+    uint64_t addr_cmp = gprs[r1];
+    /* r2: reg number of tag_opnd */
+    uint64_t addr_tag = gprs[r2];
+    /* r3: reg number of address */
+    uint64_t addr_x86 = gprs[r3];
+    /* r4: mmu index */
+    int mmu_index = r4;
+    /* r5: load or store */
+    int is_load = r5;
+
+    CPUState *cpu = env_cpu(env);
+    X86CPU *xcpu = (X86CPU *)cpu;
+
+    uint64_t mask = xcpu->neg.tlb.f[mmu_index].mask;
+    int tlb_index = (addr_x86 >> TARGET_PAGE_BITS) &
+                    (mask >> CPU_TLB_ENTRY_BITS);
+    CPUTLBEntry *tlb = &xcpu->neg.tlb.f[mmu_index].table[tlb_index];
+
+    int is_hit = addr_cmp == addr_tag;
+
+    if (is_load) {
+        fprintf(stderr,
+                "load  tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
+                (unsigned int)addr_cmp, (unsigned int)addr_tag,
+                (unsigned int)addr_x86,
+                mmu_index,
+                (unsigned int)tlb->addr_code,
+                (unsigned int)tlb->addr_read,
+                (unsigned int)tlb->addr_write,
+                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
+                         -1);
+        if (is_hit) {
+            fprintf(stderr, "tlb %p fast hit addend %x\n",
+                    (void *)tlb, (unsigned int)tlb->addend);
+        }
+    } else {
+        fprintf(stderr,
+                "store tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
+                (unsigned int)addr_cmp, (unsigned int)addr_tag,
+                (unsigned int)addr_x86,
+                mmu_index,
+                (unsigned int)tlb->addr_code,
+                (unsigned int)tlb->addr_read,
+                (unsigned int)tlb->addr_write,
+                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
+                        -1);
     }
 }

@@ -200,6 +200,12 @@ void latxs_td_set_reg_extmb(int gpr, EXMode em, EXBits eb);
 
 void latxs_td_fpu_set_top(int ctop);
 int  latxs_td_fpu_get_top(void);
+
+typedef struct {
+    void *env;
+    uint32_t np_type;
+    uint64_t np_regs[32];
+} lsenv_np_data_t;
 #endif
 
 typedef struct ENV {
@@ -209,10 +215,13 @@ typedef struct ENV {
     FLAG_PATTERN_DATA *fp_data; /* from LATX */
 #endif
 #ifdef CONFIG_SOFTMMU
+    /* SIGINT */
     struct {
         void *tb_unlinked;
     } sigint_data;
     int after_exec_tb_fixed;
+    /* Native Printer */
+    lsenv_np_data_t np_data;
 #endif
 } ENV;
 

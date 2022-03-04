@@ -1447,6 +1447,8 @@ typedef struct CPUX86State {
     ZMMReg temp_xmm;
     /* for xmm ldst usage */
     uint64_t temp128[2];
+    /* native printer */
+    void *np_data_ptr;
 #endif
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
