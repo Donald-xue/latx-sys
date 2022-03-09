@@ -1214,13 +1214,20 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
 /* translator/sys-softmmu.c */
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
         int, int, int, int, int, int);
+/* translator/sys-translate.c */
+void latxs_native_printer_tb(lsenv_np_data_t *npd,
+        int, int, int, int, int, int);
+void latxs_np_tb_print(CPUX86State *env);
 
 int latxs_np_enabled(void);
 int latxs_np_cs_enabled(void);
 int latxs_np_tlbcmp_enabled(void);
+int latxs_np_tb_enabled(void);
 
 #define LATXS_NP_TLBCMP     1
 #define LATXS_NP_CS         2
+#define LATXS_NP_TB         4
+
 #define LATXS_NP_CS_PRO         1
 #define LATXS_NP_CS_EPI         2
 #define LATXS_NP_CS_SPRO        3

@@ -21,6 +21,11 @@ int latxs_np_tlbcmp_enabled(void)
     return option_native_printer & LATXS_NP_TLBCMP;
 }
 
+int latxs_np_tb_enabled(void)
+{
+    return option_native_printer & LATXS_NP_TB;
+}
+
 static void latxs_native_printer_helper(lsenv_np_data_t *npd,
         int type, int r1, int r2, int r3, int r4, int r5)
 {
@@ -38,6 +43,11 @@ static void latxs_native_printer_helper(lsenv_np_data_t *npd,
     case LATXS_NP_TLBCMP:
         /* optimization/sys-softmmu.c */
         latxs_native_printer_tlbcmp(npd, type,
+                r1, r2, r3, r4, r5);
+        break;
+    case LATXS_NP_TB:
+        /* sys-translate.c */
+        latxs_native_printer_tb(npd, type,
                 r1, r2, r3, r4, r5);
         break;
     default:

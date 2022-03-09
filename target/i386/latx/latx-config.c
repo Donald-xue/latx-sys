@@ -421,6 +421,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
 
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
+    latxs_np_tb_print(env);
 
     if (!option_lsfpu && !option_soft_fpu) {
         lsassert(lsenv_get_top_bias(lsenv) == 0);

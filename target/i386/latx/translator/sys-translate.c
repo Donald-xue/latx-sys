@@ -472,6 +472,22 @@ void latxs_tr_gen_tb_start(void)
     latxs_append_ir2_opnd3(LISA_BLT, &count, &latxs_zero_ir2_opnd,
             &(td->exitreq_label));
 
+    /* native printer for TB's execution */
+    if (latxs_np_tb_enabled()) {
+        IR2_OPND *zero = &latxs_zero_ir2_opnd;
+        IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
+        IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
+
+        latxs_append_ir2_opnd2i(LISA_ORI, arg1, zero, LATXS_NP_TB);
+        latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, 1);
+
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = (ADDR)(tb->tc.ptr) + offset;
+        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+    }
+
     latxs_ra_free_temp(&count);
 }
 
@@ -485,6 +501,22 @@ void latxs_tr_gen_tb_end(void)
     TranslationBlock *tb = td->curr_tb;
 
     latxs_append_ir2_opnd1(LISA_LABEL, &td->exitreq_label);
+
+    /* native printer for TB's execution */
+    if (latxs_np_tb_enabled()) {
+        IR2_OPND *zero = &latxs_zero_ir2_opnd;
+        IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
+        IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
+
+        latxs_append_ir2_opnd2i(LISA_ORI, arg1, zero, LATXS_NP_TB);
+        latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, 2);
+
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = (ADDR)(tb->tc.ptr) + offset;
+        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+    }
 
     IR2_OPND tb_ptr_opnd = latxs_ra_alloc_dbt_arg1();
     IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
@@ -525,6 +557,43 @@ void latxs_tr_gen_tb_end(void)
     int64_t ins_offset =
         (context_switch_native_to_bt - code_buf - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 0);
+}
+
+/* native printer for TB's execution */
+void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
+        int r1, int r2, int r3, int r4, int r5)
+{
+    /*
+     * type = 1 : one TB start executing
+     * type = 2 : one TB exit by interrupt
+     */
+    int tb_type = r1;
+    switch(tb_type) {
+    case 1:
+        npd->np_tb_counter += 1;
+        break;
+    case 2:
+        npd->np_tb_flag = 1;
+        break;
+    default:
+        break;
+    }
+    /* Only count at here. */
+    /* Print before exec tb */
+}
+
+void latxs_np_tb_print(CPUX86State *env)
+{
+    if (latxs_np_tb_enabled()) {
+        lsenv_np_data_t *npd = env->np_data_ptr;
+        if (npd->np_tb_flag == 1) {
+            fprintf(stderr, "TB %ld I\n", npd->np_tb_counter);
+        } else {
+            fprintf(stderr, "TB %ld\n", npd->np_tb_counter);
+        }
+        npd->np_tb_counter = 0;
+        npd->np_tb_flag = 0;
+    }
 }
 
 /* translate functions */

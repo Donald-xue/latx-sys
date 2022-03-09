@@ -205,6 +205,8 @@ typedef struct {
     void *env;
     uint32_t np_type;
     uint64_t np_regs[32];
+    uint64_t np_tb_counter;
+    uint32_t np_tb_flag;
 } lsenv_np_data_t;
 
 typedef struct {
