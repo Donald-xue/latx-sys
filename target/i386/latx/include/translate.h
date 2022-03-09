@@ -1206,6 +1206,7 @@ static inline ADDR cpu_get_guest_base(void)
 
 extern ADDR latxs_sc_bpc;
 extern ADDR latxs_native_printer;
+int gen_latxs_native_printer(void *code_ptr);
 void latxs_np_env_init(CPUX86State *env);
 /* optimization/sys-fastcs.c */
 void latxs_native_printer_cs(lsenv_np_data_t *npd,
@@ -1213,6 +1214,10 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
 /* translator/sys-softmmu.c */
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
         int, int, int, int, int, int);
+
+int latxs_np_enabled(void);
+int latxs_np_cs_enabled(void);
+int latxs_np_tlbcmp_enabled(void);
 
 #define LATXS_NP_TLBCMP     1
 #define LATXS_NP_CS         2

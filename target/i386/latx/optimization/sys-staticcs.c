@@ -47,7 +47,7 @@ int gen_latxs_scs_prologue_cfg(
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
 
     /* print context switch type */
-    if (option_native_printer == LATXS_NP_CS) {
+    if (latxs_np_cs_enabled()) {
         latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
                 env, offsetof(CPUX86State, np_data_ptr));
         latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS);
@@ -172,7 +172,7 @@ int gen_latxs_scs_epilogue_cfg(
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
 
     /* print context switch type */
-    if (option_native_printer == LATXS_NP_CS) {
+    if (latxs_np_cs_enabled()) {
         latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
                 env, offsetof(CPUX86State, np_data_ptr));
         latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS);

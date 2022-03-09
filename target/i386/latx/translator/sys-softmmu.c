@@ -209,7 +209,7 @@ static void tr_gen_lookup_qemu_tlb(
             TARGET_PAGE_BITS - 1, align_bits);
 
     /* 6.5 do something before tlb compare */
-    if (option_native_printer == LATXS_NP_TLBCMP) {
+    if (latxs_np_tlbcmp_enabled()) {
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
                 zero, LATXS_NP_TLBCMP);
 

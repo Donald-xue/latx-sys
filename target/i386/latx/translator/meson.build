@@ -37,6 +37,7 @@ i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-softmmu.c',
   'sys-helper.c',
   'sys-excp.c',
+  'sys-native-printer.c',
   'sys-tr-misc.c',
   'sys-tr-arith.c',
   'sys-tr-arith-byhand.c',
