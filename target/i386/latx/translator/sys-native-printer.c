@@ -86,7 +86,7 @@ int gen_latxs_native_printer(void *code_ptr)
                 sizeof(uint64_t) * i);
     }
 
-    /* reset env = &CPUX86State */
+    /* arg0 is pointing to lsenv->np_data */
     latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
     latxs_tr_gen_call_to_helper((ADDR)latxs_native_printer_helper);
 
@@ -99,6 +99,7 @@ int gen_latxs_native_printer(void *code_ptr)
                 sizeof(uint64_t) * i);
     }
 
+    /* reset env = &CPUX86State */
     latxs_append_ir2_opnd2i(LISA_LD_D, env, env, 0);
 
     /* return */
