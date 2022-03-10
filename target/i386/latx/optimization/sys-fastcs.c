@@ -63,7 +63,7 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
     default:
         break;
     }
-    lsassertm(r == 1 || r == 2, "write %d", r);
+    lsassertm(r == 1 || r == 2, "write %d", (int)r);
     (void)r;
 }
 
