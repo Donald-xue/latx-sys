@@ -10,6 +10,21 @@
 #include <signal.h>
 #include <ucontext.h>
 
+int latxs_fastcs_enabled(void)
+{
+    return option_fastcs;
+}
+
+int latxs_fastcs_is_jmp_glue(void)
+{
+    return option_fastcs == FASTCS_JMP_GLUE;
+}
+
+int latxs_fastcs_is_ld_excp(void)
+{
+    return option_fastcs == FASTCS_LD_EXCP;
+}
+
 void latxs_fastcs_env_init(CPUX86State *env)
 {
     if (env->fastcs_ptr != NULL) {

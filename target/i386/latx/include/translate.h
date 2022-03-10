@@ -2256,6 +2256,13 @@ void latxs_enter_mmx(void);
 void do_func(ADDRX addr, int func);
 
 void latxs_fastcs_env_init(CPUX86State *env);
+int latxs_fastcs_enabled(void);
+int latxs_fastcs_is_jmp_glue(void);
+int latxs_fastcs_is_ld_excp(void);
+
+#define FASTCS_JMP_GLUE 1
+#define FASTCS_LD_EXCP  2
+
 #endif
 
 #endif

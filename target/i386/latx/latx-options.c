@@ -48,6 +48,7 @@ int option_intb_link;
 int option_soft_fpu;
 int option_fast_fpr_ldst;
 int option_large_code_cache;
+int option_fastcs;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -197,6 +198,7 @@ uint8 options_to_save(void)
 #define LATXS_OPT_soft_fpu 12
 #define LATXS_OPT_fast_fpr_ldst 13
 #define LATXS_OPT_by_hand_64 14
+#define LATXS_OPT_fastcs 15
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -264,6 +266,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "sigint",
             .type = QEMU_OPT_BOOL,
             .help = "signal interrupt handle",
+        }, {
+            .name = "fastcs",
+            .type = QEMU_OPT_NUMBER,
+            .help = "fast context switch",
         }, {
             .name = "smmu",
             .type = QEMU_OPT_BOOL,
@@ -387,6 +393,11 @@ void set_options(int index, int v)
 static void parse_options_native_printer(unsigned long long t)
 {
     option_native_printer = t;
+}
+
+static void parse_options_fastcs(unsigned long long t)
+{
+    option_fastcs = t;
 }
 
 static void parse_options_tbsizei(unsigned long long i)
@@ -525,6 +536,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_bool(LATXS_OPT_sigint, opt->value.boolean);
     }
 
+    opt = qemu_opt_find(opts, "fastcs");
+    if (opt) {
+        parse_options_fastcs(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "intblink");
     if (opt) {
         parse_options_bool(LATXS_OPT_intb_link, opt->value.boolean);
@@ -639,6 +655,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] fast frp ldst = %d\n", option_fast_fpr_ldst);
     printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_njc);
     printf("[LATXS-OPT] by_hand_64 = %d\n", option_by_hand_64);
+    printf("[LATXS-OPT] fastcs = %d\n", option_fastcs);
 #ifdef CONFIG_SOFTMMU
     printf("[LATXS-OPT] monitor 1 simple    counter = %d\n", option_monitor_sc);
     printf("[LATXS-OPT] monitor 2 timer     counter = %d\n", option_monitor_tc);
@@ -667,6 +684,7 @@ void latxs_options_init(void)
     option_intb_link = 0;
     option_njc = 0;
     option_sigint = 0;
+    option_fastcs = 0;
     option_cross_page_check = 0;
     option_cross_page_jmp_link = 0;
     option_large_code_cache = 0;
