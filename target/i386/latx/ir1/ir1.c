@@ -2144,4 +2144,15 @@ int latxs_ir1_opnd_is_gpr_not_8h(IR1_OPND *opnd)
     return ir1_opnd_is_gpr(opnd) && !ir1_opnd_is_8h(opnd);
 }
 
+/* fastcs */
+int latxs_ir1_grp_nr(IR1_INST *pir1)
+{
+    return pir1->info->detail->groups_count;
+}
+
+uint8_t *latxs_ir1_get_grps(IR1_INST *pir1)
+{
+    return pir1->info->detail->groups;
+}
+
 #endif

@@ -281,6 +281,8 @@ void latxs_tr_disasm(TranslationBlock *tb)
 {
     ADDRX pc = (ADDRX)tb->pc;
 
+    latxs_reset_tb_fastcs_ctx(tb);
+
     int ir1_num = 0;
     IR1_INST *ir1_list = latxs_get_ir1_list(tb, pc, &ir1_num);
 
@@ -313,6 +315,8 @@ IR1_INST *latxs_get_ir1_list(TranslationBlock *tb, ADDRX pc, int *p_ir1_num)
                 pir1->flags != LATXS_IR1_FLAGS_GENNOP) {
             break;
         }
+
+        latxs_disasm_tb_fastcs_ctx(tb, pir1);
 
         /*
          * special end of block in system-mode

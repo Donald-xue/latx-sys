@@ -27,6 +27,8 @@ int latxs_fastcs_is_ld_excp(void)
 
 void latxs_fastcs_env_init(CPUX86State *env)
 {
+    env->fastcs_ctx = FASTCS_CTX_NON;
+
     if (env->fastcs_ptr != NULL) {
         return;
     }
@@ -63,4 +65,74 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
     }
     lsassertm(r == 1 || r == 2, "write %d", r);
     (void)r;
+}
+
+void latxs_reset_tb_fastcs_ctx(TranslationBlock *tb)
+{
+    tb->fastcs_ctx = FASTCS_CTX_NON;
+}
+
+void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
+{
+    if (!latxs_fastcs_enabled()) {
+        return;
+    }
+
+    int i = 0;
+    int grp_nr = latxs_ir1_grp_nr(pir1);
+    uint8_t *grps = latxs_ir1_get_grps(pir1);
+
+    switch (ir1_opcode(pir1)) {
+    case X86_INS_FXSAVE:
+    case X86_INS_FXRSTOR:
+    case X86_INS_XSAVE:
+    case X86_INS_XRSTOR:
+    case X86_INS_XSAVEOPT:
+        tb->fastcs_ctx |= FASTCS_CTX_FPU;
+        tb->fastcs_ctx |= FASTCS_CTX_SIMD;
+        break;
+    default:
+        break;
+    }
+
+    for (i = 0; i < grp_nr; ++i) {
+        switch (grps[i]) {
+            case X86_GRP_FPU:
+            case X86_GRP_MMX:
+            case X86_GRP_3DNOW: /* MMX */
+                tb->fastcs_ctx |= FASTCS_CTX_FPU;
+                break;
+            case X86_GRP_AES:
+            case X86_GRP_ADX:
+            case X86_GRP_AVX:
+            case X86_GRP_AVX2:
+            case X86_GRP_AVX512:
+            case X86_GRP_F16C:
+            case X86_GRP_FMA:
+            case X86_GRP_FMA4:
+            case X86_GRP_SHA:
+            case X86_GRP_SSE1:
+            case X86_GRP_SSE2:
+            case X86_GRP_SSE3:
+            case X86_GRP_SSE41:
+            case X86_GRP_SSE42:
+            case X86_GRP_SSE4A:
+            case X86_GRP_PCLMUL:
+            case X86_GRP_XOP:
+            case X86_GRP_CDI: /* AVX512CD  */
+            case X86_GRP_ERI: /* AVX512ER  */
+            case X86_GRP_DQI: /* AVX512DQ  */
+            case X86_GRP_BWI: /* AVX512BW  */
+            case X86_GRP_PFI: /* AVX512PF  */
+            case X86_GRP_VLX: /* AVX512VL? */
+                tb->fastcs_ctx |= FASTCS_CTX_SIMD;
+                break;
+            case X86_GRP_SSSE3:
+                tb->fastcs_ctx |= FASTCS_CTX_FPU;
+                tb->fastcs_ctx |= FASTCS_CTX_SIMD;
+                break;
+            default:
+                break;
+        }
+    }
 }

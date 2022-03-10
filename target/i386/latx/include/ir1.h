@@ -397,6 +397,10 @@ int latxs_ir1_opnd_is_gpr32(IR1_OPND *opnd);
 int latxs_ir1_opnd_is_gpr64(IR1_OPND *opnd);
 int latxs_ir1_opnd_is_gpr_not_8h(IR1_OPND *opnd);
 
+/* fastcs */
+int latxs_ir1_grp_nr(IR1_INST *pir1);
+uint8_t *latxs_ir1_get_grps(IR1_INST *pir1);
+
 #endif
 
 #endif

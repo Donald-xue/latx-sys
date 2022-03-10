@@ -1451,6 +1451,7 @@ typedef struct CPUX86State {
     void *np_data_ptr;
     /* Fast Context Switch Data */
     void *fastcs_ptr;
+    uint8_t fastcs_ctx;
 #endif
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)

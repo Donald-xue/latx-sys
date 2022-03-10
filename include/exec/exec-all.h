@@ -549,6 +549,8 @@ struct TranslationBlock {
     /* record the last instruction if TB is too large */
     struct IR1_INST *tb_too_large_pir1;
     int is_indir_tb;
+    /* fastcs type */
+    uint8_t fastcs_ctx;
 #endif
 #endif
 };

@@ -2259,9 +2259,15 @@ void latxs_fastcs_env_init(CPUX86State *env);
 int latxs_fastcs_enabled(void);
 int latxs_fastcs_is_jmp_glue(void);
 int latxs_fastcs_is_ld_excp(void);
+void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1);
+void latxs_reset_tb_fastcs_ctx(TranslationBlock *tb);
 
 #define FASTCS_JMP_GLUE 1
 #define FASTCS_LD_EXCP  2
+
+#define FASTCS_CTX_NON  0
+#define FASTCS_CTX_FPU  1
+#define FASTCS_CTX_SIMD 2
 
 #endif
 

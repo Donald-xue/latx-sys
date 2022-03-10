@@ -2400,6 +2400,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->sys_eob_pir1 = NULL;
     tb->tb_too_large_pir1 = NULL;
     tb->is_indir_tb = 0;
+    tb->fastcs_ctx = 0; /* FASTCS_CTX_NON */
 #endif
 #endif
 
