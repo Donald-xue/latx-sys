@@ -49,7 +49,7 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
     ssize_t r = 0;
     switch(cs_type) {
     case 1:
-        r = write(2, "\n1", 2);
+        r = write(2, "1", 1);
         break;
     case 2:
         r = write(2, "2", 1);
