@@ -474,14 +474,17 @@ void latxs_tr_gen_tb_start(void)
 
     /* native printer for TB's execution */
     if (latxs_np_tb_enabled()) {
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+
         IR2_OPND *zero = &latxs_zero_ir2_opnd;
         IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
         IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
+        IR2_OPND *arg3 = &latxs_arg3_ir2_opnd;
 
         latxs_append_ir2_opnd2i(LISA_ORI, arg1, zero, LATXS_NP_TB);
         latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, 1);
+        latxs_append_ir2_opnd2i(LISA_ORI, arg3, zero, tb->flags & 0x3);
 
-        TranslationBlock *tb = lsenv->tr_data->curr_tb;
         int offset = lsenv->tr_data->real_ir2_inst_num << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
@@ -504,14 +507,17 @@ void latxs_tr_gen_tb_end(void)
 
     /* native printer for TB's execution */
     if (latxs_np_tb_enabled()) {
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+
         IR2_OPND *zero = &latxs_zero_ir2_opnd;
         IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
         IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
+        IR2_OPND *arg3 = &latxs_arg3_ir2_opnd;
 
         latxs_append_ir2_opnd2i(LISA_ORI, arg1, zero, LATXS_NP_TB);
         latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, 2);
+        latxs_append_ir2_opnd2i(LISA_ORI, arg3, zero, tb->flags & 0x3);
 
-        TranslationBlock *tb = lsenv->tr_data->curr_tb;
         int offset = lsenv->tr_data->real_ir2_inst_num << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
@@ -564,8 +570,11 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
         int r1, int r2, int r3, int r4, int r5)
 {
     /*
+     * @r1: TB execution type
      * type = 1 : one TB start executing
      * type = 2 : one TB exit by interrupt
+     *
+     * @r2: TB CPL (0/3)
      */
     int tb_type = r1;
     switch(tb_type) {
@@ -578,6 +587,7 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
     default:
         break;
     }
+    npd->np_tb_flag |= (r2 & 0x3) << 1;
     /* Only count at here. */
     /* Print before exec tb */
 }
@@ -586,10 +596,13 @@ void latxs_np_tb_print(CPUX86State *env)
 {
     if (latxs_np_tb_enabled()) {
         lsenv_np_data_t *npd = env->np_data_ptr;
-        if (npd->np_tb_flag == 1) {
-            fprintf(stderr, "TB %ld I\n", npd->np_tb_counter);
+        int tb_cpl = (npd->np_tb_flag >> 1) & 0x3;
+        if ((npd->np_tb_flag & 1) == 1) {
+            fprintf(stderr, "TB %ld CPL %d I\n",
+                    npd->np_tb_counter, tb_cpl);
         } else {
-            fprintf(stderr, "TB %ld\n", npd->np_tb_counter);
+            fprintf(stderr, "TB %ld CPL %d\n",
+                    npd->np_tb_counter, tb_cpl);
         }
         npd->np_tb_counter = 0;
         npd->np_tb_flag = 0;
