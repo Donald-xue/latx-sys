@@ -181,8 +181,14 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &latxs_f32_ir2_opnd, &temp);
 
     /* 2.3 load x86 mapping registers */
-    latxs_tr_load_registers_from_env(0xffffffff, 0xff, !option_soft_fpu,
-                                     0xffffffff, 0x00);
+    int load_top = !option_soft_fpu;
+    if (latxs_fastcs_enabled()) {
+        latxs_fastcs_load_registers(0xffffffff, 0xff, load_top,
+                                    0xffffffff, 0x00);
+    } else {
+        latxs_tr_load_registers_from_env(0xffffffff, 0xff, load_top,
+                                         0xffffffff, 0x00);
+    }
     latxs_tr_load_eflags();
 
     IR2_OPND sigint_label = latxs_ir2_opnd_new_label();
@@ -291,8 +297,13 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
 
     /* 3. save x86 mapping registers */
     int save_top = (option_lsfpu && !option_soft_fpu) ? 1 : 0;
-    latxs_tr_save_registers_to_env(0xffffffff, 0xff, save_top, 0xffffffff,
-                                   0x00);
+    if (latxs_fastcs_enabled()) {
+        latxs_fastcs_save_registers(0xffffffff, 0xff, save_top,
+                                    0xffffffff, 0x00);
+    } else {
+        latxs_tr_save_registers_to_env(0xffffffff, 0xff, save_top,
+                                       0xffffffff, 0x00);
+    }
     latxs_tr_save_eflags();
 
     /* print context switch type */

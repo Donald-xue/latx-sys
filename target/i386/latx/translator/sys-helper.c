@@ -167,8 +167,14 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 #endif
 
     if (likely(cfg.sv_allgpr)) {
-        latxs_tr_save_registers_to_env(0xffffffff, 0xff, !option_soft_fpu,
-                                       0xffffffff, 0x2);
+        int save_top = !option_soft_fpu;
+        if (latxs_fastcs_enabled()) {
+            latxs_fastcs_save_registers(0xffffffff, 0xff, save_top,
+                                        0xffffffff, 0x2);
+        } else {
+            latxs_tr_save_registers_to_env(0xffffffff, 0xff, save_top,
+                                           0xffffffff, 0x2);
+        }
     } else {
         lsassert(0);
         latxs_tr_save_registers_to_env(GPR_USEDEF_TO_SAVE, FPR_USEDEF_TO_SAVE,
@@ -226,8 +232,14 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     }
 
     if (likely(cfg.sv_allgpr)) {
-        latxs_tr_load_registers_from_env(0xffffffff, 0xff, !option_soft_fpu,
-                                         0xffffffff, 0x2);
+        int load_top = !option_soft_fpu;
+        if (latxs_fastcs_enabled()) {
+            latxs_fastcs_load_registers(0xffffffff, 0xff, load_top,
+                                        0xffffffff, 0x2);
+        } else {
+            latxs_tr_load_registers_from_env(0xffffffff, 0xff, load_top,
+                                             0xffffffff, 0x2);
+        }
         if (fix_em) {
             latxs_td_set_reg_extmb_after_cs(0xFF);
         }

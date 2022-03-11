@@ -107,8 +107,13 @@ int gen_latxs_scs_prologue_cfg(
 
     /* FPU TOP will be stored outside */
     if ((cfg.sv_allgpr)) {
-        latxs_tr_gen_static_save_registers_to_env(
-                0xffffffff, 0xff, 0xffffffff, 0x2);
+        if (latxs_fastcs_enabled()) {
+            latxs_fastcs_static_save_registers(0xffffffff, 0xff,
+                                               0xffffffff, 0x2);
+        } else {
+            latxs_tr_gen_static_save_registers_to_env(
+                    0xffffffff, 0xff, 0xffffffff, 0x2);
+        }
     } else {
         lsassert(0);
         latxs_tr_gen_static_save_registers_to_env(
@@ -207,8 +212,13 @@ int gen_latxs_scs_epilogue_cfg(
 
     /* FPU TOP will be loaded outside */
     if (cfg.sv_allgpr) {
-        latxs_tr_gen_static_load_registers_from_env(
-                0xffffffff, 0xff, 0xffffffff, 0x2);
+        if (latxs_fastcs_enabled()) {
+            latxs_fastcs_static_load_registers(0xffffffff, 0xff,
+                                               0xffffffff, 0x2);
+        } else {
+            latxs_tr_gen_static_load_registers_from_env(
+                    0xffffffff, 0xff, 0xffffffff, 0x2);
+        }
     } else {
         lsassert(0);
         latxs_tr_gen_static_load_registers_from_env(

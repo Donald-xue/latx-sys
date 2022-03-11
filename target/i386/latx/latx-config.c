@@ -428,6 +428,10 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
         latxs_fpu_fix_before_exec_tb(env, tb);
     }
 
+    if (latxs_fastcs_enabled()) {
+        env->fastcs_ctx = tb->fastcs_ctx;
+    }
+
     lsenv->after_exec_tb_fixed = 0;
 }
 

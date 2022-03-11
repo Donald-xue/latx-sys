@@ -2262,6 +2262,15 @@ int latxs_fastcs_is_ld_excp(void);
 void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1);
 void latxs_reset_tb_fastcs_ctx(TranslationBlock *tb);
 
+void latxs_fastcs_load_registers(uint32_t gpr, uint8_t frp, int load_top,
+                                 uint32_t xmm, uint8_t vreg);
+void latxs_fastcs_save_registers(uint32_t gpr, uint8_t frp, int load_top,
+                                 uint32_t xmm, uint8_t vreg);
+void latxs_fastcs_static_load_registers(uint32_t gpr, uint8_t frp,
+                                        uint32_t xmm, uint8_t vreg);
+void latxs_fastcs_static_save_registers(uint32_t gpr, uint8_t frp,
+                                        uint32_t xmm, uint8_t vreg);
+
 #define FASTCS_JMP_GLUE 1
 #define FASTCS_LD_EXCP  2
 

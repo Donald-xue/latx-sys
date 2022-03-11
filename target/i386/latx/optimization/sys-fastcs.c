@@ -136,3 +136,127 @@ void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
         }
     }
 }
+
+static void __latxs_fastcs_load_registers(
+        uint32_t gpr_to_load, uint8_t fpr_to_load, int load_top,
+        uint32_t xmm_to_load, uint8_t vreg_to_load,
+        IR2_OPND *ctx, IR2_OPND *tmp)
+{
+    /* LOAD REGISTERS: vreg */
+    latxs_tr_load_vreg_from_env(vreg_to_load);
+
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND label_no_fpu  = latxs_ir2_opnd_new_label();
+    IR2_OPND label_no_simd = latxs_ir2_opnd_new_label();
+
+    /* load ENV fastcs */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, ctx, env,
+            offsetof(CPUX86State, fastcs_ctx));
+    
+    latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_FPU);
+    latxs_append_ir2_opnd3(LISA_BEQ, tmp, zero, &label_no_fpu);
+    /* LOAD REGISTERS: FPU */
+    latxs_tr_load_fprs_from_env(fpr_to_load, load_top);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fpu);
+
+    latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_SIMD);
+    latxs_append_ir2_opnd3(LISA_BEQ, tmp, zero, &label_no_simd);
+    /* LOAD REGISTERS: SIMD */
+    latxs_tr_load_xmms_from_env(xmm_to_load);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_no_simd);
+
+    /* LOAD REGISTERS: GPR */
+    latxs_tr_load_gprs_from_env(gpr_to_load);
+}
+
+static void __latxs_fastcs_save_registers(
+        uint32_t gpr_to_save, uint8_t fpr_to_save, int save_top,
+        uint32_t xmm_to_save, uint8_t vreg_to_save,
+        IR2_OPND *ctx, IR2_OPND *tmp)
+{
+    /* SAVE REGISTERS: GPR */
+    latxs_tr_save_gprs_to_env(gpr_to_save);
+
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND label_no_fpu  = latxs_ir2_opnd_new_label();
+    IR2_OPND label_no_simd = latxs_ir2_opnd_new_label();
+
+    /* load ENV fastcs */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, ctx, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_FPU);
+    latxs_append_ir2_opnd3(LISA_BEQ, tmp, zero, &label_no_fpu);
+    /* SAVE REGISTERS: FPU */
+    latxs_tr_save_fprs_to_env(fpr_to_save, save_top);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fpu);
+
+    latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_SIMD);
+    latxs_append_ir2_opnd3(LISA_BEQ, tmp, zero, &label_no_simd);
+    /* SAVE REGISTERS: SIMD */
+    latxs_tr_save_xmms_to_env(xmm_to_save);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_no_simd);
+
+    /* SAVE REGISTERS: vreg */
+    latxs_tr_save_vreg_to_env(vreg_to_save);
+}
+
+void latxs_fastcs_load_registers(
+        uint32_t gpr, uint8_t fpr, int load_top,
+        uint32_t xmm, uint8_t vreg)
+{
+    lsassert(latxs_fastcs_enabled());
+
+    IR2_OPND ctx = latxs_ra_alloc_itemp();
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+
+    __latxs_fastcs_load_registers(gpr, fpr, load_top,
+                                  xmm, vreg, &ctx, &tmp);
+
+    latxs_ra_free_temp(&ctx);
+    latxs_ra_free_temp(&tmp);
+}
+
+void latxs_fastcs_save_registers(
+        uint32_t gpr, uint8_t fpr, int save_top,
+        uint32_t xmm, uint8_t vreg)
+{
+    lsassert(latxs_fastcs_enabled());
+
+    IR2_OPND ctx = latxs_ra_alloc_itemp();
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+
+    __latxs_fastcs_save_registers(gpr, fpr, save_top,
+                                  xmm, vreg, &ctx, &tmp);
+
+    latxs_ra_free_temp(&ctx);
+    latxs_ra_free_temp(&tmp);
+}
+
+void latxs_fastcs_static_load_registers(
+        uint32_t gpr, uint8_t fpr,
+        uint32_t xmm, uint8_t vreg)
+{
+    lsassert(latxs_fastcs_enabled());
+
+    IR2_OPND *ctx = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *tmp = &latxs_stmp2_ir2_opnd;
+
+    __latxs_fastcs_load_registers(gpr, fpr, 0,
+                                  xmm, vreg, ctx, tmp);
+}
+
+void latxs_fastcs_static_save_registers(
+        uint32_t gpr, uint8_t fpr,
+        uint32_t xmm, uint8_t vreg)
+{
+    lsassert(latxs_fastcs_enabled());
+
+    IR2_OPND *ctx = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *tmp = &latxs_stmp2_ir2_opnd;
+
+    __latxs_fastcs_save_registers(gpr, fpr, 0,
+                                  xmm, vreg, ctx, tmp);
+}
