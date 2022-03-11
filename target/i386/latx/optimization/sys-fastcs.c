@@ -10,9 +10,22 @@
 #include <signal.h>
 #include <ucontext.h>
 
+/*
+ * option_fastcs
+ * = 0 : disabled
+ * = 1 : enable TB ctx only
+ * = 2 : use jmp-glue method (TB ctx enabled)
+ * = 3 : use load-exception method (TB ctx enabled)
+ */
+
 int latxs_fastcs_enabled(void)
 {
-    return option_fastcs;
+    return option_fastcs >= FASTCS_ENABLED; /* >= 2 */
+}
+
+int latxs_fastcs_enable_tbctx(void)
+{
+    return option_fastcs >= FASTCS_TBCTX; /* >= 1 */
 }
 
 int latxs_fastcs_is_jmp_glue(void)
@@ -74,7 +87,7 @@ void latxs_reset_tb_fastcs_ctx(TranslationBlock *tb)
 
 void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
 {
-    if (!latxs_fastcs_enabled()) {
+    if (!latxs_fastcs_enable_tbctx()) {
         return;
     }
 

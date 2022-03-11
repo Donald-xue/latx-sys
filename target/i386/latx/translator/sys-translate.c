@@ -485,6 +485,11 @@ void latxs_tr_gen_tb_start(void)
         latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, 1);
         latxs_append_ir2_opnd2i(LISA_ORI, arg3, zero, tb->flags & 0x3);
 
+        if (latxs_fastcs_enable_tbctx()) {
+            IR2_OPND *arg4 = &latxs_arg4_ir2_opnd;
+            latxs_append_ir2_opnd2i(LISA_ORI, arg4, zero, tb->fastcs_ctx);
+        }
+
         int offset = lsenv->tr_data->real_ir2_inst_num << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
@@ -517,6 +522,11 @@ void latxs_tr_gen_tb_end(void)
         latxs_append_ir2_opnd2i(LISA_ORI, arg1, zero, LATXS_NP_TB);
         latxs_append_ir2_opnd2i(LISA_ORI, arg2, zero, 2);
         latxs_append_ir2_opnd2i(LISA_ORI, arg3, zero, tb->flags & 0x3);
+
+        if (latxs_fastcs_enable_tbctx()) {
+            IR2_OPND *arg4 = &latxs_arg4_ir2_opnd;
+            latxs_append_ir2_opnd2i(LISA_ORI, arg4, zero, tb->fastcs_ctx);
+        }
 
         int offset = lsenv->tr_data->real_ir2_inst_num << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
@@ -575,6 +585,8 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
      * type = 2 : one TB exit by interrupt
      *
      * @r2: TB CPL (0/3)
+     *
+     * @r3: TB.fastcs_ctx when fastcs TB ctx is enabled
      */
     int tb_type = r1;
     switch(tb_type) {
@@ -582,14 +594,33 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
         npd->np_tb_counter += 1;
         break;
     case 2:
+        /*
+         * npd->np_tb_flag
+         * [0]   = 0 : TB exit normally
+         *       = 1 : TB exit because of interrupt
+         * [2:1] TB's CPL
+         */
         npd->np_tb_flag = 1;
         break;
     default:
         break;
     }
+
     npd->np_tb_flag |= (r2 & 0x3) << 1;
-    /* Only count at here. */
-    /* Print before exec tb */
+
+    if (latxs_fastcs_enable_tbctx()) {
+        int tb_ctx = r3 & 0x3;
+
+        uint8_t tb_chain_info = 0;
+        tb_chain_info |= tb_ctx & 0x3;
+
+        int idx = npd->np_tb_chain_nr;
+        npd->np_tb_chain_info[idx] = tb_chain_info;
+        npd->np_tb_chain_nr += 1;
+        if (idx > npd->np_tb_chain_max) {
+            lsassertm(0, "[NPD] not enough space for tb chain info");
+        }
+    }
 }
 
 void latxs_np_tb_print(CPUX86State *env)
@@ -597,15 +628,28 @@ void latxs_np_tb_print(CPUX86State *env)
     if (latxs_np_tb_enabled()) {
         lsenv_np_data_t *npd = env->np_data_ptr;
         int tb_cpl = (npd->np_tb_flag >> 1) & 0x3;
+
         if ((npd->np_tb_flag & 1) == 1) {
-            fprintf(stderr, "TB %ld CPL %d I\n",
+            fprintf(stderr, "TB %ld CPL %d I",
                     npd->np_tb_counter, tb_cpl);
         } else {
-            fprintf(stderr, "TB %ld CPL %d\n",
+            fprintf(stderr, "TB %ld CPL %d",
                     npd->np_tb_counter, tb_cpl);
         }
+
+        int i = 0;
+        if (npd->np_tb_chain_nr > 0) {
+            fprintf(stderr, " %d", (int)npd->np_tb_chain_info[0]);
+        }
+        for (i = 1; i < npd->np_tb_chain_nr; ++i) {
+            fprintf(stderr, "%d", (int)npd->np_tb_chain_info[i]);
+        }
+
+        fprintf(stderr, "\n");
+
         npd->np_tb_counter = 0;
         npd->np_tb_flag = 0;
+        npd->np_tb_chain_nr = 0;
     }
 }
 

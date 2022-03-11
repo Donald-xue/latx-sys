@@ -207,6 +207,9 @@ typedef struct {
     uint64_t np_regs[32];
     uint64_t np_tb_counter;
     uint32_t np_tb_flag;
+    uint8_t *np_tb_chain_info;
+    uint64_t np_tb_chain_nr;
+    uint64_t np_tb_chain_max;
 } lsenv_np_data_t;
 
 typedef struct {

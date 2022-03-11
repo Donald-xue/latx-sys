@@ -2257,6 +2257,7 @@ void do_func(ADDRX addr, int func);
 
 void latxs_fastcs_env_init(CPUX86State *env);
 int latxs_fastcs_enabled(void);
+int latxs_fastcs_enable_tbctx(void);
 int latxs_fastcs_is_jmp_glue(void);
 int latxs_fastcs_is_ld_excp(void);
 void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1);
@@ -2271,8 +2272,11 @@ void latxs_fastcs_static_load_registers(uint32_t gpr, uint8_t frp,
 void latxs_fastcs_static_save_registers(uint32_t gpr, uint8_t frp,
                                         uint32_t xmm, uint8_t vreg);
 
-#define FASTCS_JMP_GLUE 1
-#define FASTCS_LD_EXCP  2
+#define FASTCS_TBCTX    1
+#define FASTCS_JMP_GLUE 2
+#define FASTCS_LD_EXCP  3
+
+#define FASTCS_ENABLED  2
 
 #define FASTCS_CTX_NON  0
 #define FASTCS_CTX_FPU  1

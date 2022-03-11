@@ -114,5 +114,12 @@ void latxs_np_env_init(CPUX86State *env)
 {
     env->np_data_ptr = &lsenv->np_data;
     lsenv->np_data.env = env;
+
+    if (!lsenv->np_data.np_tb_chain_info) {
+        lsenv->np_data.np_tb_chain_info =
+            (uint8_t*)malloc(1024 * 1024 * 1024);
+    }
+    lsenv->np_data.np_tb_chain_max = 1024 * 1024 * 1024;
+    lsenv->np_data.np_tb_chain_nr = 0;
 }
 
