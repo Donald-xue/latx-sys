@@ -28,6 +28,11 @@ int latxs_fastcs_enable_tbctx(void)
     return option_fastcs >= FASTCS_TBCTX; /* >= 1 */
 }
 
+int latxs_fastcs_is_no_link(void)
+{
+    return option_fastcs == FASTCS_NO_LINK;
+}
+
 int latxs_fastcs_is_jmp_glue(void)
 {
     return option_fastcs == FASTCS_JMP_GLUE;
