@@ -1214,7 +1214,7 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
 /* translator/sys-softmmu.c */
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
         int, int, int, int, int, int);
-/* translator/sys-translate.c */
+/* translator/sys-native-printer.c */
 void latxs_native_printer_tb(lsenv_np_data_t *npd,
         int, int, int, int, int, int);
 void latxs_np_tb_print(CPUX86State *env);
@@ -1232,6 +1232,14 @@ int latxs_np_tb_enabled(void);
 #define LATXS_NP_CS_EPI         2
 #define LATXS_NP_CS_SPRO        3
 #define LATXS_NP_CS_SEPI        4
+
+void latxs_np_tr_cs_prologue(void);
+void latxs_np_tr_cs_epilogue(void);
+void latxs_np_tr_scs_prologue(void);
+void latxs_np_tr_scs_epilogue(void);
+
+void latxs_np_tr_tb_start(void);
+void latxs_np_tr_tb_end(void);
 
 /* main translation procees */
 uint8_t latxs_cpu_read_code_via_qemu(CPUX86State *env, ADDRX pc);

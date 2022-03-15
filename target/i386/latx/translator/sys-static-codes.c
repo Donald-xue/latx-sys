@@ -90,7 +90,6 @@ static int gen_latxs_sc_bpc(void *code_ptr)
 static int gen_latxs_sc_prologue(void *code_ptr)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
-    IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *sp = &latxs_sp_ir2_opnd;
     IR2_OPND *fp = &latxs_fp_ir2_opnd;
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
@@ -130,37 +129,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     latxs_append_ir2_opnd3(LISA_OR, &latxs_env_ir2_opnd, arg1, zero);
 
     /* print context switch type */
-    if (latxs_np_cs_enabled()) {
-        IR2_OPND tmp = latxs_ra_alloc_itemp();
-        IR2_OPND ptr = latxs_ra_alloc_itemp();
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS);
-        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
-                offsetof(lsenv_np_data_t, np_type));
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
-                env, offsetof(CPUX86State, fastcs_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS_PRO);
-        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
-                offsetof(lsenv_fastcs_t, cs_type));
-
-        latxs_ra_free_temp(&tmp);
-
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
-        ADDR here = context_switch_bt_to_native + offset;
-        int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
-        fprintf(stderr, "prologue %ld\n", ins_offset);
-        latxs_append_ir2_opnda(LISA_BL, ins_offset);
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ST_D, zero, &ptr,
-                offsetof(lsenv_np_data_t, np_type));
-
-        latxs_ra_free_temp(&ptr);
-    }
+    latxs_np_tr_cs_prologue();
 
     /* 2.1 set native code FCSR (#31) */
 #if defined(LATX_SYS_FCSR)
@@ -253,7 +222,6 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 static int gen_latxs_sc_epilogue(void *code_ptr)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
-    IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *sp = &latxs_sp_ir2_opnd;
     IR2_OPND *fp = &latxs_fp_ir2_opnd;
     IR2_OPND *ra = &latxs_ra_ir2_opnd;
@@ -307,37 +275,7 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
     latxs_tr_save_eflags();
 
     /* print context switch type */
-    if (latxs_np_cs_enabled()) {
-        IR2_OPND tmp = latxs_ra_alloc_itemp();
-        IR2_OPND ptr = latxs_ra_alloc_itemp();
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS);
-        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
-                offsetof(lsenv_np_data_t, np_type));
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
-                env, offsetof(CPUX86State, fastcs_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS_EPI);
-        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
-                offsetof(lsenv_fastcs_t, cs_type));
-
-        latxs_ra_free_temp(&tmp);
-
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
-        ADDR here = context_switch_native_to_bt_ret_0 + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
-        fprintf(stderr, "epilogue %ld\n", ins_offset);
-        latxs_append_ir2_opnda(LISA_BL, ins_offset);
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ST_D, zero, &ptr,
-                offsetof(lsenv_np_data_t, np_type));
-
-        latxs_ra_free_temp(&ptr);
-    }
+    latxs_np_tr_cs_epilogue();
 
     /* 4. restore bt's context */
     /* 4.1. restore DBT FCSR (#31) */

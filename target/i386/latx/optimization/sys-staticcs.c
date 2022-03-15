@@ -30,7 +30,6 @@ int gen_latxs_scs_prologue_cfg(
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
-    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
 
     latxs_tr_init(NULL);
 
@@ -47,30 +46,7 @@ int gen_latxs_scs_prologue_cfg(
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
 
     /* print context switch type */
-    if (latxs_np_cs_enabled()) {
-        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS);
-        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
-                offsetof(lsenv_np_data_t, np_type));
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
-                env, offsetof(CPUX86State, fastcs_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS_SPRO);
-        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
-                offsetof(lsenv_fastcs_t, cs_type));
-
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
-        ADDR here = latxs_sc_scs_prologue + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
-        fprintf(stderr, "static prologue %ld\n", ins_offset);
-        latxs_append_ir2_opnda(LISA_BL, ins_offset);
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ST_D, zero, stmp2,
-                offsetof(lsenv_np_data_t, np_type));
-    }
+    latxs_np_tr_scs_prologue();
 
 #if defined(LATX_SYS_FCSR)
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
@@ -167,7 +143,6 @@ int gen_latxs_scs_epilogue_cfg(
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
-    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
 
     latxs_tr_init(NULL);
 
@@ -177,30 +152,7 @@ int gen_latxs_scs_epilogue_cfg(
             lsenv_offset_of_mips_regs(lsenv, ra_reg_num));
 
     /* print context switch type */
-    if (latxs_np_cs_enabled()) {
-        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS);
-        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
-                offsetof(lsenv_np_data_t, np_type));
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
-                env, offsetof(CPUX86State, fastcs_ptr));
-        latxs_append_ir2_opnd2i(LISA_ORI, stmp1, zero, LATXS_NP_CS_SEPI);
-        latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
-                offsetof(lsenv_fastcs_t, cs_type));
-
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
-        ADDR here = latxs_sc_scs_epilogue + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
-        fprintf(stderr, "static epilogue %ld\n", ins_offset);
-        latxs_append_ir2_opnda(LISA_BL, ins_offset);
-
-        latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
-                env, offsetof(CPUX86State, np_data_ptr));
-        latxs_append_ir2_opnd2i(LISA_ST_D, zero, stmp2,
-                offsetof(lsenv_np_data_t, np_type));
-    }
+    latxs_np_tr_scs_epilogue();
 
     if (cfg.cvt_fp80) {
         lsassertm(0, "cvtfp not supported in staticcs.\n");
