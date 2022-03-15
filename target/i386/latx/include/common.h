@@ -7,13 +7,15 @@
 #include "error.h"
 
 #define LATX_SYS_FCSR
-#define LATX_SYS_FCSR_SIMD
 /* #define LATX_SYS_FCSR_EXCP TODO */
 
 /*
- * LATX_SYS_FCSR      : map x86 FPU FCSR => LA FCSR
- * LATX_SYS_FCSR_SIMD : enabled assert for x86 SIMD FCSR
- * LATX_SYS_FCSR_EXCP : enable x86 FPU exception TODO
+ * LATX_SYS_FCSR : map x86 FPU FCSR => LA FCSR
+ *                 map x86 SSE FCSR => LA FCSR too
+ * In Context Switch
+ * > env.fcsr         = x86 FPU FCSR
+ * > env.fcsr_simd    = x86 SSE FCSR
+ * > env.is_fcsr_simd : whether fcsr_simd is valid
  */
 
 #define BITS_ARE_SET_ANY(value, bits) (((value) & (bits)) != 0)

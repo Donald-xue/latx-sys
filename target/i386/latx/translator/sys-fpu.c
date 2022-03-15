@@ -151,7 +151,7 @@ void latxs_fpu_fix_cpu_loop_exit(void)
     }
 }
 
-#if defined(LATX_SYS_FCSR) && defined(LATX_SYS_FCSR_SIMD)
+#if defined(LATX_SYS_FCSR)
 static __thread int simd_fcsr_saved;
 /*
  * latxs_set_fpu_fcsr_rounding_field_by_x86() : set()
@@ -188,7 +188,7 @@ static __thread int simd_fcsr_saved;
 void latxs_set_fpu_fcsr(IR2_OPND *new_fcsr)
 {
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr_ir2_opnd, new_fcsr);
-#if defined(LATX_SYS_FCSR) && defined(LATX_SYS_FCSR_SIMD)
+#if defined(LATX_SYS_FCSR)
     assert(simd_fcsr_saved == 1);
     simd_fcsr_saved = 0;
 
@@ -236,7 +236,7 @@ IR2_OPND latxs_set_fpu_fcsr_rounding_field_by_x86(void)
     latxs_ra_free_temp(&temp_fcsr);
     latxs_ra_free_temp(&temp_mxcsr);
 
-#if defined(LATX_SYS_FCSR) && defined(LATX_SYS_FCSR_SIMD)
+#if defined(LATX_SYS_FCSR)
     latxs_append_ir2_opnd2i(LISA_ORI, &temp_int, zero, 1);
     latxs_append_ir2_opnd2i(LISA_ST_W, &temp_int, &latxs_env_ir2_opnd,
             offsetof(CPUX86State, is_fcsr_simd));
@@ -303,4 +303,143 @@ void latxs_update_fcsr(void *_env)
     env->fcsr |= (env->fpus & (0x1 << 4)) << 13; /* x86 UE 4 -> LA 17 */
     env->fcsr |= (env->fpus & (0x1 << 5)) << 11; /* x86 UE 5 -> LA 16 */
 #endif
+}
+
+void latxs_save_fcsr_cs_helper_prologue(IR2_OPND *tmp)
+{
+#ifndef LATX_SYS_FCSR
+    lsassertm(0, "sys fcsr is used but undefined.");
+#endif
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    IR2_OPND label_finish = latxs_ir2_opnd_new_label();
+
+    latxs_append_ir2_opnd2i(LISA_LD_W, tmp, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, tmp, zero, &fcsr_is_simd);
+
+    /* LA FCSR => env->fcsr */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, tmp, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, tmp, env,
+            lsenv_offset_of_fcsr(lsenv));
+    latxs_append_ir2_opnd1(LISA_B, &label_finish);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+    /* LA FCSR => env->fcsr_simd */
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, tmp, fcsr);
+    latxs_append_ir2_opnd2i(LISA_ST_W, tmp, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
+}
+
+void latxs_save_fcsr_scs_prologue(void)
+{
+#ifndef LATX_SYS_FCSR
+    lsassertm(0, "sys fcsr is used but undefined.");
+#endif
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
+
+    latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, stmp1, fcsr);
+
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp2, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &fcsr_is_simd);
+
+    /* LA FCSR => env->fcsr */
+    latxs_append_ir2_opnd2i(LISA_ST_W, stmp1, env,
+            lsenv_offset_of_fcsr(lsenv));
+    IR2_OPND label_next = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_B, &label_next);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+
+    /* LA FCSR => env->fcsr_is_simd */
+    latxs_append_ir2_opnd2i(LISA_ST_W, stmp1, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_next);
+}
+
+void latxs_load_dbt_fcsr(IR2_OPND *tmp)
+{
+#ifndef LATX_SYS_FCSR
+    lsassertm(0, "sys fcsr is used but undefined.");
+#endif
+    IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
+    latxs_append_ir2_opnd2i(LISA_LD_D, tmp, &latxs_sp_ir2_opnd, 128);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, tmp);
+}
+
+void latxs_load_fcsr_cs_helper_epilogue(IR2_OPND *tmp)
+{
+#ifndef LATX_SYS_FCSR
+    lsassertm(0, "sys fcsr is used but undefined.");
+#endif
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
+    IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
+
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    IR2_OPND label_finish = latxs_ir2_opnd_new_label();
+
+    latxs_append_ir2_opnd2i(LISA_LD_W, tmp, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, tmp, zero, &fcsr_is_simd);
+
+    /* LA FCSR <= env->fcsr */
+    latxs_append_ir2_opnd2i(LISA_LD_W, tmp, env,
+            offsetof(CPUX86State, fcsr));
+    latxs_append_ir2_opnd1(LISA_B, &label_finish);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+    /* LA FCSR <= env->fcsr_simd */
+    latxs_append_ir2_opnd2i(LISA_LD_W, tmp, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, tmp);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
+}
+
+void latxs_load_fcsr_scs_epilogue(void)
+{
+#ifndef LATX_SYS_FCSR
+    lsassertm(0, "sys fcsr is used but undefined.");
+#endif
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
+    IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
+
+    /* load env->fcsr or env->fcsr_simd */
+    IR2_OPND fcsr_is_simd = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            offsetof(CPUX86State, is_fcsr_simd));
+    latxs_append_ir2_opnd3(LISA_BNE, stmp1, zero, &fcsr_is_simd);
+
+    /* LA FCSR <= env->fcsr */
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            lsenv_offset_of_fcsr(lsenv));
+    IR2_OPND label_finish = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd1(LISA_B, &label_finish);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
+    /* LA FCSR <= env->fcsr_simd */
+    latxs_append_ir2_opnd2i(LISA_LD_W, stmp1, env,
+            offsetof(CPUX86State, fcsr_simd));
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_finish);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, stmp1);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
 }

@@ -1351,6 +1351,12 @@ void latxs_set_fpu_fcsr(IR2_OPND *new_fcsr);
 IR2_OPND latxs_set_fpu_fcsr_rounding_field_by_x86(void);
 void latxs_update_fcsr_by_cw(IR2_OPND cw);
 
+void latxs_save_fcsr_cs_helper_prologue(IR2_OPND *tmp);
+void latxs_load_fcsr_cs_helper_epilogue(IR2_OPND *tmp);
+void latxs_save_fcsr_scs_prologue(void);
+void latxs_load_fcsr_scs_epilogue(void);
+void latxs_load_dbt_fcsr(IR2_OPND *tmp);
+
 /* opnd process */
 void latxs_load_imm64(IR2_OPND *, int64_t);
 void latxs_load_imm32_to_ir2(IR2_OPND *, uint32_t, EXMode);
