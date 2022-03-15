@@ -126,7 +126,26 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
         int64_t ins_offset = (latxs_sc_scs_prologue - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
         if (!option_lsfpu && !option_soft_fpu) {
-            latxs_tr_gen_save_curr_top();
+            if (latxs_fastcs_enabled()) {
+                IR2_OPND ctx = latxs_ra_alloc_itemp();
+
+                IR2_OPND *env = &latxs_env_ir2_opnd;
+                IR2_OPND *zero = &latxs_zero_ir2_opnd;
+                IR2_OPND label_no_fpu  = latxs_ir2_opnd_new_label();
+
+                latxs_append_ir2_opnd2i(LISA_LD_BU, &ctx, env,
+                        offsetof(CPUX86State, fastcs_ctx));
+
+                latxs_append_ir2_opnd2i(LISA_ANDI, &ctx, &ctx, FASTCS_CTX_FPU);
+                latxs_append_ir2_opnd3(LISA_BEQ, &ctx, zero, &label_no_fpu);
+
+                latxs_tr_gen_save_curr_top();
+
+                latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fpu);
+                latxs_ra_free_temp(&ctx);
+            } else {
+                latxs_tr_gen_save_curr_top();
+            }
         }
         return;
     }
