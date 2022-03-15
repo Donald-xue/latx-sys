@@ -265,6 +265,11 @@ void latxs_fastcs_static_load_registers(
 
     __latxs_fastcs_load_registers(gpr, fpr, 0,
                                   xmm, vreg, ctx, tmp);
+
+    if (option_lsfpu && !option_soft_fpu) {
+        latxs_tr_load_lstop_from_env(&latxs_stmp1_ir2_opnd);
+        latxs_tr_fpu_enable_top_mode();
+    }
 }
 
 void latxs_fastcs_static_save_registers(
@@ -275,6 +280,11 @@ void latxs_fastcs_static_save_registers(
 
     IR2_OPND *ctx = &latxs_stmp1_ir2_opnd;
     IR2_OPND *tmp = &latxs_stmp2_ir2_opnd;
+
+    if (option_lsfpu && !option_soft_fpu) {
+        latxs_tr_save_lstop_to_env(&latxs_stmp1_ir2_opnd);
+        latxs_tr_fpu_disable_top_mode();
+    }
 
     __latxs_fastcs_save_registers(gpr, fpr, 0,
                                   xmm, vreg, ctx, tmp);
