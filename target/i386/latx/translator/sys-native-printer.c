@@ -266,6 +266,84 @@ void latxs_np_tr_scs_epilogue(void)
     }
 }
 
+void latxs_np_tr_hcs_prologue(void)
+{
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+
+    if (latxs_np_cs_enabled()) {
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND ptr = latxs_ra_alloc_itemp();
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS_HPRO);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_fastcs_t, cs_type));
+
+        latxs_ra_free_temp(&tmp);
+
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = (ADDR)(tb->tc.ptr) + offset;
+        int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_ra_free_temp(&ptr);
+    }
+}
+
+void latxs_np_tr_hcs_epilogue(void)
+{
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env = &latxs_env_ir2_opnd;
+
+    if (latxs_np_cs_enabled()) {
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        IR2_OPND ptr = latxs_ra_alloc_itemp();
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, zero, LATXS_NP_CS_HEPI);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &ptr,
+                offsetof(lsenv_fastcs_t, cs_type));
+
+        latxs_ra_free_temp(&tmp);
+
+        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        ADDR here = (ADDR)(tb->tc.ptr) + offset;
+        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        latxs_append_ir2_opnda(LISA_BL, ins_offset);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
+                env, offsetof(CPUX86State, np_data_ptr));
+        latxs_append_ir2_opnd2i(LISA_ST_D, zero, &ptr,
+                offsetof(lsenv_np_data_t, np_type));
+
+        latxs_ra_free_temp(&ptr);
+    }
+}
+
 /* TB execution */
 void latxs_np_tr_tb_start(void)
 {

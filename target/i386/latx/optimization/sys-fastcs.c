@@ -73,6 +73,12 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
     case 4:
         r = write(2, "4", 1);
         break;
+    case 5:
+        r = write(2, "5", 1);
+        break;
+    case 6:
+        r = write(2, "6", 1);
+        break;
     default:
         break;
     }

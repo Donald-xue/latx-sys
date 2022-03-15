@@ -1232,11 +1232,15 @@ int latxs_np_tb_enabled(void);
 #define LATXS_NP_CS_EPI         2
 #define LATXS_NP_CS_SPRO        3
 #define LATXS_NP_CS_SEPI        4
+#define LATXS_NP_CS_HPRO        5
+#define LATXS_NP_CS_HEPI        6
 
 void latxs_np_tr_cs_prologue(void);
 void latxs_np_tr_cs_epilogue(void);
 void latxs_np_tr_scs_prologue(void);
 void latxs_np_tr_scs_epilogue(void);
+void latxs_np_tr_hcs_prologue(void);
+void latxs_np_tr_hcs_epilogue(void);
 
 void latxs_np_tr_tb_start(void);
 void latxs_np_tr_tb_end(void);

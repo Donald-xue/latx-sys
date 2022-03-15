@@ -131,6 +131,9 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
         return;
     }
 
+    /* native printer */
+    latxs_np_tr_hcs_prologue();
+
 #if defined(LATX_SYS_FCSR)
     IR2_OPND tmp = latxs_ra_alloc_itemp();
     latxs_save_fcsr_cs_helper_prologue(&tmp);
@@ -190,6 +193,9 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
         }
         return;
     }
+
+    /* native printer */
+    latxs_np_tr_hcs_epilogue();
 
     if ((!option_soft_fpu) && unlikely(cfg.cvt_fp80)) {
         latxs_tr_cvt_fp80_to_64();
