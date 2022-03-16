@@ -355,6 +355,28 @@ void latxs_tr_init_translate_ir1(TranslationBlock *tb, int index)
     td->itemp_mask_bk = 0;
 }
 
+uint8_t latxs_traceir1_type[X86_INS_ENDING + 1] = {0};
+
+static void latxs_option_traceir1(void *_pir1)
+{
+    IR1_INST *pir1 = (IR1_INST *)_pir1;
+
+    IR1_OPCODE id = ir1_opcode(pir1);
+
+    if (option_traceir1 == 1) {
+        if (!latxs_traceir1_type[id]) {
+            latxs_traceir1_type[id] = 1;
+            ir1_dump(pir1);
+        }
+    }
+
+    if (option_traceir1 == 2) {
+        if (id == option_traceir1_data) {
+            ir1_dump(pir1);
+        }
+    }
+}
+
 bool latxs_tr_ir2_generate(TranslationBlock *tb)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
@@ -369,7 +391,7 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
     for (i = 0; i < ir1_nr; ++i) {
         pir1 = ir1_list + i;
 
-        /* option_trace_ir1(pir1); TODO for trace */
+        latxs_option_traceir1(pir1);
 
         latxs_tr_init_translate_ir1(tb, i);
 

@@ -30,6 +30,8 @@ unsigned long long option_break_point_addrx;
 unsigned long long option_break_point_count;
 int option_native_printer;
 int option_tb_max_insns;
+int option_traceir1;
+int option_traceir1_data;
 
 /* For generate TB execution trace */
 int option_trace_simple;
@@ -303,6 +305,14 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "start to print trace after TB.PC",
         }, {
+            .name = "traceir1",
+            .type = QEMU_OPT_NUMBER,
+            .help = "trace ir1 by type or id",
+        }, {
+            .name = "traceir1data",
+            .type = QEMU_OPT_NUMBER,
+            .help = "another value for trace ir1",
+        }, {
             .name = "breakpoint",
             .type = QEMU_OPT_NUMBER,
             .help = "build break point code to use",
@@ -393,6 +403,22 @@ void set_options(int index, int v)
 static void parse_options_native_printer(unsigned long long t)
 {
     option_native_printer = t;
+}
+
+static void parse_options_traceir1(unsigned long long t)
+{
+    /*
+     * t = 0 : disable
+     * t = 1 : print each type of IR1 once
+     * t = 2 : keep printing one type of IR1
+     *         IR1 id is stored in @option_trace_ir1_data
+     */
+    option_traceir1 = t;
+}
+
+static void parse_options_traceir1_data(unsigned long long t)
+{
+    option_traceir1_data = t;
 }
 
 static void parse_options_fastcs(unsigned long long t)
@@ -494,6 +520,16 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "np");
     if (opt) {
         parse_options_native_printer(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "traceir1");
+    if (opt) {
+        parse_options_traceir1(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "traceir1data");
+    if (opt) {
+        parse_options_traceir1_data(opt->value.uint);
     }
 
     /* parse all optimizations as last! */
@@ -701,6 +737,9 @@ void latxs_options_init(void)
     option_break_point_count = 0;
 
     option_native_printer = 0;
+
+    option_traceir1 = 0;
+    option_traceir1_data = 0;
 
     option_trace_simple = 0;
     option_trace_start_nr = 0;

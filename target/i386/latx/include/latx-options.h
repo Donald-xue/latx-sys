@@ -42,6 +42,8 @@ extern int option_break_point;
 extern unsigned long long option_break_point_addrx;
 extern unsigned long long option_break_point_count;
 extern int option_native_printer;
+extern int option_traceir1;
+extern int option_traceir1_data;
 extern int option_test_sys;
 extern int option_tb_max_insns;
 int latxs_tb_max_insns(void);
