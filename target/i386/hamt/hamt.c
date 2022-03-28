@@ -86,6 +86,7 @@ uint64_t from_tlb_flush_page_locked = 0;
 uint64_t from_by_mmuidx = 0;
 static uint64_t tlb_lsm = 0;
 static uint64_t page_fault = 0;
+static int highest_guest_tlb= 0;
 void hmp_hamt(Monitor *mon, const QDict *qdict)
 {
     monitor_printf(mon, "hamt statistics\n");
@@ -100,6 +101,7 @@ void hmp_hamt(Monitor *mon, const QDict *qdict)
     monitor_printf(mon, "asid version : %ld\n", asid_version);
     monitor_printf(mon, "tlb load/store/modify: %ld\n", tlb_lsm);
     monitor_printf(mon, "page fault: %ld\n", page_fault);
+    monitor_printf(mon, "highest guest tlb: %d\n", highest_guest_tlb);
 }
 
 static inline void tlb_read(void)
@@ -1025,6 +1027,36 @@ static void save_into_mem(CPUX86State *env)
             );
 }
 
+#define  CSR_TLBIDX_EHINV       (_ULCAST_(1) << 31)
+
+static void count_guest_tlb(void)
+{
+    int i;
+    unsigned int index, s_asid;
+    int count = 0;
+
+    disable_pg();
+
+    s_asid = read_csr_asid();
+
+    for (i = 2048; i < 2011; ++i) {
+        write_csr_tlbidx(i);
+        tlb_read();
+        index = read_csr_tlbidx();
+        
+        if (index & CSR_TLBIDX_EHINV)
+            continue;
+
+        ++count;
+    }
+
+    if (count > highest_guest_tlb)
+        highest_guest_tlb = count;
+
+    write_csr_asid(s_asid);
+    enable_pg();
+}
+
 void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *epc)
 {
 	/*
@@ -1036,6 +1068,8 @@ void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *
      * DO NOT FORGET
      *     translate address to i386 vm address
 	 */
+
+    count_guest_tlb();
 
     tlb_lsm++;
 
