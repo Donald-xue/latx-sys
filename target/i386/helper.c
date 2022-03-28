@@ -164,7 +164,7 @@ void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
 
 #ifdef CONFIG_HAMT
         if (hamt_enable() && (old_cr3 == new_cr3))
-            delete_pgtable(old_cr3);
+            hamt_need_flush();
 #endif
 
         qemu_log_mask(CPU_LOG_MMU,

@@ -426,7 +426,7 @@
 // 读取的 LLBCTL 总是 0, 猜测是因为多数情况下，LLBit 都不会被其他人清零，所以总是 0
 #define INIT_VALUE_LLBCTL 0x1
 
-#define INIT_VALUE_STLBPS 0xe
+#define INIT_VALUE_STLBPS 0xc
 #define INIT_VALUE_PWCTL0 0x5e56e
 #define INIT_VALUE_PWCTL1 0x2e4
 

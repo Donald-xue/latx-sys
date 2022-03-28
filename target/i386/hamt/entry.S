@@ -266,8 +266,9 @@ st.d a7, t0, 56
 /*
  * loongarch linux kernel checks hypcall parameter
  * to be no more than 6, thus the need to make $a0 0
+ *
+ * xor  a0, a0, a0
  */
-xor  a0, a0, a0
 HYPERCALL
 ld.d v0, t0, 0
 

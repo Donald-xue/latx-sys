@@ -71,6 +71,8 @@ uint16_t asid_value = 0;
 
 static uint64_t asid_map[16];
 
+static bool need_flush = false;
+
 /*
  * hamt_cr3_htable holds all page table inside VM
  */
@@ -86,7 +88,9 @@ uint64_t from_tlb_flush_page_locked = 0;
 uint64_t from_by_mmuidx = 0;
 static uint64_t tlb_lsm = 0;
 static uint64_t page_fault = 0;
-static int highest_guest_tlb= 0;
+static int highest_guest_tlb = 0;
+static int highest_qemu_tlb = 0;
+static int highest_x86_tlb = 0;
 void hmp_hamt(Monitor *mon, const QDict *qdict)
 {
     monitor_printf(mon, "hamt statistics\n");
@@ -102,6 +106,8 @@ void hmp_hamt(Monitor *mon, const QDict *qdict)
     monitor_printf(mon, "tlb load/store/modify: %ld\n", tlb_lsm);
     monitor_printf(mon, "page fault: %ld\n", page_fault);
     monitor_printf(mon, "highest guest tlb: %d\n", highest_guest_tlb);
+    monitor_printf(mon, "highest qemu tlb: %d\n", highest_qemu_tlb);
+    monitor_printf(mon, "highest x86 tlb: %d\n", highest_x86_tlb);
 }
 
 static inline void tlb_read(void)
@@ -217,11 +223,21 @@ static uint16_t find_first_unused_asid_value(void)
  * (0x1 << 26) | (0x24 << 20) | (0x13 << 15) |
  * (addr << 10) | (info << 5) | op
  */
+#define STLBSETS 256
 static inline void local_flush_tlb_all(void)
 {
     int32_t csr_tlbidx;
+    /*
+    int i = 0;
+    */
 
     ++flush_tlb_all_count;
+
+    /*
+    __asm__ __volatile__(
+        ".word ((0x6498000) | (0 << 10) | (0 << 5) | 0x3)\n\t"
+        );
+    */
 
     disable_pg();
     csr_tlbidx = read_csr_tlbidx();
@@ -229,6 +245,17 @@ static inline void local_flush_tlb_all(void)
     csr_tlbidx += 0x800;
     write_csr_tlbidx(csr_tlbidx);
     __asm__ __volatile__("tlbflush");
+
+    /*
+    for (i = 0; i < STLBSETS; ++i) {
+        csr_tlbidx = read_csr_tlbidx();
+        csr_tlbidx &= 0xffff0000;
+        csr_tlbidx += i;
+        write_csr_tlbidx(csr_tlbidx);
+        __asm__ __volatile__("tlbflush");
+    } 
+    */
+
     enable_pg();
 }
 
@@ -298,6 +325,10 @@ static struct pgtable_head *insert_new_pgtable_node(uint64_t new_cr3, uint16_t n
 	return new_pgtable_head;
 }
 
+void hamt_need_flush(void)
+{
+    need_flush = true;
+}
 
 void hamt_set_context(uint64_t new_cr3)
 {
@@ -342,6 +373,8 @@ void hamt_set_context(uint64_t new_cr3)
 	asid_value = GET_ASID_VALUE(dest_pgtable_head->asid);
 
     write_csr_asid(asid_value & 0x3ff);
+
+    if (need_flush) delete_pgtable(new_cr3);
 }
 
 void delete_pgtable(uint64_t cr3)
@@ -480,7 +513,7 @@ static inline void set_attr(int r, int w, int x, uint64_t *addr)
  */
 static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
 {
-    uint64_t csr_tlbehi, csr_tlbelo0, csr_tlbelo1;
+    uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
     int32_t csr_tlbidx;
     uint32_t csr_asid = asid_value;
 
@@ -533,7 +566,7 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
 
         if (vaddr & 0x1000) {
 
-            csr_tlbelo0 = 0;
+            //csr_tlbelo0 = 0;
 
             if (mode) {
                 csr_tlbelo1 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
@@ -549,7 +582,7 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
             }
             else csr_tlbelo0 = 0;
 
-            csr_tlbelo1 = 0;
+            //csr_tlbelo1 = 0;
 
         }
 
@@ -994,10 +1027,12 @@ static void save_into_mem(CPUX86State *env)
     }
 
     __asm__ __volatile__ (
+/*
             "x86mftop   $t1\n\r"
             "andi       $t1,  $t1, 0x7\n\r"
             "st.w       $t1,  %0,  1280\n\r"
             "x86clrtm\n\r"
+*/
             "fst.d      $fa0, %0,  1296\n\r"
             "fst.d      $fa1, %0,  1312\n\r"
             "fst.d      $fa2, %0,  1328\n\r"
@@ -1027,33 +1062,48 @@ static void save_into_mem(CPUX86State *env)
             );
 }
 
-#define  CSR_TLBIDX_EHINV       (_ULCAST_(1) << 31)
-
+#define CSR_TLBIDX_EHINV       (_ULCAST_(1) << 31)
+#define ENTRYLO_G              (_ULCAST_(1) << 6)
 static void count_guest_tlb(void)
 {
     int i;
-    unsigned int index, s_asid;
-    int count = 0;
+    unsigned int index;
+    unsigned int s_index, s_asid;
+    unsigned long s_entryhi;
+    unsigned long entryhi, entrylo0, entrylo1;
+    int count = 0, qemu_count = 0, x86_count = 0;
 
     disable_pg();
 
+    s_entryhi = read_csr_tlbehi();
     s_asid = read_csr_asid();
+    s_index = read_csr_tlbidx();
 
-    for (i = 2048; i < 2011; ++i) {
+    for (i = 0; i < 2111; ++i) {
         write_csr_tlbidx(i);
         tlb_read();
         index = read_csr_tlbidx();
-        
+        entrylo0 = read_csr_tlbelo0();
+        entrylo1 = read_csr_tlbelo1();
+
         if (index & CSR_TLBIDX_EHINV)
             continue;
+
+        (entrylo0 | entrylo1) & ENTRYLO_G ? ++qemu_count : ++x86_count;
 
         ++count;
     }
 
     if (count > highest_guest_tlb)
         highest_guest_tlb = count;
+    if (qemu_count > highest_qemu_tlb)
+        highest_qemu_tlb = qemu_count;
+    if (x86_count > highest_x86_tlb)
+        highest_x86_tlb = x86_count;
 
+    write_csr_tlbehi(s_entryhi);
     write_csr_asid(s_asid);
+    write_csr_tlbidx(s_index);
     enable_pg();
 }
 
@@ -1069,7 +1119,7 @@ void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *
      *     translate address to i386 vm address
 	 */
 
-    count_guest_tlb();
+    //count_guest_tlb();
 
     tlb_lsm++;
 

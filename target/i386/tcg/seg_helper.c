@@ -35,6 +35,10 @@
 #include "latx-options.h"
 #endif
 
+#ifdef CONFIG_HAMT
+#include "hamt.h"
+#endif
+
 //#define DEBUG_PCALL
 
 #ifdef DEBUG_PCALL
@@ -2435,6 +2439,22 @@ void helper_sysenter(CPUX86State *env)
                            DESC_W_MASK | DESC_A_MASK);
     env->regs[R_ESP] = env->sysenter_esp;
     env->eip = env->sysenter_eip;
+
+#ifdef CONFIG_HAMT
+    if (hamt_enable() && hamt_started()) {
+        bool special_syscall = env->regs[0] == 1 ||
+                               env->regs[0] == 252 ||
+                               env->regs[0] == 11 ||
+                               env->regs[0] == 358;
+
+/*
+        bool special_syscall = env->regs[0] == 0x101;
+*/
+
+        if (special_syscall)
+            hamt_need_flush();
+    }
+#endif
 }
 
 void helper_sysexit(CPUX86State *env, int dflag)

@@ -117,7 +117,12 @@ static void QEMU_NORETURN raise_interrupt2(CPUX86State *env, int intno,
                                env->regs[0] == 11 ||
                                env->regs[0] == 358;
 
-        if (special_syscall) delete_pgtable(env->cr[3]);
+/*
+        bool special_syscall = env->regs[0] == 0x101;
+*/
+
+        if (special_syscall)
+            hamt_need_flush();
     }
 #endif
     cpu_loop_exit_restore(cs, retaddr);
