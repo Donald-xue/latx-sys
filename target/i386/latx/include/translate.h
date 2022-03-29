@@ -2273,12 +2273,8 @@ void latxs_sigint_prepare_check_jmp_glue_2(IR2_OPND, IR2_OPND);
 void latxs_enter_mmx(void);
 void do_func(ADDRX addr, int func);
 
+#include "latx-fastcs-sys.h"
 void latxs_fastcs_env_init(CPUX86State *env);
-int latxs_fastcs_enabled(void);
-int latxs_fastcs_enable_tbctx(void);
-int latxs_fastcs_is_no_link(void);
-int latxs_fastcs_is_jmp_glue(void);
-int latxs_fastcs_is_ld_excp(void);
 void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1);
 void latxs_reset_tb_fastcs_ctx(TranslationBlock *tb);
 

@@ -361,7 +361,6 @@ void latxs_save_fcsr_scs_prologue(void)
     latxs_append_ir2_opnd1(LISA_B, &label_next);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &fcsr_is_simd);
-
     /* LA FCSR => env->fcsr_is_simd */
     latxs_append_ir2_opnd2i(LISA_ST_W, stmp1, env,
             offsetof(CPUX86State, fcsr_simd));

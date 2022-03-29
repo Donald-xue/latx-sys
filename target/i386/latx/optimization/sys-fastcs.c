@@ -16,6 +16,7 @@
  * = 1 : enable TB ctx only
  * = 2 : use jmp-glue method (TB ctx enabled)
  * = 3 : use load-exception method (TB ctx enabled)
+ * = 4 : use no-link mode (TB ctx enabled)
  */
 
 int latxs_fastcs_enabled(void)

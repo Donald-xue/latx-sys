@@ -446,13 +446,13 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
 
     int start = (td->real_ir2_inst_num << 2);
     int offset = 0;
+    int64_t ins_offset = 0;
 
     IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env  = &latxs_env_ir2_opnd;
 
     IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
-    IR2_OPND *ra = &latxs_ra_ir2_opnd;
 
     IR2_OPND tb  = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
 
@@ -574,29 +574,46 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         }
 
         /* LL: helper_lookup_tb */
-        if (option_lsfpu && !option_soft_fpu) {
-            latxs_tr_gen_save_curr_top();
-            latxs_tr_fpu_disable_top_mode();
-        }
-        latxs_tr_save_registers_to_env(0xffffffff, 0xff, 0, 0xffffffff, 0x2);
-        latxs_tr_save_eflags();
+        offset = (td->real_ir2_inst_num << 2) - start;
+        ins_offset = (latxs_sc_scs_prologue - (ADDR)code_ptr - offset) >> 2;
+        latxs_append_ir2_jmp_far(ins_offset, 1);
 
-        latxs_load_addr_to_ir2(&tmp, (ADDR)helper_lookup_tb);
         latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
-        latxs_append_ir2_opnd2i(LISA_JIRL, ra, &tmp, 0);
+        latxs_tr_gen_call_to_helper((ADDR)helper_lookup_tb);
+//        latxs_load_addr_to_ir2(&tmp, (ADDR)helper_lookup_tb);
+//        latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
+//        latxs_append_ir2_opnd2i(LISA_JIRL, ra, &tmp, 0);
 
-        latxs_tr_load_registers_from_env(0xffffffff, 0xff, !option_soft_fpu,
-                                         0xffffffff, 0x2);
+        offset = (td->real_ir2_inst_num << 2) - start;
+        ins_offset = (latxs_sc_scs_epilogue - (ADDR)code_ptr - offset) >> 2;
+        latxs_append_ir2_jmp_far(ins_offset, 1);
+
         latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
+
+        /* check fastcs_ctx if mode is nolink */
+        IR2_OPND fastcs_no_link = latxs_invalid_ir2_opnd;
+        if (latxs_fastcs_is_no_link()) {
+            fastcs_no_link = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd1(LISA_LABEL, &fastcs_no_link);
+        }
 
         /* if next_tb == NULL, jump to epilogue */
         offset = (td->real_ir2_inst_num << 2) - start;
-        int64_t ins_offset =
-            (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >> 2;
+        ins_offset = (context_switch_native_to_bt_ret_0 -
+                (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 0);
 
         /* else compare tb->top_out and next_tb->top_in */
         latxs_append_ir2_opnd1(LISA_LABEL, &label_next_tb_exist);
+
+        /* check fastcs_ctx if mode is nolink */
+        if (latxs_fastcs_is_no_link()) {
+            latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
+                    offsetof(TranslationBlock, fastcs_ctx));
+            latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, env,
+                    offsetof(CPUX86State, fastcs_ctx));
+            latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &fastcs_no_link);
+        }
     }
 
     if (!option_lsfpu && !option_soft_fpu) {

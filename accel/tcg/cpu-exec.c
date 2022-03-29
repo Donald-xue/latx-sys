@@ -44,6 +44,7 @@
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-test-sys.h"
+#include "latx-fastcs-sys.h"
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
@@ -417,6 +418,12 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
                                TranslationBlock *tb_next)
 {
     uintptr_t old;
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    if (latxs_fastcs_is_no_link() &&
+        tb->fastcs_ctx != tb_next->fastcs_ctx) {
+        return;
+    }
+#endif
 
     qemu_thread_jit_write();
     assert(n < ARRAY_SIZE(tb->jmp_list_next));

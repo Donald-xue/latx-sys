@@ -418,6 +418,7 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
 void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
 {
     CPUX86State *env = cpu->env_ptr;
+    env->is_fcsr_simd = 0;
 
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
@@ -594,6 +595,7 @@ void latxs_fix_after_excp_or_int(void)
 {
     CPUX86State *env = lsenv->cpu_state;
     env->sigint_flag = 1;
+    env->is_fcsr_simd = 0;
 
     if (lsenv->after_exec_tb_fixed) {
         return;
