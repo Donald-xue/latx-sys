@@ -325,9 +325,14 @@ static struct pgtable_head *insert_new_pgtable_node(uint64_t new_cr3, uint16_t n
 	return new_pgtable_head;
 }
 
-void hamt_need_flush(void)
+static uint64_t request_old_cr3;
+static bool request_del_pgtable;
+void hamt_need_flush(uint64_t old_cr3, bool del_pgtable)
 {
     need_flush = true;
+    request_old_cr3 = old_cr3;
+    if (!request_del_pgtable)
+        request_del_pgtable = del_pgtable;
 }
 
 void hamt_set_context(uint64_t new_cr3)
@@ -374,7 +379,17 @@ void hamt_set_context(uint64_t new_cr3)
 
     write_csr_asid(asid_value & 0x3ff);
 
-    if (need_flush) delete_pgtable(new_cr3);
+    if (need_flush) {
+        if (request_del_pgtable) {
+            delete_pgtable(request_old_cr3);
+        } else {
+            struct pgtable_head *old_pgtable_head = check_cr3_in_htable(request_old_cr3);
+            if (old_pgtable_head == NULL) die("old_pgtable_head is NULL");
+            local_flush_tlb_asid(old_pgtable_head->asid);
+        }
+        need_flush = false;
+        request_del_pgtable = false;
+    }
 }
 
 void delete_pgtable(uint64_t cr3)

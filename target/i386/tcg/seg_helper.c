@@ -2442,17 +2442,17 @@ void helper_sysenter(CPUX86State *env)
 
 #ifdef CONFIG_HAMT
     if (hamt_enable() && hamt_started()) {
-        bool special_syscall = env->regs[0] == 1 ||
-                               env->regs[0] == 252 ||
-                               env->regs[0] == 11 ||
+        bool special_syscall1 = env->regs[0] == 1 ||
+                               env->regs[0] == 252;
+        bool special_syscall2 = env->regs[0] == 11 ||
                                env->regs[0] == 358;
 
+        target_ulong old_cr3 = env->cr[3];
 /*
         bool special_syscall = env->regs[0] == 0x101;
 */
-
-        if (special_syscall)
-            hamt_need_flush();
+        if (special_syscall1 || special_syscall2) 
+            hamt_need_flush(old_cr3, special_syscall1 ? true : false);
     }
 #endif
 }

@@ -28,6 +28,7 @@
 #include "monitor/monitor.h"
 #endif
 #ifdef CONFIG_HAMT
+#include "hw/core/cpu.h"
 #include "hamt.h"
 #endif
 
@@ -162,19 +163,25 @@ void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
     env->cr[3] = new_cr3;
     if (env->cr[0] & CR0_PG_MASK) {
 
-#ifdef CONFIG_HAMT
-        if (hamt_enable() && (old_cr3 == new_cr3))
-            hamt_need_flush();
-#endif
-
         qemu_log_mask(CPU_LOG_MMU,
                         "CR3 update: CR3=" TARGET_FMT_lx "\n", new_cr3);
-        tlb_flush(env_cpu(env));
-    }
+#ifdef CONFIG_HAMT
+        if (hamt_enable() && hamt_started()) {
+            if (old_cr3 == new_cr3) hamt_need_flush(old_cr3, false);
+            cpu_tb_jmp_cache_clear(env_cpu(env));
+        } else {
+#endif
+       tlb_flush(env_cpu(env));
+#ifdef CONFIG_HAMT
+       }
+#endif
+
+    } 
 
 #ifdef CONFIG_HAMT
-    if (hamt_enable())
+    if (hamt_enable()) {
         hamt_set_context(new_cr3);
+    }
 #endif
 }
 

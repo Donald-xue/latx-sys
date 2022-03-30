@@ -25,7 +25,7 @@ void delete_pgtable(uint64_t cr3);
 
 void hamt_set_context(uint64_t new_cr3);
  
-void hamt_need_flush(void);
+void hamt_need_flush(uint64_t old_cr3, bool del_pgtable);
 
 extern uint64_t from_tlb_flush;
 extern uint64_t from_tlb_flush_page_locked;
