@@ -1677,7 +1677,20 @@ int ir1_dump(IR1_INST *ir1)
     for (; i < 10; i++) {
         fprintf(stderr, "   ");
     }
-    fprintf(stderr, "%s\t\t%s\n", ir1->info->mnemonic, ir1->info->op_str);
+
+    fprintf(stderr, "%s\t\t%s\t", ir1->info->mnemonic, ir1->info->op_str);
+
+    int grp_nr = latxs_ir1_grp_nr(ir1);
+    uint8_t *grps = latxs_ir1_get_grps(ir1);
+    if (grp_nr > 0) {
+        fprintf(stderr, "\tGROUP [");
+        for (i = 0; i < grp_nr - 1; ++i) {
+            fprintf(stderr, "%d,", grps[i]);
+        }
+        fprintf(stderr, "%d]\n", grps[i]);
+    } else {
+        fprintf(stderr, "\n");
+    }
 #else
     fprintf(stderr, "0x%" PRIx64 ":\t%s\t\t%s\n", ir1->info->address,
             ir1->info->mnemonic, ir1->info->op_str);
