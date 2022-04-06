@@ -169,7 +169,8 @@ void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
 }
 
 static void __latxs_fastcs_load_registers(
-        uint32_t gpr_to_load, uint8_t fpr_to_load, int load_top,
+        uint32_t gpr_to_load,
+        uint8_t fpr_to_load, int load_top, int is_scs,
         uint32_t xmm_to_load, uint8_t vreg_to_load,
         IR2_OPND *ctx, IR2_OPND *tmp)
 {
@@ -188,7 +189,16 @@ static void __latxs_fastcs_load_registers(
     latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_FPU);
     latxs_append_ir2_opnd3(LISA_BEQ, tmp, zero, &label_no_fpu);
     /* LOAD REGISTERS: FPU */
-    latxs_tr_load_fprs_from_env(fpr_to_load, load_top);
+    if (is_scs) {
+        lsassert(load_top == 1);
+        latxs_tr_load_fprs_from_env(fpr_to_load, 0);
+        if (option_lsfpu && !option_soft_fpu) {
+            latxs_tr_load_lstop_from_env(tmp);
+            latxs_tr_fpu_enable_top_mode();
+        }
+    } else {
+        latxs_tr_load_fprs_from_env(fpr_to_load, load_top);
+    }
     latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fpu);
 
     latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_SIMD);
@@ -202,7 +212,8 @@ static void __latxs_fastcs_load_registers(
 }
 
 static void __latxs_fastcs_save_registers(
-        uint32_t gpr_to_save, uint8_t fpr_to_save, int save_top,
+        uint32_t gpr_to_save,
+        uint8_t fpr_to_save, int save_top, int is_scs,
         uint32_t xmm_to_save, uint8_t vreg_to_save,
         IR2_OPND *ctx, IR2_OPND *tmp)
 {
@@ -221,7 +232,16 @@ static void __latxs_fastcs_save_registers(
     latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_FPU);
     latxs_append_ir2_opnd3(LISA_BEQ, tmp, zero, &label_no_fpu);
     /* SAVE REGISTERS: FPU */
-    latxs_tr_save_fprs_to_env(fpr_to_save, save_top);
+    if (is_scs) {
+        lsassert(save_top == 1);
+        if (option_lsfpu && !option_soft_fpu) {
+            latxs_tr_save_lstop_to_env(tmp);
+            latxs_tr_fpu_disable_top_mode();
+        }
+        latxs_tr_save_fprs_to_env(fpr_to_save, 0);
+    } else {
+        latxs_tr_save_fprs_to_env(fpr_to_save, save_top);
+    }
     latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fpu);
 
     latxs_append_ir2_opnd2i(LISA_ANDI, tmp, ctx, FASTCS_CTX_SIMD);
@@ -243,7 +263,7 @@ void latxs_fastcs_load_registers(
     IR2_OPND ctx = latxs_ra_alloc_itemp();
     IR2_OPND tmp = latxs_ra_alloc_itemp();
 
-    __latxs_fastcs_load_registers(gpr, fpr, load_top,
+    __latxs_fastcs_load_registers(gpr, fpr, load_top, 0,
                                   xmm, vreg, &ctx, &tmp);
 
     latxs_ra_free_temp(&ctx);
@@ -259,7 +279,7 @@ void latxs_fastcs_save_registers(
     IR2_OPND ctx = latxs_ra_alloc_itemp();
     IR2_OPND tmp = latxs_ra_alloc_itemp();
 
-    __latxs_fastcs_save_registers(gpr, fpr, save_top,
+    __latxs_fastcs_save_registers(gpr, fpr, save_top, 0,
                                   xmm, vreg, &ctx, &tmp);
 
     latxs_ra_free_temp(&ctx);
@@ -275,13 +295,8 @@ void latxs_fastcs_static_load_registers(
     IR2_OPND *ctx = &latxs_stmp1_ir2_opnd;
     IR2_OPND *tmp = &latxs_stmp2_ir2_opnd;
 
-    __latxs_fastcs_load_registers(gpr, fpr, 0,
+    __latxs_fastcs_load_registers(gpr, fpr, 1, 1,
                                   xmm, vreg, ctx, tmp);
-
-    if (option_lsfpu && !option_soft_fpu) {
-        latxs_tr_load_lstop_from_env(&latxs_stmp1_ir2_opnd);
-        latxs_tr_fpu_enable_top_mode();
-    }
 }
 
 void latxs_fastcs_static_save_registers(
@@ -293,11 +308,6 @@ void latxs_fastcs_static_save_registers(
     IR2_OPND *ctx = &latxs_stmp1_ir2_opnd;
     IR2_OPND *tmp = &latxs_stmp2_ir2_opnd;
 
-    if (option_lsfpu && !option_soft_fpu) {
-        latxs_tr_save_lstop_to_env(&latxs_stmp1_ir2_opnd);
-        latxs_tr_fpu_disable_top_mode();
-    }
-
-    __latxs_fastcs_save_registers(gpr, fpr, 0,
+    __latxs_fastcs_save_registers(gpr, fpr, 1, 1,
                                   xmm, vreg, ctx, tmp);
 }
