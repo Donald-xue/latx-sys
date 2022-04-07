@@ -203,6 +203,11 @@ void latxs_set_fpu_fcsr(IR2_OPND *new_fcsr)
 
 IR2_OPND latxs_set_fpu_fcsr_rounding_field_by_x86(void)
 {
+    if (latxs_fastcs_enable_tbctx()) {
+        TranslationBlock *tb = lsenv->tr_data->curr_tb;
+        lsassert((tb->fastcs_ctx & FASTCS_CTX_SIMD) != 0);
+    }
+
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
 
