@@ -729,13 +729,20 @@ static int gen_latxs_jmp_glue_all(void *code_base)
             "latxs TBLink : native jmp glue 1 at %p\n",
             (void *)native_jmp_glue_1);
 
-    native_jmp_glue_2 = (ADDR)code_ptr;
-    code_nr = __gen_latxs_jmp_glue(code_ptr, 2);
-    code_nr_all += code_nr;
-    code_ptr += code_nr << 2;
-    LATXS_DUMP_STATIC_CODES_INFO(
-            "latxs TBLink : native jmp glue 2 at %p\n",
-            (void *)native_jmp_glue_2);
+    if (option_intb_link) {
+        native_jmp_glue_2 = (ADDR)code_ptr;
+        code_nr = __gen_latxs_jmp_glue(code_ptr, 2);
+        code_nr_all += code_nr;
+        code_ptr += code_nr << 2;
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs TBLink : native jmp glue 2 at %p\n",
+                (void *)native_jmp_glue_2);
+    } else {
+        native_jmp_glue_2 = (ADDR)0x0;
+        LATXS_DUMP_STATIC_CODES_INFO(
+                "latxs TBLink : native jmp glue 2 at %p DISABLED\n",
+                (void *)native_jmp_glue_2);
+    }
 
     return code_nr_all;
 }
