@@ -9,6 +9,7 @@
 #include "trace.h"
 #include <signal.h>
 #include <ucontext.h>
+#include "latxs-fastcs-cfg.h"
 
 /*
  * option_fastcs
@@ -132,6 +133,9 @@ void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
             case X86_GRP_MMX:
             case X86_GRP_3DNOW: /* MMX */
                 tb->fastcs_ctx |= FASTCS_CTX_FPU;
+#if defined(FASTCS_FPU_AND_SIMD)
+                tb->fastcs_ctx |= FASTCS_CTX_SIMD;
+#endif
                 break;
             case X86_GRP_AES:
             case X86_GRP_ADX:
@@ -156,6 +160,9 @@ void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
             case X86_GRP_BWI: /* AVX512BW  */
             case X86_GRP_PFI: /* AVX512PF  */
             case X86_GRP_VLX: /* AVX512VL? */
+#if defined(FASTCS_FPU_AND_SIMD)
+                tb->fastcs_ctx |= FASTCS_CTX_FPU;
+#endif
                 tb->fastcs_ctx |= FASTCS_CTX_SIMD;
                 break;
             case X86_GRP_SSSE3:

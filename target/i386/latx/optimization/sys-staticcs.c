@@ -6,6 +6,7 @@
 #include "translate.h"
 #include "sys-excp.h"
 #include <string.h>
+#include "latxs-fastcs-cfg.h"
 
 int scs_enabled(void)
 {
@@ -45,7 +46,24 @@ int gen_latxs_scs_prologue_cfg(
     latxs_np_tr_scs_prologue();
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_stmp1_ir2_opnd;
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs);
+    }
+#endif
     latxs_save_fcsr_scs_prologue();
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs);
+    }
+#endif
 #endif
 
     /* FPU TOP will be stored outside */
@@ -75,7 +93,24 @@ int gen_latxs_scs_prologue_cfg(
     }
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs2 = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_stmp1_ir2_opnd;
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs2);
+    }
+#endif
     latxs_load_dbt_fcsr(&latxs_stmp1_ir2_opnd);
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs2);
+    }
+#endif
 #endif
 
 #ifdef TARGET_X86_64
@@ -149,7 +184,24 @@ int gen_latxs_scs_epilogue_cfg(
 #endif
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_stmp1_ir2_opnd;
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs);
+    }
+#endif
     latxs_load_fcsr_scs_epilogue();
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs);
+    }
+#endif
 #endif
 
 #ifdef TARGET_X86_64

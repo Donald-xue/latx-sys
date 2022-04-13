@@ -481,6 +481,11 @@ void latxs_tr_gen_tb_start(void)
         return;
     }
 
+#if 0
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr2_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+#endif
+
     TRANSLATION_DATA *td = lsenv->tr_data;
     IR2_OPND count = latxs_ra_alloc_itemp();
 

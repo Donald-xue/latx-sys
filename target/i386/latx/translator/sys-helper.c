@@ -6,6 +6,7 @@
 #include "translate.h"
 #include "fpu/softfloat.h"
 #include <string.h>
+#include "latxs-fastcs-cfg.h"
 
 helper_cfg_t all_helper_cfg = {.sv_allgpr = 1, .sv_eflags = 1, .cvt_fp80 = 1};
 helper_cfg_t zero_helper_cfg = {.sv_allgpr = 0, .sv_eflags = 0, .cvt_fp80 = 0};
@@ -154,9 +155,27 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
     latxs_np_tr_hcs_prologue();
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs);
+        latxs_ra_free_temp(&fastcsctx);
+    }
+#endif
     IR2_OPND tmp = latxs_ra_alloc_itemp();
     latxs_save_fcsr_cs_helper_prologue(&tmp);
     latxs_ra_free_temp(&tmp);
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs);
+    }
+#endif
 #endif
 
     if (likely(cfg.sv_allgpr)) {
@@ -173,9 +192,27 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
     }
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs2 = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs2);
+        latxs_ra_free_temp(&fastcsctx);
+    }
+#endif
     tmp = latxs_ra_alloc_itemp();
     latxs_load_dbt_fcsr(&tmp);
     latxs_ra_free_temp(&tmp);
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs2);
+    }
+#endif
 #endif
 
     if (likely(cfg.sv_eflags)) {
@@ -241,9 +278,27 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     }
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs);
+        latxs_ra_free_temp(&fastcsctx);
+    }
+#endif
     IR2_OPND tmp = latxs_ra_alloc_itemp();
     latxs_load_fcsr_cs_helper_epilogue(&tmp);
     latxs_ra_free_temp(&tmp);
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs);
+    }
+#endif
 #endif
 }
 

@@ -7,6 +7,7 @@
 #include "sys-excp.h"
 #include <string.h>
 #include <math.h>
+#include "latxs-fastcs-cfg.h"
 
 void latxs_sys_fldst_register_ir1(void)
 {
@@ -392,7 +393,16 @@ bool latxs_translate_fist(IR1_INST *pir1)
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_end);
 
+#if defined(FCSR_LOAD_RM_ONLY)
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr3_ir2_opnd,
+            &tmp_fcsr);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr1_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr2_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+#else
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &tmp_fcsr);
+#endif
     latxs_ra_free_temp(&tmp_fcsr);
 
     latxs_store_ir2_to_ir1(&dest_int, ir1_get_opnd(pir1, 0));

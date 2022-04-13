@@ -5,6 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include <string.h>
+#include "latxs-fastcs-cfg.h"
 
 /* BPC: Break Point Codes */
 ADDR latxs_sc_bpc;
@@ -97,6 +98,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
     IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
     IR2_OPND *fcsr = &latxs_fcsr_ir2_opnd;
     IR2_OPND *fcsr1 = &latxs_fcsr1_ir2_opnd; /* enable */
+    IR2_OPND *fcsr2 = &latxs_fcsr2_ir2_opnd; /* Flags Cause */
     IR2_OPND *fcsr3 = &latxs_fcsr3_ir2_opnd; /* RM */
 
     TRANSLATION_DATA *td = lsenv->tr_data;
@@ -133,13 +135,32 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 
     /* 2.1 set native code FCSR (#31) */
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs);
+        latxs_ra_free_temp(&fastcsctx);
+    }
+#endif
     latxs_append_ir2_opnd2i(LISA_LD_W, &fcsr_value,
             &latxs_env_ir2_opnd, lsenv_offset_of_fcsr(lsenv));
     /* set RM */
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr3, &fcsr_value);
     /* disable exception TODO support fpu exception */
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr1, zero);
-#else
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr2, zero);
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs);
+    }
+#endif
+#else /* no LATX_SYS_FCSR */
     latxs_append_ir2_opnd3(LISA_OR, &fcsr_value, &fcsr_value, zero);
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &fcsr_value);
 #endif
@@ -256,11 +277,32 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
             lsenv_offset_of_last_executed_tb(lsenv));
 
 #if defined(LATX_SYS_FCSR)
+#if defined(FASTCS_INCLUDE_FCSR)
+    IR2_OPND label_no_fastcs = latxs_ir2_opnd_new_label();
+    if (latxs_fastcs_enabled()) {
+        IR2_OPND fastcsctx = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &fastcsctx,
+                &latxs_env_ir2_opnd,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BEQ, &fastcsctx,
+                &latxs_zero_ir2_opnd,
+                &label_no_fastcs);
+        latxs_ra_free_temp(&fastcsctx);
+    }
+#endif
     IR2_OPND tmp = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd2(LISA_MOVFCSR2GR, &tmp, fcsr);
+#if defined(FCSR_SAVE_RM_ONLY)
+    latxs_append_ir2_opnd2i(LISA_ANDI, &tmp, &tmp, 0x300);
+#endif
     latxs_append_ir2_opnd2i(LISA_ST_W, &tmp,
             &latxs_env_ir2_opnd, lsenv_offset_of_fcsr(lsenv));
     latxs_ra_free_temp(&tmp);
+#if defined(FASTCS_INCLUDE_FCSR)
+    if (latxs_fastcs_enabled()) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_no_fastcs);
+    }
+#endif
 #endif
 
     /* 3. save x86 mapping registers */

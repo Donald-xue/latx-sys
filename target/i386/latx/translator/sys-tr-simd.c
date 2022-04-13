@@ -6,6 +6,7 @@
 #include "translate.h"
 #include "sys-excp.h"
 #include <string.h>
+#include "latxs-fastcs-cfg.h"
 
 void latxs_sys_simd_register_ir1(void)
 {
@@ -2508,7 +2509,16 @@ bool latxs_translate_cvttss2si(IR1_INST *pir1)
     /*set fscr for rounding to zero according to x86 operation*/
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &temp_fcsr, zero, 9, 8);
     latxs_append_ir2_opnd2i(LISA_ORI, &temp_fcsr, &temp_fcsr, 0x1 << 8);
+#if defined(FCSR_LOAD_RM_ONLY)
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr3_ir2_opnd,
+            &temp_fcsr);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr1_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr2_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+#else
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &temp_fcsr);
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
         latxs_append_ir2_opnd2(LISA_FTINT_L_D, &ftemp_over_flow, &src_lo);
@@ -2519,8 +2529,17 @@ bool latxs_translate_cvttss2si(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &temp_fcsr,
                                             &ftemp_over_flow);
     /* reload fcsr */
+#if defined(FCSR_LOAD_RM_ONLY)
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr3_ir2_opnd,
+            &temp_under_flow);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr1_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr2_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+#else
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr,
                                             &temp_under_flow);
+#endif
 
     IR2_OPND label_for_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
@@ -4281,7 +4300,16 @@ bool latxs_translate_cvttsd2si(IR1_INST *pir1)
     /*set fscr for rounding to zero according to x86 operation*/
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_W, &temp_fcsr, zero, 9, 8);
     latxs_append_ir2_opnd2i(LISA_ORI, &temp_fcsr, &temp_fcsr, 0x1 << 8);
+#if defined(FCSR_LOAD_RM_ONLY)
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr3_ir2_opnd,
+            &temp_fcsr);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr1_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr2_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+#else
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &temp_fcsr);
+#endif
 
     if (ir1_opnd_size(ir1_get_opnd(pir1, 0)) == 64) {
         latxs_append_ir2_opnd2(LISA_FTINT_L_D, &ftemp_over_flow, &src_lo);
@@ -4291,7 +4319,16 @@ bool latxs_translate_cvttsd2si(IR1_INST *pir1)
 
     latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &temp_fcsr, &ftemp_over_flow);
     /* reload fcsr */
+#if defined(FCSR_LOAD_RM_ONLY)
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr3_ir2_opnd,
+            &temp_under_flow);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr1_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, &latxs_fcsr2_ir2_opnd,
+            &latxs_zero_ir2_opnd);
+#else
     latxs_append_ir2_opnd2(LISA_MOVGR2FCSR, fcsr, &temp_under_flow);
+#endif
 
     IR2_OPND label_for_exit = latxs_ir2_opnd_new_label();
     latxs_append_ir2_opnd1(LISA_B, &label_for_exit);
