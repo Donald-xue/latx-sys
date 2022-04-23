@@ -168,7 +168,7 @@ void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
 #ifdef CONFIG_HAMT
         if (hamt_enable() && hamt_started()) {
             if (old_cr3 == new_cr3) hamt_need_flush(old_cr3, false);
-            cpu_tb_jmp_cache_clear(env_cpu(env));
+            tlb_flush_by_mmuidx(env_cpu(env), 7);
         } else {
 #endif
        tlb_flush(env_cpu(env));
