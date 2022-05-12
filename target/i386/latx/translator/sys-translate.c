@@ -687,6 +687,9 @@ void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top)
 {
     int i = 0;
 
+    /* make sure the FP registers is loaded without LSFPU */
+    latxs_tr_fpu_disable_top_mode();
+
     for (i = 0; i < 8; i++) {
         if (BITS_ARE_SET(mask, 1 << i)) {
             IR2_OPND mmx_opnd = latxs_ra_alloc_mmx(i);
