@@ -744,7 +744,14 @@ bool latxs_translate_frndint(IR1_INST *pir1)
         return true;
     }
 
-    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_frndint, all_helper_cfg);
+    IR2_OPND st0_opnd = latxs_ra_alloc_st(0);
+    latxs_append_ir2_opnd2(LISA_FRINT_D, &st0_opnd, &st0_opnd);
+
+    /*
+     * latxs_tr_gen_call_to_helper1_cfg(
+     *      (ADDR)helper_frndint, all_helper_cfg);
+     */
+
     return true;
 }
 
@@ -757,7 +764,18 @@ bool latxs_translate_fscale(IR1_INST *pir1)
         return true;
     }
 
-    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fscale, all_helper_cfg);
+    IR2_OPND st0_opnd = latxs_ra_alloc_st(0);
+    IR2_OPND st1_opnd = latxs_ra_alloc_st(1);
+    IR2_OPND ret_value = latxs_ra_alloc_ftemp();
+    latxs_append_ir2_opnd2(LISA_FTINTRZ_L_D, &ret_value, &st1_opnd);
+    latxs_append_ir2_opnd3(LISA_FSCALEB_D, &st0_opnd,
+            &st0_opnd, &ret_value);
+
+    /*
+     * latxs_tr_gen_call_to_helper1_cfg(
+     *      (ADDR)helper_fscale, all_helper_cfg);
+     */
+
     return true;
 }
 
