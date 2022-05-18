@@ -128,12 +128,6 @@ void latxs_disasm_tb_fastcs_ctx(TranslationBlock *tb, IR1_INST *pir1)
         return;
     }
 
-#if 0
-    tb->fastcs_ctx |= FASTCS_CTX_FPU;
-    tb->fastcs_ctx |= FASTCS_CTX_SIMD;
-    return;
-#endif
-
     int i = 0;
     int grp_nr = latxs_ir1_grp_nr(pir1);
     uint8_t *grps = latxs_ir1_get_grps(pir1);
