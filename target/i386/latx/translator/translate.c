@@ -3197,9 +3197,13 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                                    TranslationBlock *next_tb)
 {
 #ifdef CONFIG_SOFTMMU
-    if (latxs_fastcs_is_no_link() &&
-        tb->fastcs_ctx != next_tb->fastcs_ctx) {
-        return;
+    if (latxs_fastcs_enabled()) {
+        int res = latxs_fastcs_set_jmp_target(tb, n, next_tb);
+        if (res > 0) {
+            /* TB link is done inside */
+            return;
+        }
+        /* Fall through to normal TB Link */
     }
     if (option_lsfpu || option_soft_fpu || tb->_top_out == next_tb->_top_in) {
 #else

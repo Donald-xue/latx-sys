@@ -354,6 +354,9 @@ void latxs_tr_gen_sys_eob(IR1_INST *pir1)
 
 void latxs_tr_gen_exit_tb_load_tb_addr(IR2_OPND *tbptr, ADDR tb_addr)
 {
+    TranslationBlock *tb = lsenv->tr_data->curr_tb;
+    tb->fastcs_jmp_glue_checker = 1;
+
     if (lsenv && lsenv->tr_data && lsenv->tr_data->curr_tb) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
         ADDR code_ptr = (ADDR)tb->tc.ptr;
@@ -583,6 +586,10 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     ADDR tb_addr = (ADDR)tb;
 
     int need_tb_addr_for_jmp_glue = (option_lsfpu || option_soft_fpu) ? 0 : 1;
+    
+    if (option_lsfpu && latxs_fastcs_is_jmp_glue()) {
+        need_tb_addr_for_jmp_glue = 1;
+    }
 
     /*
      * TODO

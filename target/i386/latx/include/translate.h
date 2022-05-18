@@ -2262,6 +2262,19 @@ void latxs_tr_gen_static_save_registers_to_env(
 void latxs_tr_gen_static_load_registers_from_env(
         uint32_t, uint8_t, uint32_t, uint8_t);
 
+extern ADDR latxs_sc_fcs_F_0;
+extern ADDR latxs_sc_fcs_F_1;
+extern ADDR latxs_sc_fcs_S_0;
+extern ADDR latxs_sc_fcs_S_1;
+extern ADDR latxs_sc_fcs_FS_0;
+extern ADDR latxs_sc_fcs_FS_1;
+extern ADDR latxs_sc_fcs_check_load_F;
+extern ADDR latxs_sc_fcs_check_load_S;
+extern ADDR latxs_sc_fcs_check_load_FS;
+int gen_latxs_sc_fcs_jmp_glue(void *, int ctx, int n);
+int gen_latxs_sc_fcs_check_load(void *, int ctx);
+int latxs_fastcs_set_jmp_target(void *tb, int n, void *nextb);
+
 extern ADDR latxs_sc_njc;
 int njc_enabled(void);
 int gen_latxs_njc_lookup_tb(void *code_ptr);

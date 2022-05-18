@@ -551,6 +551,7 @@ struct TranslationBlock {
     int is_indir_tb;
     /* fastcs type */
     uint8_t fastcs_ctx;
+    uint8_t fastcs_jmp_glue_checker;
 #endif
 #endif
 };

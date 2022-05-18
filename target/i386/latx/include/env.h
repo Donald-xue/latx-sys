@@ -214,6 +214,7 @@ typedef struct {
 
 typedef struct {
     void *env;
+    void *indir_table[4][4];
     uint32_t cs_type; /*   1,2,3,4   */
 } lsenv_fastcs_t;
 #endif

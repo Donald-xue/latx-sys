@@ -2401,6 +2401,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->tb_too_large_pir1 = NULL;
     tb->is_indir_tb = 0;
     tb->fastcs_ctx = 0; /* FASTCS_CTX_NON */
+    tb->fastcs_jmp_glue_checker = 0;
 #endif
 #endif
 

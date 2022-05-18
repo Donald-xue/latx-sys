@@ -25,6 +25,17 @@ ADDR latxs_native_printer;
 ADDR latxs_sc_scs_prologue;
 ADDR latxs_sc_scs_epilogue;
 
+/* FastCS: Fast Context Switch */
+ADDR latxs_sc_fcs_F_0;
+ADDR latxs_sc_fcs_F_1;
+ADDR latxs_sc_fcs_S_0;
+ADDR latxs_sc_fcs_S_1;
+ADDR latxs_sc_fcs_FS_0;
+ADDR latxs_sc_fcs_FS_1;
+ADDR latxs_sc_fcs_check_load_F;
+ADDR latxs_sc_fcs_check_load_S;
+ADDR latxs_sc_fcs_check_load_FS;
+
 /*
  * For other static codes, we use the same entry with LATX-user.
  *
@@ -656,6 +667,27 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
                     offsetof(CPUX86State, fastcs_ctx));
             latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &fastcs_no_link);
         }
+
+        /* load context if mode in jmp glue */
+        if (latxs_fastcs_is_jmp_glue()) {
+            latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
+                    offsetof(TranslationBlock, fastcs_ctx));
+            latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, env,
+                    offsetof(CPUX86State, fastcs_ctx));
+            latxs_append_ir2_opnd2i(LISA_SLLI_D, &param1, &param1, 2);
+            latxs_append_ir2_opnd3(LISA_ADD_D,  &param1, &param1, &param0);
+            latxs_append_ir2_opnd2i(LISA_SLLI_D, &param1, &param1, 3);
+
+            latxs_append_ir2_opnd2i(LISA_LD_D, &param0, env,
+                    offsetof(CPUX86State, fastcs_ptr));
+            latxs_append_ir2_opnd3(LISA_ADD_D, &param0, &param0, &param1);
+            latxs_append_ir2_opnd2i(LISA_LD_D, &param1, &param0, 8);
+
+            IR2_OPND just_go_on = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd3(LISA_BEQ, &param1, zero, &just_go_on);
+            latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_ra_ir2_opnd, &param1, 0);
+            latxs_append_ir2_opnd1(LISA_LABEL, &just_go_on);
+        }
     }
 
     if (!option_lsfpu && !option_soft_fpu) {
@@ -860,6 +892,58 @@ int target_latxs_static_codes(void *code_base)
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs SCS: static CS epilogue %p\n",
                 (void *)latxs_sc_scs_epilogue);
+    }
+
+    if (latxs_fastcs_enabled() &&
+        latxs_fastcs_is_jmp_glue())
+    {
+        latxs_sc_fcs_F_0 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 0);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 0: %p\n",
+                (void *)latxs_sc_fcs_F_0);
+
+        latxs_sc_fcs_F_1 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 1: %p\n",
+                (void *)latxs_sc_fcs_F_1);
+
+        latxs_sc_fcs_S_0 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 0);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS SIMD 0: %p\n",
+                (void *)latxs_sc_fcs_S_0);
+
+        latxs_sc_fcs_S_1 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS SIMD 1: %p\n",
+                (void *)latxs_sc_fcs_S_1);
+
+        latxs_sc_fcs_FS_0 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 0);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 0: %p\n",
+                (void *)latxs_sc_fcs_FS_0);
+
+        latxs_sc_fcs_FS_1 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 1: %p\n",
+                (void *)latxs_sc_fcs_FS_1);
+
+        latxs_sc_fcs_check_load_F = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_check_load,
+                code_ptr, 0x1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU: %p\n",
+                (void *)latxs_sc_fcs_check_load_F);
+
+        latxs_sc_fcs_check_load_S = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_check_load,
+                code_ptr, 0x2);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load SIMD: %p\n",
+                (void *)latxs_sc_fcs_check_load_S);
+
+        latxs_sc_fcs_check_load_FS = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_check_load,
+                code_ptr, 0x3);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU/SIMD: %p\n",
+                (void *)latxs_sc_fcs_check_load_FS);
     }
 
     /* Native Jmp Cache Lookup */

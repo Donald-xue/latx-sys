@@ -55,6 +55,30 @@ void latxs_fastcs_env_init(CPUX86State *env)
 
     assert(lsenv->cpu_state == env);
 
+    /*
+     *    00 01 10 11
+     * 00 -- -F S- SF
+     * 01 -- -- S- S-
+     * 10 -- -F -- -F
+     * 11 -- -- -- --
+     */
+    lsenv->fastcs_data.indir_table[0][0] = NULL;
+    lsenv->fastcs_data.indir_table[0][1] = (void *)latxs_sc_fcs_check_load_F;
+    lsenv->fastcs_data.indir_table[0][2] = (void *)latxs_sc_fcs_check_load_S;
+    lsenv->fastcs_data.indir_table[0][3] = (void *)latxs_sc_fcs_check_load_FS;
+    lsenv->fastcs_data.indir_table[1][0] = NULL;
+    lsenv->fastcs_data.indir_table[1][1] = NULL;
+    lsenv->fastcs_data.indir_table[1][2] = (void *)latxs_sc_fcs_check_load_S;
+    lsenv->fastcs_data.indir_table[1][3] = (void *)latxs_sc_fcs_check_load_S;
+    lsenv->fastcs_data.indir_table[2][0] = NULL;
+    lsenv->fastcs_data.indir_table[2][1] = (void *)latxs_sc_fcs_check_load_F;
+    lsenv->fastcs_data.indir_table[2][2] = NULL;
+    lsenv->fastcs_data.indir_table[2][3] = (void *)latxs_sc_fcs_check_load_F;
+    lsenv->fastcs_data.indir_table[3][0] = NULL;
+    lsenv->fastcs_data.indir_table[3][1] = NULL;
+    lsenv->fastcs_data.indir_table[3][2] = NULL;
+    lsenv->fastcs_data.indir_table[3][3] = NULL;
+
     env->fastcs_ptr = &lsenv->fastcs_data;
     lsenv->fastcs_data.env = env;
 }
@@ -317,4 +341,232 @@ void latxs_fastcs_static_save_registers(
 
     __latxs_fastcs_save_registers(gpr, fpr, 1, 1,
                                   xmm, vreg, ctx, tmp);
+}
+
+/* FastCS TB link */
+int latxs_fastcs_set_jmp_target(void *_tb,
+        int n, void *_nextb)
+{
+    TranslationBlock *tb    = _tb;
+    TranslationBlock *nextb = _nextb;
+
+    if (latxs_fastcs_is_no_link()) {
+        if (tb->fastcs_ctx != nextb->fastcs_ctx) {
+            /* do not link */
+            return 1;
+        } else {
+            /* Fall through to normal TB Link */
+            return 0;
+        }
+    }
+
+    if (latxs_fastcs_is_ld_excp()) {
+        /* Fall through to normal TB Link */
+        return 0;
+    }
+
+    lsassert(latxs_fastcs_is_jmp_glue());
+
+    uint8_t ctx1 =    (tb->fastcs_ctx) & 0x3;
+    uint8_t ctx2 = (nextb->fastcs_ctx) & 0x3;
+
+    lsassert(ctx1 ==    tb->fastcs_ctx);
+    lsassert(ctx2 == nextb->fastcs_ctx);
+    
+    /*
+     *      00  01  10  11
+     *    +----------------+ 
+     * 00 | --  -F  S-  SF |
+     * 01 | --  --  S-  S- |
+     * 10 | --  -F  --  -F |
+     * 11 | --  --  --  -- |
+     *    +----------------+ 
+     */
+
+    static uint8_t fastcs_tb_link[4][4] = {
+        {0, 1, 2, 3},
+        {0, 0, 2, 2},
+        {0, 1, 0, 1},
+        {0, 0, 0, 0}
+    };
+
+    uint8_t link_mode = fastcs_tb_link[ctx1][ctx2];
+
+    if (link_mode == 0) {
+        /* Fall through to normal TB Link */
+        return 0;
+    }
+
+    lsassert(tb->fastcs_jmp_glue_checker);
+    tb->next_tb[n] = nextb;
+
+    ADDR fastcs_jmp_glue = 0;
+    switch ((link_mode << 4) | n) {
+    case 0x10:
+        fastcs_jmp_glue = latxs_sc_fcs_F_0;
+        break;
+    case 0x11:
+        fastcs_jmp_glue = latxs_sc_fcs_F_1;
+        break;
+    case 0x20:
+        fastcs_jmp_glue = latxs_sc_fcs_S_0;
+        break;
+    case 0x21:
+        fastcs_jmp_glue = latxs_sc_fcs_S_1;
+        break;
+    case 0x30:
+        fastcs_jmp_glue = latxs_sc_fcs_FS_0;
+        break;
+    case 0x31:
+        fastcs_jmp_glue = latxs_sc_fcs_FS_1;
+        break;
+    default:
+        break;
+    }
+
+    lsassertm(fastcs_jmp_glue, "link mode %d n %d JG %p\n",
+            link_mode, n, (void *)fastcs_jmp_glue);
+
+    tb_set_jmp_target(tb, n, (uintptr_t)fastcs_jmp_glue);
+
+    return 2;
+}
+
+int gen_latxs_sc_fcs_jmp_glue(void *code_ptr, int ctx, int n)
+{
+    lsassert(latxs_fastcs_is_jmp_glue());
+
+    lsassertm(option_lsfpu,
+            "TODO: FastCS does not support non-LSFPU yet.\n");
+    lsassertm(!option_soft_fpu,
+            "TODO: FastCS does not support SoftFPU yet.\n");
+
+    lsassert(ctx == (ctx & 0x3));
+
+    latxs_tr_init(NULL);
+
+    /* TB must be set before fastcs jmp glue */
+    IR2_OPND tb = latxs_ra_alloc_dbt_arg1();
+
+    IR2_OPND *env   = &latxs_env_ir2_opnd;
+    IR2_OPND *zero  = &latxs_zero_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
+
+    /* stmp1 = ENV.fastcs_ctx */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    if (ctx & 0x1) {
+        /* check and Load FPU */
+        IR2_OPND no_fpu = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, stmp2, stmp1, 0x1);
+        latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &no_fpu);
+
+        /* load FPU using LSFPU */
+        latxs_tr_load_fprs_from_env(0xff, 0);
+        latxs_tr_load_lstop_from_env(stmp2);
+        latxs_tr_fpu_enable_top_mode();
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &no_fpu);
+    }
+
+    if (ctx & 0x2) {
+        /* check and Load SIMD */
+        IR2_OPND no_simd = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, stmp2, stmp1, 0x2);
+        latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &no_simd);
+
+        /* load simd */
+        latxs_tr_load_xmms_from_env(0xffffffff);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &no_simd);
+    }
+
+    /* update context */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+    latxs_append_ir2_opnd2i(LISA_ORI, stmp1, stmp1, ctx);
+    latxs_append_ir2_opnd2i(LISA_ST_B, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    /* jmp to execute next TB */
+    latxs_append_ir2_opnd2i(LISA_LD_D, stmp1, &tb,
+            offsetof(TranslationBlock, next_tb) +
+            n * sizeof(void *));
+    latxs_append_ir2_opnd2i(LISA_LD_D, stmp2, stmp1,
+            offsetof(TranslationBlock, tc) +
+            offsetof(struct tb_tc, ptr));
+    latxs_append_ir2_opnd2i(LISA_JIRL, zero, stmp2, 0);
+
+    int code_nr  = latxs_tr_ir2_assemble(code_ptr);
+    latxs_tr_fini();
+    return code_nr;
+}
+
+int gen_latxs_sc_fcs_check_load(void *code_ptr, int ctx)
+{
+    lsassert(latxs_fastcs_is_jmp_glue());
+
+    lsassertm(option_lsfpu,
+            "TODO: FastCS does not support non-LSFPU yet.\n");
+    lsassertm(!option_soft_fpu,
+            "TODO: FastCS does not support SoftFPU yet.\n");
+
+    lsassert(ctx == (ctx & 0x3));
+
+    latxs_tr_init(NULL);
+
+    IR2_OPND *env   = &latxs_env_ir2_opnd;
+    IR2_OPND *zero  = &latxs_zero_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
+
+    /* stmp1 = ENV.fastcs_ctx */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    if (ctx & 0x1) {
+        /* check and Load FPU */
+        IR2_OPND no_fpu = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, stmp2, stmp1, 0x1);
+        latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &no_fpu);
+
+        /* load FPU using LSFPU */
+        latxs_tr_load_fprs_from_env(0xff, 0);
+        latxs_tr_load_lstop_from_env(stmp2);
+        latxs_tr_fpu_enable_top_mode();
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &no_fpu);
+    }
+
+    if (ctx & 0x2) {
+        /* check and Load SIMD */
+        IR2_OPND no_simd = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, stmp2, stmp1, 0x2);
+        latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &no_simd);
+
+        /* load simd */
+        latxs_tr_load_xmms_from_env(0xffffffff);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &no_simd);
+    }
+
+    /* update context */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+    latxs_append_ir2_opnd2i(LISA_ORI, stmp1, stmp1, ctx);
+    latxs_append_ir2_opnd2i(LISA_ST_B, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    /* return */
+    latxs_append_ir2_opnd0_(lisa_return);
+
+    int code_nr  = latxs_tr_ir2_assemble(code_ptr);
+    latxs_tr_fini();
+    return code_nr;
 }
