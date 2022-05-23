@@ -45,6 +45,11 @@ int latxs_fastcs_is_ld_excp(void)
     return option_fastcs == FASTCS_LD_EXCP;
 }
 
+int latxs_fastcs_is_ld_branch(void)
+{
+    return option_fastcs == FASTCS_LD_BRANCH;
+}
+
 void latxs_fastcs_env_init(CPUX86State *env)
 {
     env->fastcs_ctx = FASTCS_CTX_NON;
@@ -354,7 +359,8 @@ int latxs_fastcs_set_jmp_target(void *_tb,
         }
     }
 
-    if (latxs_fastcs_is_ld_excp()) {
+    if (latxs_fastcs_is_ld_excp() ||
+        latxs_fastcs_is_ld_branch()) {
         /* Fall through to normal TB Link */
         return 0;
     }
@@ -502,7 +508,8 @@ int gen_latxs_sc_fcs_jmp_glue(void *code_ptr, int ctx, int n)
 
 int gen_latxs_sc_fcs_check_load(void *code_ptr, int ctx)
 {
-    lsassert(latxs_fastcs_is_jmp_glue());
+    lsassert(latxs_fastcs_is_jmp_glue() ||
+             latxs_fastcs_is_ld_branch());
 
     lsassertm(option_lsfpu,
             "TODO: FastCS does not support non-LSFPU yet.\n");
@@ -563,4 +570,33 @@ int gen_latxs_sc_fcs_check_load(void *code_ptr, int ctx)
     int code_nr  = latxs_tr_ir2_assemble(code_ptr);
     latxs_tr_fini();
     return code_nr;
+}
+
+void latxs_fastcs_tb_start(TranslationBlock *tb)
+{
+    if (!latxs_fastcs_is_ld_branch()) {
+        return;
+    }
+
+    ADDR code_buf = (ADDR)tb->tc.ptr;
+    int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+    int64_t ins_offset = 0;
+
+    switch (tb->fastcs_ctx) {
+    case 0x1:
+        ins_offset = (latxs_sc_fcs_check_load_F -
+                code_buf - offset) >> 2;
+        break;
+    case 0x2:
+        ins_offset = (latxs_sc_fcs_check_load_S -
+                code_buf - offset) >> 2;
+        break;
+    case 0x3:
+        ins_offset = (latxs_sc_fcs_check_load_FS -
+                code_buf - offset) >> 2;
+    default:
+        return;
+    }
+
+    latxs_append_ir2_jmp_far(ins_offset, 1);
 }

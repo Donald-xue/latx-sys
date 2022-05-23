@@ -2300,10 +2300,13 @@ void latxs_fastcs_static_load_registers(uint32_t gpr, uint8_t frp,
 void latxs_fastcs_static_save_registers(uint32_t gpr, uint8_t frp,
                                         uint32_t xmm, uint8_t vreg);
 
+void latxs_fastcs_tb_start(TranslationBlock *tb);
+
 #define FASTCS_TBCTX    1
 #define FASTCS_JMP_GLUE 2
 #define FASTCS_LD_EXCP  3
 #define FASTCS_NO_LINK  4
+#define FASTCS_LD_BRANCH    5
 
 #define FASTCS_ENABLED  2
 

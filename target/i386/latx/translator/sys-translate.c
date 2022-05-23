@@ -482,6 +482,7 @@ void latxs_tr_gen_tb_start(void)
     }
 
     TRANSLATION_DATA *td = lsenv->tr_data;
+    TranslationBlock *tb = td->curr_tb;
     IR2_OPND count = latxs_ra_alloc_itemp();
 
     latxs_append_ir2_opnd2i(LISA_LD_W, &count,
@@ -496,6 +497,9 @@ void latxs_tr_gen_tb_start(void)
 
     /* native printer for TB's execution */
     latxs_np_tr_tb_start();
+
+    /* fastcs tb start : ld branch */
+    latxs_fastcs_tb_start(tb);
 
     latxs_ra_free_temp(&count);
 }
