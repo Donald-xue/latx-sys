@@ -1,7 +1,7 @@
 #ifndef _LATXS_FASTCS_CONFIG_H_
 #define _LATXS_FASTCS_CONFIG_H_
 
-#define FASTCS_FPU_AND_SIMD
+//#define FASTCS_FPU_AND_SIMD
 /*
  * This define affects the value of fastcs_ctx
  *
