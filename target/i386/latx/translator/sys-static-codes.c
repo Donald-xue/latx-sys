@@ -670,12 +670,17 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
 
         /* load context if mode in jmp glue */
         if (latxs_fastcs_is_jmp_glue()) {
+#if 1
             latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
                     offsetof(TranslationBlock, fastcs_ctx));
             latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, env,
                     offsetof(CPUX86State, fastcs_ctx));
             latxs_append_ir2_opnd2i(LISA_SLLI_D, &param1, &param1, 2);
             latxs_append_ir2_opnd3(LISA_ADD_D,  &param1, &param1, &param0);
+#else
+            latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, ret0,
+                    offsetof(TranslationBlock, fastcs_ctx));
+#endif
             latxs_append_ir2_opnd2i(LISA_SLLI_D, &param1, &param1, 3);
 
             latxs_append_ir2_opnd2i(LISA_LD_D, &param0, env,
