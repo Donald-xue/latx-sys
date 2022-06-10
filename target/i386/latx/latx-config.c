@@ -318,6 +318,20 @@ void latx_set_tls_ibtc_table(CPUArchState *env)
 
 #ifdef CONFIG_SOFTMMU
 
+void latxs_lsenv_switch(CPUArchState *env)
+{
+    lsenv->cpu_state = env;
+
+    env->latxs_fpu = LATXS_FPU_RESET_VALUE;
+    lsassert(lsenv->sigint_data.tb_unlinked == NULL);
+
+    latxs_fastcs_env_init(env);
+    latxs_np_env_init(env);
+
+    lsassert(lsenv->after_exec_tb_fixed == 1);
+    lsassert(lsenv->tr_data->slow_path_rcd != NULL);
+}
+
 static unsigned long long latxs_bpc_tb_cnt;
 
 static void latxs_break_point(CPUX86State *env, TranslationBlock *tb)

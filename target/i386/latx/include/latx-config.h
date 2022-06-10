@@ -32,6 +32,8 @@ void latx_set_tls_ibtc_table(CPUArchState *env);
 ETB *etb_find(ADDRX pc);
 
 #ifdef CONFIG_SOFTMMU
+void latxs_lsenv_switch(CPUArchState *env);
+
 /* For Functions defined in latx and used outside */
 int target_latxs_static_codes(void *code_ptr);
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,

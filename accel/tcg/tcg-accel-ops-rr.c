@@ -236,7 +236,7 @@ static void *rr_cpu_thread_fn(void *arg)
 
         while (cpu && cpu_work_list_empty(cpu) && !cpu->exit_request) {
 #ifdef CONFIG_LATX
-            latx_lsenv_init(cpu->env_ptr);
+            latxs_lsenv_switch(cpu->env_ptr);
 #endif
             qatomic_mb_set(&rr_current_cpu, cpu);
             current_cpu = cpu;
