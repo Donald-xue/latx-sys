@@ -32,6 +32,7 @@ int option_native_printer;
 int option_tb_max_insns;
 int option_traceir1;
 int option_traceir1_data;
+int option_trace_code_cache;
 
 /* For generate TB execution trace */
 int option_trace_simple;
@@ -305,6 +306,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "start to print trace after TB.PC",
         }, {
+            .name = "tracecc",
+            .type = QEMU_OPT_NUMBER,
+            .help = "trace code cache block",
+        }, {
             .name = "traceir1",
             .type = QEMU_OPT_NUMBER,
             .help = "trace ir1 by type or id",
@@ -403,6 +408,18 @@ void set_options(int index, int v)
 static void parse_options_native_printer(unsigned long long t)
 {
     option_native_printer = t;
+}
+
+static void parse_options_trace_code_cache(unsigned long long t)
+{
+    /*
+     * [0] : trace TB translation
+     * [1] : trace TB execution at the first time
+     * [2] : trace TB invalidate
+     * [3] : trace TB flush
+     * [4] : print all TBs that are flushed
+     */
+    option_trace_code_cache = t;
 }
 
 static void parse_options_traceir1(unsigned long long t)
@@ -520,6 +537,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "np");
     if (opt) {
         parse_options_native_printer(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "tracecc");
+    if (opt) {
+        parse_options_trace_code_cache(opt->value.uint);
     }
 
     opt = qemu_opt_find(opts, "traceir1");

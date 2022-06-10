@@ -14,6 +14,7 @@
 #include "trace.h"
 #include "translate.h"
 #include "latx-config.h"
+#include "latxs-code-cache.h"
 
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
@@ -370,6 +371,8 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
         tb->_top_in = env->fpstt & 0x7;
     }
 
+    latxs_tracecc_target_to_host(env, tb);
+
     return latxs_tr_translate_tb(tb, search_size);
 }
 
@@ -440,6 +443,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
         env->latxs_int_tb = tb;
     }
 
+    latxs_tracecc_before_exec_tb(env, tb);
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
     latxs_np_tb_print(env);

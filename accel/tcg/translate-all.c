@@ -66,6 +66,7 @@
 #include "sigint-i386-tcg-la.h"
 #if defined(CONFIG_LATX)
 #include "latx-test-sys.h"
+#include "latxs-code-cache.h"
 #endif
 #endif
 
@@ -1868,6 +1869,10 @@ static void do_tb_flush(CPUState *cpu, run_on_cpu_data tb_flush_count)
     }
     did_flush = true;
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_tracecc_do_tb_flush();
+#endif
+
     if (DEBUG_TB_FLUSH_GATE) {
         size_t nb_tbs = tcg_nb_tbs();
         size_t host_size = 0;
@@ -2079,6 +2084,10 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
     qemu_spin_lock(&tb->jmp_lock);
     qatomic_set(&tb->cflags, tb->cflags | CF_INVALID);
     qemu_spin_unlock(&tb->jmp_lock);
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_tracecc_tb_inv(tb);
+#endif
 
     /* remove the TB from the hash list */
     phys_pc = tb->page_addr[0] + (tb->pc & ~TARGET_PAGE_MASK);
@@ -2407,6 +2416,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->sigint_link_flag[1] = -1;
     tb->sigint_link_flag[2] = -1;
     tb->sigint_link_flag[3] = -1;
+    tb->trace_cc = 0;
 #endif
 #endif
 

@@ -555,6 +555,8 @@ struct TranslationBlock {
     uint8_t fastcs_ctx;
     uint8_t fastcs_jmp_glue_checker;
     int sigint_link_flag[4];
+    /* code cache */
+    int trace_cc;
 #endif
 #endif
 };
