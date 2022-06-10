@@ -186,6 +186,7 @@ static void *rr_cpu_thread_fn(void *arg)
     qemu_guest_random_seed_thread_part2(cpu->random_seed);
 
 #if defined(CONFIG_SOFTMMU)
+    latx_lsenv_init(cpu->env_ptr);
 #if defined(CONFIG_LATX)
     latxs_init_rr_thread_signal(cpu);
 #endif
