@@ -302,9 +302,9 @@ void latx_lsenv_init(CPUArchState *env)
 
     lsenv->after_exec_tb_fixed = 1;
 
-    lsenv->tr_data->slow_path_rcd_max = 4;
-    lsenv->tr_data->slow_path_rcd_nr  = 0;
     if (!lsenv->tr_data->slow_path_rcd) {
+        lsenv->tr_data->slow_path_rcd_max = 4;
+        lsenv->tr_data->slow_path_rcd_nr  = 0;
         lsenv->tr_data->slow_path_rcd =
             mm_calloc(4, sizeof(softmmu_sp_rcd_t));
     }
