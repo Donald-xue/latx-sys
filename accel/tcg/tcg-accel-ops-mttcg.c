@@ -35,6 +35,12 @@
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-mttcg.h"
 
+#if defined(CONFIG_SOFTMMU)
+#if defined(CONFIG_LATX)
+#include "latx-config.h"
+#endif
+#endif
+
 /*
  * In the multi-threaded case each vCPU has its own thread. The TLS
  * variable current_cpu can be used deep in the code to find the

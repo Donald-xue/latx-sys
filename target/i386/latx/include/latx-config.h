@@ -34,6 +34,8 @@ ETB *etb_find(ADDRX pc);
 #ifdef CONFIG_SOFTMMU
 void latxs_lsenv_switch(CPUArchState *env);
 
+void latxs_sigint_cpu_id(CPUState *cpu);
+
 /* For Functions defined in latx and used outside */
 int target_latxs_static_codes(void *code_ptr);
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
