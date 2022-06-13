@@ -367,9 +367,6 @@ bool latxs_translate_jmp_far(IR1_INST *pir1)
 
 bool latxs_translate_call(IR1_INST *pir1)
 {
-    if (latxs_ir1_has_prefix_addrsize(pir1)) {
-        ir1_dump(pir1);
-    }
 #ifdef TARGET_X86_64
     if (lsenv->tr_data->sys.code64) {
         lsassert(!latxs_ir1_has_prefix_opsize(pir1));
