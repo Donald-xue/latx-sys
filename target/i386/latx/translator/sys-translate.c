@@ -700,10 +700,10 @@ void latxs_tr_load_fprs_from_env(uint8_t mask, int load_top)
 
     if (load_top && option_lsfpu) {
         lsassert(!option_soft_fpu);
+        latxs_tr_fpu_enable_top_mode();
         IR2_OPND top = latxs_ra_alloc_itemp();
         latxs_tr_load_lstop_from_env(&top);
         latxs_ra_free_temp(&top);
-        latxs_tr_fpu_enable_top_mode();
     }
 }
 

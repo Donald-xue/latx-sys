@@ -223,8 +223,8 @@ static void __latxs_fastcs_load_registers(
         lsassert(load_top == 1);
         latxs_tr_load_fprs_from_env(fpr_to_load, 0);
         if (option_lsfpu && !option_soft_fpu) {
-            latxs_tr_load_lstop_from_env(tmp);
             latxs_tr_fpu_enable_top_mode();
+            latxs_tr_load_lstop_from_env(tmp);
         }
     } else {
         latxs_tr_load_fprs_from_env(fpr_to_load, load_top);

@@ -247,8 +247,8 @@ void latxs_tr_gen_static_load_registers_from_env(
     latxs_tr_load_xmms_from_env(xmm_to_load);
     latxs_tr_load_fprs_from_env(fpr_to_load, 0);
     if (option_lsfpu && !option_soft_fpu) {
-        latxs_tr_load_lstop_from_env(&latxs_stmp1_ir2_opnd);
         latxs_tr_fpu_enable_top_mode();
+        latxs_tr_load_lstop_from_env(&latxs_stmp1_ir2_opnd);
     }
     latxs_tr_load_gprs_from_env(gpr_to_load);
 }
