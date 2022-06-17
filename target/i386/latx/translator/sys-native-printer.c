@@ -433,12 +433,15 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
     if (latxs_fastcs_enable_tbctx()) {
         int tb_ctx = r3 & 0x3;
 
+        int w_res = 0;
         switch (tb_ctx) {
-        case 0: write(2, "N", 1); break;
-        case 1: write(2, "F", 1); break;
-        case 2: write(2, "S", 1); break;
-        case 3: write(2, "A", 1); break;
+        case 0: w_res = write(2, "N", 1); break;
+        case 1: w_res = write(2, "F", 1); break;
+        case 2: w_res = write(2, "S", 1); break;
+        case 3: w_res = write(2, "A", 1); break;
+        default: w_res = - 1; break;
         }
+        lsassert(w_res > 0);
 
 #if 0
         uint8_t tb_chain_info = 0;
