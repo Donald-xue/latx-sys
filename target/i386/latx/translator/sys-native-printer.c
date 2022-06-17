@@ -433,6 +433,14 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
     if (latxs_fastcs_enable_tbctx()) {
         int tb_ctx = r3 & 0x3;
 
+        switch (tb_ctx) {
+        case 0: write(2, "N", 1); break;
+        case 1: write(2, "F", 1); break;
+        case 2: write(2, "S", 1); break;
+        case 3: write(2, "A", 1); break;
+        }
+
+#if 0
         uint8_t tb_chain_info = 0;
         tb_chain_info |= tb_ctx & 0x3;
 
@@ -442,6 +450,7 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
         if (idx > npd->np_tb_chain_max) {
             lsassertm(0, "[NPD] not enough space for tb chain info");
         }
+#endif
     }
 }
 
@@ -452,13 +461,14 @@ void latxs_np_tb_print(CPUX86State *env)
         int tb_cpl = (npd->np_tb_flag >> 1) & 0x3;
 
         if ((npd->np_tb_flag & 1) == 1) {
-            fprintf(stderr, "TB %ld CPL %d I",
+            fprintf(stderr, " TB %ld CPL %d I",
                     npd->np_tb_counter, tb_cpl);
         } else {
-            fprintf(stderr, "TB %ld CPL %d",
+            fprintf(stderr, " TB %ld CPL %d",
                     npd->np_tb_counter, tb_cpl);
         }
 
+#if 0
         int i = 0;
         if (npd->np_tb_chain_nr > 0) {
             fprintf(stderr, " %d", (int)npd->np_tb_chain_info[0]);
@@ -466,6 +476,7 @@ void latxs_np_tb_print(CPUX86State *env)
         for (i = 1; i < npd->np_tb_chain_nr; ++i) {
             fprintf(stderr, "%d", (int)npd->np_tb_chain_info[i]);
         }
+#endif
 
         fprintf(stderr, "\n");
 
