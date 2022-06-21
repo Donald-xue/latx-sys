@@ -35,6 +35,8 @@
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
 
+#include "tcg-bg-thread.h"
+
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
 #include "latx-options.h"
@@ -307,6 +309,10 @@ void rr_start_vcpu_thread(CPUState *cpu)
 
     g_assert(tcg_enabled());
     tcg_cpu_init_cflags(cpu, false);
+
+    if (qemu_tcg_bg_enabled()) {
+        tcg_bg_init_rr(cpu);
+    }
 
     if (!single_tcg_cpu_thread) {
         cpu->thread = g_malloc0(sizeof(QemuThread));

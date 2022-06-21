@@ -6254,7 +6254,11 @@ static void x86_cpu_reset(DeviceState *dev)
     }
 #endif
 #ifdef CONFIG_LATX
-    env->tb_jmp_cache_ptr = s->tb_jmp_cache;
+    if (qemu_tcg_bg_enabled()) {
+        env->tb_jmp_cache_ptr = s->tcg_bg_jc;
+    } else {
+        env->tb_jmp_cache_ptr = s->tb_jmp_cache;
+    }
 #ifdef CONFIG_SOFTMMU
     env->sigint_flag = 1;
     if (latx_test_sys_enabled()) {

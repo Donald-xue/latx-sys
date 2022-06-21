@@ -39,6 +39,8 @@ struct TCGState {
     bool mttcg_enabled;
     int splitwx_enabled;
     unsigned long tb_size;
+
+    bool tcg_bg_enabled;
 };
 typedef struct TCGState TCGState;
 
@@ -104,6 +106,7 @@ static void tcg_accel_instance_init(Object *obj)
 }
 
 bool mttcg_enabled;
+bool tcg_bg_enabled;
 
 static int tcg_init(MachineState *ms)
 {
@@ -111,6 +114,7 @@ static int tcg_init(MachineState *ms)
 
     tcg_exec_init(s->tb_size * 1024 * 1024, s->splitwx_enabled);
     mttcg_enabled = s->mttcg_enabled;
+    tcg_bg_enabled = s->tcg_bg_enabled;
 
     /*
      * Initialize TCG regions only for softmmu.
@@ -136,7 +140,7 @@ static void tcg_set_thread(Object *obj, const char *value, Error **errp)
 {
     TCGState *s = TCG_STATE(obj);
 
-    if (strcmp(value, "multi") == 0) {
+    if (strcmp(value, "multi") == 0 || strcmp(value, "multi-bg") == 0) {
         if (TCG_OVERSIZED_GUEST) {
             error_setg(errp, "No MTTCG when guest word size > hosts");
         } else if (icount_enabled()) {
@@ -153,8 +157,15 @@ static void tcg_set_thread(Object *obj, const char *value, Error **errp)
             }
             s->mttcg_enabled = true;
         }
+        if (strcmp(value, "multi-bg") == 0) {
+            s->tcg_bg_enabled = true;
+            error_setg(errp, "TCG thread=multi-bg not supported yet.");
+        }
     } else if (strcmp(value, "single") == 0) {
         s->mttcg_enabled = false;
+    } else if (strcmp(value, "single-bg") == 0) {
+        s->mttcg_enabled = false;
+        s->tcg_bg_enabled = true;
     } else {
         error_setg(errp, "Invalid 'thread' setting %s", value);
     }

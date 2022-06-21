@@ -483,7 +483,11 @@ TranslationBlock* latx_tb_find(void *cpu_state, ADDRX x86_pc)
     cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
     pc = cs_base + (target_ulong)x86_pc;
     hash = tb_jmp_cache_hash_func(pc);
-    tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
+    if (qemu_tcg_bg_enabled()) {
+        tb = qatomic_rcu_read(&cpu->tcg_bg_jc[hash]);
+    } else {
+        tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
+    }
 
     if (likely(tb &&
                tb->pc == pc &&
@@ -497,7 +501,11 @@ TranslationBlock* latx_tb_find(void *cpu_state, ADDRX x86_pc)
     if (tb == NULL) {
         return NULL;
     }
-    qatomic_set(&cpu->tb_jmp_cache[hash], tb);
+    if (qemu_tcg_bg_enabled()) {
+        qatomic_set(&cpu->tcg_bg_jc[hash], tb);
+    } else {
+        qatomic_set(&cpu->tb_jmp_cache[hash], tb);
+    }
     return tb;
 }
 #endif
@@ -536,7 +544,11 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
 #endif
         mmap_unlock();
         /* We add the TB in the virtual pc hash table for the fast lookup */
-        qatomic_set(&cpu->tb_jmp_cache[tb_jmp_cache_hash_func(pc)], tb);
+        if (qemu_tcg_bg_enabled()) {
+            qatomic_set(&cpu->tcg_bg_jc[tb_jmp_cache_hash_func(pc)], tb);
+        } else {
+            qatomic_set(&cpu->tb_jmp_cache[tb_jmp_cache_hash_func(pc)], tb);
+        }
     }
 #ifndef CONFIG_USER_ONLY
     /* We don't take care of direct jumps when address mapping changes in

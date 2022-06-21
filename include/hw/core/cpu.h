@@ -380,6 +380,9 @@ struct CPUState {
 
     /* Accessed in parallel; all accesses must be atomic */
     TranslationBlock *tb_jmp_cache[TB_JMP_CACHE_SIZE];
+    TranslationBlock **tcg_bg_jc;
+    int tcg_bg_jc_id;
+    void (*tcg_bg_jc_clear)(void *cpu);
 
     struct GDBRegisterState *gdb_regs;
     int gdb_num_regs;
@@ -453,12 +456,27 @@ extern CPUTailQ cpus;
 
 extern __thread CPUState *current_cpu;
 
+/**
+ * qemu_tcg_mttcg_enabled:
+ * Check whether we are running MultiThread TCG or not.
+ *
+ * Returns: %true if we are in MTTCG mode %false otherwise.
+ */
+extern bool tcg_bg_enabled;
+#define qemu_tcg_bg_enabled() (tcg_bg_enabled)
+
 static inline void cpu_tb_jmp_cache_clear(CPUState *cpu)
 {
-    unsigned int i;
+    if (qemu_tcg_bg_enabled()) {
+        if (cpu->tcg_bg_jc_clear) {
+            cpu->tcg_bg_jc_clear(cpu);
+        }
+    } else {
+        unsigned int i;
 
-    for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
-        qatomic_set(&cpu->tb_jmp_cache[i], NULL);
+        for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
+            qatomic_set(&cpu->tb_jmp_cache[i], NULL);
+        }
     }
 }
 

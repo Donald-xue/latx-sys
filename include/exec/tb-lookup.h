@@ -28,7 +28,11 @@ static inline TranslationBlock *tb_lookup(CPUState *cpu, target_ulong pc,
     tcg_debug_assert(!(cflags & CF_INVALID));
 
     hash = tb_jmp_cache_hash_func(pc);
-    tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
+    if (qemu_tcg_bg_enabled()) {
+        tb = qatomic_rcu_read(&cpu->tcg_bg_jc[hash]);
+    } else {
+        tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
+    }
 
     if (likely(tb &&
                tb->pc == pc &&
@@ -42,7 +46,11 @@ static inline TranslationBlock *tb_lookup(CPUState *cpu, target_ulong pc,
     if (tb == NULL) {
         return NULL;
     }
-    qatomic_set(&cpu->tb_jmp_cache[hash], tb);
+    if (qemu_tcg_bg_enabled()) {
+        qatomic_set(&cpu->tcg_bg_jc[hash], tb);
+    } else {
+        qatomic_set(&cpu->tb_jmp_cache[hash], tb);
+    }
     return tb;
 }
 
