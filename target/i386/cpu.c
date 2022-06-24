@@ -6264,6 +6264,7 @@ static void x86_cpu_reset(DeviceState *dev)
     if (latx_test_sys_enabled()) {
         latx_test_sys_reset_cpu(s);
     }
+    latx_lsenv_init(env);
 #endif
 #endif
 }
