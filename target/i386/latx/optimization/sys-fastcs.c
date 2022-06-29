@@ -47,7 +47,13 @@ int latxs_fastcs_is_ld_excp(void)
 
 int latxs_fastcs_is_ld_branch(void)
 {
-    return option_fastcs == FASTCS_LD_BRANCH;
+    return option_fastcs == FASTCS_LD_BRANCH ||
+           option_fastcs == FASTCS_LD_BRANCH_INLINE;
+}
+
+int latxs_fastcs_is_ld_branch_inline(void)
+{
+    return option_fastcs == FASTCS_LD_BRANCH_INLINE;
 }
 
 void latxs_fastcs_env_init(CPUX86State *env)
@@ -572,6 +578,41 @@ int gen_latxs_sc_fcs_check_load(void *code_ptr, int ctx)
     return code_nr;
 }
 
+int gen_latxs_sc_fcs_load(void *code_ptr, int ctx)
+{
+    lsassert(latxs_fastcs_is_jmp_glue() ||
+             latxs_fastcs_is_ld_branch());
+
+    lsassertm(option_lsfpu,
+            "TODO: FastCS does not support non-LSFPU yet.\n");
+    lsassertm(!option_soft_fpu,
+            "TODO: FastCS does not support SoftFPU yet.\n");
+
+    lsassert(ctx == (ctx & 0x3));
+
+    latxs_tr_init(NULL);
+
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+
+    if (ctx & 0x1) {
+        /* load FPU using LSFPU */
+        latxs_tr_load_fprs_from_env(0xff, 0);
+        latxs_tr_fpu_enable_top_mode();
+        latxs_tr_load_lstop_from_env(stmp1);
+    }
+
+    if (ctx & 0x2) {
+        latxs_tr_load_xmms_from_env(0xffffffff);
+    }
+
+    /* return */
+    latxs_append_ir2_opnd0_(lisa_return);
+
+    int code_nr  = latxs_tr_ir2_assemble(code_ptr);
+    latxs_tr_fini();
+    return code_nr;
+}
+
 void latxs_fastcs_tb_start(TranslationBlock *tb)
 {
     if (!latxs_fastcs_is_ld_branch()) {
@@ -582,21 +623,101 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
     int offset = lsenv->tr_data->real_ir2_inst_num << 2;
     int64_t ins_offset = 0;
 
-    switch (tb->fastcs_ctx) {
-    case 0x1:
-        ins_offset = (latxs_sc_fcs_check_load_F -
-                code_buf - offset) >> 2;
-        break;
-    case 0x2:
-        ins_offset = (latxs_sc_fcs_check_load_S -
-                code_buf - offset) >> 2;
-        break;
-    case 0x3:
-        ins_offset = (latxs_sc_fcs_check_load_FS -
-                code_buf - offset) >> 2;
-    default:
+    if (tb->fastcs_ctx == FASTCS_CTX_NON) {
         return;
     }
 
-    latxs_append_ir2_jmp_far(ins_offset, 1);
+    if (latxs_fastcs_is_ld_branch_inline()) {
+        IR2_OPND *env   = &latxs_env_ir2_opnd;
+        IR2_OPND *zero  = &latxs_zero_ir2_opnd;
+        IR2_OPND tmp1 = latxs_ra_alloc_itemp();
+        IR2_OPND tmp2 = latxs_ra_alloc_itemp();
+
+        IR2_OPND label = latxs_ir2_opnd_new_label();
+        IR2_OPND label1, label2;
+
+        /* tmp1 = ENV.fastcs_ctx */
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp1, env,
+                offsetof(CPUX86State, fastcs_ctx));
+
+        switch (tb->fastcs_ctx) {
+        case 0x1:
+            /* check FPU : branch if 1 */
+            latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x1);
+            latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label);
+            /* load FPU */
+            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            ins_offset = (latxs_sc_fcs_load_F - code_buf - offset) >> 2;
+            latxs_append_ir2_jmp_far(ins_offset, 1);
+            /* update context */
+            latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, &tmp1, 0x1);
+            latxs_append_ir2_opnd2i(LISA_ST_B, &tmp1, env,
+                    offsetof(CPUX86State, fastcs_ctx));
+            break;
+        case 0x2:
+            /* check SIMD : branch if 2 */
+            latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x2);
+            latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label);
+            /* load SIMD */
+            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            ins_offset = (latxs_sc_fcs_load_S - code_buf - offset) >> 2;
+            latxs_append_ir2_jmp_far(ins_offset, 1);
+            /* update context */
+            latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, &tmp1, 0x2);
+            latxs_append_ir2_opnd2i(LISA_ST_B, &tmp1, env,
+                    offsetof(CPUX86State, fastcs_ctx));
+            break;
+        case 0x3:
+            /* check FPU/SIMD : branch if 3  */
+            latxs_append_ir2_opnd2i(LISA_ORI, &tmp2, zero, 0x3);
+            latxs_append_ir2_opnd3(LISA_BEQ, &tmp1, &tmp2, &label);
+            /* check FPU : branch if not 1 */
+            label1 = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x1);
+            latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label1);
+            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            ins_offset = (latxs_sc_fcs_load_F - code_buf - offset) >> 2;
+            latxs_append_ir2_jmp_far(ins_offset, 1);
+            latxs_append_ir2_opnd1(LISA_LABEL, &label1);
+            /* check SIMD : branch if not 1 */
+            label2 = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x2);
+            latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label2);
+            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            ins_offset = (latxs_sc_fcs_load_S - code_buf - offset) >> 2;
+            latxs_append_ir2_opnd1(LISA_LABEL, &label2);
+            latxs_append_ir2_jmp_far(ins_offset, 1);
+            /* update context */
+            latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, zero, 0x3);
+            latxs_append_ir2_opnd2i(LISA_ST_B, &tmp1, env,
+                    offsetof(CPUX86State, fastcs_ctx));
+            break;
+        default:
+            return;
+        }
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &label);
+
+        latxs_ra_free_temp(&tmp1);
+        latxs_ra_free_temp(&tmp2);
+    } else {
+        switch (tb->fastcs_ctx) {
+        case 0x1:
+            ins_offset = (latxs_sc_fcs_check_load_F -
+                    code_buf - offset) >> 2;
+            break;
+        case 0x2:
+            ins_offset = (latxs_sc_fcs_check_load_S -
+                    code_buf - offset) >> 2;
+            break;
+        case 0x3:
+            ins_offset = (latxs_sc_fcs_check_load_FS -
+                    code_buf - offset) >> 2;
+            break;
+        default:
+            return;
+        }
+
+        latxs_append_ir2_jmp_far(ins_offset, 1);
+    }
 }

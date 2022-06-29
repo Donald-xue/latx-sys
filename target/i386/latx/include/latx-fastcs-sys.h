@@ -8,5 +8,6 @@ int latxs_fastcs_is_no_link(void);
 int latxs_fastcs_is_jmp_glue(void);
 int latxs_fastcs_is_ld_excp(void);
 int latxs_fastcs_is_ld_branch(void);
+int latxs_fastcs_is_ld_branch_inline(void);
 
 #endif

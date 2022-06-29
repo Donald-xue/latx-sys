@@ -35,6 +35,9 @@ ADDR latxs_sc_fcs_FS_1;
 ADDR latxs_sc_fcs_check_load_F;
 ADDR latxs_sc_fcs_check_load_S;
 ADDR latxs_sc_fcs_check_load_FS;
+ADDR latxs_sc_fcs_load_F;
+ADDR latxs_sc_fcs_load_S;
+ADDR latxs_sc_fcs_load_FS;
 
 /*
  * For other static codes, we use the same entry with LATX-user.
@@ -953,6 +956,24 @@ int target_latxs_static_codes(void *code_base)
                 code_ptr, 0x3);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU/SIMD: %p\n",
                 (void *)latxs_sc_fcs_check_load_FS);
+
+        latxs_sc_fcs_load_F = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_load,
+                code_ptr, 0x1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load FPU: %p\n",
+                (void *)latxs_sc_fcs_load_F);
+
+        latxs_sc_fcs_load_S = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_load,
+                code_ptr, 0x2);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load SIMD: %p\n",
+                (void *)latxs_sc_fcs_load_S);
+
+        latxs_sc_fcs_load_FS = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_load,
+                code_ptr, 0x3);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load FPU/SIMD: %p\n",
+                (void *)latxs_sc_fcs_load_FS);
         }
     }
 
