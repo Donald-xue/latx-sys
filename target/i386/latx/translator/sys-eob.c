@@ -376,6 +376,11 @@ void latxs_tr_gen_exit_tb_load_tb_addr(IR2_OPND *tbptr, ADDR tb_addr)
 
 void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id)
 {
+    if (latxs_fastcs_is_jmp_glue_direct()) {
+        /* fastcs BL for jmp glue with return */
+        latxs_append_ir2_opnd0_(lisa_nop);
+    }
+
     /* 1. set a label for native code linkage */
     IR2_OPND goto_label_opnd = latxs_ir2_opnd_new_label();
 

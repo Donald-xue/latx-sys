@@ -37,7 +37,13 @@ int latxs_fastcs_is_no_link(void)
 
 int latxs_fastcs_is_jmp_glue(void)
 {
-    return option_fastcs == FASTCS_JMP_GLUE;
+    return option_fastcs == FASTCS_JMP_GLUE ||
+           option_fastcs == FASTCS_DIRECT_JMP_GLUE;
+}
+
+int latxs_fastcs_is_jmp_glue_direct(void)
+{
+    return option_fastcs == FASTCS_DIRECT_JMP_GLUE;
 }
 
 int latxs_fastcs_is_ld_excp(void)
@@ -433,10 +439,92 @@ int latxs_fastcs_set_jmp_target(void *_tb,
     lsassertm(fastcs_jmp_glue, "link mode %d n %d JG %p\n",
             link_mode, n, (void *)fastcs_jmp_glue);
 
-    tb_set_jmp_target(tb, n, (uintptr_t)fastcs_jmp_glue);
+    int ret = tb_set_jmp_target_fastcs(tb, n, nextb,
+            fastcs_jmp_glue,
+            latxs_fastcs_is_jmp_glue_direct());
+    lsassertm(ret, "tb set jmp target fastcs jmp glue\n");
 
     return 2;
 }
+
+void tb_reset_fastcs_jmp_glue(TranslationBlock *tb, int n)
+{
+    if (!latxs_fastcs_is_jmp_glue_direct()) return;
+
+    uintptr_t offset = tb->jmp_target_arg[n];
+    uintptr_t tc_ptr = (uintptr_t)tb->tc.ptr;
+    uintptr_t fastcs_jmp_rx = tc_ptr + offset - 4;
+    uintptr_t fastcs_jmp_rw = fastcs_jmp_rx - tcg_splitwx_diff;
+    tb_target_reset_fastcs_jmp_glue(tc_ptr,
+            fastcs_jmp_rx, fastcs_jmp_rw);
+}
+
+int gen_latxs_sc_fcs_jmp_glue_return(void *code_ptr, int ctx, int n)
+{
+    lsassert(latxs_fastcs_is_jmp_glue_direct());
+
+    lsassertm(option_lsfpu,
+            "TODO: FastCS does not support non-LSFPU yet.\n");
+    lsassertm(!option_soft_fpu,
+            "TODO: FastCS does not support SoftFPU yet.\n");
+
+    lsassert(ctx == (ctx & 0x3));
+
+    latxs_tr_init(NULL);
+
+    IR2_OPND *env   = &latxs_env_ir2_opnd;
+    IR2_OPND *zero  = &latxs_zero_ir2_opnd;
+    IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
+    IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
+
+    /* stmp1 = ENV.fastcs_ctx */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    if (ctx & 0x1) {
+        /* check and Load FPU */
+        IR2_OPND no_fpu = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, stmp2, stmp1, 0x1);
+        latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &no_fpu);
+
+        /* load FPU using LSFPU */
+        latxs_tr_load_fprs_from_env(0xff, 0);
+        latxs_tr_load_lstop_from_env(stmp2);
+        latxs_tr_fpu_enable_top_mode();
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &no_fpu);
+    }
+
+    if (ctx & 0x2) {
+        /* check and Load SIMD */
+        IR2_OPND no_simd = latxs_ir2_opnd_new_label();
+
+        latxs_append_ir2_opnd2i(LISA_ANDI, stmp2, stmp1, 0x2);
+        latxs_append_ir2_opnd3(LISA_BNE, stmp2, zero, &no_simd);
+
+        /* load simd */
+        latxs_tr_load_xmms_from_env(0xffffffff);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &no_simd);
+    }
+
+    /* update context */
+    latxs_append_ir2_opnd2i(LISA_LD_BU, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+    latxs_append_ir2_opnd2i(LISA_ORI, stmp1, stmp1, ctx);
+    latxs_append_ir2_opnd2i(LISA_ST_B, stmp1, env,
+            offsetof(CPUX86State, fastcs_ctx));
+
+    /* return */
+    latxs_append_ir2_opnd0_(lisa_return);
+
+    int code_nr  = latxs_tr_ir2_assemble(code_ptr);
+    latxs_tr_fini();
+    return code_nr;
+}
+
+
 
 int gen_latxs_sc_fcs_jmp_glue(void *code_ptr, int ctx, int n)
 {

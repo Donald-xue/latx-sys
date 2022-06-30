@@ -401,6 +401,36 @@ TranslationBlock *tb_htable_lookup(CPUState *cpu, target_ulong pc,
     return qht_lookup_custom(&tb_ctx.htable, &desc, h, tb_lookup_cmp);
 }
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+int tb_set_jmp_target_fastcs(TranslationBlock *tb, int n,
+        TranslationBlock *nextb, uintptr_t fastcs_jmp_glue,
+        int is_jmp_glue_return)
+{
+    if (!TCG_TARGET_HAS_direct_jump) {
+        return 0;
+    }
+
+    uintptr_t offset = tb->jmp_target_arg[n];
+    uintptr_t tc_ptr = (uintptr_t)tb->tc.ptr;
+
+    uintptr_t jmp_rx = tc_ptr + offset;
+    uintptr_t jmp_rw = jmp_rx - tcg_splitwx_diff;
+
+    uintptr_t fastcs_jmp_rx = tc_ptr + offset - 4;
+    uintptr_t fastcs_jmp_rw = fastcs_jmp_rx - tcg_splitwx_diff;
+
+    if (is_jmp_glue_return) {
+        tb_target_set_jmp_target_fastcs(tc_ptr,
+                fastcs_jmp_rx, fastcs_jmp_rw, fastcs_jmp_glue, 1);
+    }
+
+    tb_target_set_jmp_target_fastcs(tc_ptr,
+            jmp_rx, jmp_rw, (uintptr_t)nextb->tc.ptr, 0);
+
+    return 1;
+}
+#endif
+
 void tb_set_jmp_target(TranslationBlock *tb, int n, uintptr_t addr)
 {
     if (TCG_TARGET_HAS_direct_jump) {

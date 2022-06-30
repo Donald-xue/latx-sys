@@ -905,7 +905,8 @@ int target_latxs_static_codes(void *code_base)
     if (latxs_fastcs_enabled())
     {
 
-        if (latxs_fastcs_is_jmp_glue()) {
+        if (latxs_fastcs_is_jmp_glue() &&
+            !latxs_fastcs_is_jmp_glue_direct()) {
         latxs_sc_fcs_F_0 = (ADDR)code_ptr;
         LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 0: %p\n",
@@ -936,6 +937,45 @@ int target_latxs_static_codes(void *code_base)
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 1: %p\n",
                 (void *)latxs_sc_fcs_FS_1);
         }
+
+        if (latxs_fastcs_is_jmp_glue_direct()) {
+        latxs_sc_fcs_F_0 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
+                code_ptr, 0x1, 0);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU 0: %p\n",
+                (void *)latxs_sc_fcs_F_0);
+
+        latxs_sc_fcs_F_1 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
+                code_ptr, 0x1, 1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU 1: %p\n",
+                (void *)latxs_sc_fcs_F_1);
+
+        latxs_sc_fcs_S_0 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
+                code_ptr, 0x2, 0);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret SIMD 0: %p\n",
+                (void *)latxs_sc_fcs_S_0);
+
+        latxs_sc_fcs_S_1 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
+                code_ptr, 0x2, 1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret SIMD 1: %p\n",
+                (void *)latxs_sc_fcs_S_1);
+
+        latxs_sc_fcs_FS_0 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
+                code_ptr, 0x3, 0);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU/SIMD 0: %p\n",
+                (void *)latxs_sc_fcs_FS_0);
+
+        latxs_sc_fcs_FS_1 = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
+                code_ptr, 0x3, 1);
+        LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU/SIMD 1: %p\n",
+                (void *)latxs_sc_fcs_FS_1);
+        }
+
 
         if (latxs_fastcs_is_jmp_glue() ||
             latxs_fastcs_is_ld_branch()) {

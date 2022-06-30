@@ -1931,6 +1931,57 @@ static void tcg_target_init(TCGContext *s)
     tcg_regset_set_reg(s->reserved_regs, TCG_REG_TP);
 }
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+
+#include "latx-fastcs-sys.h"
+
+void tb_target_reset_fastcs_jmp_glue(uintptr_t tc_ptr, uintptr_t jmp_rx,
+                      uintptr_t jmp_rw)
+{
+    g_assert(latxs_fastcs_is_jmp_glue_direct());
+
+    tcg_insn_unit insn = 0x03400000; /* andi zero, zero, 0 */
+    qatomic_set((uint32_t *)jmp_rw, insn);
+    flush_idcache_range(jmp_rx, jmp_rw, 4);
+}
+
+void tb_target_set_jmp_target_fastcs(uintptr_t tc_ptr, uintptr_t jmp_rx,
+                              uintptr_t jmp_rw, uintptr_t addr, int link)
+{
+    g_assert(latxs_fastcs_is_jmp_glue_direct());
+    g_assert(!option_large_code_cache);
+
+    ptrdiff_t offset = addr - jmp_rx;
+    tcg_insn_unit insn;
+
+    if (offset == sextreg(offset, 0, 28)) {
+        if (link) {
+            insn = encode_dj(OPC_BL, offset);
+        } else {
+            insn = encode_dj(OPC_B, offset);
+        }
+        qatomic_set((uint32_t *)jmp_rw, insn);
+        flush_idcache_range(jmp_rx, jmp_rw, 4);
+    } else {
+        /* patch far jmp, two insns were preserved */
+        tcg_insn_unit i1, i2;
+        offset >>= 2;
+        int64_t upper, lower;
+        upper = ((offset + (1 << 15)) >> 16) & 0xfffff;
+        lower = (offset & 0xffff);
+        /* $a0 -> temp reg, was not used at end of tb */
+        i1 = 0x1e000000 | upper << 5 | TCG_REG_A0;       /* pcaddu18i */
+        i2 = 0x4c000000 | lower << 10 | TCG_REG_A0 << 5; /* jirl */
+        if (link) {
+            i2 = i2 | TCG_REG_RA; /* jirl $ra, $a0, offset */
+        }
+        qatomic_set((uint32_t *)jmp_rw, i1);
+        qatomic_set((uint32_t *)(jmp_rw + 4), i2);
+        flush_idcache_range(jmp_rx, jmp_rw, 8);
+    }
+}
+#endif
+
 void tb_target_set_jmp_target(uintptr_t tc_ptr, uintptr_t jmp_rx,
                               uintptr_t jmp_rw, uintptr_t addr)
 {

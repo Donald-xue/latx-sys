@@ -2275,6 +2275,7 @@ extern ADDR latxs_sc_fcs_load_F;
 extern ADDR latxs_sc_fcs_load_S;
 extern ADDR latxs_sc_fcs_load_FS;
 int gen_latxs_sc_fcs_jmp_glue(void *, int ctx, int n);
+int gen_latxs_sc_fcs_jmp_glue_return(void *, int ctx, int n);
 int gen_latxs_sc_fcs_check_load(void *, int ctx);
 int gen_latxs_sc_fcs_load(void *, int ctx);
 int latxs_fastcs_set_jmp_target(void *tb, int n, void *nextb);
@@ -2312,6 +2313,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb);
 #define FASTCS_NO_LINK  4
 #define FASTCS_LD_BRANCH    5
 #define FASTCS_LD_BRANCH_INLINE    6
+#define FASTCS_DIRECT_JMP_GLUE  7
 
 #define FASTCS_ENABLED  2
 

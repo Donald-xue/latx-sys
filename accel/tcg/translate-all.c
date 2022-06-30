@@ -67,6 +67,7 @@
 #if defined(CONFIG_LATX)
 #include "latx-test-sys.h"
 #include "latxs-code-cache.h"
+#include "latx-fastcs-sys.h"
 #endif
 #endif
 
@@ -2043,6 +2044,9 @@ static inline void tb_reset_jump(TranslationBlock *tb, int n)
     uintptr_t addr = (uintptr_t)(tb->tc.ptr + tb->jmp_reset_offset[n]);
     tb_set_jmp_target(tb, n, addr);
 #ifdef CONFIG_LATX
+#if defined(CONFIG_SOFTMMU)
+    tb_reset_fastcs_jmp_glue(tb, n);
+#endif
     tb->next_tb[n] = NULL;
 #endif
 }
