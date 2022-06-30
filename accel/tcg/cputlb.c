@@ -40,6 +40,7 @@
 #ifdef CONFIG_PLUGIN
 #include "qemu/plugin-memory.h"
 #endif
+#include "trace.h"
 
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
@@ -80,6 +81,11 @@ QEMU_BUILD_BUG_ON(sizeof(target_ulong) > sizeof(run_on_cpu_data));
  */
 QEMU_BUILD_BUG_ON(NB_MMU_MODES > 16);
 #define ALL_MMUIDX_BITS ((1 << NB_MMU_MODES) - 1)
+
+#define TLB_FLUSH_TRACE(name) do {        \
+    trace_##name(                       \
+    pthread_self(), get_clock());       \
+} while (0)
 
 static inline size_t tlb_n_entries(CPUTLBDescFast *fast)
 {
@@ -347,6 +353,7 @@ void tlb_flush_counts(size_t *pfull, size_t *ppart, size_t *pelide)
 
 static void tlb_flush_by_mmuidx_async_work(CPUState *cpu, run_on_cpu_data data)
 {
+    TLB_FLUSH_TRACE(tlb_flush_real_st);
     CPUArchState *env = cpu->env_ptr;
     uint16_t asked = data.host_int;
     uint16_t all_dirty, work, to_clean;
@@ -363,6 +370,7 @@ static void tlb_flush_by_mmuidx_async_work(CPUState *cpu, run_on_cpu_data data)
     all_dirty &= ~to_clean;
     env_tlb(env)->c.dirty = all_dirty;
 
+    TLB_FLUSH_TRACE(tlb_flush_tlb_st);
     for (work = to_clean; work != 0; work &= work - 1) {
         int mmu_idx = ctz32(work);
         tlb_flush_one_mmuidx_locked(env, mmu_idx, now);
@@ -370,6 +378,7 @@ static void tlb_flush_by_mmuidx_async_work(CPUState *cpu, run_on_cpu_data data)
 
     qemu_spin_unlock(&env_tlb(env)->c.lock);
 
+    TLB_FLUSH_TRACE(tlb_flush_jc_st);
     cpu_tb_jmp_cache_clear(cpu);
 
     if (to_clean == ALL_MMUIDX_BITS) {
@@ -388,14 +397,17 @@ static void tlb_flush_by_mmuidx_async_work(CPUState *cpu, run_on_cpu_data data)
 
 void tlb_flush_by_mmuidx(CPUState *cpu, uint16_t idxmap)
 {
+    TLB_FLUSH_TRACE(tlb_flush_st);
     tlb_debug("mmu_idx: 0x%" PRIx16 "\n", idxmap);
 
     if (cpu->created && !qemu_cpu_is_self(cpu)) {
+        TLB_FLUSH_TRACE(tlb_flush_work_queue);
         async_run_on_cpu(cpu, tlb_flush_by_mmuidx_async_work,
                          RUN_ON_CPU_HOST_INT(idxmap));
     } else {
         tlb_flush_by_mmuidx_async_work(cpu, RUN_ON_CPU_HOST_INT(idxmap));
     }
+    TLB_FLUSH_TRACE(tlb_flush_ed);
 }
 
 void tlb_flush(CPUState *cpu)

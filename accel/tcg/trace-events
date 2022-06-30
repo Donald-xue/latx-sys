@@ -11,3 +11,11 @@ translate_block(void *tb, uintptr_t pc, const void *tb_code) "tb:%p, pc:0x%"PRIx
 
 # tcg handle interrupt
 tcg_send_int(unsigned long tid, unsigned long tns, int mask) "thread 0x%lx timens %ld sendint %d"
+
+# time stemp
+tlb_flush_st(unsigned long tid, unsigned long tns) "thread 0x%lx timens %ld"
+tlb_flush_real_st(unsigned long tid, unsigned long tns) "thread 0x%lx timens %ld"
+tlb_flush_tlb_st(unsigned long tid, unsigned long tns) "thread 0x%lx timens %ld"
+tlb_flush_jc_st(unsigned long tid, unsigned long tns) "thread 0x%lx timens %ld"
+tlb_flush_work_queue(unsigned long tid, unsigned long tns) "thread 0x%lx timens %ld"
+tlb_flush_ed(unsigned long tid, unsigned long tns) "thread 0x%lx timens %ld"
