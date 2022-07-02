@@ -1948,7 +1948,9 @@ void tb_target_reset_fastcs_jmp_glue(uintptr_t tc_ptr, uintptr_t jmp_rx,
 void tb_target_set_jmp_target_fastcs(uintptr_t tc_ptr, uintptr_t jmp_rx,
                               uintptr_t jmp_rw, uintptr_t addr, int link)
 {
-    g_assert(latxs_fastcs_is_jmp_glue_direct());
+    if (link) {
+        g_assert(latxs_fastcs_is_jmp_glue_direct());
+    }
     g_assert(!option_large_code_cache);
 
     ptrdiff_t offset = addr - jmp_rx;
