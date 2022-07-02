@@ -416,16 +416,18 @@ int tb_set_jmp_target_fastcs(TranslationBlock *tb, int n,
     uintptr_t jmp_rx = tc_ptr + offset;
     uintptr_t jmp_rw = jmp_rx - tcg_splitwx_diff;
 
-    uintptr_t fastcs_jmp_rx = tc_ptr + offset - 4;
-    uintptr_t fastcs_jmp_rw = fastcs_jmp_rx - tcg_splitwx_diff;
-
     if (is_jmp_glue_return) {
+        uintptr_t fastcs_jmp_rx = tc_ptr + offset - 4;
+        uintptr_t fastcs_jmp_rw = fastcs_jmp_rx - tcg_splitwx_diff;
+
         tb_target_set_jmp_target_fastcs(tc_ptr,
                 fastcs_jmp_rx, fastcs_jmp_rw, fastcs_jmp_glue, 1);
+        tb_target_set_jmp_target_fastcs(tc_ptr,
+                jmp_rx, jmp_rw, (uintptr_t)nextb->tc.ptr, 0);
+    } else {
+        tb_target_set_jmp_target_fastcs(tc_ptr,
+                jmp_rx, jmp_rw, fastcs_jmp_glue, 0);
     }
-
-    tb_target_set_jmp_target_fastcs(tc_ptr,
-            jmp_rx, jmp_rw, (uintptr_t)nextb->tc.ptr, 0);
 
     return 1;
 }
