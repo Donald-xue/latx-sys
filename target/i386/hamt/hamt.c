@@ -91,6 +91,7 @@ static uint64_t page_fault = 0;
 static int highest_guest_tlb = 0;
 static int highest_qemu_tlb = 0;
 static int highest_x86_tlb = 0;
+#ifdef CONFIG_HAMT
 void hmp_hamt(Monitor *mon, const QDict *qdict)
 {
     monitor_printf(mon, "hamt statistics\n");
@@ -109,6 +110,7 @@ void hmp_hamt(Monitor *mon, const QDict *qdict)
     monitor_printf(mon, "highest qemu tlb: %d\n", highest_qemu_tlb);
     monitor_printf(mon, "highest x86 tlb: %d\n", highest_x86_tlb);
 }
+#endif
 
 static inline void tlb_read(void)
 {
