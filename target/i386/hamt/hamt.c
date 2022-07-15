@@ -1034,7 +1034,7 @@ static void save_into_mem(CPUX86State *env)
 {
     int i;
     uint32_t *reg_pos = (uint64_t *)data_storage + 24;
-    uint32_t *dest    = (uint8_t *)env + 928;
+    uint32_t *dest    = (uint8_t *)env + 964;
 
     for (i=0; i<8; ++i) {
         *dest++ = *reg_pos;
@@ -1048,14 +1048,14 @@ static void save_into_mem(CPUX86State *env)
             "st.w       $t1,  %0,  1280\n\r"
             "x86clrtm\n\r"
 */
-            "fst.d      $fa0, %0,  1296\n\r"
-            "fst.d      $fa1, %0,  1312\n\r"
-            "fst.d      $fa2, %0,  1328\n\r"
-            "fst.d      $fa3, %0,  1344\n\r"
-            "fst.d      $fa4, %0,  1360\n\r"
-            "fst.d      $fa5, %0,  1376\n\r"
-            "fst.d      $fa6, %0,  1392\n\r"
-            "fst.d      $fa7, %0,  1408\n\r"
+            "fst.d      $fa0, %0,  1328\n\r"
+            "fst.d      $fa1, %0,  1344\n\r"
+            "fst.d      $fa2, %0,  1360\n\r"
+            "fst.d      $fa3, %0,  1376\n\r"
+            "fst.d      $fa4, %0,  1392\n\r"
+            "fst.d      $fa5, %0,  1408\n\r"
+            "fst.d      $fa6, %0,  1424\n\r"
+            "fst.d      $fa7, %0,  1440\n\r"
             "vst        $vr16,%0,  0\n\r"
             "vst        $vr17,%0,  64\n\r"
             "vst        $vr18,%0,  128\n\r"
@@ -1064,13 +1064,13 @@ static void save_into_mem(CPUX86State *env)
             "vst        $vr21,%0,  320\n\r"
             "vst        $vr22,%0,  384\n\r"
             "vst        $vr23,%0,  448\n\r"
-            "st.d       $a6,  %0,  528\n\r"
+//            "st.d       $a6,  %0,  528\n\r"
             "ld.d       $t0,  $sp, 128\n\r"
             "movgr2fcsr $r0,  $t0\n\r"
             "x86mfflag  $t0,  63\n\r"
-            "st.w       $t0,  %0,  972\n\r"
+            "st.w       $t0,  %0,  1008\n\r"
             "ori        $t0,  $zero,0x1\n\r"
-            "st.w       $t0,  %0,  980\n\r"
+            "st.w       $t0,  %0,  1016\n\r"
             :
             :"r"(env)
             :"memory", "t1", "t0"
