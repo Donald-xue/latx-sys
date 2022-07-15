@@ -42,12 +42,12 @@
 #endif
 #include "trace.h"
 
-#ifdef CONFIG_HAMT
+#ifdef CONFIG_LATX
 #include "hamt.h"
-#endif
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
 /* #define DEBUG_TLB_LOG */
+#endif
 
 #ifdef DEBUG_TLB
 # define DEBUG_TLB_GATE 1
@@ -415,7 +415,7 @@ void tlb_flush_by_mmuidx(CPUState *cpu, uint16_t idxmap)
 
 void tlb_flush(CPUState *cpu)
 {
-#ifdef CONFIG_HAMT
+#ifdef CONFIG_LATX
     if (hamt_enable() && hamt_started()) {
         hamt_flush_all();
         from_tlb_flush++;
@@ -527,7 +527,7 @@ static void tlb_flush_page_locked(CPUArchState *env, int midx,
     target_ulong lp_addr = env_tlb(env)->d[midx].large_page_addr;
     target_ulong lp_mask = env_tlb(env)->d[midx].large_page_mask;
 
-#ifdef CONFIG_HAMT
+#ifdef CONFIG_LATX
     if (hamt_enable() && hamt_started()) {
         hamt_flush_all();
         from_tlb_flush_page_locked++;
@@ -630,7 +630,7 @@ void tlb_flush_page_by_mmuidx(CPUState *cpu, target_ulong addr, uint16_t idxmap)
     /* This should already be page aligned */
     addr &= TARGET_PAGE_MASK;
 
-#ifdef CONFIG_HAMT
+#ifdef CONFIG_LATX
     if (hamt_enable() && hamt_started()) {
         from_by_mmuidx++;
         hamt_flush_all();
@@ -1377,15 +1377,9 @@ static inline void cpu_transaction_failed(CPUState *cpu, hwaddr physaddr,
     }
 }
 
-#ifdef CONFIG_HAMT
 uint64_t io_readx(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
                          int mmu_idx, target_ulong addr, uintptr_t retaddr,
                          MMUAccessType access_type, MemOp op)
-#else
-static uint64_t io_readx(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
-                         int mmu_idx, target_ulong addr, uintptr_t retaddr,
-                         MMUAccessType access_type, MemOp op)
-#endif
 {
     CPUState *cpu = env_cpu(env);
     hwaddr mr_offset;
@@ -1439,15 +1433,9 @@ static void save_iotlb_data(CPUState *cs, hwaddr addr,
 #endif
 }
 
-#ifdef CONFIG_HAMT
 void io_writex(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
                       int mmu_idx, uint64_t val, target_ulong addr,
                       uintptr_t retaddr, MemOp op)
-#else
-static void io_writex(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
-                      int mmu_idx, uint64_t val, target_ulong addr,
-                      uintptr_t retaddr, MemOp op)
-#endif
 {
     CPUState *cpu = env_cpu(env);
     hwaddr mr_offset;
@@ -1597,13 +1585,8 @@ tb_page_addr_t get_page_addr_code(CPUArchState *env, target_ulong addr)
     return get_page_addr_code_hostp(env, addr, NULL);
 }
 
-#ifdef CONFIG_HAMT
 void notdirty_write(CPUState *cpu, vaddr mem_vaddr, unsigned size,
                            CPUIOTLBEntry *iotlbentry, uintptr_t retaddr)
-#else
-static void notdirty_write(CPUState *cpu, vaddr mem_vaddr, unsigned size,
-                           CPUIOTLBEntry *iotlbentry, uintptr_t retaddr)
-#endif
 {
     ram_addr_t ram_addr = mem_vaddr + iotlbentry->addr;
 

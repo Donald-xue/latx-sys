@@ -5,9 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include <string.h>
-#ifdef CONFIG_HAMT
 #include "hamt.h"
-#endif
 
 static int is_ldst_realized_by_softmmu(IR2_OPCODE op)
 {
@@ -721,22 +719,18 @@ void gen_ldst_softmmu_helper(
         int save_temp)
 {
     if (is_ldst_realized_by_softmmu(op)) {
-#ifdef CONFIG_HAMT
-    if (hamt_enable()) {
-        if (!option_lsfpu) {
-            latxs_tr_gen_save_curr_top();
+        if (hamt_enable()) {
+            if (!option_lsfpu) {
+                latxs_tr_gen_save_curr_top();
+            } else {
+                lsassertm(0, "HAMT does not support LSFPU\n");
+            }
+            IR2_OPND base = latxs_ir2_opnd_mem_get_base(opnd_mem);
+            int offset  = latxs_ir2_opnd_mem_get_offset(opnd_mem);
+            latxs_append_ir2_opnd2i(op, opnd_gpr, &base, offset);
         } else {
-            lsassertm(0, "HAMT does not support LSFPU\n");
+            __gen_ldst_softmmu_helper_native(op, opnd_gpr, opnd_mem, save_temp);
         }
-        IR2_OPND base = latxs_ir2_opnd_mem_get_base(opnd_mem);
-        int offset  = latxs_ir2_opnd_mem_get_offset(opnd_mem);
-        latxs_append_ir2_opnd2i(op, opnd_gpr, &base, offset);
-	} else {
-#endif
-        __gen_ldst_softmmu_helper_native(op, opnd_gpr, opnd_mem, save_temp);
-#ifdef CONFIG_HAMT
-	}
-#endif
         return;
     }
     lsassertm(0, "Softmmu not support non-load/store instruction.");

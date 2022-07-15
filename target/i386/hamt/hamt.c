@@ -91,9 +91,13 @@ static uint64_t page_fault = 0;
 static int highest_guest_tlb = 0;
 static int highest_qemu_tlb = 0;
 static int highest_x86_tlb = 0;
-#ifdef CONFIG_HAMT
 void hmp_hamt(Monitor *mon, const QDict *qdict)
 {
+    if (!hamt_enable()) {
+        monitor_printf(mon, "hamt is not enabled\n");
+        return;
+    }
+
     monitor_printf(mon, "hamt statistics\n");
     monitor_printf(mon, "delete a pgtable : %ld\n", delete_some_pgtable);
     monitor_printf(mon, "flush tlb all: %ld\n", flush_tlb_all_count);
@@ -110,7 +114,6 @@ void hmp_hamt(Monitor *mon, const QDict *qdict)
     monitor_printf(mon, "highest qemu tlb: %d\n", highest_qemu_tlb);
     monitor_printf(mon, "highest x86 tlb: %d\n", highest_x86_tlb);
 }
-#endif
 
 static inline void tlb_read(void)
 {
@@ -159,7 +162,7 @@ static inline void disable_pg(void)
             );
 }
 
-void alloc_target_addr_space(void)
+void hamt_alloc_target_addr_space(void)
 {
 	mapping_base_address =
 	    (uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS+0x10000), TARGET_ADDR_SIZE, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);

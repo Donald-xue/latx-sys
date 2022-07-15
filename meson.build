@@ -2172,8 +2172,6 @@ foreach target : target_dirs
     link_args += ['@block.syms', '@qemu.syms']
     if 'CONFIG_LATX' in config_host
       target_inc += include_directories('target/i386/latx/include')
-    endif
-    if 'CONFIG_HAMT' in config_host
       target_inc += include_directories('target/i386/hamt/')
     endif
   else
@@ -2207,8 +2205,6 @@ foreach target : target_dirs
     endif
     if 'CONFIG_LATX' in config_host
       target_inc += include_directories('target/i386/latx/include')
-    endif
-    if 'CONFIG_HAMT' in config_host
       target_inc += include_directories('target/i386/hamt/')
     endif
   endif

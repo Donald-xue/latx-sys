@@ -130,9 +130,7 @@ void latx_sys_parse_options(QemuOpts *opts);
 #include "latx-test-sys.h"
 #endif
 
-#ifdef CONFIG_HAMT
 #include "hamt.h"
-#endif
 
 #define MAX_VIRTIO_CONSOLES 1
 
@@ -208,7 +206,6 @@ static struct {
     { .driver = "vhost-user-vga",       .flag = &default_vga       },
 };
 
-#ifdef CONFIG_HAMT
 static QemuOptsList qemu_hamt_opts = {
     .name = "hamt",
     .head = QTAILQ_HEAD_INITIALIZER(qemu_hamt_opts.head),
@@ -216,7 +213,6 @@ static QemuOptsList qemu_hamt_opts = {
         {/* end of list */}
     },
 };
-#endif
 
 static QemuOptsList qemu_rtc_opts = {
     .name = "rtc",
@@ -2680,9 +2676,7 @@ void qemu_init(int argc, char **argv, char **envp)
     qemu_add_opts(&qemu_latx_opts);
     qemu_add_opts(&qemu_latx_test_opts);
 #endif
-#ifdef CONFIG_HAMT
     qemu_add_opts(&qemu_hamt_opts);
-#endif
     module_call_init(MODULE_INIT_OPTS);
 
     error_init(argv[0]);
@@ -2729,11 +2723,9 @@ void qemu_init(int argc, char **argv, char **envp)
                 exit(1);
             }
             switch(popt->index) {
-#ifdef CONFIG_HAMT
             case QEMU_OPTION_hamt:
                 hamt_enabled = true;
                 break;
-#endif
 #ifdef CONFIG_LATX
             case QEMU_OPTION_latx:
                 opts = qemu_opts_parse_noisily(

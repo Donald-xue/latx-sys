@@ -24,8 +24,7 @@
 #include "sysemu/runstate.h"
 #include "exec/helper-proto.h"
 #include "helper-tcg.h"
-
-#ifdef CONFIG_HAMT
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "hamt.h"
 #endif
 
@@ -110,7 +109,7 @@ static void QEMU_NORETURN raise_interrupt2(CPUX86State *env, int intno,
     env->exception_is_int = is_int;
     env->exception_next_eip = env->eip + next_eip_addend;
 
-#ifdef CONFIG_HAMT
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     if (hamt_enable() && hamt_started() && is_int && (intno == 0x80)) {
         bool special_syscall1 = env->regs[0] == 1 ||
                                env->regs[0] == 252;
@@ -118,13 +117,12 @@ static void QEMU_NORETURN raise_interrupt2(CPUX86State *env, int intno,
                                env->regs[0] == 358;
 
         target_ulong old_cr3 = env->cr[3];
-/*
-        bool special_syscall = env->regs[0] == 0x101;
-*/
+        /* bool special_syscall = env->regs[0] == 0x101; */
         if (special_syscall1 || special_syscall2) 
             hamt_need_flush(old_cr3, special_syscall1 ? true : false);
     }
 #endif
+
     cpu_loop_exit_restore(cs, retaddr);
 }
 

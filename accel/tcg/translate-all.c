@@ -62,16 +62,13 @@
 #include "hw/core/tcg-cpu-ops.h"
 #include "internal.h"
 
-#ifdef CONFIG_HAMT
-#include "hamt.h"
-#endif
-
 #if defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
 #if defined(CONFIG_LATX)
 #include "latx-test-sys.h"
 #include "latxs-code-cache.h"
 #include "latx-fastcs-sys.h"
+#include "hamt.h"
 #endif
 #endif
 
@@ -1798,8 +1795,10 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
                                splitwx, &error_fatal);
     assert(ok);
 
-#ifdef CONFIG_HAMT
-    if (hamt_enable()) alloc_target_addr_space(); 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (hamt_enable()) {
+        hamt_alloc_target_addr_space(); 
+    }
 #endif
 
 #if defined(CONFIG_SOFTMMU)

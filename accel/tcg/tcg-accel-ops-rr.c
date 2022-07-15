@@ -41,8 +41,6 @@
 #if defined(CONFIG_LATX)
 #include "latx-options.h"
 #include "latx-config.h"
-#endif
-#ifdef CONFIG_HAMT
 #include "hamt.h"
 #endif
 #if defined(CONFIG_SIGINT)
@@ -178,7 +176,7 @@ static void *rr_cpu_thread_fn(void *arg)
 {
     CPUState *cpu = arg;
 
-#ifdef CONFIG_HAMT
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     if (hamt_enable()) {
         hamt_enter();
 	    printf("here we in hamt mode\n");

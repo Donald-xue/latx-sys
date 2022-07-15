@@ -25,7 +25,7 @@
 #include "exec/cpu_ldst.h"
 #include "exec/address-spaces.h"
 #include "helper-tcg.h"
-#ifdef CONFIG_HAMT
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "hamt.h"
 #endif
 /*
@@ -205,9 +205,10 @@ void helper_invlpg(CPUX86State *env, target_ulong addr)
     cpu_svm_check_intercept_param(env, SVM_EXIT_INVLPG, 0, GETPC());
     tlb_flush_page(CPU(cpu), addr);
 
-#ifdef CONFIG_HAMT
-    if (hamt_enable() && hamt_started())
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (hamt_enable() && hamt_started()) {
         hamt_invlpg_helper(addr);
+    }
 #endif
 }
 

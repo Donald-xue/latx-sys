@@ -33,9 +33,6 @@
 
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
 #include "latx-options.h"
-#endif
-
-#ifdef CONFIG_HAMT
 #include "hamt.h"
 #endif
 
@@ -2440,7 +2437,7 @@ void helper_sysenter(CPUX86State *env)
     env->regs[R_ESP] = env->sysenter_esp;
     env->eip = env->sysenter_eip;
 
-#ifdef CONFIG_HAMT
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     if (hamt_enable() && hamt_started()) {
         bool special_syscall1 = env->regs[0] == 1 ||
                                env->regs[0] == 252;
@@ -2448,9 +2445,7 @@ void helper_sysenter(CPUX86State *env)
                                env->regs[0] == 358;
 
         target_ulong old_cr3 = env->cr[3];
-/*
-        bool special_syscall = env->regs[0] == 0x101;
-*/
+        /* bool special_syscall = env->regs[0] == 0x101; */
         if (special_syscall1 || special_syscall2) 
             hamt_need_flush(old_cr3, special_syscall1 ? true : false);
     }

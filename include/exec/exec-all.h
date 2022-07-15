@@ -136,8 +136,6 @@ void cpu_address_space_init(CPUState *cpu, int asidx,
 
 #if !defined(CONFIG_USER_ONLY) && defined(CONFIG_TCG)
 
-#ifdef CONFIG_HAMT
-
 uint64_t io_readx(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
                          int mmu_idx, target_ulong addr, uintptr_t retaddr,
                          MMUAccessType access_type, MemOp op);
@@ -146,7 +144,6 @@ void io_writex(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
                       uintptr_t retaddr, MemOp op);
 void notdirty_write(CPUState *cpu, vaddr mem_vaddr, unsigned size,
                            CPUIOTLBEntry *iotlbentry, uintptr_t retaddr);
-#endif
 
 /* cputlb.c */
 /**

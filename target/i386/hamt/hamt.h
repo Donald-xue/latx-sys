@@ -19,7 +19,7 @@ void hamt_invlpg_helper(uint32_t i386_addr);
 
 void hamt_flush_all(void);
 
-void alloc_target_addr_space(void);
+void hamt_alloc_target_addr_space(void);
 
 void delete_pgtable(uint64_t cr3);
 
