@@ -19,9 +19,12 @@
 #include "interface.h"
 #include "info.h"
 #include "hamt.h"
+#include "hamt_misc.h"
 
 // https://stackoverflow.com/questions/22449342/clone-vm-undeclared-first-use-in-this-function
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #ifndef __USE_GNU
 #define __USE_GNU
 #endif
@@ -30,7 +33,7 @@
 
 struct kvm_cpu *kvm_init_vm_with_one_cpu(void);
 
-void kvm_free_vcpu(struct kvm_cpu *vcpu)
+static void kvm_free_vcpu(struct kvm_cpu *vcpu)
 {
 	struct kvm_vm *kvm = vcpu->vm;
 
@@ -45,7 +48,7 @@ void kvm_free_vcpu(struct kvm_cpu *vcpu)
 	}
 }
 
-struct kvm_cpu *kvm_alloc_vcpu(struct kvm_vm *kvm)
+static struct kvm_cpu *kvm_alloc_vcpu(struct kvm_vm *kvm)
 {
 	struct kvm_cpu *vcpu;
 	int cpu_id = -1;
@@ -107,7 +110,7 @@ void vacate_current_stack(struct kvm_cpu *cpu)
 	switch_stack(cpu, (u64)host_stack + PAGESIZE);
 }
 
-struct kvm_cpu *kvm_init_vm_with_one_cpu()
+struct kvm_cpu *kvm_init_vm_with_one_cpu(void)
 {
 	char dev_path[] = "/dev/kvm";
 	int ret;
@@ -203,7 +206,7 @@ struct dune_procmap_entry {
 	int type;
 };
 
-static u64 expand_stack_getrlimit()
+static u64 expand_stack_getrlimit(void)
 {
 	struct rlimit rlim;
 	if (getrlimit(RLIMIT_STACK, &rlim) == -1)
@@ -211,7 +214,7 @@ static u64 expand_stack_getrlimit()
 	return rlim.rlim_cur;
 }
 
-static u64 expand_stack_get_stack_top()
+static u64 expand_stack_get_stack_top(void)
 {
 	struct dune_procmap_entry e;
 
@@ -246,7 +249,7 @@ static u64 expand_stack_get_stack_top()
 	return 0;
 }
 
-void expand_stack()
+static void expand_stack(void)
 {
 	u64 limit = expand_stack_getrlimit();
 	u64 top = expand_stack_get_stack_top();
@@ -254,7 +257,7 @@ void expand_stack()
 	*(int *)(top - limit) = 0;
 }
 
-int dune_enter()
+int dune_enter(void)
 {
 	expand_stack();
 	struct kvm_cpu *cpu = kvm_init_vm_with_one_cpu();
@@ -267,6 +270,7 @@ int dune_enter()
 	return 0;
 }
 
+static
 struct kvm_cpu *dup_vcpu(const struct kvm_cpu *parent_cpu, int sysno)
 {
 	struct kvm_cpu *child_cpu = kvm_alloc_vcpu(parent_cpu->vm);
@@ -278,6 +282,7 @@ struct kvm_cpu *dup_vcpu(const struct kvm_cpu *parent_cpu, int sysno)
 	return child_cpu;
 }
 
+static
 struct kvm_cpu *dup_vm(const struct kvm_cpu *parent_cpu, int sysno)
 {
 	// printf("=======\n");
@@ -290,13 +295,16 @@ struct kvm_cpu *dup_vm(const struct kvm_cpu *parent_cpu, int sysno)
 	return child_cpu;
 }
 
+static
 struct kvm_cpu *fork_child_entry(const struct kvm_cpu *parent_cpu, int sysno)
 {
 	struct kvm_cpu *child_cpu = dup_vm(parent_cpu, sysno);
 	host_loop(child_cpu);
 	die("host_loop never return\n");
+    return NULL;
 }
 
+static
 struct kvm_cpu *emulate_fork_diff_vm_old_stack(struct kvm_cpu *parent_cpu,
 					       int sysno)
 {
@@ -313,6 +321,7 @@ struct child_stack_para {
 	u64 para1;
 };
 
+static
 struct kvm_cpu *emulate_fork_same_vm(struct kvm_cpu *parent_cpu, int sysno)
 {
 	// without CLONE_VM
@@ -342,6 +351,7 @@ struct kvm_cpu *emulate_fork_same_vm(struct kvm_cpu *parent_cpu, int sysno)
 
 // 即使 parent 和 child 共享地址空间，因为 child 在新的 stack 上运行，这导致无法
 // 使用无法访问 stack 的数据，包括函数的参数，所以同样需要走 stack
+static
 struct kvm_cpu *emulate_fork_diff_vm_new_stack(struct kvm_cpu *parent_cpu,
 					       int sysno)
 {
@@ -362,6 +372,7 @@ struct kvm_cpu *emulate_fork_diff_vm_new_stack(struct kvm_cpu *parent_cpu,
 }
 
 // sysno == SYS_FORK || sysno == SYS_CLONE || sysno == SYS_CLONE3
+static
 struct kvm_cpu *emulate_fork(struct kvm_cpu *parent_cpu, int sysno)
 {
 	switch (arch_get_clone_type(parent_cpu, sysno)) {
@@ -374,6 +385,7 @@ struct kvm_cpu *emulate_fork(struct kvm_cpu *parent_cpu, int sysno)
 	default:
 		die("unexpected clone type");
 	}
+    return NULL;
 }
 
 void host_loop(struct kvm_cpu *vcpu)
@@ -386,7 +398,7 @@ void host_loop(struct kvm_cpu *vcpu)
         hamt_status = false;
         stop_hamt(&hamt_status);
 		u64 sysno = arch_get_sysno(vcpu);
-		struct kvm_regs regs;
+		/* struct kvm_regs regs; */
 
 		if (err < 0 && (errno != EINTR && errno != EAGAIN)) {
 			die("KVM_RUN : err=%d\n", err);

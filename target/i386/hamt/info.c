@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "info.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"

@@ -1038,8 +1038,8 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
 static void save_into_mem(CPUX86State *env)
 {
     int i;
-    uint32_t *reg_pos = (uint64_t *)data_storage + 24;
-    uint32_t *dest    = (uint8_t *)env + 964;
+    uint32_t *reg_pos = (uint32_t *)((uint64_t *)data_storage + 24);
+    uint32_t *dest    = (uint32_t *)((uint8_t *)env + 964);
 
     for (i=0; i<8; ++i) {
         *dest++ = *reg_pos;
@@ -1082,6 +1082,8 @@ static void save_into_mem(CPUX86State *env)
             );
 }
 
+//#define HAMT_COUNT_GUEST_TLB
+#ifdef HAMT_COUNT_GUEST_TLB
 #define CSR_TLBIDX_EHINV       (_ULCAST_(1) << 31)
 #define ENTRYLO_G              (_ULCAST_(1) << 6)
 static void count_guest_tlb(void)
@@ -1126,6 +1128,7 @@ static void count_guest_tlb(void)
     write_csr_tlbidx(s_index);
     enable_pg();
 }
+#endif
 
 void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *epc)
 {
@@ -1139,7 +1142,9 @@ void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *
      *     translate address to i386 vm address
 	 */
 
-    //count_guest_tlb();
+#ifdef HAMT_COUNT_GUEST_TLB
+    count_guest_tlb();
+#endif
 
     tlb_lsm++;
 
