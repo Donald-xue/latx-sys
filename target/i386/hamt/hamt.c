@@ -40,11 +40,28 @@
 #include "latx-options.h"
 
 #define HAMT_TYPE_BASE          1
+#define HAMT_TYPE_INTERPRETER   2
 
 int hamt_enable(void)
 {
     return option_hamt >= HAMT_TYPE_BASE;
 }
+
+int hamt_interpreter(void)
+{
+    return option_hamt == HAMT_TYPE_INTERPRETER;
+}
+
+//#define HAMT_INTERPRETER_DEBUG
+#ifdef HAMT_INTERPRETER_DEBUG
+#define hamt_interpreter_debug(str, ...) do { \
+    if (hamt_interpreter()) { \
+        fprintf(stderr, str, __VA_ARGS__); \
+    } \
+} while (0)
+#else
+#define hamt_interpreter_debug(str, ...)
+#endif
 
 pthread_key_t in_hamt;
 
@@ -341,6 +358,10 @@ static uint64_t request_old_cr3;
 static bool request_del_pgtable;
 void hamt_need_flush(uint64_t old_cr3, bool del_pgtable)
 {
+    if (hamt_interpreter()) {
+        return;
+    }
+
     need_flush = true;
     request_old_cr3 = old_cr3;
     if (!request_del_pgtable)
@@ -349,6 +370,10 @@ void hamt_need_flush(uint64_t old_cr3, bool del_pgtable)
 
 void hamt_set_context(uint64_t new_cr3)
 {
+    if (hamt_interpreter()) {
+        return;
+    }
+
     /*
 	 * already in hamt_cr3_htable?
 	 * |_ yes -> same version?
@@ -548,6 +573,8 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
     int r = prot & PAGE_READ  ? 1 : 0;
     int x = prot & PAGE_EXEC  ? 1 : 0;
 
+    assert(!hamt_interpreter());
+
     disable_pg();
 
     // to see whether there is already a valid adjacent tlb entry
@@ -631,6 +658,10 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
 
 void hamt_invlpg_helper(uint32_t i386_addr)
 {
+    if (hamt_interpreter()) {
+        return;
+    }
+
     uint64_t hamt_vaddr = i386_addr + mapping_base_address;
     hamt_set_tlb(hamt_vaddr, 0x0, 0x0, false);
 }
@@ -822,14 +853,21 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
             //TRY
             ((uint64_t *)data_storage)[32] += 4;
             store_into_mem(haddr, epc);
+            return;
         }
 
         if (unlikely(need_swap)) {
 		    //pr_info("need swap");
         } else {
 
-            hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+            if (!hamt_interpreter()) {
+                hamt_set_tlb(addr + mapping_base_address, haddr, prot, true);
+            }
+        }
 
+        if (hamt_interpreter()) {
+            ((uint64_t *)data_storage)[32] += 4;
+            store_into_mem(haddr, epc);
         }
         return;
     }
@@ -843,7 +881,59 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
     haddr = ((uintptr_t)addr + entry->addend);
 
-    hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+    if (hamt_interpreter()) {
+        ((uint64_t *)data_storage)[32] += 4;
+        store_into_mem(haddr, epc);
+    } else {
+        hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+    }
+}
+
+static void load_direct_into_reg(MemOp op,
+        uint64_t haddr, uint32_t *epc)
+{
+    int is_sign  = (op & (1<<2));
+    size_t size  = op & 0x3;
+    uint64_t val = 0;
+
+    switch (size) {
+    case 0:
+        if (is_sign) {
+            val = *((int8_t*)haddr);
+            hamt_interpreter_debug("Read  8s haddr=0x%lx val=0x%lx\n", haddr, val);
+        } else {
+            val = *((uint8_t*)haddr);
+            hamt_interpreter_debug("Read  8u haddr=0x%lx val=0x%lx\n", haddr, val);
+        }
+        break;
+    case 1:
+        if (is_sign) {
+            val = *((int16_t*)haddr);
+            hamt_interpreter_debug("Read 16s haddr=0x%lx val=0x%lx\n", haddr, val);
+        } else {
+            val = *((uint16_t*)haddr);
+            hamt_interpreter_debug("Read 16u haddr=0x%lx val=0x%lx\n", haddr, val);
+        }
+        break;
+    case 2:
+        if (is_sign) {
+            val = *((int32_t*)haddr);
+            hamt_interpreter_debug("Read 32s haddr=0x%lx val=0x%lx\n", haddr, val);
+        } else {
+            val = *((uint32_t*)haddr);
+            hamt_interpreter_debug("Read 32u haddr=0x%lx val=0x%lx\n", haddr, val);
+        }
+        break;
+    case 3:
+        val = *((uint64_t*)haddr);
+        hamt_interpreter_debug("Read 64 haddr=0x%lx val=0x%lx\n", haddr, val);
+        break;
+    default:
+        hamt_interpreter_debug(">>>>> error memop 0x%x\n", op);
+        break;
+    }
+
+    load_into_reg(val, epc);
 }
 
 static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
@@ -901,7 +991,12 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 		    //pr_info("need swap");
         }
 
-        hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+        if (hamt_interpreter()) {
+            ((uint64_t *)data_storage)[32] += 4;
+            load_direct_into_reg(op, haddr, epc);
+        } else {
+            hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+        }
 
         return;
     }
@@ -915,7 +1010,12 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 
     haddr = (uintptr_t)addr + entry->addend;
 
-    hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+    if (hamt_interpreter()) {
+        ((uint64_t *)data_storage)[32] += 4;
+        load_direct_into_reg(op, haddr, epc);
+    } else {
+        hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+    }
 
     return;
 }
@@ -1533,6 +1633,10 @@ static void build_tlb_invalid_trampoline(void)
 
 void hamt_flush_all(void)
 {
+    if (hamt_interpreter()) {
+        return;
+    }
+
     local_flush_tlb_all();
     other_source++;
 }
