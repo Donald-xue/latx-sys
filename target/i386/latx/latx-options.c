@@ -52,6 +52,7 @@ int option_soft_fpu;
 int option_fast_fpr_ldst;
 int option_large_code_cache;
 int option_fastcs;
+int option_hamt;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -274,6 +275,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "fast context switch",
         }, {
+            .name = "hamt",
+            .type = QEMU_OPT_NUMBER,
+            .help = "hardware accelerated memory translation",
+        }, {
             .name = "smmu",
             .type = QEMU_OPT_BOOL,
             .help = "use softmmu slow path only (debug)",
@@ -438,6 +443,11 @@ static void parse_options_traceir1_data(unsigned long long t)
     option_traceir1_data = t;
 }
 
+static void parse_options_hamt(unsigned long long t)
+{
+    option_hamt = t;
+}
+
 static void parse_options_fastcs(unsigned long long t)
 {
     option_fastcs = t;
@@ -594,6 +604,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_bool(LATXS_OPT_sigint, opt->value.boolean);
     }
 
+    opt = qemu_opt_find(opts, "hamt");
+    if (opt) {
+        parse_options_hamt(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "fastcs");
     if (opt) {
         parse_options_fastcs(opt->value.uint);
@@ -743,6 +758,7 @@ void latxs_options_init(void)
     option_njc = 0;
     option_sigint = 0;
     option_fastcs = 0;
+    option_hamt = 0;
     option_cross_page_check = 0;
     option_cross_page_jmp_link = 0;
     option_large_code_cache = 0;

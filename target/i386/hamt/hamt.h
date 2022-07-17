@@ -7,8 +7,7 @@
 int dune_enter(void);
 #define hamt_enter() (dune_enter())
 
-extern bool hamt_enabled;
-#define hamt_enable() (hamt_enabled) 
+int hamt_enable(void);
 
 extern pthread_key_t in_hamt;
 bool hamt_started(void);

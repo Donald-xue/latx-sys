@@ -63,6 +63,7 @@ extern int option_fast_fpr_ldst;
 extern int option_njc;
 extern int option_sigint;
 extern int option_fastcs;
+extern int option_hamt;
 extern int option_cross_page_check;
 extern int option_cross_page_jmp_link;
 extern int option_intb_link;

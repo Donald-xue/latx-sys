@@ -37,7 +37,14 @@
 #include "monitor/hmp.h"
 #include "qapi/qmp/qdict.h"
 
-bool hamt_enabled = false;
+#include "latx-options.h"
+
+#define HAMT_TYPE_BASE          1
+
+int hamt_enable(void)
+{
+    return option_hamt >= HAMT_TYPE_BASE;
+}
 
 pthread_key_t in_hamt;
 

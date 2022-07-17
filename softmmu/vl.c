@@ -130,8 +130,6 @@ void latx_sys_parse_options(QemuOpts *opts);
 #include "latx-test-sys.h"
 #endif
 
-#include "hamt.h"
-
 #define MAX_VIRTIO_CONSOLES 1
 
 typedef struct BlockdevOptionsQueueEntry {
@@ -204,14 +202,6 @@ static struct {
     { .driver = "virtio-vga",           .flag = &default_vga       },
     { .driver = "ati-vga",              .flag = &default_vga       },
     { .driver = "vhost-user-vga",       .flag = &default_vga       },
-};
-
-static QemuOptsList qemu_hamt_opts = {
-    .name = "hamt",
-    .head = QTAILQ_HEAD_INITIALIZER(qemu_hamt_opts.head),
-    .desc = {
-        {/* end of list */}
-    },
 };
 
 static QemuOptsList qemu_rtc_opts = {
@@ -2676,7 +2666,6 @@ void qemu_init(int argc, char **argv, char **envp)
     qemu_add_opts(&qemu_latx_opts);
     qemu_add_opts(&qemu_latx_test_opts);
 #endif
-    qemu_add_opts(&qemu_hamt_opts);
     module_call_init(MODULE_INIT_OPTS);
 
     error_init(argv[0]);
@@ -2723,9 +2712,6 @@ void qemu_init(int argc, char **argv, char **envp)
                 exit(1);
             }
             switch(popt->index) {
-            case QEMU_OPTION_hamt:
-                hamt_enabled = true;
-                break;
 #ifdef CONFIG_LATX
             case QEMU_OPTION_latx:
                 opts = qemu_opts_parse_noisily(
