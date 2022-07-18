@@ -52,15 +52,17 @@ int hamt_interpreter(void)
     return option_hamt == HAMT_TYPE_INTERPRETER;
 }
 
-//#define HAMT_INTERPRETER_DEBUG
+#define HAMT_INTERPRETER_DEBUG
 #ifdef HAMT_INTERPRETER_DEBUG
 #define hamt_interpreter_debug(str, ...) do { \
-    if (hamt_interpreter()) { \
+    if (hamt_interpreter() && debug) { \
         fprintf(stderr, str, __VA_ARGS__); \
     } \
 } while (0)
+#define VHV_FMT "vaddr=0x%lx haddr=0x%lx val=0x%lx"
 #else
 #define hamt_interpreter_debug(str, ...)
+#define VHV_FMT
 #endif
 
 pthread_key_t in_hamt;
@@ -890,7 +892,8 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 }
 
 static void load_direct_into_reg(MemOp op,
-        uint64_t haddr, uint32_t *epc)
+        uint64_t vaddr, uint64_t haddr, uint32_t *epc,
+        int debug)
 {
     int is_sign  = (op & (1<<2));
     size_t size  = op & 0x3;
@@ -900,33 +903,39 @@ static void load_direct_into_reg(MemOp op,
     case 0:
         if (is_sign) {
             val = *((int8_t*)haddr);
-            hamt_interpreter_debug("Read  8s haddr=0x%lx val=0x%lx\n", haddr, val);
+            hamt_interpreter_debug("Read  8s " VHV_FMT "\n", vaddr, haddr, val);
+            assert((val >> 8) == 0 || (int64_t)(val >> 8) == 1);
         } else {
             val = *((uint8_t*)haddr);
-            hamt_interpreter_debug("Read  8u haddr=0x%lx val=0x%lx\n", haddr, val);
+            hamt_interpreter_debug("Read  8u " VHV_FMT "\n", vaddr, haddr, val);
+            assert((val >> 8) == 0);
         }
         break;
     case 1:
         if (is_sign) {
             val = *((int16_t*)haddr);
-            hamt_interpreter_debug("Read 16s haddr=0x%lx val=0x%lx\n", haddr, val);
+            hamt_interpreter_debug("Read 16s " VHV_FMT "\n", vaddr, haddr, val);
+            assert((val >> 16) == 0 || (int64_t)(val >> 16) == 1);
         } else {
             val = *((uint16_t*)haddr);
-            hamt_interpreter_debug("Read 16u haddr=0x%lx val=0x%lx\n", haddr, val);
+            hamt_interpreter_debug("Read 16u " VHV_FMT "\n", vaddr, haddr, val);
+            assert((val >> 16) == 0);
         }
         break;
     case 2:
         if (is_sign) {
             val = *((int32_t*)haddr);
-            hamt_interpreter_debug("Read 32s haddr=0x%lx val=0x%lx\n", haddr, val);
+            hamt_interpreter_debug("Read 32s " VHV_FMT "\n", vaddr, haddr, val);
+            assert((val >> 32) == 0 || (int64_t)(val >> 32) == 1);
         } else {
             val = *((uint32_t*)haddr);
-            hamt_interpreter_debug("Read 32u haddr=0x%lx val=0x%lx\n", haddr, val);
+            hamt_interpreter_debug("Read 32u " VHV_FMT "\n", vaddr, haddr, val);
+            assert((val >> 32) == 0);
         }
         break;
     case 3:
         val = *((uint64_t*)haddr);
-        hamt_interpreter_debug("Read 64 haddr=0x%lx val=0x%lx\n", haddr, val);
+        hamt_interpreter_debug("Read 64 " VHV_FMT "\n", vaddr, haddr, val);
         break;
     default:
         hamt_interpreter_debug(">>>>> error memop 0x%x\n", op);
@@ -993,7 +1002,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 
         if (hamt_interpreter()) {
             ((uint64_t *)data_storage)[32] += 4;
-            load_direct_into_reg(op, haddr, epc);
+            load_direct_into_reg(op, addr, haddr, epc, 0);
         } else {
             hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
         }
@@ -1012,7 +1021,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 
     if (hamt_interpreter()) {
         ((uint64_t *)data_storage)[32] += 4;
-        load_direct_into_reg(op, haddr, epc);
+        load_direct_into_reg(op, addr, haddr, epc, 0);
     } else {
         hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
     }
