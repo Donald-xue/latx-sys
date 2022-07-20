@@ -60,14 +60,42 @@ int hamt_interpreter(void)
     } \
 } while (0)
 #define VHV_FMT "vaddr=0x%lx haddr=0x%lx val=0x%lx"
+#define HHV_FMT "haddr=0x%lx haddr=0x%lx val=0x%lx"
 #else
 #define hamt_interpreter_debug(str, ...)
 #define VHV_FMT
+#define HHV_FMT
 #endif
 
 pthread_key_t in_hamt;
 
-void hamt_exception_handler(uint64_t x86_vaddr, CPUX86State *env, uint32_t *epc);
+/*
+ * # HAMT uses hardware TLB
+ * TLB Invalid Exception -> trampoline
+ * -> hamt_exception_handler()
+ * -> hamt_process_addr_mapping()
+ * -> hamt_store/load_helper()
+ * -> hamt_set_tlb()
+ *
+ * # HAMT interpreter mode : not unalign access
+ * TLB Invalid Exception -> trampoline
+ * -> hamt_exception_handler() # is_unalign_2 = 0
+ * -> hamt_process_addr_mapping()
+ * -> hamt_store/load_helper()
+ * -> interpreter load/store # if is not unalign access
+ *
+ * # HAMT interpreter mode : unalign access
+ * TLB Invalid Exception -> trampoline
+ * -> hamt_exception_handler()    # is_unalign_2 = 0
+ * -> hamt_process_addr_mapping() # walk the first page
+ * -> hamt_store/load_helper()    # find out it is unaligned
+ * -> hamt_exception_handler()    # is_unalign_2 = 1
+ * -> hamt_process_addr_mapping() # walk the second page
+ * -> hamt_store/load_helper()
+ * -> interpreter unaligned load/store
+ */
+void hamt_exception_handler(uint64_t x86_vaddr, CPUX86State *env, uint32_t *epc,
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size);
 
 /*
  * data_storage layout:
@@ -756,7 +784,8 @@ static void load_into_reg(uint64_t val, uint32_t *epc)
 }
 
 //TRY
-static void store_into_mem(uint64_t haddr, uint32_t *epc)
+static void store_into_mem(uint64_t haddr, uint32_t *epc,
+        int debug, int is_unalign_2, uint64_t haddr2)
 {
     uint32_t inst = *epc;
     int rd = inst & 0x1f; 
@@ -764,26 +793,77 @@ static void store_into_mem(uint64_t haddr, uint32_t *epc)
     
     uint64_t val = ((uint64_t*)data_storage)[rd];
 
-    switch(opc) {
-        case OPC_ST_B: {
-            *((uint8_t*)haddr) = val & 0xffULL; 
-            return;
+    if (!is_unalign_2) {
+        /* emulate aligned access (inside one page) */
+        switch(opc) {
+            case OPC_ST_B: {
+                *((uint8_t*)haddr) = val & 0xffULL; 
+                return;
+            }
+            case OPC_ST_H: {
+                *((uint16_t*)haddr) = val & 0xffffULL; 
+                return;
+            }
+            case OPC_ST_W: {
+                *((uint32_t*)haddr) = val & 0xffffffffULL;
+                return;
+            }
+            case OPC_ST_D: {
+                *((uint64_t*)haddr) = val;
+                return;
+            }
+            default: {
+                pr_info("inst: %x", *epc);
+                die("invalid opc in store_into_mem");
+            }
         }
-        case OPC_ST_H: {
-            *((uint16_t*)haddr) = val & 0xffffULL; 
-            return;
-        }
-        case OPC_ST_W: {
-            *((uint32_t*)haddr) = val & 0xffffffffULL;
-            return;
-        }
-        case OPC_ST_D: {
-            *((uint64_t*)haddr) = val;
-            return;
-        }
-        default: {
-            pr_info("inst: %x", *epc);
-            die("invalid opc in store_into_mem");
+    } else {
+        /* emulate unaligned access (spans two page) */
+        uint8_t *d1 = (void *)haddr;
+        uint8_t *d2 = (void *)haddr2;
+        uint8_t *d = NULL;
+        uint8_t  b = 0;
+        int i = 0;
+        switch(opc) {
+            case OPC_ST_B: {
+                pr_info("inst: %x", *epc);
+                die("store byte unalign");
+                return;
+            }
+            case OPC_ST_H: {
+                hamt_interpreter_debug("Store 16 " HHV_FMT "\n", haddr, haddr2, val);
+                *d1 = val & 0xffULL; 
+                *d2 = (val & 0xff00ULL) >> 8; 
+                return;
+            }
+            case OPC_ST_W: {
+                hamt_interpreter_debug("Store 32 " HHV_FMT "\n", haddr, haddr2, val);
+                d = d1;
+                b = val & 0xffULL; *d = b;
+                
+                for (i = 0; i < 3; ++i) {
+                    val = val >> 8;
+                    d += 1; if (((uint64_t)d & 0xfff) == 0) d = d2;
+                    b = val & 0xffULL; *d = b;
+                }
+                return;
+            }
+            case OPC_ST_D: {
+                hamt_interpreter_debug("Store 64 " HHV_FMT "\n", haddr, haddr2, val);
+                d = d1;
+                b = val & 0xffULL; *d = b;
+
+                for (i = 0; i < 7; ++i) {
+                    val = val >> 8;
+                    d += 1; if (((uint64_t)d & 0xfff) == 0) d = d2;
+                    b = val & 0xffULL; *d = b;
+                }
+                return;
+            }
+            default: {
+                pr_info("inst: %x", *epc);
+                die("invalid opc in store_into_mem");
+            }
         }
     }
 
@@ -792,14 +872,16 @@ static void store_into_mem(uint64_t haddr, uint32_t *epc)
 }
 
 static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
-                TCGMemOpIdx oi, uintptr_t retaddr, MemOp op,
-                CPUTLBEntry *entry, CPUIOTLBEntry *iotlbentry,
-                int prot, uint32_t *epc)
+        TCGMemOpIdx oi, uintptr_t retaddr, MemOp op,
+        CPUTLBEntry *entry, CPUIOTLBEntry *iotlbentry,
+        int prot, uint32_t *epc,
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
 {
     uintptr_t mmu_idx = get_mmuidx(oi);
     target_ulong tlb_addr = tlb_addr_write(entry);
     unsigned a_bits = get_alignment_bits(get_memop(oi));
-    uint64_t haddr;
+    uint64_t haddr, haddr2;
+    target_ulong addr2;
     size_t size = memop_size(op);
 
     /* Handle CPU specific unaligned behaviour */
@@ -810,6 +892,8 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
     /* Handle anything that isn't just a straight memory access.  */
     if (unlikely(tlb_addr & ~TARGET_PAGE_MASK)) {
         bool need_swap;
+
+        assert(!is_unalign_2); /* TODO */
 
         /* For anything that is unaligned, recurse through byte stores.  */
         if ((addr & (size - 1)) != 0) {
@@ -854,7 +938,8 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
             notdirty_write(env_cpu(env), addr, size, iotlbentry, retaddr);
             //TRY
             ((uint64_t *)data_storage)[32] += 4;
-            store_into_mem(haddr, epc);
+            store_into_mem(haddr, epc, 0,
+                    0, -1); /* not unalign access */
             return;
         }
 
@@ -869,7 +954,8 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
         if (hamt_interpreter()) {
             ((uint64_t *)data_storage)[32] += 4;
-            store_into_mem(haddr, epc);
+            store_into_mem(haddr, epc, 0,
+                    0, -1); /* not unalign */
         }
         return;
     }
@@ -879,13 +965,39 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         && unlikely((addr & ~TARGET_PAGE_MASK) + size - 1
                      >= TARGET_PAGE_SIZE)) {
 	    //pr_info("store helper slow unaligned access vaddr: %llx", addr);
+        if (hamt_interpreter()) {
+            if (!is_unalign_2) {
+                //pr_info("store unaligned access vaddr=0x%llx size=%d", addr, size);
+                hamt_exception_handler(addr + mapping_base_address, env, epc,
+                        1, entry, size);
+            } else {
+                ((uint64_t *)data_storage)[32] += 4;
+
+                /*
+                 *              size
+                 *      addr |--------|
+                 * ---------------|--------------
+                 *       page1          page2
+                 * unalign_entry1       entry
+                 */
+                haddr = ((uintptr_t)addr + unalign_entry1->addend);
+                addr2 = (addr + size) & TARGET_PAGE_MASK;
+                haddr2 = ((uintptr_t)addr2 + entry->addend);
+                //pr_info("store unaligned access vaddr=0x%llx haddr=0x%llx haddr2=0x%llx",
+                        //addr, haddr, haddr2);
+                store_into_mem(haddr, epc, 0,
+                        is_unalign_2, haddr2);
+            }
+            return;
+        }
     }
 
     haddr = ((uintptr_t)addr + entry->addend);
 
     if (hamt_interpreter()) {
         ((uint64_t *)data_storage)[32] += 4;
-        store_into_mem(haddr, epc);
+        store_into_mem(haddr, epc, 0,
+                0, -1); /* not unalign access */
     } else {
         hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
     }
@@ -893,14 +1005,22 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
 static void load_direct_into_reg(MemOp op,
         uint64_t vaddr, uint64_t haddr, uint32_t *epc,
-        int debug)
+        int debug, int is_unalign_2, uint64_t haddr2)
 {
     int is_sign  = (op & (1<<2));
     size_t size  = op & 0x3;
     uint64_t val = 0;
 
+    uint8_t *d1 = (void *)haddr;
+    uint8_t *d2 = (void *)haddr2;
+    uint8_t *d = NULL;
+    uint8_t  b = 0;
+    int i = 0;
+    int s = 0;
+
     switch (size) {
     case 0:
+        assert(!is_unalign_2);
         if (is_sign) {
             val = *((int8_t*)haddr);
             hamt_interpreter_debug("Read  8s " VHV_FMT "\n", vaddr, haddr, val);
@@ -912,30 +1032,84 @@ static void load_direct_into_reg(MemOp op,
         }
         break;
     case 1:
-        if (is_sign) {
-            val = *((int16_t*)haddr);
-            hamt_interpreter_debug("Read 16s " VHV_FMT "\n", vaddr, haddr, val);
-            assert((val >> 16) == 0 || (int64_t)(val >> 16) == 1);
+        if (is_unalign_2) {
+            s = 0;
+            b = *d1; val = val | (b << (8 * s));
+
+            s += 1;
+            b = *d2; val = val | (b << (8 * s));
+            if (is_sign) {
+                val = (int16_t)val;
+                assert((val >> 16) == 0 || (int64_t)(val >> 16) == 1);
+                hamt_interpreter_debug("Read 16s " VHV_FMT "\n", vaddr, haddr, val);
+            } else {
+                val = (uint16_t)val;
+                assert((val >> 16) == 0);
+                hamt_interpreter_debug("Read 16u " VHV_FMT "\n", vaddr, haddr, val);
+            }
         } else {
-            val = *((uint16_t*)haddr);
-            hamt_interpreter_debug("Read 16u " VHV_FMT "\n", vaddr, haddr, val);
-            assert((val >> 16) == 0);
+            if (is_sign) {
+                val = *((int16_t*)haddr);
+                hamt_interpreter_debug("Read 16s " VHV_FMT "\n", vaddr, haddr, val);
+                assert((val >> 16) == 0 || (int64_t)(val >> 16) == 1);
+            } else {
+                val = *((uint16_t*)haddr);
+                hamt_interpreter_debug("Read 16u " VHV_FMT "\n", vaddr, haddr, val);
+                assert((val >> 16) == 0);
+            }
         }
         break;
     case 2:
-        if (is_sign) {
-            val = *((int32_t*)haddr);
-            hamt_interpreter_debug("Read 32s " VHV_FMT "\n", vaddr, haddr, val);
-            assert((val >> 32) == 0 || (int64_t)(val >> 32) == 1);
+        if (is_unalign_2) {
+            /* 0 */
+            d = d1; s = 0;
+            b = *d; val = val | (b << (s * 8));
+            /* 1,2,3 */
+            for (i = 0; i < 3; ++i) {
+                s += 1;
+                d += 1; if (((uint64_t)d & 0xfff) == 0) d = d2;
+                b = *d; val = val | (b << (s * 8));
+            }
+            /* final value */
+            if (is_sign) {
+                val = (int32_t)val;
+                assert((val >> 32) == 0 || (int64_t)(val >> 32) == 1);
+                hamt_interpreter_debug("Read 32s " VHV_FMT "\n", vaddr, haddr, val);
+            } else {
+                val = (uint32_t)val;
+                assert((val >> 32) == 0);
+                hamt_interpreter_debug("Read 32u " VHV_FMT "\n", vaddr, haddr, val);
+            }
         } else {
-            val = *((uint32_t*)haddr);
-            hamt_interpreter_debug("Read 32u " VHV_FMT "\n", vaddr, haddr, val);
-            assert((val >> 32) == 0);
+            if (is_sign) {
+                val = *((int32_t*)haddr);
+                hamt_interpreter_debug("Read 32s " VHV_FMT "\n", vaddr, haddr, val);
+                assert((val >> 32) == 0 || (int64_t)(val >> 32) == 1);
+            } else {
+                val = *((uint32_t*)haddr);
+                hamt_interpreter_debug("Read 32u " VHV_FMT "\n", vaddr, haddr, val);
+                assert((val >> 32) == 0);
+            }
         }
         break;
     case 3:
-        val = *((uint64_t*)haddr);
-        hamt_interpreter_debug("Read 64 " VHV_FMT "\n", vaddr, haddr, val);
+        if (is_unalign_2) {
+            /* 0 */
+            d = d1; s = 0;
+            b = *d; val = val | b;
+            /* 1,2,3,4,5,6,7 */
+            for (i = 0; i < 7; ++i) {
+                s += 1;
+                d += 1; if (((uint64_t)d & 0xfff) == 0) d = d2;
+                b = *d; val = val | (b << (s * 8));
+            }
+            /* final value */
+            val = (uint64_t)val;
+            hamt_interpreter_debug("Read 64 " VHV_FMT "\n", vaddr, haddr, val);
+        } else {
+            val = *((uint64_t*)haddr);
+            hamt_interpreter_debug("Read 64 " VHV_FMT "\n", vaddr, haddr, val);
+        }
         break;
     default:
         hamt_interpreter_debug(">>>>> error memop 0x%x\n", op);
@@ -946,14 +1120,16 @@ static void load_direct_into_reg(MemOp op,
 }
 
 static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
-                uintptr_t retaddr, MemOp op, CPUTLBEntry *entry, CPUIOTLBEntry *iotlbentry,
-                int prot, uint32_t *epc)
+        uintptr_t retaddr, MemOp op, CPUTLBEntry *entry, CPUIOTLBEntry *iotlbentry,
+        int prot, uint32_t *epc,
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
 {
     uintptr_t mmu_idx = get_mmuidx(oi);
     uint64_t tlb_addr = entry->addr_read;
     const MMUAccessType access_type = MMU_DATA_LOAD;
     unsigned a_bits = get_alignment_bits(get_memop(oi));
-    uint64_t haddr;
+    uint64_t haddr, haddr2;
+    target_ulong addr2;
     size_t size = memop_size(op);
 
     /* Handle CPU specific unaligned behaviour */
@@ -964,6 +1140,8 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
     /* Handle anything that isn't just a straight memory access.  */
     if (unlikely(tlb_addr & ~TARGET_PAGE_MASK)) {
         bool need_swap;
+
+        assert(!is_unalign_2); /* TODO */
 
         /* For anything that is unaligned, recurse through full_load.  */
         if ((addr & (size - 1)) != 0) {
@@ -1002,7 +1180,8 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 
         if (hamt_interpreter()) {
             ((uint64_t *)data_storage)[32] += 4;
-            load_direct_into_reg(op, addr, haddr, epc, 0);
+            load_direct_into_reg(op, addr, haddr, epc, 0,
+                    0, 0); /* not unalign access */
         } else {
             hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
         }
@@ -1015,13 +1194,39 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
         && unlikely((addr & ~TARGET_PAGE_MASK) + size - 1
                     >= TARGET_PAGE_SIZE)) {
 	    //pr_info("load helper slow unaligned access vaddr: %llx", addr);
+        if (hamt_interpreter()) {
+            if (!is_unalign_2) {
+                //pr_info("load  unaligned access vaddr=0x%llx size=%d", addr, size);
+                hamt_exception_handler(addr + mapping_base_address, env, epc,
+                        1, entry, size);
+            } else {
+                ((uint64_t *)data_storage)[32] += 4;
+
+                /*
+                 *              size
+                 *      addr |--------|
+                 * ---------------|--------------
+                 *       page1          page2
+                 * unalign_entry1       entry
+                 */
+                haddr = ((uintptr_t)addr + unalign_entry1->addend);
+                addr2 = (addr + size) & TARGET_PAGE_MASK;
+                haddr2 = ((uintptr_t)addr2 + entry->addend);
+                //pr_info("load  unaligned access vaddr=0x%llx haddr=0x%llx haddr2=0x%llx",
+                        //addr, haddr, haddr2);
+                load_direct_into_reg(op, addr, haddr, epc, 0,
+                        is_unalign_2, haddr2); /* unalign access */
+            }
+            return;
+        }
     }
 
     haddr = (uintptr_t)addr + entry->addend;
 
     if (hamt_interpreter()) {
         ((uint64_t *)data_storage)[32] += 4;
-        load_direct_into_reg(op, addr, haddr, epc, 0);
+        load_direct_into_reg(op, addr, haddr, epc, 0,
+                0, 0); /* not unalign access */
     } else {
         hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
     }
@@ -1030,8 +1235,9 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 }
 
 static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
-                             uint64_t paddr, MemTxAttrs attrs, int prot,
-                             int mmu_idx, target_ulong size, bool is_write, uint32_t *epc)
+        uint64_t paddr, MemTxAttrs attrs, int prot,
+        int mmu_idx, target_ulong size, bool is_write, uint32_t *epc,
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
 {
 
     CPUArchState *env = cpu->env_ptr;
@@ -1056,7 +1262,12 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
         sz = size;
     }
 
-    vaddr_page = (hamt_badvaddr - mapping_base_address) & TARGET_PAGE_MASK;
+    uint64_t addr = hamt_badvaddr - mapping_base_address;
+    if (is_unalign_2) {
+        /* process the second page for unaligned access */
+        addr = (addr + unalign_size) & TARGET_PAGE_MASK;
+    }
+    vaddr_page = addr  & TARGET_PAGE_MASK;
     paddr_page = paddr & TARGET_PAGE_MASK;
 
     section = address_space_translate_for_iotlb(cpu, asidx, paddr_page,
@@ -1141,11 +1352,13 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
         hamt_store_helper(env, hamt_badvaddr-mapping_base_address, hamt_get_st_val(epc),
             hamt_get_oi(epc, mmu_idx), ((uint64_t *)data_storage)[32]+4,
             hamt_get_memop(epc),
-            &tn, &iotlbentry, prot, epc);
+            &tn, &iotlbentry, prot, epc,
+            is_unalign_2, unalign_entry1, unalign_size);
     } else {
         hamt_load_helper(env,hamt_badvaddr-mapping_base_address, hamt_get_oi(epc, mmu_idx),
             ((uint64_t *)data_storage)[32]+4, hamt_get_memop(epc),
-            &tn, &iotlbentry, prot, epc);
+            &tn, &iotlbentry, prot, epc,
+            is_unalign_2, unalign_entry1, unalign_size);
     }
 
     return;
@@ -1246,7 +1459,9 @@ static void count_guest_tlb(void)
 }
 #endif
 
-void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *epc)
+void hamt_exception_handler(uint64_t hamt_badvaddr,
+        CPUX86State *env, uint32_t *epc,
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
 {
 	/*
      * JOBS
@@ -1269,6 +1484,10 @@ void hamt_exception_handler(uint64_t hamt_badvaddr, CPUX86State *env, uint32_t *
     }
 
     uint64_t addr = hamt_badvaddr - mapping_base_address;
+    if (is_unalign_2) {
+        /* process the second page for unaligned access */
+        addr = (addr + unalign_size) & TARGET_PAGE_MASK;
+    }
 
     CPUState *cs = env_cpu(env);
     X86CPU *cpu = X86_CPU(cs);
@@ -1489,7 +1708,8 @@ do_mapping:
     assert(prot & (1 << is_write));
 
 	hamt_process_addr_mapping(cs, hamt_badvaddr, paddr, cpu_get_mem_attrs(env),
-                            prot, mmu_idx, page_size, is_write, epc);
+            prot, mmu_idx, page_size, is_write, epc,
+            is_unalign_2, unalign_entry1, unalign_size);
 
     return;
 
@@ -1595,10 +1815,13 @@ static void build_tlb_invalid_trampoline(void)
      *     ld.d $a1, $t0, 184 
      * epc(a2)
      *     ld.d $a2, $t0, 256
+     * is_unalign_2(a3)
+     *     or   $a3, zero, zero
      */
     p[i++] = 0x28c42184;
     p[i++] = 0x28c2e185;
     p[i++] = 0x28c40186;
+    p[i++] = 0x00150007;
 
     uint64_t f = (uint64_t)hamt_exception_handler;
     /*
