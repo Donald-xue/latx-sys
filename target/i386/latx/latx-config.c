@@ -382,6 +382,11 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
         return;
     }
 
+    int cpl = (option_trace_simple & 0xF0) >> 4;
+    if ((tb->flags & 0x3) < cpl) {
+        return;
+    }
+
     static int latxs_sttb;
     if (option_trace_start_tb_set &&
         !latxs_sttb &&
@@ -402,7 +407,7 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
     fprintf(stderr, "PC=0x"TARGET_FMT_lx" / ", tb->pc);
     fprintf(stderr, "CS=0x"TARGET_FMT_lx" / ", tb->cs_base);
     fprintf(stderr, "EF=0x%x / ", eflags);
-    switch (option_trace_simple) {
+    switch (option_trace_simple & 0xF) {
     case 2: /* Print with FPU state */
         fprintf(stderr, "TOP=%d / ",  env->fpstt);
         if (!option_lsfpu) {
