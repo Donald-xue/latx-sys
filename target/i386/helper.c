@@ -162,7 +162,7 @@ void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
     if (env->cr[0] & CR0_PG_MASK) {
         qemu_log_mask(CPU_LOG_MMU,
                         "CR3 update: CR3=" TARGET_FMT_lx "\n", new_cr3);
-        if (hamt_enable() && !hamt_interpreter() && hamt_started()) {
+        if (hamt_enable() && hamt_pg_asid() && hamt_started()) {
             if (old_cr3 == new_cr3) hamt_need_flush(old_cr3, false);
             tlb_flush_by_mmuidx(env_cpu(env), 7);
         } else {

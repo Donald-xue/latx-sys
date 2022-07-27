@@ -110,7 +110,8 @@ static void QEMU_NORETURN raise_interrupt2(CPUX86State *env, int intno,
     env->exception_next_eip = env->eip + next_eip_addend;
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-    if (hamt_enable() && hamt_started() && is_int && (intno == 0x80)) {
+    if (hamt_enable() && hamt_pg_asid() && hamt_started() &&
+            is_int && (intno == 0x80)) {
         bool special_syscall1 = env->regs[0] == 1 ||
                                env->regs[0] == 252;
         bool special_syscall2 = env->regs[0] == 11 ||

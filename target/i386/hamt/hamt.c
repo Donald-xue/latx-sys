@@ -41,15 +41,26 @@
 
 #define HAMT_TYPE_BASE          1
 #define HAMT_TYPE_INTERPRETER   2
+#define HAMT_TYPE_PG_ASID       3
 
 int hamt_enable(void)
 {
     return option_hamt >= HAMT_TYPE_BASE;
 }
 
+int hamt_base(void)
+{
+    return option_hamt == HAMT_TYPE_BASE;
+}
+
 int hamt_interpreter(void)
 {
     return option_hamt == HAMT_TYPE_INTERPRETER;
+}
+
+int hamt_pg_asid(void)
+{
+    return option_hamt == HAMT_TYPE_PG_ASID;
 }
 
 #define HAMT_INTERPRETER_DEBUG
@@ -286,9 +297,7 @@ static uint16_t find_first_unused_asid_value(void)
 static inline void local_flush_tlb_all(void)
 {
     int32_t csr_tlbidx;
-    /*
     int i = 0;
-    */
 
     ++flush_tlb_all_count;
 
@@ -305,7 +314,6 @@ static inline void local_flush_tlb_all(void)
     write_csr_tlbidx(csr_tlbidx);
     __asm__ __volatile__("tlbflush");
 
-    /*
     for (i = 0; i < STLBSETS; ++i) {
         csr_tlbidx = read_csr_tlbidx();
         csr_tlbidx &= 0xffff0000;
@@ -313,7 +321,6 @@ static inline void local_flush_tlb_all(void)
         write_csr_tlbidx(csr_tlbidx);
         __asm__ __volatile__("tlbflush");
     } 
-    */
 
     enable_pg();
 }
@@ -402,6 +409,15 @@ void hamt_set_context(uint64_t new_cr3)
 {
     if (hamt_interpreter()) {
         return;
+    }
+
+    if (hamt_base()) {
+        if (hamt_enable() && hamt_started()) {
+            hamt_flush_all();
+            return;
+        } else {
+            die("hamt flush all when not in hamt");
+        }
     }
 
     /*
@@ -1479,8 +1495,10 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
 
     tlb_lsm++;
 
-    if (env->cr[3] == 0 && check_cr3_in_htable(0) == NULL) {
-        hamt_set_context(0);
+    if (hamt_pg_asid()) {
+        if (env->cr[3] == 0 && check_cr3_in_htable(0) == NULL) {
+            hamt_set_context(0);
+        }
     }
 
     uint64_t addr = hamt_badvaddr - mapping_base_address;

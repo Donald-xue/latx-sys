@@ -2438,7 +2438,7 @@ void helper_sysenter(CPUX86State *env)
     env->eip = env->sysenter_eip;
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-    if (hamt_enable() && hamt_started()) {
+    if (hamt_enable() && hamt_pg_asid() && hamt_started()) {
         bool special_syscall1 = env->regs[0] == 1 ||
                                env->regs[0] == 252;
         bool special_syscall2 = env->regs[0] == 11 ||
