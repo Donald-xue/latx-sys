@@ -296,24 +296,31 @@ static uint16_t find_first_unused_asid_value(void)
 #define STLBSETS 256
 static inline void local_flush_tlb_all(void)
 {
-    int32_t csr_tlbidx;
-    int i = 0;
-
     ++flush_tlb_all_count;
 
-    /*
+#if 1
+    disable_pg();
+    /* invtlb 0x3 : flush guest all TLB that G=0 */
     __asm__ __volatile__(
         ".word ((0x6498000) | (0 << 10) | (0 << 5) | 0x3)\n\t"
         );
-    */
+    enable_pg();
+#endif
+#if 0
+    int i = 0;
+    int32_t csr_tlbidx;
 
     disable_pg();
+
+    /* flush mtlb */
     csr_tlbidx = read_csr_tlbidx();
     csr_tlbidx &= 0xffff0000;
     csr_tlbidx += 0x800;
     write_csr_tlbidx(csr_tlbidx);
     __asm__ __volatile__("tlbflush");
 
+#if 0
+    /* flush stlb */
     for (i = 0; i < STLBSETS; ++i) {
         csr_tlbidx = read_csr_tlbidx();
         csr_tlbidx &= 0xffff0000;
@@ -321,8 +328,11 @@ static inline void local_flush_tlb_all(void)
         write_csr_tlbidx(csr_tlbidx);
         __asm__ __volatile__("tlbflush");
     } 
+#endif
 
     enable_pg();
+#endif
+
 }
 
 static inline void local_flush_tlb_asid(uint16_t asid)
