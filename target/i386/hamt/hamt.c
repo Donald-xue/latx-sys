@@ -230,14 +230,18 @@ static inline void disable_pg(void)
 void hamt_alloc_target_addr_space(void)
 {
 	mapping_base_address =
-	    (uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS+0x10000), TARGET_ADDR_SIZE, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	    //(uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS+0x10000), TARGET_ADDR_SIZE, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	    (uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS), TARGET_ADDR_SIZE, PROT_RWX,
+               MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
     if (mapping_base_address == (uint64_t)MAP_FAILED)
 	    die("CANNOT ALLOC_TARGET_SPACE\n");
 
-    assert(mapping_base_address == 0x10000);
+    printf("mapping base address 0x%lx\n", mapping_base_address);
+//    assert(mapping_base_address == 0x10000);
+    assert(mapping_base_address == 0x0);
     
-    mapping_base_address -= 0x10000;
+//    mapping_base_address -= 0x10000;
 }
 
 static uint8_t cr3_hash_2_index(uint64_t cr3)
