@@ -398,7 +398,7 @@ void host_loop(struct kvm_cpu *vcpu)
         hamt_status = false;
         stop_hamt(&hamt_status);
 		u64 sysno = arch_get_sysno(vcpu);
-		/* struct kvm_regs regs; */
+		struct kvm_regs regs;
 
 		if (err < 0 && (errno != EINTR && errno != EAGAIN)) {
 			die("KVM_RUN : err=%d\n", err);
@@ -409,6 +409,32 @@ void host_loop(struct kvm_cpu *vcpu)
 		}
 
 		if (vcpu->kvm_run->exit_reason != KVM_EXIT_HYPERCALL) {
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_REGS, &regs);
+            pr_info("         PC  %p", (void *)regs.pc);
+            pr_info("         R13 0x%lx", regs.gpr[13]);
+
+            struct kvm_one_reg csr;
+            uint64_t csr_value = 0;
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_BADV;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("         BADV 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_EPC;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("         EPC 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_BADI;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("         BADI 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_ESTAT;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("         ESTAT 0x%lx", csr_value);
+
 			die("KVM_EXIT_IS_NOT_HYPERCALL vcpu=%d exit_reason=%d",
 			    vcpu->cpu_id, vcpu->kvm_run->exit_reason);
 		}
