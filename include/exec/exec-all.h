@@ -567,6 +567,7 @@ struct TranslationBlock {
     int sigint_link_flag[4];
     /* code cache */
     int trace_cc;
+    uint64_t tb_exec_nr;
 #endif
 #endif
 };

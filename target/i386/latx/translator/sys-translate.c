@@ -6,6 +6,7 @@
 #include "translate.h"
 #include <string.h>
 #include "qemu/cacheflush.h"
+#include "latxs-code-cache.h"
 
 /* Main Translation Process */
 
@@ -477,6 +478,8 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 
 void latxs_tr_gen_tb_start(void)
 {
+    latxs_tracecc_gen_tb_start();
+
     if (sigint_enabled()) {
         return;
     }

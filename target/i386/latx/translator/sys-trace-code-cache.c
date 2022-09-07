@@ -86,13 +86,14 @@ static gboolean latxs_tracecc_tb(
     const TranslationBlock *tb = value;
     int *flushnr = data;
 
-    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x\n",
+    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld\n",
             *flushnr, (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
             (void *)tb->tc.ptr, tb->tc.size,
             (uint32_t)tb->page_addr[0],
-            (uint32_t)tb->page_addr[1]);
+            (uint32_t)tb->page_addr[1],
+            (uint64_t)tb->tb_exec_nr);
 
     return false;
 }
@@ -120,4 +121,24 @@ void latxs_tracecc_tb_inv(TranslationBlock *tb)
             (void *)tb->tc.ptr, tb->tc.size,
             (uint32_t)tb->page_addr[0],
             (uint32_t)tb->page_addr[1]);
+}
+
+void latxs_tracecc_gen_tb_start(void)
+{
+    if (tracecc_has_tb_flush_print()) {
+        TRANSLATION_DATA *td = lsenv->tr_data;
+        TranslationBlock *tb = td->curr_tb;
+
+        IR2_OPND tbbase = latxs_stmp1_ir2_opnd;
+        IR2_OPND count = latxs_stmp2_ir2_opnd;
+
+        tb->tb_exec_nr = 0;
+
+        latxs_load_imm64(&tbbase, (int64_t)tb);
+        latxs_append_ir2_opnd2i(LISA_LD_D, &count, &tbbase,
+                offsetof(TranslationBlock, tb_exec_nr));
+        latxs_append_ir2_opnd2i(LISA_ADDI_D, &count, &count, 1);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &count, &tbbase,
+                offsetof(TranslationBlock, tb_exec_nr));
+    }
 }

@@ -15,6 +15,7 @@ int tracecc_has_tb_flush_print(void);
 
 
 
+void latxs_tracecc_gen_tb_start(void);
 void latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb);
 void latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb);
 void latxs_tracecc_do_tb_flush(void);
