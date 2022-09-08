@@ -7,6 +7,7 @@
 #include <string.h>
 #include "trace.h"
 #include "latxs-code-cache.h"
+#include "latxs-fastcs-cfg.h"
 
 /*
  * option_trace_code_cache
@@ -50,12 +51,14 @@ void latxs_tracecc_target_to_host(
     if (!tracecc_has_tb_tr()) {
         return;
     }
-    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x\n",
+    uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
+    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x %x\n",
             (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->icount,
             (void *)tb->tc.ptr,
-            (uint32_t)env->cr[3]);
+            (uint32_t)env->cr[3],
+            fcs);
 }
 
 static int tb_trace_cc_done(TranslationBlock *tb)
@@ -69,14 +72,15 @@ void latxs_tracecc_before_exec_tb(
     if (!tracecc_has_tb_exec() || tb_trace_cc_done(tb)) {
         return;
     }
-    fprintf(stderr, "[CC] EXEC %p %x %x %x %x %d %p %lx %x %x %x\n",
+    uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
+    fprintf(stderr, "[CC] EXEC %p %x %x %x %x %d %p %lx %x %x %x %x\n",
             (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
             (void *)tb->tc.ptr, tb->tc.size,
             (uint32_t)env->cr[3],
             (uint32_t)tb->page_addr[0],
-            (uint32_t)tb->page_addr[1]);
+            (uint32_t)tb->page_addr[1], fcs);
     tb->trace_cc |= 0x1;
 }
 
@@ -86,14 +90,16 @@ static gboolean latxs_tracecc_tb(
     const TranslationBlock *tb = value;
     int *flushnr = data;
 
-    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld\n",
+    uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
+    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld %x\n",
             *flushnr, (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
             (void *)tb->tc.ptr, tb->tc.size,
             (uint32_t)tb->page_addr[0],
             (uint32_t)tb->page_addr[1],
-            (uint64_t)tb->tb_exec_nr);
+            (uint64_t)tb->tb_exec_nr,
+            fcs);
 
     return false;
 }
