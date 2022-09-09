@@ -277,6 +277,7 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     td->sys.bp_hit = 0;
 
     if (option_dump && qemu_log_in_addr_range(tb->pc)) {
+        fprintf(stderr, "SYS.FLAGS  = %x\n", td->sys.flags);
         fprintf(stderr, "SYS.PE     = %d\n", td->sys.pe);
         fprintf(stderr, "SYS.code32 = %d\n", td->sys.code32);
 #ifdef TARGET_X86_64
