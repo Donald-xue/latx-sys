@@ -51,14 +51,29 @@ void latxs_tracecc_target_to_host(
     if (!tracecc_has_tb_tr()) {
         return;
     }
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    IR1_INST *ir1_list = td->ir1_inst_array;
+    int ir1_nr = td->ir1_nr;
+
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x %x\n",
+    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x %x ",
             (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->icount,
             (void *)tb->tc.ptr,
             (uint32_t)env->cr[3],
             fcs);
+
+    int i = 0, j = 0;
+    IR1_INST *pir1 = NULL;
+    for (i = 0; i < ir1_nr; ++i) {
+        pir1 = ir1_list + i;
+        for (j = 0; j < pir1->info->size; j++) {
+            fprintf(stderr, "%02x", pir1->info->bytes[j]);
+        }
+    }
+    fprintf(stderr, "\n");
 }
 
 static int tb_trace_cc_done(TranslationBlock *tb)

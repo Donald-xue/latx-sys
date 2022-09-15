@@ -1672,10 +1672,10 @@ int ir1_dump(IR1_INST *ir1)
     fprintf(stderr, "0x%" PRIx64 ": ", ir1->info->address);
     int i = 0;
     for (; i < ir1->info->size; i++) {
-        fprintf(stderr, "%02x ", ir1->info->bytes[i]);
+        fprintf(stderr, "%02x", ir1->info->bytes[i]);
     }
     for (; i < 10; i++) {
-        fprintf(stderr, "   ");
+        fprintf(stderr, "  ");
     }
 
     fprintf(stderr, "%s\t\t%s\t", ir1->info->mnemonic, ir1->info->op_str);
