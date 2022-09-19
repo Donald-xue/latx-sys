@@ -1674,9 +1674,7 @@ int ir1_dump(IR1_INST *ir1)
     for (; i < ir1->info->size; i++) {
         fprintf(stderr, "%02x", ir1->info->bytes[i]);
     }
-    for (; i < 10; i++) {
-        fprintf(stderr, "  ");
-    }
+    fprintf(stderr, "\t\t");
 
     fprintf(stderr, "%s\t\t%s\t", ir1->info->mnemonic, ir1->info->op_str);
 
