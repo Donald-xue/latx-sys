@@ -16,6 +16,10 @@
 #include "exec/exec-all.h"
 #include "exec/tb-hash.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latxs-cc-pro.h"
+#endif
+
 /* Might cause an exception, so have a longjmp destination ready */
 static inline TranslationBlock *tb_lookup(CPUState *cpu, target_ulong pc,
                                           target_ulong cs_base,
@@ -34,13 +38,22 @@ static inline TranslationBlock *tb_lookup(CPUState *cpu, target_ulong pc,
         tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
     }
 
+    int jc_lookup_ok = 0;
     if (likely(tb &&
                tb->pc == pc &&
                tb->cs_base == cs_base &&
-               tb->flags == flags &&
                tb->trace_vcpu_dstate == *cpu->trace_dstate &&
                tb_cflags(tb) == cflags)) {
-        return tb;
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+        if (latxs_cc_pro_tb_flags_cmp(tb, flags)) {
+            jc_lookup_ok = 1;
+        }
+#else
+        if (tb->flags == flags) {
+            jc_lookup_ok = 1;
+        }
+#endif
+        if(jc_lookup_ok) return tb;
     }
     tb = tb_htable_lookup(cpu, pc, cs_base, flags, cflags);
     if (tb == NULL) {

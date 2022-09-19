@@ -13,5 +13,6 @@ i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-njc.c',
   'sys-sigint.c',
   'sys-fastcs.c',
+  'sys-cc-pro.c',
   'sys-em.c'
 ))

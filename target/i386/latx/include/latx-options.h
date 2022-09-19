@@ -68,6 +68,7 @@ extern int option_cross_page_check;
 extern int option_cross_page_jmp_link;
 extern int option_intb_link;
 extern int option_by_hand_64;
+extern int option_code_cache_pro;
 
 /* For QEMU monitor in softmmu */
 extern int option_monitor_sc; /* Simple Counter */

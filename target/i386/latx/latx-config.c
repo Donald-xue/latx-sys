@@ -371,8 +371,6 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
         tb->_top_in = env->fpstt & 0x7;
     }
 
-    latxs_tracecc_target_to_host(env, tb);
-
     return latxs_tr_translate_tb(tb, search_size);
 }
 

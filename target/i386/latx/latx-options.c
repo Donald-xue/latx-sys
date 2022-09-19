@@ -53,6 +53,7 @@ int option_fast_fpr_ldst;
 int option_large_code_cache;
 int option_fastcs;
 int option_hamt;
+int option_code_cache_pro;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -279,6 +280,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "hardware accelerated memory translation",
         }, {
+            .name = "ccpro",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache pro",
+        }, {
             .name = "smmu",
             .type = QEMU_OPT_BOOL,
             .help = "use softmmu slow path only (debug)",
@@ -453,6 +458,11 @@ static void parse_options_fastcs(unsigned long long t)
     option_fastcs = t;
 }
 
+static void parse_options_code_cache_pro(unsigned long long t)
+{
+    option_code_cache_pro = t;
+}
+
 static void parse_options_tbsizei(unsigned long long i)
 {
     if (i && i < 255) {
@@ -614,6 +624,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_fastcs(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "ccpro");
+    if (opt) {
+        parse_options_code_cache_pro(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "intblink");
     if (opt) {
         parse_options_bool(LATXS_OPT_intb_link, opt->value.boolean);
@@ -729,6 +744,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_njc);
     printf("[LATXS-OPT] by_hand_64 = %d\n", option_by_hand_64);
     printf("[LATXS-OPT] fastcs = %d\n", option_fastcs);
+    printf("[LATXS-OPT] Code Cache Pro = %d\n", option_code_cache_pro);
 #ifdef CONFIG_SOFTMMU
     printf("[LATXS-OPT] monitor 1 simple    counter = %d\n", option_monitor_sc);
     printf("[LATXS-OPT] monitor 2 timer     counter = %d\n", option_monitor_tc);
@@ -765,6 +781,7 @@ void latxs_options_init(void)
     option_soft_fpu = 0;
     option_fast_fpr_ldst = 0;
     option_by_hand_64 = 0;
+    option_code_cache_pro = 0;
 
     option_smmu_slow = 0;
 

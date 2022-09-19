@@ -45,6 +45,7 @@
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-test-sys.h"
 #include "latx-fastcs-sys.h"
+#include "latxs-cc-pro.h"
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
@@ -355,12 +356,22 @@ static bool tb_lookup_cmp(const void *p, const void *d)
     const TranslationBlock *tb = p;
     const struct tb_desc *desc = d;
 
+    int ok = 0;
     if (tb->pc == desc->pc &&
         tb->page_addr[0] == desc->phys_page1 &&
         tb->cs_base == desc->cs_base &&
-        tb->flags == desc->flags &&
         tb->trace_vcpu_dstate == desc->trace_vcpu_dstate &&
         tb_cflags(tb) == desc->cflags) {
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+        if (latxs_cc_pro_tb_flags_cmp(tb, desc->flags)) {
+            ok = 1;
+        }
+#else
+        if (tb->flags == desc->flags) {
+            ok = 1;
+        }
+#endif
+        if (!ok) return false;
         /* check next page if needed */
         if (tb->page_addr[1] == -1) {
             return true;
@@ -397,7 +408,13 @@ TranslationBlock *tb_htable_lookup(CPUState *cpu, target_ulong pc,
         return NULL;
     }
     desc.phys_page1 = phys_pc & TARGET_PAGE_MASK;
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    h = tb_hash_func(phys_pc, pc,
+            latxs_cc_pro() ? flags & ~0xe00 : flags,
+            cflags, *cpu->trace_dstate);
+#else
     h = tb_hash_func(phys_pc, pc, flags, cflags, *cpu->trace_dstate);
+#endif
     return qht_lookup_custom(&tb_ctx.htable, &desc, h, tb_lookup_cmp);
 }
 
@@ -453,6 +470,9 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     if (latxs_fastcs_is_no_link() &&
         tb->fastcs_ctx != tb_next->fastcs_ctx) {
+        return;
+    }
+    if (latxs_cc_pro() && tb_next->cc_flags != 0) {
         return;
     }
 #endif

@@ -294,6 +294,12 @@ void latxs_tr_disasm(TranslationBlock *tb)
 
     tb->_ir1_instructions = ir1_list;
     tb->icount = ir1_num;
+
+    if (option_dump) {
+        fprintf(stderr, "TB.FASTCS   = %d\n", tb->fastcs_ctx);
+        fprintf(stderr, "TB.CC_FLAGS = %d\n", tb->cc_flags);
+        fprintf(stderr, "TB.ICOUNT   = %d\n", tb->icount);
+    }
 }
 
 IR1_INST *latxs_get_ir1_list(TranslationBlock *tb, ADDRX pc, int *p_ir1_num)

@@ -566,6 +566,7 @@ struct TranslationBlock {
     uint8_t fastcs_jmp_glue_checker;
     int sigint_link_flag[4];
     /* code cache */
+    int cc_flags;
     int trace_cc;
     uint64_t tb_exec_nr;
 #endif

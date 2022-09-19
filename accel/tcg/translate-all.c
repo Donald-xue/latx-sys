@@ -69,6 +69,7 @@
 #include "latxs-code-cache.h"
 #include "latx-fastcs-sys.h"
 #include "hamt.h"
+#include "latxs-cc-pro.h"
 #endif
 #endif
 
@@ -2102,8 +2103,15 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
 
     /* remove the TB from the hash list */
     phys_pc = tb->page_addr[0] + (tb->pc & ~TARGET_PAGE_MASK);
-    h = tb_hash_func(phys_pc, tb->pc, tb->flags, orig_cflags,
-                     tb->trace_vcpu_dstate);
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    h = tb_hash_func(phys_pc, tb->pc,
+            latxs_cc_pro() ? tb->flags & ~0xe00 : tb->flags,
+            orig_cflags, tb->trace_vcpu_dstate);
+#else
+    h = tb_hash_func(phys_pc, tb->pc,
+            tb->flags,
+            orig_cflags, tb->trace_vcpu_dstate);
+#endif
     if (!qht_remove(&tb_ctx.htable, tb, h)) {
         return;
     }
@@ -2294,8 +2302,14 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
     }
 
     /* add in the hash table */
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    h = tb_hash_func(phys_pc, tb->pc,
+            latxs_cc_pro() ? tb->flags & ~0xe00 : tb->flags,
+            tb->cflags, tb->trace_vcpu_dstate);
+#else
     h = tb_hash_func(phys_pc, tb->pc, tb->flags, tb->cflags,
                      tb->trace_vcpu_dstate);
+#endif
     qht_insert(&tb_ctx.htable, tb, h, &existing_tb);
 
     /* remove TB from the page(s) if we couldn't insert it */
@@ -2434,6 +2448,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->sigint_link_flag[2] = -1;
     tb->sigint_link_flag[3] = -1;
     tb->trace_cc = 0;
+    tb->cc_flags = 0;
 #endif
 #endif
 

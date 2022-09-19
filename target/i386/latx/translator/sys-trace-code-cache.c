@@ -8,6 +8,7 @@
 #include "trace.h"
 #include "latxs-code-cache.h"
 #include "latxs-fastcs-cfg.h"
+#include "latxs-cc-pro.h"
 
 /*
  * option_trace_code_cache
@@ -57,13 +58,13 @@ void latxs_tracecc_target_to_host(
     int ir1_nr = td->ir1_nr;
 
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x %x ",
+    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x %x %d ",
             (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->icount,
             (void *)tb->tc.ptr,
             (uint32_t)env->cr[3],
-            fcs);
+            fcs, tb->cc_flags);
 
     int i = 0, j = 0;
     IR1_INST *pir1 = NULL;
@@ -106,7 +107,7 @@ static gboolean latxs_tracecc_tb(
     int *flushnr = data;
 
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld %x\n",
+    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld %x %d\n",
             *flushnr, (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
@@ -114,7 +115,7 @@ static gboolean latxs_tracecc_tb(
             (uint32_t)tb->page_addr[0],
             (uint32_t)tb->page_addr[1],
             (uint64_t)tb->tb_exec_nr,
-            fcs);
+            fcs, tb->cc_flags);
 
     return false;
 }

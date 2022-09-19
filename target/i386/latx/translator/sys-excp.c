@@ -170,8 +170,10 @@ static void latxs_tr_gen_raise_exception_addr(
 int latxs_tr_gen_fp_common_excp_check(IR1_INST *pir1)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
+    TranslationBlock *tb = td->curr_tb;
 
     if (td->sys.flags & (HF_TS_MASK | HF_EM_MASK)) {
+        tb->cc_flags = 1;
         GEN_EXCP_PREX_AND_RETURN();
     }
 
@@ -181,12 +183,15 @@ int latxs_tr_gen_fp_common_excp_check(IR1_INST *pir1)
 int latxs_tr_gen_sse_common_excp_check(IR1_INST *pir1)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
+    TranslationBlock *tb = td->curr_tb;
 
     if (td->sys.flags & HF_TS_MASK) {
+        tb->cc_flags = 1;
         GEN_EXCP_PREX_AND_RETURN();
     }
 
     if (td->sys.flags & HF_EM_MASK) {
+        tb->cc_flags = 1;
         GEN_EXCP_ILLOP_AND_RETURN();
     }
 
@@ -196,6 +201,7 @@ int latxs_tr_gen_sse_common_excp_check(IR1_INST *pir1)
 int latxs_tr_gen_excp_check(IR1_INST *pir1)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
+    TranslationBlock *tb = td->curr_tb;
 
     IR1_OPND *opnd0;
     IR1_OPND *opnd1;
@@ -326,6 +332,7 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
     case X86_INS_STMXCSR:
         if ((td->sys.flags & HF_EM_MASK) ||
             !(td->sys.flags & HF_OSFXSR_MASK)) {
+            tb->cc_flags = 1;
             GEN_EXCP_ILLOP_AND_RETURN();
         }
         break;
@@ -418,12 +425,14 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
         }
         if ((td->sys.flags & HF_EM_MASK) ||
             (td->sys.flags & HF_TS_MASK)) {
+            tb->cc_flags = 1;
             GEN_EXCP_PREX_AND_RETURN();
         }
         break;
     case X86_INS_WAIT:
         if ((td->sys.flags & (HF_MP_MASK | HF_TS_MASK)) ==
             (HF_MP_MASK | HF_TS_MASK)) {
+            tb->cc_flags = 1;
             GEN_EXCP_PREX_AND_RETURN();
         }
         break;
