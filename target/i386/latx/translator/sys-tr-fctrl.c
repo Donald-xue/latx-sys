@@ -666,6 +666,10 @@ bool latxs_translate_fnclex(IR1_INST *pir1)
 
 bool latxs_translate_emms(IR1_INST *pir1)
 {
+    if (latxs_tr_gen_sse_common_excp_check(pir1)) {
+        return true;
+    }
+
     /*
      *  QEMU implements emms by helper func, which is simple,
      *  so I choose to implements it by mips assembly.
