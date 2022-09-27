@@ -1213,7 +1213,7 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
         int, int, int, int, int, int);
 /* translator/sys-softmmu.c */
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
-        int, int, int, int, int, int);
+        int, int, int, int, int, int, uint32_t);
 /* translator/sys-native-printer.c */
 void latxs_native_printer_tb(lsenv_np_data_t *npd,
         int, int, int, int, int, int);

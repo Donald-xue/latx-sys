@@ -216,8 +216,13 @@ static void tr_gen_lookup_qemu_tlb(
 
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg2_ir2_opnd,
                 zero, latxs_ir2_opnd_reg(&cmp_opnd));
-        latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
-                zero, latxs_ir2_opnd_reg(&tag_opnd));
+        if (is_load) {
+            latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
+                    zero, latxs_ir2_opnd_reg(&tag_opnd));
+        } else {
+            latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg3_ir2_opnd,
+                    zero, latxs_ir2_opnd_reg(gpr_opnd));
+        }
         /* latxs_arg4/5/6_ir2_opnd is itemp in x86_64, please be careful */
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg4_ir2_opnd,
                 zero, latxs_ir2_opnd_reg(mem));
@@ -228,6 +233,11 @@ static void tr_gen_lookup_qemu_tlb(
 
         TRANSLATION_DATA *td = lsenv->tr_data;
         TranslationBlock *tb = td->curr_tb;
+        IR1_INST *pir1 = td->curr_ir1_inst;
+        uint32_t ir1_addr = (uint32_t)pir1->info->address; /* eip */
+
+        latxs_load_imm64(&latxs_arg7_ir2_opnd, ir1_addr);
+
         ADDR code_buf = (ADDR)tb->tc.ptr;
         int offset = td->real_ir2_inst_num << 2;
 
@@ -787,21 +797,32 @@ void gen_ldst_c1_softmmu_helper(
 }
 
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
-        int type, int r1, int r2, int r3, int r4, int r5)
+        int type, int r1, int r2, int r3, int r4, int r5, uint32_t r6)
 {
     CPUX86State *env = npd->env;
     uint64_t *gprs = npd->np_regs;
 
     /* r1: reg number of cmp_opnd */
     uint64_t addr_cmp = gprs[r1];
-    /* r2: reg number of tag_opnd */
-    uint64_t addr_tag = gprs[r2];
     /* r3: reg number of address */
     uint64_t addr_x86 = gprs[r3];
     /* r4: mmu index */
     int mmu_index = r4;
     /* r5: load or store */
     int is_load = r5;
+
+    uint64_t store_value = 0;
+    uint64_t tag_word = 0;
+    if (is_load) {
+        /* r2: reg number of tag_opnd */
+        tag_word = gprs[r2];
+    } else {
+        /* r2: reg number of gpr_opnd (value of store) */
+        store_value = gprs[r2];
+    }
+
+    /* r6: guest instruction's address */
+    uint32_t ir1_addr = r6;
 
     CPUState *cpu = env_cpu(env);
     X86CPU *xcpu = (X86CPU *)cpu;
@@ -811,33 +832,39 @@ void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
                     (mask >> CPU_TLB_ENTRY_BITS);
     CPUTLBEntry *tlb = &xcpu->neg.tlb.f[mmu_index].table[tlb_index];
 
+    uint64_t addr_tag = is_load ? tlb->addr_read : tlb->addr_write;
     int is_hit = addr_cmp == addr_tag;
 
     if (is_load) {
         fprintf(stderr,
-                "load  tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
-                (unsigned int)addr_cmp, (unsigned int)addr_tag,
-                (unsigned int)addr_x86,
+                "IR1 0x%-8x LOAD  Page 0x%-8x Addr 0x%-8x " \
+                "mmu=%d TLB C=0x%-8x R=0x%-8x W=0x%-8x value 0x%-8x ",
+                ir1_addr, (unsigned int)addr_cmp, (unsigned int)addr_x86,
                 mmu_index,
                 (unsigned int)tlb->addr_code,
                 (unsigned int)tlb->addr_read,
                 (unsigned int)tlb->addr_write,
                 is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
                          -1);
-        if (is_hit) {
-            fprintf(stderr, "tlb %p fast hit addend %x\n",
-                    (void *)tlb, (unsigned int)tlb->addend);
+        if (addr_tag != tag_word) {
+            fprintf(stderr,
+                    "WARNING inconsistent tag %8x ", (uint32_t)tag_word);
         }
     } else {
         fprintf(stderr,
-                "store tlb cmp %x,%x,%x mmu=%d. TLB:%x,%x,%x val=%x\n",
-                (unsigned int)addr_cmp, (unsigned int)addr_tag,
-                (unsigned int)addr_x86,
+                "IR1 0x%-8x STORE Page 0x%-8x Addr 0x%-8x " \
+                "mmu=%d TLB C=0x%-8x R=0x%-8x W=0x%-8x value 0x%-8x ",
+                ir1_addr, (unsigned int)addr_cmp, (unsigned int)addr_x86,
                 mmu_index,
                 (unsigned int)tlb->addr_code,
                 (unsigned int)tlb->addr_read,
                 (unsigned int)tlb->addr_write,
-                is_hit ? *((uint32_t *)((uint32_t)(addr_x86) + tlb->addend)) :
-                        -1);
+                (unsigned int)store_value);
+    }
+
+    if (is_hit) {
+        fprintf(stderr, "hit addend %-8x\n", (unsigned int)tlb->addend);
+    } else {
+        fprintf(stderr, "miss\n");
     }
 }
