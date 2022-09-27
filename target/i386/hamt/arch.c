@@ -436,6 +436,7 @@ static void init_csr(struct kvm_cpu *cpu)
 static int __attribute__((noinline))
 kvm_launch(struct kvm_cpu *cpu, struct kvm_regs *regs)
 {
+    uint64_t val;
 	BUILD_ASSERT(offsetof(struct kvm_regs, pc) == 256);
 	asm goto("\n\t"
 		 "st.d $r0,  $r5, 0\n\t"
@@ -515,6 +516,16 @@ kvm_launch(struct kvm_cpu *cpu, struct kvm_regs *regs)
 guest_entry:
 	// return expression is needed by guest_entry, otherwise gcc inline asm would
 	// complaint
+    __asm__ __volatile__("csrrd %0, 0x80 \n\t" : "=r"(val));
+    printf("CSR[0x80]: 0x%lx Bit[8]=%d\n", val, (val >> 8) & 0x1);
+    __asm__ __volatile__("li.d $t1, 0x0 \n\t"
+                   "ori $t0, $zero, %0 \n\t"
+                   "csrxchg $t1, $t0, %1 \n\t"
+                   :
+                   : "i"(0x100), "i"(0x80)
+                   : "$t0", "$t1");
+    __asm__ __volatile__("csrrd %0, 0x80 \n\t" : "=r"(val));
+    printf("CSR[0x80]: 0x%lx Bit[8]=%d\n", val, (val >> 8) & 0x1);
 	return 0;
 }
 
