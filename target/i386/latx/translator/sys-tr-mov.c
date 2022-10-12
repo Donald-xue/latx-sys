@@ -41,12 +41,13 @@ void latxs_sys_mov_register_ir1(void)
 
 bool latxs_translate_mov(IR1_INST *pir1)
 {
-    /* TranslationBlock *tb = lsenv->tr_data->curr_tb; */
-    /* if (tb->cflags & CF_USE_ICOUNT) { TODO */
-        /* if (ir1_is_mov_to_cr(pir1) || ir1_is_mov_from_cr(pir1)){ */
-            /* tr_gen_io_start(); */
-        /* } */
-    /* } */
+    TranslationBlock *tb = lsenv->tr_data->curr_tb;
+    if (tb->cflags & CF_USE_ICOUNT) {
+        if (latxs_ir1_is_mov_to_cr(pir1) ||
+            latxs_ir1_is_mov_from_cr(pir1) ){
+            latxs_tr_gen_io_start();
+        }
+    }
 #ifdef TARGET_X86_64
     if (option_by_hand_64 && latxs_translate_mov_byhand64(pir1)) {
         return true;

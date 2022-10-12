@@ -398,9 +398,9 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 
         latxs_tr_init_translate_ir1(tb, i);
 
-        /* if ((td->max_insns == i + 1) && (td->sys.cflags & CF_LAST_IO)) { */
-            /* latxs_tr_gen_io_start(); TODO for icount */
-        /* } */
+        if ((td->max_insns == i + 1) && (td->sys.cflags & CF_LAST_IO)) {
+            latxs_tr_gen_io_start();
+        } 
 
         if (option_dump_ir1 && qemu_log_in_addr_range(tb->pc)) {
             fprintf(stderr, "ir1 translate >>> ");
@@ -454,12 +454,12 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
                 latxs_ir1_free_info(pir1);
             }
             tb->icount = real_ir1_nr;
-            /* 3. TODO ICOUNT: decrease real number of IR1 */
-            /* if (atomic_read(&tb->cflags) & CF_USE_ICOUNT) { */
-                /* IR2_INST *pir2 = latxs_ir2_get(td->dec_icount_inst_id); */
-                /* pir2->_opnd[2] = latxs_ir2_opnd_new(IR2_OPND_IMMH, */
-                        /* 0 - real_ir1_nr); */
-            /* } */
+            /* 3. ICOUNT: decrease real number of IR1 */
+            if (tb->cflags & CF_USE_ICOUNT) { 
+                IR2_INST *pir2 = latxs_ir2_get(td->dec_icount_inst_id); 
+                pir2->_opnd[2] = latxs_ir2_opnd_new(IR2_OPND_IMMH, 
+                        0 - real_ir1_nr); 
+            } 
             break;
         }
     }
@@ -489,16 +489,29 @@ void latxs_tr_gen_tb_start(void)
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
     IR2_OPND count = latxs_ra_alloc_itemp();
+    uint32_t cflags = tb->cflags;
 
     latxs_append_ir2_opnd2i(LISA_LD_W, &count,
             &latxs_env_ir2_opnd,
             (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
             (int32_t)offsetof(X86CPU, env));
 
-    /* TODO icount */
+    if (cflags & CF_USE_ICOUNT) {
+        int ir1_nr = td->ir1_nr;
+        IR2_INST *pir2 = latxs_append_ir2_opnd2i(LISA_ADDI_D,
+                &count, &count, 0 - ir1_nr);
+        td->dec_icount_inst_id = latxs_ir2_get_id(pir2);
+    }
 
     latxs_append_ir2_opnd3(LISA_BLT, &count, &latxs_zero_ir2_opnd,
             &(td->exitreq_label));
+
+    if (cflags & CF_USE_ICOUNT) {
+        latxs_append_ir2_opnd2i(LISA_ST_H, &count, &latxs_env_ir2_opnd,
+            (int32_t)offsetof(X86CPU, neg.icount_decr.u16.low) -
+            (int32_t)offsetof(X86CPU, env));
+        latxs_tr_gen_io_end();
+    }
 
     /* native printer for TB's execution */
     latxs_np_tr_tb_start();

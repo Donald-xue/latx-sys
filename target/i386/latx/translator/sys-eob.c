@@ -37,6 +37,29 @@ static int latxs_is_system_eob(IR1_INST *ir1)
 
             case X86_INS_IN:
             case X86_INS_OUT:
+
+            /* string instruction is also eob in icount mode */
+            case X86_INS_MOVSB:
+            case X86_INS_MOVSD:
+            case X86_INS_MOVSQ:
+            case X86_INS_MOVSW:
+            case X86_INS_STOSB:
+            case X86_INS_STOSD:
+            case X86_INS_STOSQ:
+            case X86_INS_STOSW:
+            case X86_INS_LODSB:
+            case X86_INS_LODSD:
+            case X86_INS_LODSQ:
+            case X86_INS_LODSW:
+            case X86_INS_CMPSB:
+            case X86_INS_CMPSD:
+            case X86_INS_CMPSQ:
+            case X86_INS_CMPSW:
+            case X86_INS_SCASB:
+            case X86_INS_SCASD:
+            case X86_INS_SCASQ:
+            case X86_INS_SCASW:
+
                 return 1;
             default:
                 return 0;
@@ -335,9 +358,12 @@ void latxs_tr_gen_sys_eob(IR1_INST *pir1)
     /* EOB worker */
     latxs_tr_gen_eob();
 
-    IR2_OPND tbptr = latxs_ra_alloc_dbt_arg1(); /* a6($10) */
+    if (td->sys_eob_can_link) {
+        latxs_tr_gen_exit_tb_j_tb_link(tb, 0);
+    }
 
     /* t8: This TB's address */
+    IR2_OPND tbptr = latxs_ra_alloc_dbt_arg1(); /* a6($10) */
     latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, (ADDR)tb);
 
     /* t9: next x86 instruction's address */
@@ -349,7 +375,11 @@ void latxs_tr_gen_sys_eob(IR1_INST *pir1)
 #endif
 
     /* jump to context switch */
-    latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, 0);
+    if (td->sys_eob_can_link) {
+        latxs_tr_gen_exit_tb_j_context_switch(&tbptr, 1, 0);
+    } else {
+        latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, 0);
+    }
 }
 
 void latxs_tr_gen_exit_tb_load_tb_addr(IR2_OPND *tbptr, ADDR tb_addr)

@@ -303,6 +303,8 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     td->end_with_exception = 0;
     td->dec_icount_inst_id = 0;
 
+    td->sys_eob_can_link = 0;
+
     if (sigint_enabled() == 1) {
         td->need_save_currtb_for_int = 1;
     } else {

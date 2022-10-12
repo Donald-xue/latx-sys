@@ -1626,6 +1626,9 @@ void latxs_tr_gen_io_bpt(IR1_INST *, IR1_OPND *, int);
 bool latxs_translate_in(IR1_INST *pir1);
 bool latxs_translate_out(IR1_INST *pir1);
 
+void latxs_tr_gen_io_start(void); /* icount */
+void latxs_tr_gen_io_end(void); /* icount */
+
 /* sys-arith */
 bool latxs_translate_add(IR1_INST *pir1);
 bool latxs_translate_adc(IR1_INST *pir1);

@@ -186,6 +186,13 @@ typedef struct TRANSLATION_DATA {
     int end_with_exception;
     int dec_icount_inst_id;
 
+    /*
+     * Usually sys-eob is not allowed tb-link.
+     * While string instructions in icount mode
+     * can do tb-link.
+     */
+    int sys_eob_can_link;
+
     int need_save_currtb_for_int;
 #endif
 

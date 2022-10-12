@@ -7,6 +7,17 @@
 #include "sys-excp.h"
 #include <string.h>
 
+static int check_icount_mode(void)
+{
+    TranslationBlock *tb = lsenv->tr_data->curr_tb;
+    uint32_t cflags = tb->cflags;
+    if (cflags & CF_USE_ICOUNT) {
+        return 1;
+    }
+
+    return 0;
+}
+
 void latxs_sys_string_register_ir1(void)
 {
     latxs_register_ir1(X86_INS_INSB);
@@ -92,6 +103,8 @@ static void latxs_tr_gen_string_loop_start(IR1_INST *pir1,
         IR2_OPND *loop, IR2_OPND *exit,
         int load_step, IR2_OPND *step)
 {
+    int is_icount = check_icount_mode();
+
     /* 1. exit when initial count is zero */
     IR2_OPND label_exit = latxs_ir2_opnd_new_label();
     if (latxs_ir1_has_prefix_rep(pir1) || latxs_ir1_has_prefix_repne(pir1)) {
@@ -128,8 +141,50 @@ static void latxs_tr_gen_string_loop_start(IR1_INST *pir1,
 
     /* 3. loop starts */
     IR2_OPND label_loop = latxs_ir2_opnd_new_label();
-    latxs_append_ir2_opnd1(LISA_LABEL, &label_loop);
+    if (!is_icount) {
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_loop);
+    }
     *loop = label_loop;
+}
+
+/*
+ * mode = 1 : next eip = curr ir1
+ * mode = 0 : next eip = next ir1
+ */
+static void tr_load_eip_icount(IR1_INST *pir1, int mode, int is64)
+{
+    IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
+    ADDRX next_eip = mode ? ir1_addr(pir1) : ir1_addr_next(pir1);
+
+    if (is64) {
+        latxs_load_imm64_to_ir2(&eip_opnd, next_eip);
+        latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd,
+                &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+    } else {
+        latxs_load_imm32_to_ir2(&eip_opnd, next_eip, EXMode_Z);
+        latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd,
+                &latxs_env_ir2_opnd, lsenv_offset_of_eip(lsenv));
+    }
+}
+
+/* string instruction is sys eob in icount mode */
+static void latxs_tr_gen_icount_end(IR1_INST *pir1, IR2_OPND label_loop)
+{
+    if (!check_icount_mode()) {
+        return;
+    }
+
+    /* exit loop */
+    tr_load_eip_icount(pir1, 0, 0);
+    latxs_tr_gen_eob();
+    latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, 0);
+
+    /* continue loop */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_loop);
+    tr_load_eip_icount(pir1, 1, 0);
+
+    lsenv->tr_data->ignore_eip_update = 1;
+    lsenv->tr_data->sys_eob_can_link = 1;
 }
 
 static void latxs_tr_gen_string_loop_end(IR1_INST *pir1,
@@ -274,7 +329,7 @@ bool latxs_translate_ins(IR1_INST *pir1)
     IR2_OPND label_exit = latxs_ir2_opnd_new_inv();
     latxs_tr_gen_string_loop_start(pir1, &label_loop, &label_exit, 0, NULL);
 
-    /* tr_gen_io_start(); */
+    latxs_tr_gen_io_start();
 
     int addr_size = latxs_ir1_addr_size(pir1);
 
@@ -323,7 +378,7 @@ bool latxs_translate_ins(IR1_INST *pir1)
     latxs_store_ir2_to_ir1_mem(&io_value_reg, opnd0, addr_size);
     latxs_ra_free_temp(&io_value_reg);
 
-    /* tr_gen_io_end(); */
+    latxs_tr_gen_io_end();
 
     /* 4. adjust (E)DI */
     IR2_OPND setp = latxs_ra_alloc_itemp();
@@ -354,6 +409,9 @@ bool latxs_translate_ins(IR1_INST *pir1)
     /* 6. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
 
+    /* 7. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
+
     latxs_ra_free_temp(&setp);
 
     return true;
@@ -374,7 +432,7 @@ bool latxs_translate_outs(IR1_INST *pir1)
     IR2_OPND label_exit = latxs_ir2_opnd_new_inv();
     latxs_tr_gen_string_loop_start(pir1, &label_loop, &label_exit, 0, NULL);
 
-    /* tr_gen_io_start(); */
+    latxs_tr_gen_io_start();
 
     /* 2. read from MEM(ES:(E)DI)  : softmmu helper  */
     /* 3. I/O write to I/O port DX : helper_outb/w/l */
@@ -416,7 +474,7 @@ bool latxs_translate_outs(IR1_INST *pir1)
     /* 3.3 resotre the naive context */
     latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
 
-    /* tr_gen_io_end(); */
+    latxs_tr_gen_io_end();
 
     /* 4. adjust (E)SI */
     IR2_OPND setp = latxs_ra_alloc_itemp();
@@ -447,6 +505,9 @@ bool latxs_translate_outs(IR1_INST *pir1)
 
     /* 6. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
+
+    /* 7. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
 
     latxs_ra_free_temp(&setp);
 
@@ -515,6 +576,9 @@ bool latxs_translate_movs(IR1_INST *pir1)
     /* 4. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
 
+    /* 5. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
+
     latxs_ra_free_temp(&setp);
 
     return true;
@@ -526,6 +590,7 @@ bool latxs_translate_scas(IR1_INST *pir1)
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* src : MEM(ES:(E/R)DI) */
 
     int addr_size = latxs_ir1_addr_size(pir1);
+    int is_icount = check_icount_mode();
 
     /* 0. preparations outside the loop */
     IR2_OPND eax = latxs_ra_alloc_itemp();
@@ -575,15 +640,24 @@ bool latxs_translate_scas(IR1_INST *pir1)
     IR2_OPND cmp_result = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SUB_W, &cmp_result, &eax, &_edi_);
 
+    if (is_icount) {
+        latxs_generate_eflag_calculation(&cmp_result, &eax, &_edi_, pir1, true);
+    }
+
     /* 4. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, &cmp_result);
 
     /* 5. calculate eflags */
-    latxs_generate_eflag_calculation(&cmp_result, &eax, &_edi_, pir1, true);
+    if (!is_icount) {
+        latxs_generate_eflag_calculation(&cmp_result, &eax, &_edi_, pir1, true);
+    }
     latxs_ra_free_temp(&cmp_result);
 
     /* 6. loop exits */
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+    /* 7. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
 
     latxs_ra_free_temp(&setp);
 
@@ -596,6 +670,7 @@ bool latxs_translate_cmps(IR1_INST *pir1)
     IR1_OPND *opnd1 = ir1_get_opnd(pir1, 1); /* src : MEM(ES:(E/R)DI) */
 
     int addr_size = latxs_ir1_addr_size(pir1);
+    int is_icount = check_icount_mode();
 
     /* 1. loop starts */
     IR2_OPND label_loop = latxs_ir2_opnd_new_inv();
@@ -654,16 +729,26 @@ bool latxs_translate_cmps(IR1_INST *pir1)
     IR2_OPND cmp_result = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd3(LISA_SUB_W, &cmp_result, &_esi_, &_edi_);
 
+    if (is_icount) {
+        latxs_generate_eflag_calculation(&cmp_result,
+                &_esi_, &_edi_, pir1, true);
+    }
+
     /* 4. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, &cmp_result);
 
     /* 5. calculate eflags */
-    latxs_generate_eflag_calculation(&cmp_result,
-            &_esi_, &_edi_, pir1, true);
+    if (!is_icount) {
+        latxs_generate_eflag_calculation(&cmp_result,
+                &_esi_, &_edi_, pir1, true);
+    }
     latxs_ra_free_temp(&cmp_result);
 
     /* 6. loop exits */
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+
+    /* 7. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
 
     latxs_ra_free_temp(&setp);
 
@@ -729,6 +814,9 @@ bool latxs_translate_lods(IR1_INST *pir1)
     /* 4. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
 
+    /* 5. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
+
     latxs_ra_free_temp(&step);
 
     return true;
@@ -785,6 +873,9 @@ bool latxs_translate_stos(IR1_INST *pir1)
 
     /* 4. loop ends */
     latxs_tr_gen_string_loop_end(pir1, label_loop, label_exit, NULL);
+
+    /* 5. icount ends */
+    latxs_tr_gen_icount_end(pir1, label_loop);
 
     latxs_ra_free_temp(&step);
 

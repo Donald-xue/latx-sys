@@ -3060,14 +3060,14 @@ bool latxs_translate_leave(IR1_INST *pir1)
 
 bool latxs_translate_rdtsc(IR1_INST *pir1)
 {
-    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+    TRANSLATION_DATA *td = lsenv->tr_data;
 
     /* 0. save next instruciton's EIP to env */
     latxs_tr_gen_save_curr_eip();
 
-    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
-        /* TODO latxs_tr_gen_io_start(); */
-    /* } */
+    if (td->sys.cflags & CF_USE_ICOUNT) {
+        latxs_tr_gen_io_start();
+    }
 
     /*
      * target/i386/misc_helper.c
@@ -3076,9 +3076,9 @@ bool latxs_translate_rdtsc(IR1_INST *pir1)
     helper_cfg_t cfg = default_helper_cfg;
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdtsc, cfg);
 
-    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
-        /* TODO latxs_tr_gen_io_end(); */
-    /* } */
+    if (td->sys.cflags & CF_USE_ICOUNT) {
+        latxs_tr_gen_io_end();
+    }
 
     return true;
 }
@@ -3089,14 +3089,14 @@ bool latxs_translate_rdtscp(IR1_INST *pir1)
         return true;
     }
 
-    /* TRANSLATION_DATA *td = lsenv->tr_data; */
+    TRANSLATION_DATA *td = lsenv->tr_data;
 
     /* 0. save next instruciton's EIP to env */
     latxs_tr_gen_save_curr_eip();
 
-    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
-        /* TODO latxs_tr_gen_io_start(); */
-    /* } */
+    if (td->sys.cflags & CF_USE_ICOUNT) {
+        latxs_tr_gen_io_start();
+    }
 
     /*
      * target/i386/misc_helper.c
@@ -3105,9 +3105,9 @@ bool latxs_translate_rdtscp(IR1_INST *pir1)
     helper_cfg_t cfg = default_helper_cfg;
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_rdtscp, cfg);
 
-    /* if (td->sys.cflags & CF_USE_ICOUNT) { */
-        /* TODO latxs_tr_gen_io_end(); */
-    /* } */
+    if (td->sys.cflags & CF_USE_ICOUNT) {
+        latxs_tr_gen_io_end();
+    }
 
     return true;
 }

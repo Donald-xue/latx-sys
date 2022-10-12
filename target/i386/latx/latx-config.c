@@ -405,6 +405,10 @@ static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
     fprintf(stderr, "PC=0x"TARGET_FMT_lx" / ", tb->pc);
     fprintf(stderr, "CS=0x"TARGET_FMT_lx" / ", tb->cs_base);
     fprintf(stderr, "EF=0x%x / ", eflags);
+    if (tb->cflags & CF_USE_ICOUNT) {
+        X86CPU *xcpu = env_archcpu(env);
+        fprintf(stderr, "ICOUNT=0x%x / ", xcpu->neg.icount_decr.u32);
+    }
     switch (option_trace_simple & 0xF) {
     case 2: /* Print with FPU state */
         fprintf(stderr, "TOP=%d / ",  env->fpstt);

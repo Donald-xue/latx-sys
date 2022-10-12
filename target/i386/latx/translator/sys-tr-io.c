@@ -139,40 +139,35 @@ void latxs_tr_gen_io_bpt(IR1_INST *ir1,
     latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
 }
 
-/*
- * TODO
-static void latxs_tr_gen_io_start(void)
+void latxs_tr_gen_io_start(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
-    uint32 cflags = atomic_read(&tb->cflags);
-    if (cflags & CF_USE_ICOUNT) {
-        lsassertm(0, "[ICOUNT] IO start to be implemented in LoongArch.\n");
-        IR2_OPND tmp = ra_alloc_itemp();
-        append_ir2_opnd2i(mips_ori, &tmp, &zero_ir2_opnd, 1);
-        append_ir2_opnd2i(mips_sw, &tmp, &env_ir2_opnd,
-                (int32)offsetof(X86CPU, parent_obj.can_do_io) -
-                (int32)offsetof(X86CPU, env));
-        ra_free_temp(&tmp);
-    }
-}
-*/
 
-/*
- * TODO
-static void latxs_tr_gen_io_end(void)
+    uint32_t cflags = tb->cflags;
+    if (cflags & CF_USE_ICOUNT) {
+        IR2_OPND tmp = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &latxs_zero_ir2_opnd, 1);
+        latxs_append_ir2_opnd2i(LISA_ST_W, &tmp, &latxs_env_ir2_opnd,
+                (int32)offsetof(X86CPU, parent_obj.can_do_io) -
+                (int32)offsetof(X86CPU, env));
+        latxs_ra_free_temp(&tmp);
+    }
+}
+
+void latxs_tr_gen_io_end(void)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
-    uint32 cflags = atomic_read(&tb->cflags);
+
+    uint32_t cflags = tb->cflags;
     if (cflags & CF_USE_ICOUNT) {
-        lsassertm(0, "[ICOUNT] IO end to be implemented in LoongArch.\n");
-        append_ir2_opnd2i(mips_sw, &zero_ir2_opnd, &env_ir2_opnd,
+        latxs_append_ir2_opnd2i(LISA_ST_W, &latxs_zero_ir2_opnd,
+                &latxs_env_ir2_opnd,
                 (int32)offsetof(X86CPU, parent_obj.can_do_io) -
                 (int32)offsetof(X86CPU, env));
     }
 }
-*/
 
 bool latxs_translate_in(IR1_INST *pir1)
 {
@@ -189,7 +184,7 @@ bool latxs_translate_in(IR1_INST *pir1)
     /* Always check IO before any IO operation */
     latxs_tr_gen_io_check(pir1, opnd1, data_size);
 
-    /* latxs_tr_gen_io_start(); */
+    latxs_tr_gen_io_start();
 
     /* 0. save native context */
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
@@ -268,7 +263,7 @@ bool latxs_translate_out(IR1_INST *pir1)
     /* Always check IO before any IO operation */
     latxs_tr_gen_io_check(pir1, opnd0, data_size);
 
-    /* latxs_tr_gen_io_start(); */
+    latxs_tr_gen_io_start();
 
     /* 0. save native context */
     latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
