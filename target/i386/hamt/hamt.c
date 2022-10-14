@@ -1780,6 +1780,15 @@ do_fault:
     return;
 }
 
+void hamt_cpu_io_recompile(void *_cpu)
+{
+    if (hamt_enable() && hamt_started()) {
+        CPUState *cpu = (CPUState *)_cpu;
+        CPUX86State *env = cpu->env_ptr;
+        save_into_mem(env);
+    }
+}
+
 static uint32_t gen_inst(uint32_t opc, uint32_t rd, uint32_t rj, uint32_t imm)
 {
     uint32_t inst;

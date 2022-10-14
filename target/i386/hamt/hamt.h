@@ -34,4 +34,6 @@ extern uint64_t from_tlb_flush;
 extern uint64_t from_tlb_flush_page_locked;
 extern uint64_t from_by_mmuidx;
 
+void hamt_cpu_io_recompile(void *cpu);
+
 #endif
