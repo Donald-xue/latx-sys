@@ -422,7 +422,9 @@ void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id)
 
     /* point to current j insn addr plus 8 by default, will resolve in */
     /* label_dispose, two instructions for pcaddu18i and jirl patch */
-    latxs_append_ir2_opnda(LISA_B, 1);
+    /* patch may be pcaddu18i and jirl, this b should b to next insn of nop other than nop  */
+    /* if nop was interrupt, and may just exec jirl without pcaddu18i  */
+    latxs_append_ir2_opnda(LISA_B, 2);
     latxs_append_ir2_opnd0_(lisa_nop);
 }
 
