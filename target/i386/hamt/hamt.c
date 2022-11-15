@@ -1394,7 +1394,8 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
     return;
 }
 
-static void save_into_mem(CPUX86State *env)
+/* save native context into ENV */
+static void hamt_save_from_native(CPUX86State *env)
 {
     int i;
     uint32_t *reg_pos = (uint32_t *)((uint64_t *)data_storage + 24);
@@ -1429,17 +1430,77 @@ static void save_into_mem(CPUX86State *env)
             "vst        $vr22,%0,  384\n\r"
             "vst        $vr23,%0,  448\n\r"
 //            "st.d       $a6,  %0,  528\n\r"
-            "ld.d       $t0,  $sp, 128\n\r"
-            "movgr2fcsr $r0,  $t0\n\r"
+
+            /* save fcsr */
+            "ld.w        $t0, %0,  824\n\r"
+            "bnez        $t0, 1f\n\r"
+            "movfcsr2gr  $t0, $r0\n\r"
+            "andi        $t0, $t0, 0x300\n\r"
+            "st.w        $t0, %0,  816\n\r"
+            "b           2f\n\r"
+            "1:\n\r"
+            "movfcsr2gr  $t0, $r0\n\r"
+            "andi        $t0, $t0, 0x300\n\r"
+            "st.w        $t0, %0,  820\n\r"
+            "2:\n\r"
+
+            /* save eflags */
             "x86mfflag  $t0,  63\n\r"
             "st.w       $t0,  %0,  1008\n\r"
             "ori        $t0,  $zero,0x1\n\r"
             "st.w       $t0,  %0,  1016\n\r"
+
+            /* load DBT fcsr */
+            "ld.d       $t0,  $sp, 128\n\r"
+            "movgr2fcsr $r0,  $t0\n\r"
             :
             :"r"(env)
             :"memory", "t1", "t0"
             );
 }
+
+/* restore native context from ENV */
+static void hamt_restore_to_native(CPUX86State *env)              
+{                                             
+    __asm__ __volatile__ (                    
+            "ld.w       $t0,  %0,1008\n\r"    
+            "x86mtflag  $t0,  63\n\r"         
+                                              
+            "fld.d      $fa0, %0,  1328\n\r"  
+            "fld.d      $fa1, %0,  1344\n\r"  
+            "fld.d      $fa2, %0,  1360\n\r"  
+            "fld.d      $fa3, %0,  1376\n\r"  
+            "fld.d      $fa4, %0,  1392\n\r"  
+            "fld.d      $fa5, %0,  1408\n\r"  
+            "fld.d      $fa6, %0,  1424\n\r"  
+            "fld.d      $fa7, %0,  1440\n\r"  
+            "vld        $vr16,%0,  0\n\r"     
+            "vld        $vr17,%0,  64\n\r"    
+            "vld        $vr18,%0,  128\n\r"   
+            "vld        $vr19,%0,  192\n\r"   
+            "vld        $vr20,%0,  256\n\r"   
+            "vld        $vr21,%0,  320\n\r"   
+            "vld        $vr22,%0,  384\n\r"   
+            "vld        $vr23,%0,  448\n\r"   
+                                              
+            "ld.w        $t0, %0,    824\n\r" 
+            "bnez        $t0, 1f\n\r"         
+            "ld.w        $t0, %0,    816\n\r" 
+            "b           2f\n\r"              
+            "1:\n\r"                          
+            "ld.w        $t0, %0,    820\n\r" 
+            "2:\n\r"                          
+//            "movgr2fcsr  fcsr3, $t0\n\r"    
+            ".word 0x0114c183\n\r"            
+//            "movgr2fcsr  fcsr1, zero\n\r"   
+            ".word 0x0114c001\n\r"            
+//            "movgr2fcsr  fcsr2, zero\n\r"   
+            ".word 0x0114c002\n\r"            
+            :                                 
+            :"r"(env)                         
+            :"memory", "t1", "t0"             
+            );                                
+}                                             
 
 //#define HAMT_COUNT_GUEST_TLB
 #ifdef HAMT_COUNT_GUEST_TLB
@@ -1506,6 +1567,11 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
 #ifdef HAMT_COUNT_GUEST_TLB
     count_guest_tlb();
 #endif
+    if (!is_unalign_2) {
+        /* save native context into ENV */
+        hamt_save_from_native(env);
+    }
+
 
     tlb_lsm++;
 
@@ -1743,6 +1809,8 @@ do_mapping:
             prot, mmu_idx, page_size, is_write, epc,
             is_unalign_2, unalign_entry1, unalign_size);
 
+    /* restore native context from ENV */
+    hamt_restore_to_native(env);
     return;
 
 do_fault_rsvd:
@@ -1769,7 +1837,8 @@ do_fault:
     env->error_code = error_code;
     cs->exception_index = EXCP0E_PAGE;
 
-    save_into_mem(env);
+    /* save native context into ENV */
+    hamt_save_from_native(env);
 	/*
 	 * insert PF fault
 	 */
@@ -1785,7 +1854,7 @@ void hamt_cpu_restore_state_from_tb(void *_cpu)
     if (hamt_enable() && hamt_started()) {
         CPUState *cpu = (CPUState *)_cpu;
         CPUX86State *env = cpu->env_ptr;
-        save_into_mem(env);
+        hamt_save_from_native(env);
     }
 }
 
