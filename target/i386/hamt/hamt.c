@@ -106,7 +106,9 @@ pthread_key_t in_hamt;
  * -> interpreter unaligned load/store
  */
 void hamt_exception_handler(uint64_t x86_vaddr, CPUX86State *env, uint32_t *epc,
-        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size);
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
+        int is_unalign_clean_ram);
+
 
 /*
  * data_storage layout:
@@ -905,7 +907,8 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         TCGMemOpIdx oi, uintptr_t retaddr, MemOp op,
         CPUTLBEntry *entry, CPUIOTLBEntry *iotlbentry,
         int prot, uint32_t *epc,
-        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
+        int is_unalign_clean_ram)
 {
     uintptr_t mmu_idx = get_mmuidx(oi);
     target_ulong tlb_addr = tlb_addr_write(entry);
@@ -923,7 +926,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
     if (unlikely(tlb_addr & ~TARGET_PAGE_MASK)) {
         bool need_swap;
 
-        assert(!is_unalign_2); /* TODO */
+        //assert(!is_unalign_2); /* TODO */
 
         /* For anything that is unaligned, recurse through byte stores.  */
         if ((addr & (size - 1)) != 0) {
@@ -964,12 +967,32 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
         /* Handle clean RAM pages.  */
         if (tlb_addr & TLB_NOTDIRTY) {
-	        //TODO
             notdirty_write(env_cpu(env), addr, size, iotlbentry, retaddr);
-            //TRY
-            ((uint64_t *)data_storage)[32] += 4;
-            store_into_mem(haddr, epc, 0,
-                    0, -1); /* not unalign access */
+            /* if cross-page clean RAM write */
+            if (size > 1 &&
+                (addr & ~TARGET_PAGE_MASK) + size - 1 >= TARGET_PAGE_SIZE) {
+                if (!is_unalign_2) {
+                    /*
+                     * go to walk the second page with
+                     * @is_unalign_2 = 1 and the TLB entry of the first page
+                     * @is_unalign_clean_ram = 1
+                     */
+                    hamt_exception_handler(addr + mapping_base_address, env, epc,
+                            1, entry, size, 1);
+                } else {
+                    assert(is_unalign_clean_ram == 1);
+                    ((uint64_t *)data_storage)[32] += 4;
+                    haddr = ((uintptr_t)addr + unalign_entry1->addend);
+                    addr2 = (addr + size) & TARGET_PAGE_MASK;
+                    haddr2 = ((uintptr_t)addr2 + entry->addend);
+                    store_into_mem(haddr, epc, 0,
+                            is_unalign_2, haddr2);
+                }
+            } else {
+                /* NOT a cross-page clean RAM write: write directly */
+                ((uint64_t *)data_storage)[32] += 4;
+                store_into_mem(haddr, epc, 0, 0, -1);
+            }
             return;
         }
 
@@ -999,7 +1022,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
             if (!is_unalign_2) {
                 //pr_info("store unaligned access vaddr=0x%llx size=%d", addr, size);
                 hamt_exception_handler(addr + mapping_base_address, env, epc,
-                        1, entry, size);
+                        1, entry, size, 0);
             } else {
                 ((uint64_t *)data_storage)[32] += 4;
 
@@ -1228,7 +1251,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
             if (!is_unalign_2) {
                 //pr_info("load  unaligned access vaddr=0x%llx size=%d", addr, size);
                 hamt_exception_handler(addr + mapping_base_address, env, epc,
-                        1, entry, size);
+                        1, entry, size, 0);
             } else {
                 ((uint64_t *)data_storage)[32] += 4;
 
@@ -1267,7 +1290,8 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
         uint64_t paddr, MemTxAttrs attrs, int prot,
         int mmu_idx, target_ulong size, bool is_write, uint32_t *epc,
-        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
+        int is_unalign_clean_ram)
 {
 
     CPUArchState *env = cpu->env_ptr;
@@ -1383,7 +1407,7 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
             hamt_get_oi(epc, mmu_idx), ((uint64_t *)data_storage)[32]+4,
             hamt_get_memop(epc),
             &tn, &iotlbentry, prot, epc,
-            is_unalign_2, unalign_entry1, unalign_size);
+            is_unalign_2, unalign_entry1, unalign_size, is_unalign_clean_ram);
     } else {
         hamt_load_helper(env,hamt_badvaddr-mapping_base_address, hamt_get_oi(epc, mmu_idx),
             ((uint64_t *)data_storage)[32]+4, hamt_get_memop(epc),
@@ -1552,7 +1576,8 @@ static void count_guest_tlb(void)
 
 void hamt_exception_handler(uint64_t hamt_badvaddr,
         CPUX86State *env, uint32_t *epc,
-        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
+        int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
+        int is_unalign_clean_ram)
 {
 	/*
      * JOBS
@@ -1807,7 +1832,7 @@ do_mapping:
 
 	hamt_process_addr_mapping(cs, hamt_badvaddr, paddr, cpu_get_mem_attrs(env),
             prot, mmu_idx, page_size, is_write, epc,
-            is_unalign_2, unalign_entry1, unalign_size);
+            is_unalign_2, unalign_entry1, unalign_size, is_unalign_clean_ram);
 
     /* restore native context from ENV */
     hamt_restore_to_native(env);
