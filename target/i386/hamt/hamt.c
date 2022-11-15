@@ -1780,7 +1780,7 @@ do_fault:
     return;
 }
 
-void hamt_cpu_io_recompile(void *_cpu)
+void hamt_cpu_restore_state_from_tb(void *_cpu)
 {
     if (hamt_enable() && hamt_started()) {
         CPUState *cpu = (CPUState *)_cpu;
