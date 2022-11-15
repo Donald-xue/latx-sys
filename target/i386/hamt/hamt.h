@@ -35,5 +35,6 @@ extern uint64_t from_tlb_flush_page_locked;
 extern uint64_t from_by_mmuidx;
 
 void hamt_cpu_restore_state_from_tb(void *cpu);
+void hamt_protect_code(uint64_t guest_pc, int n);
 
 #endif

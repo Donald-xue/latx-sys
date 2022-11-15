@@ -2258,6 +2258,9 @@ static inline void tb_page_add(PageDesc *p, TranslationBlock *tb,
        allocated in a physical page */
     if (!page_already_protected) {
         tlb_protect_code(page_addr);
+#ifdef CONFIG_LATX
+        hamt_protect_code(tb->pc, n);
+#endif
     }
 #endif
 }

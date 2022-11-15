@@ -718,6 +718,50 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
     enable_pg();
 }
 
+void hamt_protect_code(uint64_t guest_pc, int n)
+{
+    if (!(hamt_enable() && hamt_started())) {
+        return;
+    }
+
+    uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
+    int32_t csr_tlbidx;
+    uint32_t csr_asid = asid_value;
+
+    disable_pg(); /* --------------------------------------------- */
+
+    csr_tlbehi = guest_pc & ~0x1fffULL;
+
+    write_csr_tlbehi(csr_tlbehi);
+    write_csr_asid(csr_asid);
+    tlb_probe();
+    csr_tlbidx = read_csr_tlbidx();
+    if (csr_tlbidx >= 0) {
+        tlb_read();
+        csr_tlbelo0 = read_csr_tlbelo0();
+        csr_tlbelo1 = read_csr_tlbelo1();
+
+        if (!n) {
+            csr_tlbelo0 &= ~0x2;
+        } else {
+            csr_tlbelo1 &= ~0x2;
+        }
+
+        csr_tlbidx &= 0xc0ffffff;
+        csr_tlbidx |= PS_4K << PS_SHIFT;
+
+        write_csr_asid(csr_asid);
+        write_csr_tlbehi(csr_tlbehi);
+        write_csr_tlbelo0(csr_tlbelo0);
+        write_csr_tlbelo1(csr_tlbelo1);
+        write_csr_tlbidx(csr_tlbidx);
+
+        tlb_write_indexed();
+    }
+
+    enable_pg(); /* --------------------------------------------- */
+}
+
 void hamt_invlpg_helper(uint32_t i386_addr)
 {
     if (hamt_interpreter()) {
