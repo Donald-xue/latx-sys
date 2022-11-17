@@ -6,12 +6,14 @@
 #define LATXS_TRACECC_TB_INV          (1 << 2)
 #define LATXS_TRACECC_TB_FLUSH        (1 << 3)
 #define LATXS_TRACECC_TB_FLUSH_PRINT  (1 << 4)
+#define LATXS_TRACECC_TB_LINK         (1 << 5)
 
 int tracecc_has_tb_tr(void);
 int tracecc_has_tb_exec(void);
 int tracecc_has_tb_inv(void);
 int tracecc_has_tb_flush(void);
 int tracecc_has_tb_flush_print(void);
+int tracecc_has_tb_link(void);
 
 
 
@@ -20,5 +22,6 @@ void latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb);
 void latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb);
 void latxs_tracecc_do_tb_flush(void);
 void latxs_tracecc_tb_inv(TranslationBlock *tb);
+void latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb);
 
 #endif

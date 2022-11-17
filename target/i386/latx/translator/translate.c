@@ -10,6 +10,7 @@
 #include "profile.h"
 #include "ibtc.h"
 #include "translate.h"
+#include "latxs-code-cache.h"
 
 extern void *helper_tb_lookup_ptr(CPUArchState *);
 static int ss_generate_match_fail_native_code(void* code_buf);
@@ -3197,6 +3198,7 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                                    TranslationBlock *next_tb)
 {
 #ifdef CONFIG_SOFTMMU
+    latxs_tracecc_tb_link(tb, n, next_tb);
     if (latxs_fastcs_enabled()) {
         int res = latxs_fastcs_set_jmp_target(tb, n, next_tb);
         if (res > 0) {

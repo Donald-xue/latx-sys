@@ -44,6 +44,10 @@ int tracecc_has_tb_flush_print(void)
     return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH_PRINT;
 }
 
+int tracecc_has_tb_link(void)
+{
+    return option_trace_code_cache & LATXS_TRACECC_TB_LINK;
+}
 
 
 void latxs_tracecc_target_to_host(
@@ -163,4 +167,15 @@ void latxs_tracecc_gen_tb_start(void)
         latxs_append_ir2_opnd2i(LISA_ST_D, &count, &tbbase,
                 offsetof(TranslationBlock, tb_exec_nr));
     }
+}
+
+void latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
+{
+    if (!tracecc_has_tb_link()) {
+        return;
+    }
+
+    fprintf(stderr, "[CC] LINK %p %d %p %p %p\n",
+            (void *)tb, n, (void *)ntb,
+            tb->tc.ptr, ntb->tc.ptr);
 }
