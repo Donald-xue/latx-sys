@@ -718,7 +718,7 @@ static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
     enable_pg();
 }
 
-void hamt_protect_code(uint64_t guest_pc, int n)
+void hamt_protect_code(uint64_t guest_pc, int is_page2)
 {
     if (!(hamt_enable() && hamt_started())) {
         return;
@@ -727,10 +727,16 @@ void hamt_protect_code(uint64_t guest_pc, int n)
     uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
     int32_t csr_tlbidx;
     uint32_t csr_asid = asid_value;
+    int n;
 
     disable_pg(); /* --------------------------------------------- */
 
     csr_tlbehi = guest_pc & ~0x1fffULL;
+    n = (guest_pc >> 12) & 0x1;
+    if (is_page2) {
+        csr_tlbehi += 0x1000ULL;
+        n = !n;
+    }
 
     write_csr_tlbehi(csr_tlbehi);
     write_csr_asid(csr_asid);
@@ -1337,7 +1343,6 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
         int is_unalign_clean_ram)
 {
-
     CPUArchState *env = cpu->env_ptr;
     MemoryRegionSection *section;
     target_ulong address;
