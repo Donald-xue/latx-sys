@@ -33,6 +33,7 @@ int option_tb_max_insns;
 int option_traceir1;
 int option_traceir1_data;
 int option_trace_code_cache;
+int option_print_exec_per_sec;
 
 /* For generate TB execution trace */
 int option_trace_simple;
@@ -324,6 +325,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "trace ir1 by type or id",
         }, {
+            .name = "print-exec-per-sec",
+            .type = QEMU_OPT_NUMBER,
+            .help = "print enter tb count per second",
+        }, {
             .name = "traceir1data",
             .type = QEMU_OPT_NUMBER,
             .help = "another value for trace ir1",
@@ -441,6 +446,11 @@ static void parse_options_traceir1(unsigned long long t)
      *         IR1 id is stored in @option_trace_ir1_data
      */
     option_traceir1 = t;
+}
+
+static void parse_options_print_exec_per_sec(unsigned long long p)
+{
+    option_print_exec_per_sec = p;
 }
 
 static void parse_options_traceir1_data(unsigned long long t)
@@ -567,6 +577,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "traceir1");
     if (opt) {
         parse_options_traceir1(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "print-exec-per-sec");
+    if (opt) {
+        parse_options_print_exec_per_sec(opt->value.uint);
     }
 
     opt = qemu_opt_find(opts, "traceir1data");
@@ -795,6 +810,7 @@ void latxs_options_init(void)
 
     option_traceir1 = 0;
     option_traceir1_data = 0;
+    option_print_exec_per_sec = 0;
 
     option_trace_simple = 0;
     option_trace_start_nr = 0;

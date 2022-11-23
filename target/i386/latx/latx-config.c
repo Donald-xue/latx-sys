@@ -374,6 +374,22 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
     return latxs_tr_translate_tb(tb, search_size);
 }
 
+static void latxs_print_before_enter(CPUX86State *env, TranslationBlock *tb)
+{
+    if (option_print_exec_per_sec) {
+        static uint64_t enter_tb_count = 0;
+        static int64_t st = 0, cur = 0;
+        enter_tb_count += 1;
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        cur = ts.tv_sec;
+        if (cur != st) {
+            st = cur;
+            printf("[%ld] exec=%ld\n", cur, enter_tb_count);
+        }
+    }
+}
+
 static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
 {
     if (!option_trace_simple) {
@@ -450,6 +466,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
         env->latxs_int_tb = tb;
     }
 
+    latxs_print_before_enter(env, tb);
     latxs_tracecc_before_exec_tb(env, tb);
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
