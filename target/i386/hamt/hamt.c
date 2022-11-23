@@ -42,6 +42,7 @@
 #define HAMT_TYPE_BASE          1
 #define HAMT_TYPE_INTERPRETER   2
 #define HAMT_TYPE_PG_ASID       3
+#define HAMT_TYPE_SOFTMMU       4
 
 int hamt_enable(void)
 {
@@ -61,6 +62,11 @@ int hamt_interpreter(void)
 int hamt_pg_asid(void)
 {
     return option_hamt == HAMT_TYPE_PG_ASID;
+}
+
+int hamt_softmmu(void)
+{
+    return option_hamt == HAMT_TYPE_SOFTMMU;
 }
 
 #define HAMT_INTERPRETER_DEBUG
@@ -575,6 +581,16 @@ static inline MemOp hamt_get_memop(uint32_t *epc)
     exit(1);
 }
 
+static inline uint64_t hamt_get_mem_address(uint32_t *epc)
+{
+    uint32_t inst = *epc;
+    uint32_t rj = (inst >> 5) & 0x1f;
+    int imm = (inst >> 10) & 0xfff;
+    int simm = (imm << 20) >> 20;
+    uint64_t base = ((uint64_t*)data_storage)[rj];
+    return base + simm;
+}
+
 static inline uint64_t hamt_get_st_val(uint32_t *epc)
 {
     uint32_t inst = *epc;
@@ -821,6 +837,13 @@ void hamt_invlpg_helper(uint32_t i386_addr)
     hamt_set_tlb(hamt_vaddr, 0x0, 0x0, false);
 }
 
+static uint32_t get_opc_from_epc(uint32_t *epc)
+{
+    uint32_t inst = *epc;
+    uint32_t opc = (inst >> 22) << 22;
+    return opc;
+}
+
 static TCGMemOpIdx hamt_get_oi(uint32_t *epc, int mmu_idx)
 {
     uint32_t inst = *epc;
@@ -1003,6 +1026,10 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
         int is_unalign_clean_ram)
 {
+    if (hamt_softmmu()) {
+        die("%s : hamt softmmu\n", __func__);
+    }
+
     uintptr_t mmu_idx = get_mmuidx(oi);
     target_ulong tlb_addr = tlb_addr_write(entry);
     unsigned a_bits = get_alignment_bits(get_memop(oi));
@@ -1270,6 +1297,10 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
         int prot, uint32_t *epc,
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size)
 {
+    if (hamt_softmmu()) {
+        die("%s : hamt softmmu\n", __func__);
+    }
+
     uintptr_t mmu_idx = get_mmuidx(oi);
     uint64_t tlb_addr = entry->addr_read;
     const MMUAccessType access_type = MMU_DATA_LOAD;
@@ -1386,6 +1417,10 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
         int is_unalign_clean_ram)
 {
+    if (hamt_softmmu()) {
+        die("%s : hamt softmmu\n", __func__);
+    }
+
     CPUArchState *env = cpu->env_ptr;
     MemoryRegionSection *section;
     target_ulong address;
@@ -1666,11 +1701,75 @@ static void count_guest_tlb(void)
 }
 #endif
 
+void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr, int prot)
+{
+    if (hamt_enable() && hamt_started()) {
+        if (prot) {
+            hamt_set_tlb(vaddr, paddr, prot, true);
+        } else {
+            hamt_set_tlb(vaddr, paddr, prot, false);
+        }
+    }
+}
+
+static
+void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
+        CPUX86State *env, uint32_t *epc)
+{
+    hamt_save_from_native(env);
+
+    uint64_t mem_addr = hamt_get_mem_address(epc);
+    if (mem_addr != hamt_badvaddr) {
+        hamt_badvaddr = mem_addr;
+    }
+
+    int is_write = is_write_inst(epc) & 1;
+    uint64_t addr = hamt_badvaddr - mapping_base_address;
+    int mmu_idx = cpu_mmu_index(env, false);
+    TCGMemOpIdx oi = hamt_get_oi(epc, mmu_idx);
+    uint64_t retaddr = ((uint64_t *)data_storage)[32] + 4;
+
+    uint32_t opc = get_opc_from_epc(epc);
+
+    uint64_t val = 0;
+    if (is_write) {
+        val = hamt_get_st_val(epc);
+        switch(opc) {
+            case OPC_ST_B: helper_ret_stb_mmu(env, addr, val, oi, retaddr); break;
+            case OPC_ST_H: helper_le_stw_mmu(env, addr, val, oi, retaddr);  break;
+            case OPC_ST_W: helper_le_stl_mmu(env, addr, val, oi, retaddr);  break;
+            case OPC_ST_D: helper_le_stq_mmu(env, addr, val, oi, retaddr);  break;
+            default: assert(0); break;
+        }
+        ((uint64_t *)data_storage)[32] += 4;
+    } else {
+        switch(opc) {
+            case OPC_LD_B:  val = helper_ret_ldsb_mmu(env, addr, oi, retaddr); break;
+            case OPC_LD_BU: val = helper_ret_ldub_mmu(env, addr, oi, retaddr); break;
+            case OPC_LD_H:  val = helper_le_ldsw_mmu(env, addr, oi, retaddr);  break;
+            case OPC_LD_HU: val = helper_le_lduw_mmu(env, addr, oi, retaddr);  break;
+            case OPC_LD_W:  val = helper_le_ldsl_mmu(env, addr, oi, retaddr);  break;
+            case OPC_LD_WU: val = helper_le_ldul_mmu(env, addr, oi, retaddr);  break;
+            case OPC_LD_D:  val = helper_le_ldq_mmu(env, addr, oi, retaddr);   break;
+            default: assert(0); break;
+        }
+        ((uint64_t *)data_storage)[32] += 4;
+        load_into_reg(val, epc);
+    }
+
+    hamt_restore_to_native(env);
+}
+
 void hamt_exception_handler(uint64_t hamt_badvaddr,
         CPUX86State *env, uint32_t *epc,
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
         int is_unalign_clean_ram)
 {
+    if (hamt_softmmu()) {
+        hamt_exception_handler_softmmu(hamt_badvaddr, env, epc);
+        return;
+    }
+
 	/*
      * JOBS
 	 *     1. get hpa from x86_addr

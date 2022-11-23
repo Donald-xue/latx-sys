@@ -1997,6 +1997,19 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
         return res & MAKE_64BIT_MASK(0, size * 8);
     }
 
+#ifdef CONFIG_LATX
+    if (hamt_enable() && !code_read) {
+        int prot = 0;
+        target_ulong vaddr_page = addr & TARGET_PAGE_MASK;
+        if (entry->addr_read == vaddr_page) prot |= PROT_READ;
+        if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
+        if (prot & PROT_READ) {
+            hamt_set_hardware_tlb(vaddr_page,
+                    vaddr_page + entry->addend, prot);
+        }
+    }
+#endif
+
     haddr = (void *)((uintptr_t)addr + entry->addend);
     return load_memop(haddr, op);
 }
@@ -2534,6 +2547,19 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
 
     haddr = (void *)((uintptr_t)addr + entry->addend);
     store_memop(haddr, val, op);
+
+#ifdef CONFIG_LATX
+    if (hamt_enable()) {
+        int prot = 0;
+        target_ulong vaddr_page = addr & TARGET_PAGE_MASK;
+        if (entry->addr_read == vaddr_page) prot |= PROT_READ;
+        if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
+        if (prot & PROT_WRITE) {
+            hamt_set_hardware_tlb(vaddr_page,
+                    vaddr_page + entry->addend, prot);
+        }
+    }
+#endif
 }
 
 void __attribute__((noinline))

@@ -12,6 +12,7 @@ int hamt_enable(void);
 int hamt_base(void);
 int hamt_interpreter(void);
 int hamt_pg_asid(void);
+int hamt_softmmu(void);
 
 extern pthread_key_t in_hamt;
 bool hamt_started(void);
@@ -37,5 +38,6 @@ extern uint64_t from_by_mmuidx;
 void hamt_cpu_restore_state_from_tb(void *cpu);
 void hamt_protect_code(uint64_t guest_pc, int is_page2);
 void hamt_unprotect_code(uint64_t guest_pc);
+void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr, int prot);
 
 #endif
