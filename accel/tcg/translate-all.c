@@ -2791,9 +2791,6 @@ tb_invalidate_phys_page_range__locked(struct page_collection *pages,
                  */
                 current_tb_modified = true;
                 cpu_restore_state_from_tb(cpu, current_tb, retaddr, true);
-#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-                hamt_cpu_restore_state_from_tb(cpu);
-#endif
                 cpu_get_tb_cpu_state(env, &current_pc, &current_cs_base,
                                      &current_flags);
             }
@@ -3039,9 +3036,6 @@ void cpu_io_recompile(CPUState *cpu, uintptr_t retaddr)
                   (void *)retaddr);
     }
     cpu_restore_state_from_tb(cpu, tb, retaddr, true);
-#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    hamt_cpu_restore_state_from_tb(cpu);
-#endif
 
     /*
      * Some guests must re-execute the branch when re-executing a delay
