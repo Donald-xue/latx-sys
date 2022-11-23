@@ -36,5 +36,6 @@ extern uint64_t from_by_mmuidx;
 
 void hamt_cpu_restore_state_from_tb(void *cpu);
 void hamt_protect_code(uint64_t guest_pc, int is_page2);
+void hamt_unprotect_code(uint64_t guest_pc);
 
 #endif

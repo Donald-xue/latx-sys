@@ -2806,6 +2806,9 @@ tb_invalidate_phys_page_range__locked(struct page_collection *pages,
     if (!p->first_tb) {
         invalidate_page_bitmap(p);
         tlb_unprotect_code(start);
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+        hamt_unprotect_code(start);
+#endif
     }
 #endif
 #ifdef TARGET_HAS_PRECISE_SMC
