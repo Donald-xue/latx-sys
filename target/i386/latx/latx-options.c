@@ -54,6 +54,7 @@ int option_fast_fpr_ldst;
 int option_large_code_cache;
 int option_fastcs;
 int option_hamt;
+int option_hamt_delay;
 int option_code_cache_pro;
 
 /* For QEMU monitor in softmmu */
@@ -281,6 +282,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "hardware accelerated memory translation",
         }, {
+            .name = "hamtdelay",
+            .type = QEMU_OPT_NUMBER,
+            .help = "delay on HAMT exception handler",
+        }, {
             .name = "ccpro",
             .type = QEMU_OPT_NUMBER,
             .help = "code cache pro",
@@ -463,6 +468,11 @@ static void parse_options_hamt(unsigned long long t)
     option_hamt = t;
 }
 
+static void parse_options_hamt_delay(unsigned long long t)
+{
+    option_hamt_delay = t;
+}
+
 static void parse_options_fastcs(unsigned long long t)
 {
     option_fastcs = t;
@@ -634,6 +644,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_hamt(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "hamtdelay");
+    if (opt) {
+        parse_options_hamt_delay(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "fastcs");
     if (opt) {
         parse_options_fastcs(opt->value.uint);
@@ -790,6 +805,7 @@ void latxs_options_init(void)
     option_sigint = 0;
     option_fastcs = 0;
     option_hamt = 0;
+    option_hamt_delay = 0;
     option_cross_page_check = 0;
     option_cross_page_jmp_link = 0;
     option_large_code_cache = 0;

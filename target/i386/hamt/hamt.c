@@ -69,6 +69,11 @@ int hamt_softmmu(void)
     return option_hamt == HAMT_TYPE_SOFTMMU;
 }
 
+static int hamt_delay(void)
+{
+    return option_hamt_delay;
+}
+
 #define HAMT_INTERPRETER_DEBUG
 #ifdef HAMT_INTERPRETER_DEBUG
 #define hamt_interpreter_debug(str, ...) do { \
@@ -1760,11 +1765,34 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
     hamt_restore_to_native(env);
 }
 
+static int hamt_delay_res[64];
+static int __attribute__((noinline)) __hamt_do_delay(int n)
+{
+    int hamt_delay_num = 2;
+    int loop = option_hamt_delay;
+    int i = 1;
+    for (; i < loop; ++i) {
+        hamt_delay_num = hamt_delay_num * i + hamt_delay_res[i & 0x3f];
+        hamt_delay_res[i & 0x3f] = n;
+    }
+    return hamt_delay_num;
+}
+static void __attribute__((noinline)) hamt_do_delay(int n)
+{
+    if (!hamt_delay()) return;
+
+    hamt_delay_res[1] = hamt_delay_res[0];
+    int res = __hamt_do_delay(n);
+    hamt_delay_res[0] = res;
+}
+
 void hamt_exception_handler(uint64_t hamt_badvaddr,
         CPUX86State *env, uint32_t *epc,
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
         int is_unalign_clean_ram)
 {
+    hamt_do_delay(hamt_badvaddr);
+
     if (hamt_softmmu()) {
         hamt_exception_handler_softmmu(hamt_badvaddr, env, epc);
         return;
