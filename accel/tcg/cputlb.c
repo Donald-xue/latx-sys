@@ -47,6 +47,7 @@
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
 /* #define DEBUG_TLB_LOG */
+/* #define HAMT_SOFTMMU_PROFILE */
 #endif
 
 #ifdef DEBUG_TLB
@@ -1896,6 +1897,12 @@ load_memop(const void *haddr, MemOp op)
     }
 }
 
+#ifdef HAMT_SOFTMMU_PROFILE
+uint64_t hamt_load_nr;
+uint64_t hamt_load_tlbhit_nr;
+uint64_t hamt_load_vtlbhit_nr;
+#endif
+
 static inline uint64_t QEMU_ALWAYS_INLINE
 load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
             uintptr_t retaddr, MemOp op, bool code_read,
@@ -1920,6 +1927,10 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
                              mmu_idx, retaddr);
     }
 
+#ifdef HAMT_SOFTMMU_PROFILE
+    if (!code_read) hamt_load_nr += 1;
+#endif
+
     /* If the TLB entry is for a different page, reload and try again.  */
     if (!tlb_hit(tlb_addr, addr)) {
         if (!victim_tlb_hit(env, mmu_idx, index, tlb_off,
@@ -1928,9 +1939,15 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
                      access_type, mmu_idx, retaddr);
             index = tlb_index(env, mmu_idx, addr);
             entry = tlb_entry(env, mmu_idx, addr);
+#ifdef HAMT_SOFTMMU_PROFILE
+        } else { if (!code_read) hamt_load_vtlbhit_nr += 1;
+#endif
         }
         tlb_addr = code_read ? entry->addr_code : entry->addr_read;
         tlb_addr &= ~TLB_INVALID_MASK;
+#ifdef HAMT_SOFTMMU_PROFILE
+    } else { if (!code_read) hamt_load_tlbhit_nr += 1;
+#endif
     }
 
     /* Handle anything that isn't just a straight memory access.  */
@@ -2451,6 +2468,12 @@ store_helper_unaligned(CPUArchState *env, target_ulong addr, uint64_t val,
     }
 }
 
+#ifdef HAMT_SOFTMMU_PROFILE
+uint64_t hamt_store_nr;
+uint64_t hamt_store_tlbhit_nr;
+uint64_t hamt_store_vtlbhit_nr;
+#endif
+
 static inline void QEMU_ALWAYS_INLINE
 store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
              TCGMemOpIdx oi, uintptr_t retaddr, MemOp op)
@@ -2470,6 +2493,10 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
                              mmu_idx, retaddr);
     }
 
+#ifdef HAMT_SOFTMMU_PROFILE
+    hamt_store_nr += 1;
+#endif
+
     /* If the TLB entry is for a different page, reload and try again.  */
     if (!tlb_hit(tlb_addr, addr)) {
         if (!victim_tlb_hit(env, mmu_idx, index, tlb_off,
@@ -2478,8 +2505,14 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
                      mmu_idx, retaddr);
             index = tlb_index(env, mmu_idx, addr);
             entry = tlb_entry(env, mmu_idx, addr);
+#ifdef HAMT_SOFTMMU_PROFILE
+        } else { hamt_store_vtlbhit_nr += 1;
+#endif
         }
         tlb_addr = tlb_addr_write(entry) & ~TLB_INVALID_MASK;
+#ifdef HAMT_SOFTMMU_PROFILE
+    } else { hamt_store_tlbhit_nr += 1;
+#endif
     }
 
     /* Handle anything that isn't just a straight memory access.  */
