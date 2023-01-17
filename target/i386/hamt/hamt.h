@@ -14,6 +14,8 @@ int hamt_interpreter(void);
 int hamt_pg_asid(void);
 int hamt_softmmu(void);
 
+int hamt_have_tlbr_fastpath(void);
+
 extern pthread_key_t in_hamt;
 bool hamt_started(void);
 void start_hamt(bool *enable);
@@ -37,6 +39,12 @@ extern uint64_t from_by_mmuidx;
 
 void hamt_protect_code(uint64_t guest_pc, int is_page2);
 void hamt_unprotect_code(uint64_t guest_pc);
-void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr, int prot);
+void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
+        int prot, int istlbr);
+void __hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
+        int prot, int is_tlbr);
+
+int hamt_fast_load(void *env, uint64_t addr);
+int hamt_fast_store(void *env, uint64_t addr);
 
 #endif

@@ -2022,7 +2022,8 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
         if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
         if (prot & PROT_READ) {
             hamt_set_hardware_tlb(vaddr_page,
-                    vaddr_page + entry->addend, prot);
+                    vaddr_page + entry->addend, prot,
+                    /* is_tlbr = 0 */ 0);
         }
     }
 #endif
@@ -2589,7 +2590,8 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
         if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
         if (prot & PROT_WRITE) {
             hamt_set_hardware_tlb(vaddr_page,
-                    vaddr_page + entry->addend, prot);
+                    vaddr_page + entry->addend, prot,
+                    /* is_tlbr = 0 */ 0);
         }
     }
 #endif
@@ -2893,3 +2895,51 @@ uint64_t cpu_ldq_code(CPUArchState *env, abi_ptr addr)
     TCGMemOpIdx oi = make_memop_idx(MO_TEQ, cpu_mmu_index(env, true));
     return full_ldq_code(env, addr, oi, 0);
 }
+
+#ifdef CONFIG_LATX
+int hamt_fast_load(void *_env, uint64_t addr)
+{
+    CPUArchState *env = _env;
+    int mmu_idx = cpu_mmu_index(env, false);
+    CPUTLBEntry *entry = tlb_entry(env, mmu_idx, addr);
+    target_ulong tlb_addr = entry->addr_read;
+
+    if (tlb_hit(tlb_addr, addr) && hamt_enable()) {
+        int prot = 0;
+        target_ulong vaddr_page = addr & TARGET_PAGE_MASK;
+        if (entry->addr_read == vaddr_page) prot |= PROT_READ;
+        if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
+        if (prot & PROT_READ) {
+            __hamt_set_hardware_tlb(vaddr_page,
+                    vaddr_page + entry->addend, prot,
+                    /* is tlbr = 1 */ 1);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int hamt_fast_store(void *_env, uint64_t addr)
+{
+    CPUArchState *env = _env;
+    int mmu_idx = cpu_mmu_index(env, false);
+    CPUTLBEntry *entry = tlb_entry(env, mmu_idx, addr);
+    target_ulong tlb_addr = entry->addr_write;
+
+    if (tlb_hit(tlb_addr, addr) && hamt_enable()) {
+        int prot = 0;
+        target_ulong vaddr_page = addr & TARGET_PAGE_MASK;
+        if (entry->addr_read == vaddr_page) prot |= PROT_READ;
+        if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
+        if (prot & PROT_WRITE) {
+            __hamt_set_hardware_tlb(vaddr_page,
+                    vaddr_page + entry->addend, prot,
+                    /* is tlbr = 1 */ 1);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+#endif

@@ -43,30 +43,43 @@
 #define HAMT_TYPE_INTERPRETER   2
 #define HAMT_TYPE_PG_ASID       3
 #define HAMT_TYPE_SOFTMMU       4
+#define HAMT_TYPE_MASK          0xf
+
+#define HAMT_HAVE_TLBRFAST      0x10
 
 int hamt_enable(void)
 {
-    return option_hamt >= HAMT_TYPE_BASE;
+    int hamt = option_hamt & HAMT_TYPE_MASK;
+    return hamt >= HAMT_TYPE_BASE;
 }
 
 int hamt_base(void)
 {
-    return option_hamt == HAMT_TYPE_BASE;
+    int hamt = option_hamt & HAMT_TYPE_MASK;
+    return hamt == HAMT_TYPE_BASE;
 }
 
 int hamt_interpreter(void)
 {
-    return option_hamt == HAMT_TYPE_INTERPRETER;
+    int hamt = option_hamt & HAMT_TYPE_MASK;
+    return hamt == HAMT_TYPE_INTERPRETER;
 }
 
 int hamt_pg_asid(void)
 {
-    return option_hamt == HAMT_TYPE_PG_ASID;
+    int hamt = option_hamt & HAMT_TYPE_MASK;
+    return hamt == HAMT_TYPE_PG_ASID;
 }
 
 int hamt_softmmu(void)
 {
-    return option_hamt == HAMT_TYPE_SOFTMMU;
+    int hamt = option_hamt & HAMT_TYPE_MASK;
+    return hamt == HAMT_TYPE_SOFTMMU;
+}
+
+int hamt_have_tlbr_fastpath(void)
+{
+    return option_hamt & HAMT_HAVE_TLBRFAST;
 }
 
 static int hamt_delay(void)
@@ -140,6 +153,7 @@ void hamt_exception_handler(uint64_t x86_vaddr, CPUX86State *env, uint32_t *epc,
 uint64_t data_storage;
 
 uint64_t code_storage;
+uint64_t fastcode_storage;
 uint64_t debug_code_storage;
 
 uint64_t mapping_base_address = 0x0;
@@ -633,6 +647,70 @@ static inline void set_attr(int r, int w, int x, uint64_t *addr)
 
     if (w) set_bit(1, addr);
     else clear_bit(1, addr);
+}
+
+static void hamt_set_tlbr(uint64_t vaddr, uint64_t paddr,
+        int prot, bool mode)
+{
+    uint64_t csr_tlbr_ehi = 0;
+    uint64_t csr_tlbr_elo0 = 0;
+    uint64_t csr_tlbr_elo1 = 0;
+
+    int32_t csr_tlbidx = 0;
+    uint32_t csr_asid = asid_value;
+
+    int w = prot & PAGE_WRITE ? 1 : 0;
+    int r = prot & PAGE_READ  ? 1 : 0;
+    int x = prot & PAGE_EXEC  ? 1 : 0;
+
+    assert(!hamt_interpreter());
+
+    csr_tlbr_ehi = vaddr & ~0x1fffULL;
+    write_csr_tlbr_ehi(csr_tlbr_ehi);
+    write_csr_asid(csr_asid);
+    tlb_probe(); /* tlbsrch */
+    csr_tlbidx = read_csr_tlbidx();
+    if (valid_index(csr_tlbidx)) {
+        tlb_read(); /* tlbrd: always update TLBELO0/1 */
+        csr_tlbr_elo0 = read_csr_tlbelo0();
+        csr_tlbr_elo1 = read_csr_tlbelo1();
+    }
+
+    //FIX
+    if (csr_tlbidx == 0xc00083f) {
+        local_flush_tlb_all();
+        write_2111++;
+        csr_tlbidx |= 0x80000000;
+    }
+
+    if (vaddr & 0x1000) {
+        if (mode) {
+            csr_tlbr_elo1 = ((paddr >> 12 << 12) | TLBRELO0_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
+            set_attr(r, w, x, &csr_tlbr_elo1);
+        }
+        else csr_tlbr_elo1 = 0; 
+    } else {
+        if (mode) {
+            csr_tlbr_elo0 = ((paddr >> 12 << 12) | TLBRELO0_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
+            set_attr(r, w, x, &csr_tlbr_elo0);
+        }
+        else csr_tlbr_elo0 = 0; 
+    }
+
+    csr_tlbidx &= 0xc0ffffff;
+    csr_tlbidx |= PS_4K << PS_SHIFT;
+
+    csr_tlbr_ehi &= ~0x1f;
+    csr_tlbr_ehi |= PS_4K ;
+
+    write_csr_asid(csr_asid);
+    write_csr_tlbr_ehi(csr_tlbr_ehi);
+    write_csr_tlbr_elo0(csr_tlbr_elo0);
+    write_csr_tlbr_elo1(csr_tlbr_elo1);
+    write_csr_tlbidx(csr_tlbidx);
+
+    /* tlbwr : tlbfill */
+    valid_index(csr_tlbidx) ? tlb_write_indexed() : tlb_write_random();
 }
 
 /*
@@ -1706,14 +1784,22 @@ static void count_guest_tlb(void)
 }
 #endif
 
-void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr, int prot)
+void __hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
+        int prot, int is_tlbr)
+{
+    bool mode = prot ? true : false;
+    if (is_tlbr) {
+        hamt_set_tlbr(vaddr, paddr, prot, mode);
+    } else {
+        hamt_set_tlb(vaddr, paddr, prot, mode);
+    }
+}
+
+void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
+        int prot, int is_tlbr)
 {
     if (hamt_enable() && hamt_started()) {
-        if (prot) {
-            hamt_set_tlb(vaddr, paddr, prot, true);
-        } else {
-            hamt_set_tlb(vaddr, paddr, prot, false);
-        }
+        __hamt_set_hardware_tlb(vaddr, paddr, prot, is_tlbr);
     }
 }
 
@@ -2111,6 +2197,140 @@ static void local_flush_icache_range(void)
 	asm volatile ("\tibar 0\n"::);
 }
 
+/* #define CONFIG_LATX_HAMT_FAST_COUNTER */
+#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
+int hamt_fast_load_nr = 0;
+int hamt_fast_load_ok_nr = 0;
+int hamt_fast_store_nr = 0;
+int hamt_fast_store_ok_nr = 0;
+int hamt_fast_badv0_nr = 0;
+int hamt_fast_not_ldst_nr = 0;
+#endif
+/*
+ * DATA_STORAGE:
+ * 0-31: native context
+ *   32: EPC
+ *   33: badvaddr
+ *   40: tlbr_ehi
+ */
+
+static int hamt_fast_exception_handler(void)
+{
+    uint64_t *data = (void *)data_storage;
+
+    uint32_t *epc = (void *)(data[32] & ~0x1);
+    uint64_t badv = data[33];
+    uint32_t opc = get_opc_from_epc(epc);
+    void *env = (void *)(data[23]); /* $s0 */
+
+    if (!badv) {
+#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
+        hamt_fast_badv0_nr += 1;
+#endif
+        return 0;
+    }
+
+    int is_store = 0;
+    int is_load = 0;
+    switch(opc) {
+    case OPC_ST_B:
+    case OPC_ST_H:
+    case OPC_ST_W:
+    case OPC_ST_D:
+        is_store = 1;
+        break;
+    case OPC_LD_B:
+    case OPC_LD_BU:
+    case OPC_LD_H:
+    case OPC_LD_HU:
+    case OPC_LD_W:
+    case OPC_LD_WU:
+    case OPC_LD_D:
+        is_load = 1;
+        break;
+    default:
+        break;
+    }
+
+    if (!is_load && !is_store) {
+#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
+        hamt_fast_not_ldst_nr += 1;
+#endif
+        return 0;
+    }
+
+#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
+    if (is_store) {
+        hamt_fast_store_nr += 1;
+    } else {
+        hamt_fast_load_nr += 1;
+    }
+#endif
+
+    int res = 0;
+    if (is_store) {
+        res = hamt_fast_store(env, badv);
+    } else {
+        res = hamt_fast_load(env, badv);
+    }
+
+#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
+    if (res) {
+        if (is_store) {
+            hamt_fast_store_ok_nr += 1;
+        } else {
+            hamt_fast_load_ok_nr += 1;
+        }
+    }
+#endif
+
+    return res;
+}
+
+static void build_tlb_fast_exception(void)
+{
+    uint32_t *p = (uint32_t *)fastcode_storage;
+    int i = 0, j = 0;
+
+    /* $t0 already points to DATA_STORAGE */
+    /* save all integer registers */
+    for (j=0; j<32; ++j) {
+        /* t0, t1, t2 */
+        if (j==12 || j==13 || j==14) continue;
+        /* st.d reg, t0, offset */
+        p[i++] = gen_inst(OPC_ST_D, j, 12, 8*j); 
+    }
+
+    /* goto handler */
+    uint64_t f = (uint64_t)hamt_fast_exception_handler;
+    p[i++] = 0x0015b18c;
+    p[i++] = 0x1400000c | (((f >> 12) & 0xfffff) << 5);
+    p[i++] = 0x0380018c | (((f) & 0xfff) << 10);
+    p[i++] = 0x1600000c | (((f >> 32) & 0xfffff) << 5);
+    p[i++] = 0x0300018c | (((f >> 52) & 0xfff) << 10);
+    /* jirl $ra, $t0, 0 */
+    p[i++] = 0x4c000181;
+    /* move a0 to t2 */
+    p[i++] = 0x15008e;
+
+    /* t0 = 0x81000000000 (DATA_STORAGE) */
+    p[i++] = 0x0015b18c;
+    p[i++] = 0x1600102c;
+    /* restore all integer registers */
+    for (j=0; j<32; ++j) {
+        /* t0, t1, t2 */
+        if (j==12 || j==13 || j==14) continue;
+        /* ld.d reg, t0, offset */
+        p[i++] = gen_inst(OPC_LD_D, j, 12, 8*j); 
+    }
+
+    /* jirl zero, ra, 0 */
+    p[i++] = 0x4c000020;
+
+    assert(i <= (0x4000 >> 2));
+    local_flush_icache_range();
+}
+
 static void build_tlb_invalid_trampoline(void)
 {
     uint32_t *p = (uint32_t *)code_storage;
@@ -2223,6 +2443,7 @@ void enable_x86vm_hamt(void)
     int i;
 	data_storage = (uint64_t)mmap((void *)DATA_STORAGE_ADDRESS, 4096, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
     code_storage = (uint64_t)mmap((void *)CODE_STORAGE_ADDRESS, 4096, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    fastcode_storage = (uint64_t)mmap((void *)FASTCODE_STORAGE_ADDRESS, 4096, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
     assert(data_storage == DATA_STORAGE_ADDRESS);
     assert(code_storage == CODE_STORAGE_ADDRESS);
@@ -2235,7 +2456,7 @@ void enable_x86vm_hamt(void)
 	memset(asid_map, 0, sizeof(uint64_t) * 16);
 
     build_tlb_invalid_trampoline();
-
+    build_tlb_fast_exception();
 }
 
 static void __attribute__((constructor)) in_hamt_init(void)

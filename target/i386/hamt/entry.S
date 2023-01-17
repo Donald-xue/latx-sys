@@ -66,6 +66,99 @@ ertn
 
 tlb_refill_entry_end:
 
+.global tlb_fast_refill_entry_begin
+.global tlb_fast_refill_entry_end
+tlb_fast_refill_entry_begin:
+csrwr    t0, LOONGARCH_CSR_TLBRSAVE
+csrwr    t1, LOONGARCH_CSR_KS0
+csrwr    t2, LOONGARCH_CSR_KS1
+
+// t0: bad vaddr t1: 0x1000000000
+csrrd    t0, LOONGARCH_CSR_TLBRBADV
+or       t1, zero, zero
+lu32i.d  t1, 0x100000000>>32
+bltu     t0, t1, fast_hamt_space 
+
+fast_qemu_space:
+csrrd t0, LOONGARCH_CSR_TLBREHI
+// 因为 Loongarch 的 TLB 采用奇偶页, 所以从 EntryHi 的获取掩码为 1G 而不是 512M
+
+// page fault 的 1G 对齐地址
+srli.d t0, t0, (TLB_PS_1G_shift + 1)
+slli.d t0, t0, (TLB_PS_1G_shift + 1)
+
+// 整个计算过程中， t0 的数值始终保持不变
+// 使用 t1 来对应的掩码
+ori   t1, zero, TLB_PS_1G
+add.d t1, t1, t0
+csrwr t1, LOONGARCH_CSR_TLBREHI
+
+csrrd t1, LOONGARCH_CSR_KS6
+add.d t1, t1, t0
+csrwr t1, LOONGARCH_CSR_TLBRELO0
+
+csrrd t1, LOONGARCH_CSR_KS7
+add.d t1, t1, t0
+csrwr t1, LOONGARCH_CSR_TLBRELO1
+tlbfill
+
+csrrd    t0, LOONGARCH_CSR_TLBRSAVE
+csrrd    t1, LOONGARCH_CSR_KS0
+csrrd    t2, LOONGARCH_CSR_KS1
+ertn
+
+fast_hamt_space:
+/* fast path: lookup softtlb */
+/* 1. save ra and BADV,EPC */
+or      t0, zero, zero
+lu32i.d t0, 0x8100000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+st.d    ra, t0, 8                   /* native ra */
+csrrd   t1, LOONGARCH_CSR_TLBRSAVE  /* native t0 */
+st.d    t1, t0, 12 * 8
+csrrd   t1, LOONGARCH_CSR_KS0       /* native t1 */
+st.d    t1, t0, 13 * 8
+csrrd   t1, LOONGARCH_CSR_KS1       /* native t2 */
+st.d    t1, t0, 14 * 8
+csrrd   t1, LOONGARCH_CSR_TLBRBADV      /* CSR: bad vaddr */
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_TLBREPC       /* CSR: EPC */
+st.d    t1, t0, (ERA_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_TLBREHI   /* CSR: TLBR_EHI */
+st.d    t1, t0, (TLBR_EHI_INDEX*8)
+/* 2. jump to fast exception */
+lu12i.w t1, -32768>>12
+lu32i.d t1, 0x7f00000000>>32
+jirl    ra, t1, 0 /* call to fastcode_storage */
+/* 3. $t0 already points to DATA_STORAGE before return */
+/* 4. if success (t2) */
+bnez    t2, fast_tlbr_restore
+
+/* slow path: fill empty tlb entry */
+ld.d    t2, t0, (TLBR_EHI_INDEX*8)  /* CSR: TLBR_EHI */
+// set TLBREHI.PS
+srli.d t2, t2, 0x6
+slli.d t2, t2, 0x6
+ori    t1, t2, TLB_PS_4K
+
+csrwr  t1, LOONGARCH_CSR_TLBREHI
+csrwr  zero, LOONGARCH_CSR_TLBRELO0
+csrwr  zero, LOONGARCH_CSR_TLBRELO1
+tlbfill
+
+fast_tlbr_restore:
+/* restore epc */
+ld.d    t1, t0, (ERA_INDEX*8)
+csrwr  t1, LOONGARCH_CSR_TLBREPC
+/* restore native */
+ld.d    ra, t0, 8                   /* native: ra */
+ld.d    t2, t0, 14 * 8              /* native: t2 */
+ld.d    t1, t0, 13 * 8              /* native: t1 */
+ld.d    t0, t0, 12 * 8              /* native: t0 */
+ertn
+
+tlb_fast_refill_entry_end:
+
 // EXCCODE_TLBL 1
 .global tlb_load_entry_begin
 .global tlb_load_entry_end

@@ -426,6 +426,16 @@ void host_loop(struct kvm_cpu *vcpu)
             pr_info("         EPC 0x%lx", csr_value);
 
             csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_TLBRBADV;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("   TLBR BADV 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_TLBREPC;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("   TLBR  EPC 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
             csr.id = KVM_CSR_BADI;
             err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
             pr_info("         BADI 0x%lx", csr_value);

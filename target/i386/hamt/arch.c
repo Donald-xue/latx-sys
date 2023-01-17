@@ -16,6 +16,8 @@
 #endif
 #include <sched.h>
 
+#include "hamt.h"
+
 void arch_dump_regs(int debug_fd, struct kvm_regs regs);
 void arch_dump_regs(int debug_fd, struct kvm_regs regs)
 {
@@ -183,6 +185,8 @@ extern void fpe_entry_begin(void);
 extern void fpe_entry_end(void);
 extern void tlb_refill_entry_begin(void);
 extern void tlb_refill_entry_end(void);
+extern void tlb_fast_refill_entry_begin(void);
+extern void tlb_fast_refill_entry_end(void);
 extern void tlb_load_entry_begin(void);
 extern void tlb_load_entry_end(void);
 extern void tlb_store_entry_begin(void);
@@ -222,9 +226,15 @@ static void init_ebase(struct kvm_cpu *cpu)
 	}
 
     // tlb refill exception
-    assert((tlb_refill_entry_end - tlb_refill_entry_begin) < 512);
-	memcpy(cpu->info.ebase, tlb_refill_entry_begin,
-	       tlb_refill_entry_end - tlb_refill_entry_begin);
+    if (hamt_have_tlbr_fastpath()) {
+        assert((tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin) < 512);
+        memcpy(cpu->info.ebase, tlb_fast_refill_entry_begin,
+               tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin);
+    } else {
+        assert((tlb_refill_entry_end - tlb_refill_entry_begin) < 512);
+        memcpy(cpu->info.ebase, tlb_refill_entry_begin,
+               tlb_refill_entry_end - tlb_refill_entry_begin);
+    }
 
     // EXCCODE_TLBL 1
     assert((tlb_load_entry_end - tlb_load_entry_begin) < 512);

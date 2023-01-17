@@ -129,6 +129,13 @@ void enable_x86vm_hamt(void);
 #define read_csr_tlbelo1()     __dcsrrd(LOONGARCH_CSR_TLBELO1)
 #define write_csr_tlbelo1(val) __dcsrwr(val, LOONGARCH_CSR_TLBELO1)
 
+#define read_csr_tlbr_ehi()      __dcsrrd(LOONGARCH_CSR_TLBREHI)
+#define write_csr_tlbr_ehi(val)  __dcsrwr(val, LOONGARCH_CSR_TLBREHI)
+#define read_csr_tlbr_elo0()     __dcsrrd(LOONGARCH_CSR_TLBRELO0)
+#define write_csr_tlbr_elo0(val) __dcsrwr(val, LOONGARCH_CSR_TLBRELO0)
+#define read_csr_tlbr_elo1()     __dcsrrd(LOONGARCH_CSR_TLBRELO1)
+#define write_csr_tlbr_elo1(val) __dcsrwr(val, LOONGARCH_CSR_TLBRELO1)
+
 /*
  * parse_r var, r - Helper assembler macro for parsing register names.
  *
