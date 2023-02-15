@@ -38,6 +38,7 @@
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
 #include "latx-config.h"
+#include "hamt.h"
 #endif
 #endif
 
@@ -50,6 +51,26 @@
 static void *mttcg_cpu_thread_fn(void *arg)
 {
     CPUState *cpu = arg;
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (hamt_enable()) {
+        pthread_t tid = pthread_self();
+        assert(tid == cpu->thread->thread);
+
+        printf("MTTCG enter HAMT mode %d pthread_t 0x%lx\n",
+                cpu->cpu_index,
+                (uint64_t)tid);
+
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(cpu->cpu_index, &cpuset);
+        pthread_setaffinity_np(tid,
+                sizeof(cpu_set_t),
+                &cpuset);
+
+        hamt_enter(HAMT_MODE_MT, cpu->cpu_index);
+    }
+#endif
 
     assert(tcg_enabled());
     g_assert(!icount_enabled());

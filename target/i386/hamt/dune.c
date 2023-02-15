@@ -257,16 +257,22 @@ static void expand_stack(void)
 	*(int *)(top - limit) = 0;
 }
 
-int dune_enter(void)
+/* 
+ * 1 HAMT_MODE_RR: single vcpu thread
+ * 2 HAMT_MODE_MT: multi  vcpu thread
+ */
+int dune_enter(int mode, int cpuid)
 {
-	expand_stack();
-	struct kvm_cpu *cpu = kvm_init_vm_with_one_cpu();
-	if (cpu == NULL)
-		die("kvm_init_vm_with_one_cpu");
+    pr_info("%s cpu %d mode %d", __func__, cpuid, mode);
 
-    
-    enable_x86vm_hamt();
-	arch_dune_enter(cpu);
+	expand_stack();
+	struct kvm_cpu *kvmcpu = kvm_init_vm_with_one_cpu();
+	if (kvmcpu == NULL)
+		die("kvm_init_vm_with_one_cpu");
+    pr_info("init kvm vcpu KVM_vCPU_fd=%d", kvmcpu->vcpu_fd);
+
+    enable_x86vm_hamt(mode, cpuid);
+	arch_dune_enter(kvmcpu, mode, cpuid);
 	return 0;
 }
 

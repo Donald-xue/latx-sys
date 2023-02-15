@@ -160,9 +160,9 @@ ertn
 tlb_fast_refill_entry_end:
 
 // EXCCODE_TLBL 1
-.global tlb_load_entry_begin
-.global tlb_load_entry_end
-tlb_load_entry_begin:
+.global tlb_load_entry_s0_begin
+.global tlb_load_entry_s0_end
+tlb_load_entry_s0_begin:
 csrwr   t0, LOONGARCH_CSR_KS0
 csrwr   t1, LOONGARCH_CSR_KS1
 
@@ -183,12 +183,78 @@ csrwr   t1, LOONGARCH_CSR_EPC
 csrrd   t1, LOONGARCH_CSR_KS1
 csrrd   t0, LOONGARCH_CSR_KS0
 ertn
-tlb_load_entry_end:
+tlb_load_entry_s0_end:
+
+.global tlb_load_entry_s1_begin
+.global tlb_load_entry_s1_end
+tlb_load_entry_s1_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s1 0x9000008200000000
+or      t0, zero, zero
+lu32i.d t0, 0x8200000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s1 0x7F_FFFF_8000
+lu12i.w t1, -32768>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_load_entry_s1_end:
+
+.global tlb_load_entry_s2_begin
+.global tlb_load_entry_s2_end
+tlb_load_entry_s2_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s2 0x9000008300000000
+or      t0, zero, zero
+lu32i.d t0, 0x8300000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s2 0x7F_FFFF_4000
+lu12i.w t1, -49152>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_load_entry_s2_end:
+
+.global tlb_load_entry_s3_begin
+.global tlb_load_entry_s3_end
+tlb_load_entry_s3_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s3 0x9000008400000000
+or      t0, zero, zero
+lu32i.d t0, 0x8400000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s3 0x7F_FFFF_0000
+lu12i.w t1, -65536>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_load_entry_s3_end:
 
 // EXCCODE_TLBS 2
-.global tlb_store_entry_begin
-.global tlb_store_entry_end
-tlb_store_entry_begin:
+.global tlb_store_entry_s0_begin
+.global tlb_store_entry_s0_end
+tlb_store_entry_s0_begin:
 csrwr   t0, LOONGARCH_CSR_KS0
 csrwr   t1, LOONGARCH_CSR_KS1
 
@@ -209,7 +275,73 @@ csrwr   t1, LOONGARCH_CSR_EPC
 csrrd   t1, LOONGARCH_CSR_KS1
 csrrd   t0, LOONGARCH_CSR_KS0
 ertn
-tlb_store_entry_end:
+tlb_store_entry_s0_end:
+
+.global tlb_store_entry_s1_begin
+.global tlb_store_entry_s1_end
+tlb_store_entry_s1_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s1 0x9000008200000000
+or      t0, zero, zero
+lu32i.d t0, 0x8200000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s1 0x7F_FFFF_8000
+lu12i.w t1, -32768>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_store_entry_s1_end:
+
+.global tlb_store_entry_s2_begin
+.global tlb_store_entry_s2_end
+tlb_store_entry_s2_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s2 0x9000008300000000
+or      t0, zero, zero
+lu32i.d t0, 0x8300000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s2 0x7F_FFFF_4000
+lu12i.w t1, -49152>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_store_entry_s2_end:
+
+.global tlb_store_entry_s3_begin
+.global tlb_store_entry_s3_end
+tlb_store_entry_s3_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s3 0x9000008400000000
+or      t0, zero, zero
+lu32i.d t0, 0x8400000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s3 0x7F_FFFF_0000
+lu12i.w t1, -65536>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_store_entry_s3_end:
 
 // EXCCODE_TLBI 3
 .global tlb_ifetch_entry_begin
@@ -219,9 +351,9 @@ UNEXPECTED_TLBI
 tlb_ifetch_entry_end:
 
 // EXCCODE_TLBM 4
-.global tlb_modified_entry_begin
-.global tlb_modified_entry_end
-tlb_modified_entry_begin:
+.global tlb_modified_entry_s0_begin
+.global tlb_modified_entry_s0_end
+tlb_modified_entry_s0_begin:
 csrwr   t0, LOONGARCH_CSR_KS0
 csrwr   t1, LOONGARCH_CSR_KS1
 
@@ -243,7 +375,73 @@ csrrd   t1, LOONGARCH_CSR_KS1
 csrrd   t0, LOONGARCH_CSR_KS0
 
 ertn
-tlb_modified_entry_end:
+tlb_modified_entry_s0_end:
+
+.global tlb_modified_entry_s1_begin
+.global tlb_modified_entry_s1_end
+tlb_modified_entry_s1_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s1 0x9000008200000000
+or      t0, zero, zero
+lu32i.d t0, 0x8200000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s1 0x7F_FFFF_8000
+lu12i.w t1, -32768>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_modified_entry_s1_end:
+
+.global tlb_modified_entry_s2_begin
+.global tlb_modified_entry_s2_end
+tlb_modified_entry_s2_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s2 0x9000008300000000
+or      t0, zero, zero
+lu32i.d t0, 0x8300000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s2 0x7F_FFFF_4000
+lu12i.w t1, -49152>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_modified_entry_s2_end:
+
+.global tlb_modified_entry_s3_begin
+.global tlb_modified_entry_s3_end
+tlb_modified_entry_s3_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+// data_storage_s3 0x9000008400000000
+or      t0, zero, zero
+lu32i.d t0, 0x8400000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+csrrd   t1, LOONGARCH_CSR_BADV
+st.d    t1, t0, (BADV_INDEX*8)
+csrrd   t1, LOONGARCH_CSR_EPC
+st.d    t1, t0, (ERA_INDEX*8)
+// code_storage_s3 0x7F_FFFF_0000
+lu12i.w t1, -65536>>12
+lu32i.d t1, 0x7f00000000>>32
+csrwr   t1, LOONGARCH_CSR_EPC
+csrrd   t1, LOONGARCH_CSR_KS1
+csrrd   t0, LOONGARCH_CSR_KS0
+ertn
+tlb_modified_entry_s3_end:
 
 // EXCCODE_TLBRI 5
 .global tlb_read_inhibit_entry_begin
@@ -281,9 +479,9 @@ UNEXPECTED_ALE
 unaligned_access_entry_end:
 
 // EXCCODE_BP 12
-.global break_entry_begin
-.global break_entry_end
-break_entry_begin:
+.global break_entry_s0_begin
+.global break_entry_s0_end
+break_entry_s0_begin:
 csrwr   t0, LOONGARCH_CSR_KS0
 csrwr   t1, LOONGARCH_CSR_KS1
 csrwr   t2, LOONGARCH_CSR_KS2
@@ -296,11 +494,11 @@ ldptr.d t1, t0, (TRAP_CODE_INDEX*8)
 
 move    t2, t1
 xori    t2, t2, 0x3
-beq     t2, zero, restore_regs
+beq     t2, zero, restore_regs_s0
 
 UNEXPECTED_TRAP
 
-restore_regs:
+restore_regs_s0:
 ld.d    ra, t0, 8*1
 ld.d    tp, t0, 8*2
 ld.d    sp, t0, 8*3
@@ -340,7 +538,169 @@ ld.d    t0, t0, 8*12
 csrrd   t1, LOONGARCH_CSR_KS0
 
 ertn
-break_entry_end:
+break_entry_s0_end:
+
+.global break_entry_s1_begin
+.global break_entry_s1_end
+break_entry_s1_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+csrwr   t2, LOONGARCH_CSR_KS2
+// data_storage_s1 0x9000008200000000
+or      t0, zero, zero
+lu32i.d t0, 0x8200000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+ldptr.d t1, t0, (TRAP_CODE_INDEX*8)
+move    t2, t1
+xori    t2, t2, 0x3
+beq     t2, zero, restore_regs_s1
+UNEXPECTED_TRAP
+restore_regs_s1:
+ld.d    ra, t0, 8*1
+ld.d    tp, t0, 8*2
+ld.d    sp, t0, 8*3
+ld.d    a0, t0, 8*4
+ld.d    a1, t0, 8*5
+ld.d    a2, t0, 8*6
+ld.d    a3, t0, 8*7
+ld.d    a4, t0, 8*8
+ld.d    a5, t0, 8*9
+ld.d    a6, t0, 8*10
+ld.d    a7, t0, 8*11
+ld.d    t1, t0, 8*13
+ld.d    t2, t0, 8*14
+ld.d    t3, t0, 8*15
+ld.d    t4, t0, 8*16
+ld.d    t5, t0, 8*17
+ld.d    t6, t0, 8*18
+ld.d    t7, t0, 8*19
+ld.d    t8, t0, 8*20
+ld.d  $r21, t0, 8*21
+ld.d    fp, t0, 8*22
+ld.d    s0, t0, 8*23
+ld.d    s1, t0, 8*24
+ld.d    s2, t0, 8*25
+ld.d    s3, t0, 8*26
+ld.d    s4, t0, 8*27
+ld.d    s5, t0, 8*28
+ld.d    s6, t0, 8*29
+ld.d    s7, t0, 8*30
+ld.d    s8, t0, 8*31
+csrwr   t1, LOONGARCH_CSR_KS0
+ld.d    t1, t0, 8*32
+csrwr   t1, LOONGARCH_CSR_EPC
+ld.d    t0, t0, 8*12
+csrrd   t1, LOONGARCH_CSR_KS0
+ertn
+break_entry_s1_end:
+
+.global break_entry_s2_begin
+.global break_entry_s2_end
+break_entry_s2_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+csrwr   t2, LOONGARCH_CSR_KS2
+// data_storage_s2 0x9000008300000000
+or      t0, zero, zero
+lu32i.d t0, 0x8300000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+ldptr.d t1, t0, (TRAP_CODE_INDEX*8)
+move    t2, t1
+xori    t2, t2, 0x3
+beq     t2, zero, restore_regs_s2
+UNEXPECTED_TRAP
+restore_regs_s2:
+ld.d    ra, t0, 8*1
+ld.d    tp, t0, 8*2
+ld.d    sp, t0, 8*3
+ld.d    a0, t0, 8*4
+ld.d    a1, t0, 8*5
+ld.d    a2, t0, 8*6
+ld.d    a3, t0, 8*7
+ld.d    a4, t0, 8*8
+ld.d    a5, t0, 8*9
+ld.d    a6, t0, 8*10
+ld.d    a7, t0, 8*11
+ld.d    t1, t0, 8*13
+ld.d    t2, t0, 8*14
+ld.d    t3, t0, 8*15
+ld.d    t4, t0, 8*16
+ld.d    t5, t0, 8*17
+ld.d    t6, t0, 8*18
+ld.d    t7, t0, 8*19
+ld.d    t8, t0, 8*20
+ld.d  $r21, t0, 8*21
+ld.d    fp, t0, 8*22
+ld.d    s0, t0, 8*23
+ld.d    s1, t0, 8*24
+ld.d    s2, t0, 8*25
+ld.d    s3, t0, 8*26
+ld.d    s4, t0, 8*27
+ld.d    s5, t0, 8*28
+ld.d    s6, t0, 8*29
+ld.d    s7, t0, 8*30
+ld.d    s8, t0, 8*31
+csrwr   t1, LOONGARCH_CSR_KS0
+ld.d    t1, t0, 8*32
+csrwr   t1, LOONGARCH_CSR_EPC
+ld.d    t0, t0, 8*12
+csrrd   t1, LOONGARCH_CSR_KS0
+ertn
+break_entry_s2_end:
+
+.global break_entry_s3_begin
+.global break_entry_s3_end
+break_entry_s3_begin:
+csrwr   t0, LOONGARCH_CSR_KS0
+csrwr   t1, LOONGARCH_CSR_KS1
+csrwr   t2, LOONGARCH_CSR_KS2
+// data_storage_s3 0x9000008400000000
+or      t0, zero, zero
+lu32i.d t0, 0x8400000000>>32
+lu52i.d t0, t0, 0x9000000000000000>>52
+ldptr.d t1, t0, (TRAP_CODE_INDEX*8)
+move    t2, t1
+xori    t2, t2, 0x3
+beq     t2, zero, restore_regs_s3
+UNEXPECTED_TRAP
+restore_regs_s3:
+ld.d    ra, t0, 8*1
+ld.d    tp, t0, 8*2
+ld.d    sp, t0, 8*3
+ld.d    a0, t0, 8*4
+ld.d    a1, t0, 8*5
+ld.d    a2, t0, 8*6
+ld.d    a3, t0, 8*7
+ld.d    a4, t0, 8*8
+ld.d    a5, t0, 8*9
+ld.d    a6, t0, 8*10
+ld.d    a7, t0, 8*11
+ld.d    t1, t0, 8*13
+ld.d    t2, t0, 8*14
+ld.d    t3, t0, 8*15
+ld.d    t4, t0, 8*16
+ld.d    t5, t0, 8*17
+ld.d    t6, t0, 8*18
+ld.d    t7, t0, 8*19
+ld.d    t8, t0, 8*20
+ld.d  $r21, t0, 8*21
+ld.d    fp, t0, 8*22
+ld.d    s0, t0, 8*23
+ld.d    s1, t0, 8*24
+ld.d    s2, t0, 8*25
+ld.d    s3, t0, 8*26
+ld.d    s4, t0, 8*27
+ld.d    s5, t0, 8*28
+ld.d    s6, t0, 8*29
+ld.d    s7, t0, 8*30
+ld.d    s8, t0, 8*31
+csrwr   t1, LOONGARCH_CSR_KS0
+ld.d    t1, t0, 8*32
+csrwr   t1, LOONGARCH_CSR_EPC
+ld.d    t0, t0, 8*12
+csrrd   t1, LOONGARCH_CSR_KS0
+ertn
+break_entry_s3_end:
 
 /* t0 是 caller saved 寄存器 */
 /* Syscall number held in a7 */

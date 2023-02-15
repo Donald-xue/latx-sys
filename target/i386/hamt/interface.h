@@ -113,7 +113,7 @@ enum CLONE_TYPE{
   DIFF_VM_OLD_STACk, // do the fork, then create another vm
 };
 
-void arch_dune_enter(struct kvm_cpu *cpu);
+void arch_dune_enter(struct kvm_cpu *cpu, int mode, int cpuid);
 void switch_stack(struct kvm_cpu *cpu, u64 host_stack);
 u64 arch_get_sysno(const struct kvm_cpu *cpu);
 enum CLONE_TYPE arch_get_clone_type(const struct kvm_cpu *parent_cpu, int sysno);

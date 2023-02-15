@@ -116,7 +116,7 @@ typedef enum {
 #define PS_256M		0x0000001b
 #define PS_1G		0x0000001c
 
-void enable_x86vm_hamt(void);
+void enable_x86vm_hamt(int mode, int cpuid);
 
 #define read_csr_asid()			__dcsrrd(LOONGARCH_CSR_ASID)
 #define write_csr_asid(val)		__dcsrwr(val, LOONGARCH_CSR_ASID)

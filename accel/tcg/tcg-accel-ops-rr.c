@@ -178,8 +178,8 @@ static void *rr_cpu_thread_fn(void *arg)
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     if (hamt_enable()) {
-        hamt_enter();
-	    printf("here we in hamt mode\n");
+        hamt_enter(HAMT_MODE_RR, 0);
+        printf("RR enter HAMT mode\n");
     }
 #endif
 

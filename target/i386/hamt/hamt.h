@@ -4,8 +4,11 @@
 #include <stdint.h>
 #include <pthread.h>
 
-int dune_enter(void);
-#define hamt_enter() (dune_enter())
+#define HAMT_MODE_RR    1
+#define HAMT_MODE_MT    2
+
+int dune_enter(int mode, int cpuid);
+#define hamt_enter(mode, cpuid) (dune_enter(mode, cpuid))
 
 int hamt_enable(void);
 

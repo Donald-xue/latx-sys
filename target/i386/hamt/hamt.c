@@ -150,11 +150,11 @@ void hamt_exception_handler(uint64_t x86_vaddr, CPUX86State *env, uint32_t *epc,
  * ---4KB---
  */
 
-uint64_t data_storage;
+uint64_t data_storage_s[4];
 
-uint64_t code_storage;
-uint64_t fastcode_storage;
-uint64_t debug_code_storage;
+uint64_t code_storage_s[4];
+uint64_t fastcode_storage_s[4];
+uint64_t debug_code_storage_s[4];
 
 uint64_t mapping_base_address = 0x0;
 
@@ -600,17 +600,17 @@ static inline MemOp hamt_get_memop(uint32_t *epc)
     exit(1);
 }
 
-static inline uint64_t hamt_get_mem_address(uint32_t *epc)
+static inline uint64_t hamt_get_mem_address(uint32_t *epc, int cpuid)
 {
     uint32_t inst = *epc;
     uint32_t rj = (inst >> 5) & 0x1f;
     int imm = (inst >> 10) & 0xfff;
     int simm = (imm << 20) >> 20;
-    uint64_t base = ((uint64_t*)data_storage)[rj];
+    uint64_t base = ((uint64_t*)(data_storage_s[cpuid]))[rj];
     return base + simm;
 }
 
-static inline uint64_t hamt_get_st_val(uint32_t *epc)
+static inline uint64_t hamt_get_st_val(uint32_t *epc, int cpuid)
 {
     uint32_t inst = *epc;
 
@@ -620,13 +620,13 @@ static inline uint64_t hamt_get_st_val(uint32_t *epc)
 
     switch(opc) {
         case OPC_ST_B:
-            return ((uint64_t*)data_storage)[rd] & (uint64_t)0xff;
+            return ((uint64_t*)(data_storage_s[cpuid]))[rd] & (uint64_t)0xff;
         case OPC_ST_H:
-            return ((uint64_t*)data_storage)[rd] & (uint64_t)0xffff;
+            return ((uint64_t*)(data_storage_s[cpuid]))[rd] & (uint64_t)0xffff;
         case OPC_ST_W:
-            return ((uint64_t*)data_storage)[rd] & (uint64_t)0xffffffff;
+            return ((uint64_t*)(data_storage_s[cpuid]))[rd] & (uint64_t)0xffffffff;
         case OPC_ST_D:
-            return ((uint64_t*)data_storage)[rd];
+            return ((uint64_t*)(data_storage_s[cpuid]))[rd];
         default: {
             pr_info("inst: %x", *epc);
             die("invalid opc in hamt_get_st_val");
@@ -961,7 +961,7 @@ static TCGMemOpIdx hamt_get_oi(uint32_t *epc, int mmu_idx)
     exit(1);
 }
 
-static void load_into_reg(uint64_t val, uint32_t *epc)
+static void load_into_reg(uint64_t val, uint32_t *epc, int cpuid)
 {
     uint32_t inst = *epc;
     int rt = inst & 0x1f;
@@ -1011,18 +1011,19 @@ static void load_into_reg(uint64_t val, uint32_t *epc)
         }
     }
 
-    ((uint64_t *)data_storage)[rt] = val;
+    ((uint64_t *)(data_storage_s[cpuid]))[rt] = val;
 }
 
 //TRY
 static void store_into_mem(uint64_t haddr, uint32_t *epc,
-        int debug, int is_unalign_2, uint64_t haddr2)
+        int debug, int is_unalign_2, uint64_t haddr2,
+        int cpuid)
 {
     uint32_t inst = *epc;
     int rd = inst & 0x1f; 
     uint32_t opc = inst >> 22 << 22;
     
-    uint64_t val = ((uint64_t*)data_storage)[rd];
+    uint64_t val = ((uint64_t*)data_storage_s[cpuid])[rd];
 
     if (!is_unalign_2) {
         /* emulate aligned access (inside one page) */
@@ -1113,6 +1114,11 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         die("%s : hamt softmmu\n", __func__);
     }
 
+    int cpuid = 0;
+    if (qemu_tcg_mttcg_enabled()) {
+        cpuid = (env_cpu(env))->cpu_index;
+    }
+
     uintptr_t mmu_idx = get_mmuidx(oi);
     target_ulong tlb_addr = tlb_addr_write(entry);
     unsigned a_bits = get_alignment_bits(get_memop(oi));
@@ -1149,7 +1155,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         /* Handle I/O access.  */
         if (tlb_addr & TLB_MMIO) {
 
-            ((uint64_t *)data_storage)[32] += 4;
+            ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
 
             io_writex(env, iotlbentry, mmu_idx, val, addr, retaddr,
                       op ^ (need_swap * MO_BSWAP));
@@ -1160,7 +1166,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         /* Ignore writes to ROM.  */
         if (unlikely(tlb_addr & TLB_DISCARD_WRITE)) {
 
-            ((uint64_t *)data_storage)[32] += 4;
+            ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
 
             return;
         }
@@ -1184,17 +1190,17 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
                             1, entry, size, 1);
                 } else {
                     assert(is_unalign_clean_ram == 1);
-                    ((uint64_t *)data_storage)[32] += 4;
+                    ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
                     haddr = ((uintptr_t)addr + unalign_entry1->addend);
                     addr2 = (addr + size) & TARGET_PAGE_MASK;
                     haddr2 = ((uintptr_t)addr2 + entry->addend);
                     store_into_mem(haddr, epc, 0,
-                            is_unalign_2, haddr2);
+                            is_unalign_2, haddr2, cpuid);
                 }
             } else {
                 /* NOT a cross-page clean RAM write: write directly */
-                ((uint64_t *)data_storage)[32] += 4;
-                store_into_mem(haddr, epc, 0, 0, -1);
+                ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
+                store_into_mem(haddr, epc, 0, 0, -1, cpuid);
             }
             return;
         }
@@ -1209,9 +1215,9 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         }
 
         if (hamt_interpreter()) {
-            ((uint64_t *)data_storage)[32] += 4;
+            ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
             store_into_mem(haddr, epc, 0,
-                    0, -1); /* not unalign */
+                    0, -1, cpuid); /* not unalign */
         }
         return;
     }
@@ -1227,7 +1233,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
                 hamt_exception_handler(addr + mapping_base_address, env, epc,
                         1, entry, size, 0);
             } else {
-                ((uint64_t *)data_storage)[32] += 4;
+                ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
 
                 /*
                  *              size
@@ -1242,7 +1248,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
                 //pr_info("store unaligned access vaddr=0x%llx haddr=0x%llx haddr2=0x%llx",
                         //addr, haddr, haddr2);
                 store_into_mem(haddr, epc, 0,
-                        is_unalign_2, haddr2);
+                        is_unalign_2, haddr2, cpuid);
             }
             return;
         }
@@ -1251,9 +1257,9 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
     haddr = ((uintptr_t)addr + entry->addend);
 
     if (hamt_interpreter()) {
-        ((uint64_t *)data_storage)[32] += 4;
+        ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
         store_into_mem(haddr, epc, 0,
-                0, -1); /* not unalign access */
+                0, -1, cpuid); /* not unalign access */
     } else {
         hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
     }
@@ -1261,7 +1267,8 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
 static void load_direct_into_reg(MemOp op,
         uint64_t vaddr, uint64_t haddr, uint32_t *epc,
-        int debug, int is_unalign_2, uint64_t haddr2)
+        int debug, int is_unalign_2, uint64_t haddr2,
+        int cpuid)
 {
     int is_sign  = (op & (1<<2));
     size_t size  = op & 0x3;
@@ -1372,7 +1379,7 @@ static void load_direct_into_reg(MemOp op,
         break;
     }
 
-    load_into_reg(val, epc);
+    load_into_reg(val, epc, cpuid);
 }
 
 static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
@@ -1382,6 +1389,11 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 {
     if (hamt_softmmu()) {
         die("%s : hamt softmmu\n", __func__);
+    }
+
+    int cpuid = 0;
+    if (qemu_tcg_mttcg_enabled()) {
+        cpuid = (env_cpu(env))->cpu_index;
     }
 
     uintptr_t mmu_idx = get_mmuidx(oi);
@@ -1422,14 +1434,14 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
         /* Handle I/O access.  */
         if (likely(tlb_addr & TLB_MMIO)) {
 
-            ((uint64_t *)data_storage)[32] += 4;
+            ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
 
             uint64_t retval;
 
             retval = io_readx(env, iotlbentry, mmu_idx, addr, retaddr,
                             access_type, op ^ (need_swap * MO_BSWAP));
 
-            return load_into_reg(retval, epc);
+            return load_into_reg(retval, epc, cpuid);
         }
 
         haddr = (uintptr_t)addr + entry->addend;
@@ -1439,9 +1451,9 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
         }
 
         if (hamt_interpreter()) {
-            ((uint64_t *)data_storage)[32] += 4;
+            ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
             load_direct_into_reg(op, addr, haddr, epc, 0,
-                    0, 0); /* not unalign access */
+                    0, 0, cpuid); /* not unalign access */
         } else {
             hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
         }
@@ -1460,7 +1472,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
                 hamt_exception_handler(addr + mapping_base_address, env, epc,
                         1, entry, size, 0);
             } else {
-                ((uint64_t *)data_storage)[32] += 4;
+                ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
 
                 /*
                  *              size
@@ -1475,7 +1487,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
                 //pr_info("load  unaligned access vaddr=0x%llx haddr=0x%llx haddr2=0x%llx",
                         //addr, haddr, haddr2);
                 load_direct_into_reg(op, addr, haddr, epc, 0,
-                        is_unalign_2, haddr2); /* unalign access */
+                        is_unalign_2, haddr2, cpuid); /* unalign access */
             }
             return;
         }
@@ -1484,9 +1496,9 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
     haddr = (uintptr_t)addr + entry->addend;
 
     if (hamt_interpreter()) {
-        ((uint64_t *)data_storage)[32] += 4;
+        ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
         load_direct_into_reg(op, addr, haddr, epc, 0,
-                0, 0); /* not unalign access */
+                0, 0, cpuid); /* not unalign access */
     } else {
         hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
     }
@@ -1502,6 +1514,11 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
 {
     if (hamt_softmmu()) {
         die("%s : hamt softmmu\n", __func__);
+    }
+
+    int cpuid = 0;
+    if (qemu_tcg_mttcg_enabled()) {
+        cpuid = cpu->cpu_index;
     }
 
     CPUArchState *env = cpu->env_ptr;
@@ -1613,14 +1630,14 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
     }
 
     if (is_write) {
-        hamt_store_helper(env, hamt_badvaddr-mapping_base_address, hamt_get_st_val(epc),
-            hamt_get_oi(epc, mmu_idx), ((uint64_t *)data_storage)[32]+4,
+        hamt_store_helper(env, hamt_badvaddr-mapping_base_address, hamt_get_st_val(epc, cpuid),
+            hamt_get_oi(epc, mmu_idx), ((uint64_t *)(data_storage_s[cpuid]))[32]+4,
             hamt_get_memop(epc),
             &tn, &iotlbentry, prot, epc,
             is_unalign_2, unalign_entry1, unalign_size, is_unalign_clean_ram);
     } else {
         hamt_load_helper(env,hamt_badvaddr-mapping_base_address, hamt_get_oi(epc, mmu_idx),
-            ((uint64_t *)data_storage)[32]+4, hamt_get_memop(epc),
+            ((uint64_t *)(data_storage_s[cpuid]))[32]+4, hamt_get_memop(epc),
             &tn, &iotlbentry, prot, epc,
             is_unalign_2, unalign_entry1, unalign_size);
     }
@@ -1631,8 +1648,13 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
 /* save native context into ENV */
 static void hamt_save_from_native(CPUX86State *env)
 {
+    int cpuid = 0;
+    if (qemu_tcg_mttcg_enabled()) {
+        cpuid = (env_cpu(env))->cpu_index;
+    }
+
     int i;
-    uint32_t *reg_pos = (uint32_t *)((uint64_t *)data_storage + 24);
+    uint32_t *reg_pos = (uint32_t *)((uint64_t *)(data_storage_s[cpuid]) + 24);
     uint32_t *dest    = (uint32_t *)((uint8_t *)env + 964);
 
     for (i=0; i<8; ++i) {
@@ -1807,9 +1829,14 @@ static
 void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
         CPUX86State *env, uint32_t *epc)
 {
+    int cpuid = 0;
+    if (qemu_tcg_mttcg_enabled()) {
+        cpuid = (env_cpu(env))->cpu_index;
+    }
+
     hamt_save_from_native(env);
 
-    uint64_t mem_addr = hamt_get_mem_address(epc);
+    uint64_t mem_addr = hamt_get_mem_address(epc, cpuid);
     if (mem_addr != hamt_badvaddr) {
         hamt_badvaddr = mem_addr;
     }
@@ -1818,13 +1845,13 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
     uint64_t addr = hamt_badvaddr - mapping_base_address;
     int mmu_idx = cpu_mmu_index(env, false);
     TCGMemOpIdx oi = hamt_get_oi(epc, mmu_idx);
-    uint64_t retaddr = ((uint64_t *)data_storage)[32] + 4;
+    uint64_t retaddr = ((uint64_t *)(data_storage_s[cpuid]))[32] + 4;
 
     uint32_t opc = get_opc_from_epc(epc);
 
     uint64_t val = 0;
     if (is_write) {
-        val = hamt_get_st_val(epc);
+        val = hamt_get_st_val(epc, cpuid);
         switch(opc) {
             case OPC_ST_B: helper_ret_stb_mmu(env, addr, val, oi, retaddr); break;
             case OPC_ST_H: helper_le_stw_mmu(env, addr, val, oi, retaddr);  break;
@@ -1832,7 +1859,7 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
             case OPC_ST_D: helper_le_stq_mmu(env, addr, val, oi, retaddr);  break;
             default: assert(0); break;
         }
-        ((uint64_t *)data_storage)[32] += 4;
+        ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
     } else {
         switch(opc) {
             case OPC_LD_B:  val = helper_ret_ldsb_mmu(env, addr, oi, retaddr); break;
@@ -1844,8 +1871,8 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
             case OPC_LD_D:  val = helper_le_ldq_mmu(env, addr, oi, retaddr);   break;
             default: assert(0); break;
         }
-        ((uint64_t *)data_storage)[32] += 4;
-        load_into_reg(val, epc);
+        ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
+        load_into_reg(val, epc, cpuid);
     }
 
     hamt_restore_to_native(env);
@@ -2216,7 +2243,10 @@ int hamt_fast_not_ldst_nr = 0;
 
 static int hamt_fast_exception_handler(void)
 {
-    uint64_t *data = (void *)data_storage;
+    /* TODO: tlb fast exception in hamt multi vcpu mode */
+    int cpuid = 0;
+
+    uint64_t *data = (void *)(data_storage_s[cpuid]);
 
     uint32_t *epc = (void *)(data[32] & ~0x1);
     uint64_t badv = data[33];
@@ -2289,7 +2319,10 @@ static int hamt_fast_exception_handler(void)
 
 static void build_tlb_fast_exception(void)
 {
-    uint32_t *p = (uint32_t *)fastcode_storage;
+    /* TODO: tlb fast exception in hamt multi vcpu mode */
+    int cpuid = 0;
+
+    uint32_t *p = (uint32_t *)fastcode_storage_s[cpuid];
     int i = 0, j = 0;
 
     /* $t0 already points to DATA_STORAGE */
@@ -2331,9 +2364,119 @@ static void build_tlb_fast_exception(void)
     local_flush_icache_range();
 }
 
+static void build_tlb_invalid_trampoline_mt(int cpuid)
+{
+    uint32_t *p = (uint32_t *)code_storage_s[cpuid];
+    int i=0, j=0;
+
+    /* 
+     * save $t0 in stack
+     *     addi.d $sp, $sp, -8
+     *     st.d   $t0, $sp, 0
+     */
+    p[i++] = 0x02ffe063;
+    p[i++] = 0x29c0006c;
+    /*
+     * load $t0 with DATA_STORAGE_ADDRESS_S ## cpuid
+     *     xor $t0, $t0, $t0
+     *     lu32i.d $t0, 0x8100000000>>32
+     */
+    p[i++] = 0x0015b18c;
+    switch (cpuid) {
+    case 0: p[i++] = 0x1600102c; break; /* 0x81_0000_0000 */
+    case 1: p[i++] = 0x1600104c; break; /* 0x82_0000_0000 */
+    case 2: p[i++] = 0x1600106c; break; /* 0x83_0000_0000 */
+    case 3: p[i++] = 0x1600108c; break; /* 0x84_0000_0000 */
+    default: assert(0); break;
+    }
+    /*
+     * save all but $t0 and $sp
+     */
+    for (j=0; j<32; ++j) {
+        if (j == 12 || j == 3) continue;
+        p[i++] = gen_inst(OPC_ST_D, j, 12, 8*j); 
+    }
+    /*
+     * save original $t0 in data_storage
+     * & restore and save $sp
+     *     ld.d   $t1, $sp, 0
+     *     st.d   $t1, $t0, 96
+     *     addi.d $sp, $sp, 8
+     *     st.d   $sp, $t0, 24
+     */
+    p[i++] = 0x28c0006d;
+    p[i++] = 0x29c1818d;
+    p[i++] = 0x02c02063;
+    p[i++] = 0x29c06183;
+
+    /* TILL NOW, WE PRESERVE ALL REGISTERS IN DATA_STORAGE */
+
+    /*
+     * prepare parameters for hamt_exception_handler
+     * hamt_badvaddr(a0)
+     *     ld.d $a0, $t0, 264
+     * CPUX86State *env(a1)
+     *     ld.d $a1, $t0, 184 
+     * epc(a2)
+     *     ld.d $a2, $t0, 256
+     * is_unalign_2(a3)
+     *     or   $a3, zero, zero
+     */
+    p[i++] = 0x28c42184;
+    p[i++] = 0x28c2e185;
+    p[i++] = 0x28c40186;
+    p[i++] = 0x00150007;
+
+    uint64_t f = (uint64_t)hamt_exception_handler;
+    /*
+     * put hamt_exception_handler in $t0
+     *     xor     $t0, $t0, $t0
+     *     lu12i.w $t0, 0 | ((f >> 12) & 0xfffff)
+     *     ori     $t0, $t0, 0 | ((f) & 0xfff)
+     *     lu32i.d $t0, 0 | ((f >> 32) & 0xfffff)
+     *     lu52i.d $t0, $t0, 0 | ((f >> 52) & 0xfff)
+     */
+    p[i++] = 0x0015b18c;
+    p[i++] = 0x1400000c | (((f >> 12) & 0xfffff) << 5);
+    p[i++] = 0x0380018c | (((f) & 0xfff) << 10);
+    p[i++] = 0x1600000c | (((f >> 32) & 0xfffff) << 5);
+    p[i++] = 0x0300018c | (((f >> 52) & 0xfff) << 10);
+
+    /*
+     * jump to hamt_exception_handler
+     *     jirl $ra, $t0, 0
+     */
+    p[i++] = 0x4c000181;
+
+    /*
+     * use exception to restore regs & resume execution
+     *     xor     $t0, $t0, $t0
+     *     lu32i.d $t0, 0x81
+     *     ori     $t0, $t0, 0xfd0
+     *     addi.d  $t1, $zero, 0x3
+     *     st.d    $t1, $t0, 0x0
+     *     break 0
+     */
+    p[i++] = 0x0015b18c;
+    /*p[i++] = 0x1600102c;*/
+    switch (cpuid) {
+    case 0: p[i++] = 0x1600102c; break; /* 0x81_0000_0000 */
+    case 1: p[i++] = 0x1600104c; break; /* 0x82_0000_0000 */
+    case 2: p[i++] = 0x1600106c; break; /* 0x83_0000_0000 */
+    case 3: p[i++] = 0x1600108c; break; /* 0x84_0000_0000 */
+    default: assert(0); break;
+    }
+    p[i++] = 0x03bf418c;
+    p[i++] = 0x02c00c0d;
+    p[i++] = 0x29c0018d;
+    p[i++] = 0x002a0000;
+
+    local_flush_icache_range();
+}
+
 static void build_tlb_invalid_trampoline(void)
 {
-    uint32_t *p = (uint32_t *)code_storage;
+    uint32_t *p = (uint32_t *)code_storage_s[0];
     int i=0, j=0;
 
     /* 
@@ -2438,15 +2581,21 @@ void hamt_flush_all(void)
     other_source++;
 }
 
-void enable_x86vm_hamt(void)
+static void enable_x86vm_hamt_rr(void)
 {
     int i;
-	data_storage = (uint64_t)mmap((void *)DATA_STORAGE_ADDRESS, 4096, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-    code_storage = (uint64_t)mmap((void *)CODE_STORAGE_ADDRESS, 4096, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-    fastcode_storage = (uint64_t)mmap((void *)FASTCODE_STORAGE_ADDRESS, 4096, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    data_storage_s[0] = (uint64_t)mmap(
+            (void *)DATA_STORAGE_ADDRESS, 4096,
+            PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    code_storage_s[0] = (uint64_t)mmap(
+            (void *)CODE_STORAGE_ADDRESS, 4096,
+            PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    fastcode_storage_s[0] = (uint64_t)mmap(
+            (void *)FASTCODE_STORAGE_ADDRESS, 4096,
+            PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
-    assert(data_storage == DATA_STORAGE_ADDRESS);
-    assert(code_storage == CODE_STORAGE_ADDRESS);
+    assert(data_storage_s[0] == DATA_STORAGE_ADDRESS);
+    assert(code_storage_s[0] == CODE_STORAGE_ADDRESS);
 
     for(i = 0; i < MAX_ASID; ++i) {
 		QLIST_INIT(&(hamt_cr3_htable[i].pgtables_list));
@@ -2457,6 +2606,47 @@ void enable_x86vm_hamt(void)
 
     build_tlb_invalid_trampoline();
     build_tlb_fast_exception();
+}
+
+#define HAMT_MTTCG_STORAGE_ALLOC(id, val) do {          \
+if (id == val) {                                        \
+    data_storage_s[id] = (uint64_t)mmap(                \
+        (void *)DATA_STORAGE_ADDRESS_S ## val, 4096,    \
+        PROT_RWX, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);  \
+    code_storage_s[id] = (uint64_t)mmap(                \
+        (void *)CODE_STORAGE_ADDRESS_S ## val, 4096,    \
+        PROT_RWX, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);  \
+    assert(data_storage_s[id] == DATA_STORAGE_ADDRESS_S ## val);    \
+    assert(code_storage_s[id] == CODE_STORAGE_ADDRESS_S ## val);    \
+    pr_info("data[%d] %p", id, (void *)(data_storage_s[id]));       \
+    pr_info("code[%d] %p", id, (void *)code_storage_s[id]);         \
+} } while (0)
+
+static void enable_x86vm_hamt_mt(int cpuid)
+{
+    HAMT_MTTCG_STORAGE_ALLOC(cpuid, 0);
+    HAMT_MTTCG_STORAGE_ALLOC(cpuid, 1);
+    HAMT_MTTCG_STORAGE_ALLOC(cpuid, 2);
+    HAMT_MTTCG_STORAGE_ALLOC(cpuid, 3);
+    build_tlb_invalid_trampoline_mt(cpuid);
+    /* TODO: asdid map in hamt multi vcpu mode */
+    /* TODO: tlb fast exception in hamt multi vcpu mode */
+    assert(!hamt_have_tlbr_fastpath());
+}
+
+void enable_x86vm_hamt(int mode, int cpuid)
+{
+    /* single vcpu thread */
+    if (mode == HAMT_MODE_RR) {
+        static int enabled = 0;
+        assert(!enabled);
+        enable_x86vm_hamt_rr();
+        enabled = 1;
+    }
+    /* multi vcpu thread */
+    if (mode == HAMT_MODE_MT) {
+        enable_x86vm_hamt_mt(cpuid);
+    }
 }
 
 static void __attribute__((constructor)) in_hamt_init(void)

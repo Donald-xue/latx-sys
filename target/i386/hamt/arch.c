@@ -187,14 +187,8 @@ extern void tlb_refill_entry_begin(void);
 extern void tlb_refill_entry_end(void);
 extern void tlb_fast_refill_entry_begin(void);
 extern void tlb_fast_refill_entry_end(void);
-extern void tlb_load_entry_begin(void);
-extern void tlb_load_entry_end(void);
-extern void tlb_store_entry_begin(void);
-extern void tlb_store_entry_end(void);
 extern void tlb_ifetch_entry_begin(void);
 extern void tlb_ifetch_entry_end(void);
-extern void tlb_modified_entry_begin(void);
-extern void tlb_modified_entry_end(void);
 extern void tlb_read_inhibit_entry_begin(void);
 extern void tlb_read_inhibit_entry_end(void);
 extern void tlb_exe_inhibit_entry_begin(void);
@@ -207,23 +201,83 @@ extern void unaligned_access_entry_begin(void);
 extern void unaligned_access_entry_end(void);
 extern void syscall_entry_begin(void);
 extern void syscall_entry_end(void);
-extern void break_entry_begin(void);
-extern void break_entry_end(void);
 extern void ine_entry_begin(void);
 extern void ine_entry_end(void);
 
-static void init_ebase(struct kvm_cpu *cpu)
+#define HAMT_MTTCG_ENTRY_DEF(n)                         \
+extern void tlb_load_entry_s ## n ## _begin(void);      \
+extern void tlb_load_entry_s ## n ## _end(void);        \
+extern void tlb_store_entry_s ## n ## _begin(void);     \
+extern void tlb_store_entry_s ## n ## _end(void);       \
+extern void tlb_modified_entry_s ## n ## _begin(void);  \
+extern void tlb_modified_entry_s ## n ## _end(void);    \
+extern void break_entry_s ## n ## _begin(void);         \
+extern void break_entry_s ## n ## _end(void);
+
+HAMT_MTTCG_ENTRY_DEF(0)
+HAMT_MTTCG_ENTRY_DEF(1)
+HAMT_MTTCG_ENTRY_DEF(2)
+HAMT_MTTCG_ENTRY_DEF(3)
+
+#define HAMT_MTTCG_INIT_EBASE(cpuid, val) do {          \
+if (cpuid == val) {                                     \
+    void * st = NULL;                                   \
+    void * ed = NULL;                                   \
+    /* tlb load exception entry */                      \
+    st = tlb_load_entry_s ## val ## _begin;             \
+    ed = tlb_load_entry_s ## val ## _end;               \
+    pr_info("cpu %d tlb load  : 0x%llx", cpuid, st);    \
+    assert((ed - st) < 512);                            \
+    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL,   \
+            st, ed - st);                               \
+    /* tlb store exception entry */                     \
+    st = tlb_store_entry_s ## val ## _begin;            \
+    ed = tlb_store_entry_s ## val ## _end;              \
+    pr_info("cpu %d tlb store : 0x%llx", cpuid, st);    \
+    assert((ed - st) < 512);                            \
+    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS,   \
+            st, ed - st);                               \
+    /* tlb modify exception entry */                    \
+    st = tlb_modified_entry_s ## val ## _begin;         \
+    ed = tlb_modified_entry_s ## val ## _end;           \
+    pr_info("cpu %d tlb modify: 0x%llx", cpuid, st);    \
+    assert((ed - st) < 512);                            \
+    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM,   \
+            st, ed - st);                               \
+    /* break entry */                                   \
+    st = break_entry_s ## val ## _begin;                \
+    ed = break_entry_s ## val ## _end;                  \
+    pr_info("cpu %d break     : 0x%llx", cpuid, st);    \
+    assert((ed - st) < 512);                            \
+    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_BP,     \
+            st, ed - st);                               \
+} } while (0)
+
+static void init_ebase(struct kvm_cpu *cpu,
+        int mode, int cpuid)
 {
 	BUILD_ASSERT(512 == VEC_SIZE);
 	BUILD_ASSERT(INT_OFFSET * VEC_SIZE == PAGESIZE * 2);
 	BUILD_ASSERT(VEC_SIZE * 14 < PAGESIZE);
 
 	cpu->info.ebase = mmap_pages(4);
+    pr_info("cpu %d mode %d ebase address : %llx",
+            cpuid, mode, 
+            cpu->info.ebase);
 	for (int i = 0; i < PAGESIZE; ++i) {
 		int *x = (int *)cpu->info.ebase;
 		x = x + i;
 		*x = (0x002b8000 | INVALID_EBASE_POSITION);
 	}
+
+    /* multi vcpu thread */
+    if (mode == HAMT_MODE_MT) {
+        HAMT_MTTCG_INIT_EBASE(cpuid, 0);
+        HAMT_MTTCG_INIT_EBASE(cpuid, 1);
+        HAMT_MTTCG_INIT_EBASE(cpuid, 2);
+        HAMT_MTTCG_INIT_EBASE(cpuid, 3);
+        assert(!hamt_have_tlbr_fastpath());
+    }
 
     // tlb refill exception
     if (hamt_have_tlbr_fastpath()) {
@@ -237,14 +291,20 @@ static void init_ebase(struct kvm_cpu *cpu)
     }
 
     // EXCCODE_TLBL 1
-    assert((tlb_load_entry_end - tlb_load_entry_begin) < 512);
-    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL, tlb_load_entry_begin,
-            tlb_load_entry_end - tlb_load_entry_begin);
+    if (mode == HAMT_MODE_RR) { /* single vcpu thread */
+        assert((tlb_load_entry_s0_end - tlb_load_entry_s0_begin) < 512);
+        memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL,
+                tlb_load_entry_s0_begin,
+                tlb_load_entry_s0_end - tlb_load_entry_s0_begin);
+    }
 
     // EXCCODE_TLBS 2
-    assert((tlb_store_entry_end - tlb_store_entry_begin) < 512);
-    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS, tlb_store_entry_begin,
-            tlb_store_entry_end - tlb_store_entry_begin);
+    if (mode == HAMT_MODE_RR) { /* single vcpu thread  */
+        assert((tlb_store_entry_s0_end - tlb_store_entry_s0_begin) < 512);
+        memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS,
+                tlb_store_entry_s0_begin,
+                tlb_store_entry_s0_end - tlb_store_entry_s0_begin);
+    }
 
     // EXCCODE_TLBI 3
     assert((tlb_ifetch_entry_end - tlb_ifetch_entry_begin) < 512);
@@ -252,9 +312,12 @@ static void init_ebase(struct kvm_cpu *cpu)
             tlb_ifetch_entry_end - tlb_ifetch_entry_begin);
 
     // EXCCODE_TLBM 4
-    assert((tlb_modified_entry_end - tlb_modified_entry_begin) < 512);
-    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM, tlb_modified_entry_begin,
-            tlb_modified_entry_end - tlb_modified_entry_begin);
+    if (mode == HAMT_MODE_RR) { /* single vcpu thread  */
+        assert((tlb_modified_entry_s0_end - tlb_modified_entry_s0_begin) < 512);
+        memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM,
+                tlb_modified_entry_s0_begin,
+                tlb_modified_entry_s0_end - tlb_modified_entry_s0_begin);
+    }
 
     // EXCCODE_TLBRI 5
     assert((tlb_read_inhibit_entry_end - tlb_read_inhibit_entry_begin) < 512);
@@ -287,9 +350,12 @@ static void init_ebase(struct kvm_cpu *cpu)
 	       syscall_entry_end - syscall_entry_begin);
 
     // EXCCODE_BP 12 
-    assert((break_entry_end - break_entry_begin) < 512);
-    memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_BP, break_entry_begin,
-            break_entry_end - break_entry_begin);
+    if (mode == HAMT_MODE_RR) { /* single vcpu thread  */
+        assert((break_entry_s0_end - break_entry_s0_begin) < 512);
+        memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_BP,
+                break_entry_s0_begin,
+                break_entry_s0_end - break_entry_s0_begin);
+    }
 
     // EXCCODE_INE 13
     assert((ine_entry_end - ine_entry_begin) < 512);
@@ -444,7 +510,8 @@ static void init_csr(struct kvm_cpu *cpu)
 }
 
 static int __attribute__((noinline))
-kvm_launch(struct kvm_cpu *cpu, struct kvm_regs *regs)
+kvm_launch(struct kvm_cpu *cpu, struct kvm_regs *regs,
+        int mode, int cpuid)
 {
     uint64_t val;
 	BUILD_ASSERT(offsetof(struct kvm_regs, pc) == 256);
@@ -484,15 +551,15 @@ kvm_launch(struct kvm_cpu *cpu, struct kvm_regs *regs)
 
 		 "la.local $r6, %l[guest_entry]\n\t"
 		 "st.d $r6, $r5, 256\n\t"
-		 "ld.d $r6, $r5, 64\n\t" // restore $6
+		 "ld.d $r6, $r5, 48\n\t" // restore $6
 		 :
 		 :
 		 : "memory"
 		 : guest_entry);
 
-	// arch_dump_regs(STDOUT_FILENO, *regs);
+    arch_dump_regs(STDOUT_FILENO, *regs);
 
-	init_ebase(cpu);
+	init_ebase(cpu, mode, cpuid);
 	init_csr(cpu);
 	init_fpu(cpu);
 
@@ -539,11 +606,13 @@ guest_entry:
 	return 0;
 }
 
-void arch_dune_enter(struct kvm_cpu *cpu)
+void arch_dune_enter(struct kvm_cpu *cpu,
+        int mode, int cpuid)
 {
+    pr_info("%s cpu %d mode %d", __func__, cpuid, mode);
 	struct kvm_regs regs;
 	BUILD_ASSERT(256 == offsetof(struct kvm_regs, pc));
-	kvm_launch(cpu, &regs);
+	kvm_launch(cpu, &regs, mode, cpuid);
 }
 
 // a7($r11) 是作为 syscall number
