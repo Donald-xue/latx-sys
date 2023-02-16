@@ -35,6 +35,8 @@
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-mttcg.h"
 
+#include "tcg-bg-thread.h"
+
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
 #include "latx-config.h"
@@ -147,6 +149,10 @@ void mttcg_start_vcpu_thread(CPUState *cpu)
 
     g_assert(tcg_enabled());
     tcg_cpu_init_cflags(cpu, current_machine->smp.max_cpus > 1);
+
+    if (qemu_tcg_bg_enabled()) {
+        tcg_bg_init_mt(cpu);
+    }
 
     cpu->thread = g_malloc0(sizeof(QemuThread));
     cpu->halt_cond = g_malloc0(sizeof(QemuCond));

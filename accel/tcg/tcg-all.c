@@ -159,7 +159,7 @@ static void tcg_set_thread(Object *obj, const char *value, Error **errp)
         }
         if (strcmp(value, "multi-bg") == 0) {
             s->tcg_bg_enabled = true;
-            error_setg(errp, "TCG thread=multi-bg not supported yet.");
+            s->mttcg_enabled = true;
         }
     } else if (strcmp(value, "single") == 0) {
         s->mttcg_enabled = false;

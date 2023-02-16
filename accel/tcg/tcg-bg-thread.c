@@ -38,7 +38,7 @@ static struct tcg_bg_work_item *tcg_bg_worker_jc_build(int jc_id)
     wi->jc_id = jc_id;
 
 #ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[BG] worker: create %d.\n", id);
+    fprintf(stderr, "[BG] worker: create %d.\n", jc_id);
 #endif
 
     return wi;
@@ -126,7 +126,8 @@ static void tcg_bg_func_jc_clear(void *_cpu)
     CPUState *cpu = _cpu;
     CPUX86State *env = cpu->env_ptr;
 #ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[vCPU] clear: jmp cache.\n");
+    fprintf(stderr, "[vCPU][%d] clear: jmp cache.\n",
+            cpu->cpu_index);
 #endif
 
     qemu_mutex_lock(tcg_bg_jc_mutex);
@@ -136,8 +137,8 @@ static void tcg_bg_func_jc_clear(void *_cpu)
     if (free_id >= 0) {
         int old_id = cpu->tcg_bg_jc_id;
 #ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[vCPU] clear: send %d to bg thread and get %d.\n",
-            old_id, free_id);
+    fprintf(stderr, "[vCPU][%d] clear: send %d to bg thread and get %d.\n",
+            cpu->cpu_index, old_id, free_id);
 #endif
 
         /* build worker for bg thread */
@@ -161,7 +162,8 @@ static void tcg_bg_func_jc_clear(void *_cpu)
         qemu_mutex_unlock(tcg_bg_thread_mutex);
     } else {
 #ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[vCPU] clear: by vCPU-self.\n");
+    fprintf(stderr, "[vCPU][%d] clear: by vCPU-self.\n",
+            cpu->cpu_index);
 #endif
         unsigned int i;
         for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
@@ -248,7 +250,10 @@ static void tcg_bg_init_thread(void)
     qemu_mutex_init(tcg_bg_thread_mutex);
 
     tcg_bg_thread = g_malloc0(sizeof(QemuThread));
-    qemu_thread_create(tcg_bg_thread, "Background vCPU thread",
+    char bg_thread_name[64];
+    sprintf(bg_thread_name, "BG thread");
+    /*qemu_thread_create(tcg_bg_thread, "Background vCPU thread",*/
+    qemu_thread_create(tcg_bg_thread, bg_thread_name,
             tcg_bg_thread_rr_func,
             NULL, QEMU_THREAD_JOINABLE);
 }
@@ -260,7 +265,7 @@ static void tcg_bg_init_work(void)
     qemu_mutex_init(tcg_bg_work_mutex);
 }
 
-void tcg_bg_init_rr(CPUState *cpu)
+static void __tcg_bg_init(CPUState *cpu)
 {
     if (!tcg_bg_thread) {
 
@@ -276,6 +281,15 @@ void tcg_bg_init_rr(CPUState *cpu)
         cpu->tcg_bg_jc_clear = tcg_bg_func_jc_clear;
         tcg_bg_init_cpu_rr(cpu, 1);
     }
+}
+void tcg_bg_init_rr(CPUState *cpu)
+{
+    __tcg_bg_init(cpu);
+}
+
+void tcg_bg_init_mt(CPUState *cpu)
+{
+    __tcg_bg_init(cpu);
 }
 
 static void __attribute__((__constructor__)) tcg_bg_init_static(void)
