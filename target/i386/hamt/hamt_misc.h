@@ -96,30 +96,30 @@ typedef enum {
 */
 } ld_st_inst;
 
-#define PS_MASK		0x3f000000
-#define PS_SHIFT	24
-#define PS_4K		0x0000000c
-#define PS_8K		0x0000000d
-#define PS_16K		0x0000000e
-#define PS_32K		0x0000000f
-#define PS_64K		0x00000010
-#define PS_128K		0x00000011
-#define PS_256K		0x00000012
-#define PS_512K		0x00000013
-#define PS_1M		0x00000014
-#define PS_2M		0x00000015
-#define PS_4M		0x00000016
-#define PS_8M		0x00000017
-#define PS_16M		0x00000018
-#define PS_32M		0x00000019
-#define PS_64M		0x0000001a
-#define PS_256M		0x0000001b
-#define PS_1G		0x0000001c
+#define PS_MASK     0x3f000000
+#define PS_SHIFT    24
+#define PS_4K       0x0000000c
+#define PS_8K       0x0000000d
+#define PS_16K      0x0000000e
+#define PS_32K      0x0000000f
+#define PS_64K      0x00000010
+#define PS_128K     0x00000011
+#define PS_256K     0x00000012
+#define PS_512K     0x00000013
+#define PS_1M       0x00000014
+#define PS_2M       0x00000015
+#define PS_4M       0x00000016
+#define PS_8M       0x00000017
+#define PS_16M      0x00000018
+#define PS_32M      0x00000019
+#define PS_64M      0x0000001a
+#define PS_256M     0x0000001b
+#define PS_1G       0x0000001c
 
 void enable_x86vm_hamt(int mode, int cpuid);
 
-#define read_csr_asid()			__dcsrrd(LOONGARCH_CSR_ASID)
-#define write_csr_asid(val)		__dcsrwr(val, LOONGARCH_CSR_ASID)
+#define read_csr_asid()        __dcsrrd(LOONGARCH_CSR_ASID)
+#define write_csr_asid(val)    __dcsrwr(val, LOONGARCH_CSR_ASID)
 #define read_csr_tlbehi()      __dcsrrd(LOONGARCH_CSR_TLBEHI)
 #define write_csr_tlbehi(val)  __dcsrwr(val, LOONGARCH_CSR_TLBEHI)
 #define read_csr_tlbidx()       __dcsrrd(LOONGARCH_CSR_TLBIDX)
@@ -151,31 +151,31 @@ void enable_x86vm_hamt(int mode, int cpuid);
  *
  * Simple usage example:
  * __asm__ __volatile__("parse_r __rt, %0\n\t"
- *			"# di    %0\n\t"
- *			".word   (0x41606000 | (__rt << 16))"
- *			: "=r" (status);
+ *            "# di    %0\n\t"
+ *            ".word   (0x41606000 | (__rt << 16))"
+ *            : "=r" (status);
  */
 
 /* Match an individual register number and assign to \var */
-#define _IFC_REG(n)				\
-	".ifc	\\r, $r" #n "\n\t"		\
-	"\\var	= " #n "\n\t"			\
-	".endif\n\t"
+#define _IFC_REG(n)                 \
+    ".ifc    \\r, $r" #n "\n\t"     \
+    "\\var    = " #n "\n\t"         \
+    ".endif\n\t"
 
-__asm__(".macro	parse_r var r\n\t"
-	"\\var	= -1\n\t"
-	_IFC_REG(0)  _IFC_REG(1)  _IFC_REG(2)  _IFC_REG(3)
-	_IFC_REG(4)  _IFC_REG(5)  _IFC_REG(6)  _IFC_REG(7)
-	_IFC_REG(8)  _IFC_REG(9)  _IFC_REG(10) _IFC_REG(11)
-	_IFC_REG(12) _IFC_REG(13) _IFC_REG(14) _IFC_REG(15)
-	_IFC_REG(16) _IFC_REG(17) _IFC_REG(18) _IFC_REG(19)
-	_IFC_REG(20) _IFC_REG(21) _IFC_REG(22) _IFC_REG(23)
-	_IFC_REG(24) _IFC_REG(25) _IFC_REG(26) _IFC_REG(27)
-	_IFC_REG(28) _IFC_REG(29) _IFC_REG(30) _IFC_REG(31)
-	".iflt	\\var\n\t"
-	".error	\"Unable to parse register name \\r\"\n\t"
-	".endif\n\t"
-	".endm");
+__asm__(".macro    parse_r var r\n\t"
+    "\\var    = -1\n\t"
+    _IFC_REG(0)  _IFC_REG(1)  _IFC_REG(2)  _IFC_REG(3)
+    _IFC_REG(4)  _IFC_REG(5)  _IFC_REG(6)  _IFC_REG(7)
+    _IFC_REG(8)  _IFC_REG(9)  _IFC_REG(10) _IFC_REG(11)
+    _IFC_REG(12) _IFC_REG(13) _IFC_REG(14) _IFC_REG(15)
+    _IFC_REG(16) _IFC_REG(17) _IFC_REG(18) _IFC_REG(19)
+    _IFC_REG(20) _IFC_REG(21) _IFC_REG(22) _IFC_REG(23)
+    _IFC_REG(24) _IFC_REG(25) _IFC_REG(26) _IFC_REG(27)
+    _IFC_REG(28) _IFC_REG(29) _IFC_REG(30) _IFC_REG(31)
+    ".iflt    \\var\n\t"
+    ".error    \"Unable to parse register name \\r\"\n\t"
+    ".endif\n\t"
+    ".endm");
 
 #undef _IFC_REG
 

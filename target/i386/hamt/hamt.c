@@ -214,7 +214,7 @@ static inline void tlb_read(void)
 
 static inline void tlb_probe(void)
 {
-	__asm__ __volatile__("tlbsrch");
+    __asm__ __volatile__("tlbsrch");
 }
 
 static bool valid_index(int32_t index)
@@ -224,12 +224,12 @@ static bool valid_index(int32_t index)
 
 static inline void tlb_write_indexed(void)
 {
-	__asm__ __volatile__("tlbwr");
+    __asm__ __volatile__("tlbwr");
 }
 
 static inline void tlb_write_random(void)
 {
-	__asm__ __volatile__("tlbfill");
+    __asm__ __volatile__("tlbfill");
 }
 
 static inline void enable_pg(void)
@@ -256,13 +256,13 @@ static inline void disable_pg(void)
 
 void hamt_alloc_target_addr_space(void)
 {
-	mapping_base_address =
-	    //(uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS+0x10000), TARGET_ADDR_SIZE, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	    (uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS), TARGET_ADDR_SIZE, PROT_RWX,
+    mapping_base_address =
+        //(uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS+0x10000), TARGET_ADDR_SIZE, PROT_RWX, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+        (uint64_t)mmap((void *)(MAPPING_BASE_ADDRESS), TARGET_ADDR_SIZE, PROT_RWX,
                MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
     if (mapping_base_address == (uint64_t)MAP_FAILED)
-	    die("CANNOT ALLOC_TARGET_SPACE\n");
+        die("CANNOT ALLOC_TARGET_SPACE\n");
 
     printf("mapping base address 0x%lx\n", mapping_base_address);
 //    assert(mapping_base_address == 0x10000);
@@ -273,7 +273,7 @@ void hamt_alloc_target_addr_space(void)
 
 static uint8_t cr3_hash_2_index(uint64_t cr3)
 {
-	return qemu_xxhash2(cr3) % MAX_ASID;
+    return qemu_xxhash2(cr3) % MAX_ASID;
 }
 
 /*
@@ -286,19 +286,19 @@ static struct pgtable_head *check_cr3_in_htable(uint64_t cr3)
 {
     uint32_t index = cr3_hash_2_index(cr3);
 
-	if (hamt_cr3_htable[index].pgtable_num == 0){
+    if (hamt_cr3_htable[index].pgtable_num == 0){
         return NULL;
     }
 
-	struct pgtable_head *var;
+    struct pgtable_head *var;
 
-	QLIST_FOREACH(var, &(hamt_cr3_htable[index].pgtables_list), entry) {
-		if (var->cr3_value == cr3) {
-		    return var;
+    QLIST_FOREACH(var, &(hamt_cr3_htable[index].pgtables_list), entry) {
+        if (var->cr3_value == cr3) {
+            return var;
         }
-	}
+    }
 
-	return NULL;
+    return NULL;
 }
 
 static bool check_asid_value_used(uint16_t asid)
@@ -381,26 +381,26 @@ static inline void local_flush_tlb_asid(uint16_t asid)
 
 static uint16_t allocate_new_asid_value(void)
 {
-	uint16_t new_asid_value = find_first_unused_asid_value();
+    uint16_t new_asid_value = find_first_unused_asid_value();
 
-	if (new_asid_value == MAX_ASID) {
-		/*
-		 * 1. flush all tlb
-		 * 2. asid_version++
-		 * 3. clear asid_map
-		 * 4. allocate new asid value
+    if (new_asid_value == MAX_ASID) {
+        /*
+         * 1. flush all tlb
+         * 2. asid_version++
+         * 3. clear asid_map
+         * 4. allocate new asid value
          * 5. set allocated bit to 1
-		 */
+         */
 
-		local_flush_tlb_all();
+        local_flush_tlb_all();
         new_round_asid++;
-		asid_version++;
-		memset(asid_map, 0, sizeof(uint64_t) * 16);
-		new_asid_value = find_first_unused_asid_value();
+        asid_version++;
+        memset(asid_map, 0, sizeof(uint64_t) * 16);
+        new_asid_value = find_first_unused_asid_value();
         assert(new_asid_value == 0);
         set_bit(new_asid_value, (unsigned long *)asid_map);
 
-	} else {
+    } else {
 
         set_bit(new_asid_value, (unsigned long *)asid_map);
 
@@ -411,25 +411,25 @@ static uint16_t allocate_new_asid_value(void)
 
 static struct pgtable_head *insert_new_pgtable_node(uint64_t new_cr3, uint16_t new_asid_value)
 {
-	int index = cr3_hash_2_index(new_cr3);
+    int index = cr3_hash_2_index(new_cr3);
 
-	hamt_cr3_htable[index].pgtable_num++;
+    hamt_cr3_htable[index].pgtable_num++;
 
-	struct pgtable_head *new_pgtable_head =
-	    (struct pgtable_head *)malloc(sizeof(struct pgtable_head));
+    struct pgtable_head *new_pgtable_head =
+        (struct pgtable_head *)malloc(sizeof(struct pgtable_head));
 
-	if(new_pgtable_head == NULL) {
-		die("new_pgtable_head is NULL");
-	}
+    if(new_pgtable_head == NULL) {
+        die("new_pgtable_head is NULL");
+    }
 
-	QLIST_INSERT_HEAD(&(hamt_cr3_htable[index].pgtables_list),
-	    new_pgtable_head, entry);
+    QLIST_INSERT_HEAD(&(hamt_cr3_htable[index].pgtables_list),
+        new_pgtable_head, entry);
 
-	new_pgtable_head->asid = FORM_NEW_ASID(asid_version, new_asid_value);
+    new_pgtable_head->asid = FORM_NEW_ASID(asid_version, new_asid_value);
 
-	new_pgtable_head->cr3_value = new_cr3;
+    new_pgtable_head->cr3_value = new_cr3;
 
-	return new_pgtable_head;
+    return new_pgtable_head;
 }
 
 static uint64_t request_old_cr3;
@@ -462,44 +462,44 @@ void hamt_set_context(uint64_t new_cr3)
     }
 
     /*
-	 * already in hamt_cr3_htable?
-	 * |_ yes -> same version?
-	 * |         |_ yes -> set asid_value and return
-	 * |	     |_ no  -> asid has been used?
-	 * |	               |_ yes -> allocate a new asid
-	 * |			       |_ no -> use old asid, change asid_version
-	 * |
-	 * |_ no  -> allocate a new asid
-	 */
+     * already in hamt_cr3_htable?
+     * |_ yes -> same version?
+     * |         |_ yes -> set asid_value and return
+     * |         |_ no  -> asid has been used?
+     * |                   |_ yes -> allocate a new asid
+     * |                   |_ no -> use old asid, change asid_version
+     * |
+     * |_ no  -> allocate a new asid
+     */
 
-	struct pgtable_head *dest_pgtable_head = check_cr3_in_htable(new_cr3);
+    struct pgtable_head *dest_pgtable_head = check_cr3_in_htable(new_cr3);
     if (dest_pgtable_head != NULL) {
 
         if (GET_ASID_VERSION(dest_pgtable_head->asid) != asid_version) {
 
-			if (check_asid_value_used(GET_ASID_VALUE(dest_pgtable_head->asid))) {
+            if (check_asid_value_used(GET_ASID_VALUE(dest_pgtable_head->asid))) {
 
-				uint16_t new_asid_value = allocate_new_asid_value();
+                uint16_t new_asid_value = allocate_new_asid_value();
 
-				dest_pgtable_head->asid = FORM_NEW_ASID(asid_version, new_asid_value);
+                dest_pgtable_head->asid = FORM_NEW_ASID(asid_version, new_asid_value);
 
-			} else {
+            } else {
 
-				dest_pgtable_head->asid =
-				    FORM_NEW_ASID(asid_version, GET_ASID_VALUE(dest_pgtable_head->asid));
+                dest_pgtable_head->asid =
+                    FORM_NEW_ASID(asid_version, GET_ASID_VALUE(dest_pgtable_head->asid));
 
-			}
-		}
+            }
+        }
 
-	} else {
+    } else {
 
-		uint16_t new_asid_value = allocate_new_asid_value();
+        uint16_t new_asid_value = allocate_new_asid_value();
 
-		dest_pgtable_head = insert_new_pgtable_node(new_cr3, new_asid_value);
+        dest_pgtable_head = insert_new_pgtable_node(new_cr3, new_asid_value);
 
-	}
+    }
 
-	asid_value = GET_ASID_VALUE(dest_pgtable_head->asid);
+    asid_value = GET_ASID_VALUE(dest_pgtable_head->asid);
 
     write_csr_asid(asid_value & 0x3ff);
 
@@ -518,12 +518,12 @@ void hamt_set_context(uint64_t new_cr3)
 
 void delete_pgtable(uint64_t cr3)
 {
-	/*
+    /*
      * 1. delete cr3 corresponding page table
-	 * TODO:
+     * TODO:
      * 2. invalidate all tlb belonging to this process
      *    currently I simply flush all tlb
-	 */
+     */
 
     delete_some_pgtable++;
 
@@ -540,29 +540,29 @@ void delete_pgtable(uint64_t cr3)
 
 static inline int is_write_inst(uint32_t *epc)
 {
-	uint32_t inst = *epc;
+    uint32_t inst = *epc;
 
-	uint32_t opc = (inst >> 22) << 22;
+    uint32_t opc = (inst >> 22) << 22;
 
-	switch(opc) {
-		case OPC_LD_B:
-		case OPC_LD_H:
-		case OPC_LD_W:
-		case OPC_LD_BU:
-		case OPC_LD_HU:
-		case OPC_LD_WU:
-		case OPC_LD_D:
-		    return 0;
+    switch(opc) {
+        case OPC_LD_B:
+        case OPC_LD_H:
+        case OPC_LD_W:
+        case OPC_LD_BU:
+        case OPC_LD_HU:
+        case OPC_LD_WU:
+        case OPC_LD_D:
+            return 0;
         case OPC_ST_B:
         case OPC_ST_H:
         case OPC_ST_W:
-		case OPC_ST_D:
+        case OPC_ST_D:
             return 1;
-		default: {
+        default: {
             pr_info("inst: %x", *epc);
             die("invalid opc in is_write_inst");
         }
-	}
+    }
 
     // would and should never reach here
     exit(1);
@@ -1128,7 +1128,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
     /* Handle CPU specific unaligned behaviour */
     if (addr & ((1 << a_bits) - 1)) {
-	    //pr_info("handle cpu specific unaligned behaviour");
+        //pr_info("handle cpu specific unaligned behaviour");
     }
 
     /* Handle anything that isn't just a straight memory access.  */
@@ -1139,13 +1139,13 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
 
         /* For anything that is unaligned, recurse through byte stores.  */
         if ((addr & (size - 1)) != 0) {
-		    //pr_info("unaligned behaviour");
+            //pr_info("unaligned behaviour");
         }
 
         /* Handle watchpoints.  */
 //        if (unlikely(tlb_addr & TLB_WATCHPOINT)) {
 //            /* On watchpoint hit, this will longjmp out.  */
-//		      pr_info("watchpoint");
+//              pr_info("watchpoint");
 //            cpu_check_watchpoint(env_cpu(env), addr, size,
 //                                 iotlbentry->attrs, BP_MEM_WRITE, retaddr);
 //        }
@@ -1206,7 +1206,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         }
 
         if (unlikely(need_swap)) {
-		    //pr_info("need swap");
+            //pr_info("need swap");
         } else {
 
             if (!hamt_interpreter()) {
@@ -1226,7 +1226,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
     if (size > 1
         && unlikely((addr & ~TARGET_PAGE_MASK) + size - 1
                      >= TARGET_PAGE_SIZE)) {
-	    //pr_info("store helper slow unaligned access vaddr: %llx", addr);
+        //pr_info("store helper slow unaligned access vaddr: %llx", addr);
         if (hamt_interpreter()) {
             if (!is_unalign_2) {
                 //pr_info("store unaligned access vaddr=0x%llx size=%d", addr, size);
@@ -1406,7 +1406,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 
     /* Handle CPU specific unaligned behaviour */
     if (addr & ((1 << a_bits) - 1)) {
-	    //pr_info("handle cpu specific unaligned behaviour");
+        //pr_info("handle cpu specific unaligned behaviour");
     }
 
     /* Handle anything that isn't just a straight memory access.  */
@@ -1417,14 +1417,14 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
 
         /* For anything that is unaligned, recurse through full_load.  */
         if ((addr & (size - 1)) != 0) {
-		    //TODO
-		    //pr_info("unaligned behaviour");
+            //TODO
+            //pr_info("unaligned behaviour");
         }
 
         /* Handle watchpoints.  */
 //        if (unlikely(tlb_addr & TLB_WATCHPOINT)) {
 //            /* On watchpoint hit, this will longjmp out.  */
-//		      pr_info("watchpoint");
+//              pr_info("watchpoint");
 //            cpu_check_watchpoint(env_cpu(env), addr, size,
 //                                 iotlbentry->attrs, BP_MEM_READ, retaddr);
 //        }
@@ -1447,7 +1447,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
         haddr = (uintptr_t)addr + entry->addend;
 
         if (unlikely(need_swap)) {
-		    //pr_info("need swap");
+            //pr_info("need swap");
         }
 
         if (hamt_interpreter()) {
@@ -1465,7 +1465,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
     if (size > 1
         && unlikely((addr & ~TARGET_PAGE_MASK) + size - 1
                     >= TARGET_PAGE_SIZE)) {
-	    //pr_info("load helper slow unaligned access vaddr: %llx", addr);
+        //pr_info("load helper slow unaligned access vaddr: %llx", addr);
         if (hamt_interpreter()) {
             if (!is_unalign_2) {
                 //pr_info("load  unaligned access vaddr=0x%llx size=%d", addr, size);
@@ -1911,15 +1911,15 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
         return;
     }
 
-	/*
+    /*
      * JOBS
-	 *     1. get hpa from x86_addr
-	 *     2. fill x86_addr -> hpa transition into page table
-	 *     3. possible inject a PF fault
-	 *     4. dispatch MMIO function
+     *     1. get hpa from x86_addr
+     *     2. fill x86_addr -> hpa transition into page table
+     *     3. possible inject a PF fault
+     *     4. dispatch MMIO function
      * DO NOT FORGET
      *     translate address to i386 vm address
-	 */
+     */
 
 #ifdef HAMT_COUNT_GUEST_TLB
     count_guest_tlb();
@@ -1946,49 +1946,49 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
 
     CPUState *cs = env_cpu(env);
     X86CPU *cpu = X86_CPU(cs);
-	uint64_t ptep, pte;
-	int32_t a20_mask;
-	uint32_t pde_addr, pte_addr;
-	int error_code = 0;
+    uint64_t ptep, pte;
+    int32_t a20_mask;
+    uint32_t pde_addr, pte_addr;
+    int error_code = 0;
     int is_dirty, prot, page_size, is_write, is_user;
     hwaddr paddr;
     uint64_t rsvd_mask = PG_ADDRESS_MASK & ~MAKE_64BIT_MASK(0, cpu->phys_bits);
     uint32_t page_offset;
     int mmu_idx = cpu_mmu_index(env, false);
 
-	is_user = mmu_idx == MMU_USER_IDX;
+    is_user = mmu_idx == MMU_USER_IDX;
 
     /*
-	 * in accel/tcg/excp_helper.c handle_mmu_fault
-	 * parameter is_write1 could be:
-	 * 0: load data
-	 * 1: store data
-	 * 2: load instructions
-	 *
-	 * it is not necessary for hamt to deal with
-	 * is_write1 = 2, for such circumstances only happen
-	 * in disas_insn, while hamt_exception_handler will only be
-	 * triggered by addresses modified
-	 */
-	is_write = is_write_inst(epc) & 1;
+     * in accel/tcg/excp_helper.c handle_mmu_fault
+     * parameter is_write1 could be:
+     * 0: load data
+     * 1: store data
+     * 2: load instructions
+     *
+     * it is not necessary for hamt to deal with
+     * is_write1 = 2, for such circumstances only happen
+     * in disas_insn, while hamt_exception_handler will only be
+     * triggered by addresses modified
+     */
+    is_write = is_write_inst(epc) & 1;
 
-	a20_mask = x86_get_a20_mask(env);
-	if (!(env->cr[0] & CR0_PG_MASK)) {
+    a20_mask = x86_get_a20_mask(env);
+    if (!(env->cr[0] & CR0_PG_MASK)) {
         pte = addr;
         prot = PAGE_READ | PAGE_WRITE | PAGE_EXEC;
         page_size = 4096;
         goto do_mapping;
     }
 
-	if (!(env->efer & MSR_EFER_NXE)) {
+    if (!(env->efer & MSR_EFER_NXE)) {
         rsvd_mask |= PG_NX_MASK;
     }
 
-	if (env->cr[4] & CR4_PAE_MASK) {
+    if (env->cr[4] & CR4_PAE_MASK) {
         uint64_t pde, pdpe;
         target_ulong pdpe_addr;
 
-		/* XXX: load them when cr3 is loaded ? */
+        /* XXX: load them when cr3 is loaded ? */
         pdpe_addr = ((env->cr[3] & ~0x1f) + ((addr >> 27) & 0x18)) & a20_mask;
         pdpe_addr = get_hphys(cs, pdpe_addr, MMU_DATA_STORE, false);
         pdpe = x86_ldq_phys(cs, pdpe_addr);
@@ -2001,7 +2001,7 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
         }
         ptep = PG_NX_MASK | PG_USER_MASK | PG_RW_MASK;
 
-		pde_addr = ((pdpe & PG_ADDRESS_MASK) + (((addr >> 21) & 0x1ff) << 3)) &
+        pde_addr = ((pdpe & PG_ADDRESS_MASK) + (((addr >> 21) & 0x1ff) << 3)) &
             a20_mask;
         pde_addr = get_hphys(cs, pde_addr, MMU_DATA_STORE, NULL);
         pde = x86_ldq_phys(cs, pde_addr);
@@ -2037,8 +2037,8 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
         /* combine pde and pte nx, user and rw protections */
         ptep &= pte ^ PG_NX_MASK;
         page_size = 4096;
-	} else {
-		uint32_t pde;
+    } else {
+        uint32_t pde;
 
         /* page directory entry */
         pde_addr = ((env->cr[3] & ~0xfff) + ((addr >> 20) & 0xffc)) &
@@ -2080,7 +2080,7 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
         ptep &= pte | PG_NX_MASK;
         page_size = 4096;
         rsvd_mask = 0;
-	}
+    }
 do_check_protect:
     rsvd_mask |= (page_size - 1) & PG_ADDRESS_MASK & ~PG_PSE_PAT_MASK;
 do_check_protect_pse36:
@@ -2162,7 +2162,7 @@ do_mapping:
 
     assert(prot & (1 << is_write));
 
-	hamt_process_addr_mapping(cs, hamt_badvaddr, paddr, cpu_get_mem_attrs(env),
+    hamt_process_addr_mapping(cs, hamt_badvaddr, paddr, cpu_get_mem_attrs(env),
             prot, mmu_idx, page_size, is_write, epc,
             is_unalign_2, unalign_entry1, unalign_size, is_unalign_clean_ram);
 
@@ -2196,11 +2196,11 @@ do_fault:
 
     /* save native context into ENV */
     hamt_save_from_native(env);
-	/*
-	 * insert PF fault
-	 */
+    /*
+     * insert PF fault
+     */
     page_fault++;
-	raise_exception_err_ra(env, cs->exception_index,
+    raise_exception_err_ra(env, cs->exception_index,
                                env->error_code, (uint64_t)epc);
 
     return;
@@ -2221,7 +2221,7 @@ static uint32_t gen_inst(uint32_t opc, uint32_t rd, uint32_t rj, uint32_t imm)
 /* Cache operations. */
 static void local_flush_icache_range(void)
 {
-	asm volatile ("\tibar 0\n"::);
+    asm volatile ("\tibar 0\n"::);
 }
 
 /* #define CONFIG_LATX_HAMT_FAST_COUNTER */
@@ -2598,11 +2598,11 @@ static void enable_x86vm_hamt_rr(void)
     assert(code_storage_s[0] == CODE_STORAGE_ADDRESS);
 
     for(i = 0; i < MAX_ASID; ++i) {
-		QLIST_INIT(&(hamt_cr3_htable[i].pgtables_list));
-		hamt_cr3_htable[i].pgtable_num = 0;
-	}
+        QLIST_INIT(&(hamt_cr3_htable[i].pgtables_list));
+        hamt_cr3_htable[i].pgtable_num = 0;
+    }
 
-	memset(asid_map, 0, sizeof(uint64_t) * 16);
+    memset(asid_map, 0, sizeof(uint64_t) * 16);
 
     build_tlb_invalid_trampoline();
     build_tlb_fast_exception();

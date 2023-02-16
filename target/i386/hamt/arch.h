@@ -12,11 +12,11 @@ typedef unsigned long long u64;
 #define NUM_FPU_REGS 32
 
 struct thread_info {
-  struct kvm_regs regs;
-  struct kvm_fpu fpu;
+    struct kvm_regs regs;
+    struct kvm_fpu fpu;
 
-  u64 era;
-  void *ebase;
+    u64 era;
+    void *ebase;
 };
 
 #define KVM_MAX_VCPUS 16

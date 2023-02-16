@@ -15,39 +15,39 @@
 #define offsetof(TYPE, MEMBER) ((size_t) & ((TYPE *)0)->MEMBER)
 #endif
 
-#define BUILD_ASSERT(cond)                                                     \
-	do {                                                                   \
-		(void)sizeof(char[1 - 2 * !(cond)]);                           \
-	} while (0)
+#define BUILD_ASSERT(cond)                  \
+do {                                        \
+    (void)sizeof(char[1 - 2 * !(cond)]);    \
+} while (0)
 
 struct kvm_cpu;
 struct vcpu_pool_ele {
-	bool valid;
-	struct kvm_cpu *vcpu;
+    bool valid;
+    struct kvm_cpu *vcpu;
 };
 
 struct kvm_vm {
-	int sys_fd;
-	int vm_fd;
-	int kvm_run_mmap_size;
+    int sys_fd;
+    int vm_fd;
+    int kvm_run_mmap_size;
 #ifdef DUNE_DEBUG
-	int debug_fd;
+    int debug_fd;
 #endif
 
-	struct vcpu_pool_ele vcpu_pool[KVM_MAX_VCPUS];
-	pthread_spinlock_t lock;
+    struct vcpu_pool_ele vcpu_pool[KVM_MAX_VCPUS];
+    pthread_spinlock_t lock;
 };
 
 // reference : kvmtool/mips/include/kvm/kvm-cpu-arch.h
 struct kvm_cpu {
-	int cpu_id;
-	struct kvm_vm *vm;
-	int vcpu_fd; /* For VCPU ioctls() */
-	struct kvm_run *kvm_run;
-	u64 syscall_parameter[8];
+    int cpu_id;
+    struct kvm_vm *vm;
+    int vcpu_fd; /* For VCPU ioctls() */
+    struct kvm_run *kvm_run;
+    u64 syscall_parameter[8];
 
-	// architecture specified vm state
-	struct thread_info info;
+    // architecture specified vm state
+    struct thread_info info;
 };
 
 #define PROT_RWX (PROT_READ | PROT_WRITE | PROT_EXEC)
@@ -56,22 +56,22 @@ struct kvm_cpu {
 
 static inline void *mmap_pages(int num)
 {
-	void *addr =
-		mmap(NULL, PAGESIZE * num, PROT_RWX, MAP_ANON_NORESERVE, -1, 0);
-	if (addr == NULL)
-		die("mmap_one_page");
-	return addr;
+    void *addr =
+        mmap(NULL, PAGESIZE * num, PROT_RWX, MAP_ANON_NORESERVE, -1, 0);
+    if (addr == NULL)
+        die("mmap_one_page");
+    return addr;
 }
 
 static inline void *mmap_one_page(void)
 {
-	return mmap_pages(1);
+    return mmap_pages(1);
 }
 
 static inline void ebase_share(struct kvm_cpu *child_cpu,
-			const struct kvm_cpu *parent_cpu)
+            const struct kvm_cpu *parent_cpu)
 {
-	child_cpu->info.ebase = parent_cpu->info.ebase;
+    child_cpu->info.ebase = parent_cpu->info.ebase;
 }
 
 void vacate_current_stack(struct kvm_cpu *cpu);
@@ -91,26 +91,26 @@ void host_loop(struct kvm_cpu *vcpu);
  */
 
 struct clone3_args {
-	u64 flags; /* Flags bit mask */
-	u64 pidfd; /* Where to store PID file descriptor
+    u64 flags; /* Flags bit mask */
+    u64 pidfd; /* Where to store PID file descriptor
                                     (pid_t *) */
-	u64 child_tid; /* Where to store child TID,
+    u64 child_tid; /* Where to store child TID,
                                     in child's memory (pid_t *) */
-	u64 parent_tid; /* Where to store child TID,
+    u64 parent_tid; /* Where to store child TID,
                                     in parent's memory (int *) */
-	u64 exit_signal; /* Signal to deliver to parent on
+    u64 exit_signal; /* Signal to deliver to parent on
                                     child termination */
-	u64 stack; /* Pointer to lowest byte of stack */
-	u64 stack_size; /* Size of stack */
-	u64 tls; /* Location of new TLS */
-	u64 set_tid; /* Pointer to a pid_t array */
-	u64 set_tid_size; /* Number of elements in set_tid */
+    u64 stack; /* Pointer to lowest byte of stack */
+    u64 stack_size; /* Size of stack */
+    u64 tls; /* Location of new TLS */
+    u64 set_tid; /* Pointer to a pid_t array */
+    u64 set_tid_size; /* Number of elements in set_tid */
 };
 
 enum CLONE_TYPE{
-  SAME_VM, // Create vcpu firstly, and do the clone by assembly code
-  DIFF_VM_NEW_STACK, // do the fork by assembly code, then create another vm
-  DIFF_VM_OLD_STACk, // do the fork, then create another vm
+    SAME_VM, // Create vcpu firstly, and do the clone by assembly code
+    DIFF_VM_NEW_STACK, // do the fork by assembly code, then create another vm
+    DIFF_VM_OLD_STACk, // do the fork, then create another vm
 };
 
 void arch_dune_enter(struct kvm_cpu *cpu, int mode, int cpuid);
@@ -121,7 +121,7 @@ bool arch_do_syscall(struct kvm_cpu *cpu, bool is_fork);
 void kvm_get_parent_thread_info(struct kvm_cpu *parent_cpu);
 // 设置 child 的 tls, stack, host_loop 的参数 vcpu
 void init_child_thread_info(struct kvm_cpu *child_cpu,
-			    const struct kvm_cpu *parent_cpu, int sysno);
+        const struct kvm_cpu *parent_cpu, int sysno);
 void arch_set_thread_area(struct kvm_cpu *vcpu);
 bool arch_handle_special_syscall(struct kvm_cpu *vcpu, u64 sysno);
 // 如果 fork 或者 clone 失败，创建的虚拟机和 vcpu 都需要销毁才对

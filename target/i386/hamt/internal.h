@@ -3,10 +3,10 @@
 
 /* Loongarch KVM register ids */
 #define LOONGARCH_CSR_32(_R, _S)                                               \
-	(KVM_REG_LOONGARCH_CSR | KVM_REG_SIZE_U32 | (8 * (_R) + (_S)))
+    (KVM_REG_LOONGARCH_CSR | KVM_REG_SIZE_U32 | (8 * (_R) + (_S)))
 
 #define LOONGARCH_CSR_64(_R, _S)                                               \
-	(KVM_REG_LOONGARCH_CSR | KVM_REG_SIZE_U64 | (8 * (_R) + (_S)))
+    (KVM_REG_LOONGARCH_CSR | KVM_REG_SIZE_U64 | (8 * (_R) + (_S)))
 
 #define KVM_LOONGARCH_CSR_CRMD 0
 #define KVM_LOONGARCH_CSR_PRMD 1
@@ -336,44 +336,44 @@
 #define INSTRUCTION_SIZE 4
 #define INT_OFFSET 64
 #define VEC_SIZE                                                               \
-	(1 << (INIT_VALUE_ECFG >> CSR_ECFG_VS_SHIFT)) * INSTRUCTION_SIZE
+    (1 << (INIT_VALUE_ECFG >> CSR_ECFG_VS_SHIFT)) * INSTRUCTION_SIZE
 #define ERREBASE_OFFSET (PAGESIZE * 3)
 
 /*
  * ExStatus.ExcCode
  */
-#define EXCCODE_RSV		0	/* Reserved */
-#define EXCCODE_TLBL		1	/* TLB miss on a load */
-#define EXCCODE_TLBS		2	/* TLB miss on a store */
-#define EXCCODE_TLBI		3	/* TLB miss on a ifetch */
-#define EXCCODE_TLBM		4	/* TLB modified fault */
-#define EXCCODE_TLBRI		5	/* TLB Read-Inhibit exception */
-#define EXCCODE_TLBXI		6	/* TLB Execution-Inhibit exception */
-#define EXCCODE_TLBPE		7	/* TLB Privilege Error */
-#define EXCCODE_ADE		8	/* Address Error */
-	#define EXSUBCODE_ADEF		0	/* Fetch Instruction */
-	#define EXSUBCODE_ADEM		1	/* Access Memory*/
-#define EXCCODE_ALE		9	/* Unalign Access */
-#define EXCCODE_OOB		10  	/* Out of bounds */
-#define EXCCODE_SYS		11	/* System call */
-#define EXCCODE_BP		12	/* Breakpoint */
-#define EXCCODE_INE		13	/* Inst. Not Exist */
-#define EXCCODE_IPE		14	/* Inst. Privileged Error */
-#define EXCCODE_FPDIS		15	/* FPU Disabled */
-#define EXCCODE_LSXDIS		16  	/* LSX Disabled */
-#define EXCCODE_LASXDIS		17	/* LASX Disabled */
-#define EXCCODE_FPE		18	/* Floating Point Exception */
-	#define EXCSUBCODE_FPE		0	/* Floating Point Exception */
-	#define EXCSUBCODE_VFPE		1	/* Vector Exception */
-#define EXCCODE_WATCH		19	/* Watch address reference */
-#define EXCCODE_BTDIS		20	/* Binary Trans. Disabled */
-#define EXCCODE_BTE		21	/* Binary Trans. Exception */
-#define EXCCODE_PSI		22	/* Guest Privileged Error */
-#define EXCCODE_HYP		23	/* Hypercall */
-#define EXCCODE_GCM		24	/* Guest CSR modified */
-	#define EXCSUBCODE_GCSC		0	/* Software caused */
-	#define EXCSUBCODE_GCHC		1	/* Hardware caused */
-#define EXCCODE_SE		25	/* Security */
+#define EXCCODE_RSV         0   /* Reserved */
+#define EXCCODE_TLBL        1   /* TLB miss on a load */
+#define EXCCODE_TLBS        2   /* TLB miss on a store */
+#define EXCCODE_TLBI        3   /* TLB miss on a ifetch */
+#define EXCCODE_TLBM        4   /* TLB modified fault */
+#define EXCCODE_TLBRI       5   /* TLB Read-Inhibit exception */
+#define EXCCODE_TLBXI       6   /* TLB Execution-Inhibit exception */
+#define EXCCODE_TLBPE       7   /* TLB Privilege Error */
+#define EXCCODE_ADE         8   /* Address Error */
+     #define EXSUBCODE_ADEF 0   /* Fetch Instruction */
+     #define EXSUBCODE_ADEM 1   /* Access Memory*/
+#define EXCCODE_ALE         9   /* Unalign Access */
+#define EXCCODE_OOB         10  /* Out of bounds */
+#define EXCCODE_SYS         11  /* System call */
+#define EXCCODE_BP          12  /* Breakpoint */
+#define EXCCODE_INE         13  /* Inst. Not Exist */
+#define EXCCODE_IPE         14  /* Inst. Privileged Error */
+#define EXCCODE_FPDIS       15  /* FPU Disabled */
+#define EXCCODE_LSXDIS      16  /* LSX Disabled */
+#define EXCCODE_LASXDIS     17  /* LASX Disabled */
+#define EXCCODE_FPE         18  /* Floating Point Exception */
+    #define EXCSUBCODE_FPE  0   /* Floating Point Exception */
+    #define EXCSUBCODE_VFPE 1   /* Vector Exception */
+#define EXCCODE_WATCH       19  /* Watch address reference */
+#define EXCCODE_BTDIS       20  /* Binary Trans. Disabled */
+#define EXCCODE_BTE         21  /* Binary Trans. Exception */
+#define EXCCODE_PSI         22  /* Guest Privileged Error */
+#define EXCCODE_HYP         23  /* Hypercall */
+#define EXCCODE_GCM         24  /* Guest CSR modified */
+    #define EXCSUBCODE_GCSC 0   /* Software caused */
+    #define EXCSUBCODE_GCHC 1   /* Hardware caused */
+#define EXCCODE_SE          25  /* Security */
 
 #define CSR_TLBRELO_RPLV_SHIFT 63
 #define CSR_TLBRELO_RPLV (_ULCAST_(0x1) << CSR_TLBRELO_RPLV_SHIFT)
@@ -408,7 +408,7 @@
 #define TLB_MASK (1 << TLB_PS - 1)
 
 #define TLBRELO0_STANDARD_BITS                                                 \
-	(CSR_TLBRELO_V | CSR_TLBRELO_WE | CSR_TLBRELO_CCA | CSR_TLBRELO_GLOBAL)
+    (CSR_TLBRELO_V | CSR_TLBRELO_WE | CSR_TLBRELO_CCA | CSR_TLBRELO_GLOBAL)
 #define TLBRELO1_STANDARD_BITS (TLBRELO0_STANDARD_BITS | (1 << TLB_PS_1G_shift))
 
 #define TLBELO_STANDARD_BITS                                                   \
@@ -466,16 +466,16 @@
  * LEAF - declare leaf routine
  */
 #define ENTRY(symbol)                                                          \
-	.globl symbol;                                                         \
-	.align 2;                                                              \
-	.type symbol, @function;                                               \
-	symbol:
+    .globl symbol;                                                         \
+    .align 2;                                                              \
+    .type symbol, @function;                                               \
+    symbol:
 
 /*
  * END - mark end of function
  */
-#define END(function)					\
-		.size	function, .-function
+#define END(function)                   \
+        .size   function, .-function
 
 #define VCPU_FCSR0 0
 #define VCPU_VCSR 4
@@ -485,7 +485,7 @@
 
 #define ERA_INDEX       32
 #define BADV_INDEX      33
-#define TLBR_EHI_INDEX      40
+#define TLBR_EHI_INDEX  40
 #define TRAP_CODE_INDEX 506
 #define ASID_INDEX      507
 #define TLBELO1_INDEX   508
