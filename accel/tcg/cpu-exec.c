@@ -46,6 +46,7 @@
 #include "latx-test-sys.h"
 #include "latx-fastcs-sys.h"
 #include "latxs-cc-pro.h"
+#include "latx-options.h"
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
@@ -608,6 +609,9 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
      * spanning two pages because the mapping for the second page can change.
      */
     if (tb->page_addr[1] != -1) {
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        if (!option_cross_page_jmp_link)
+#endif
         last_tb = NULL;
     }
 #endif

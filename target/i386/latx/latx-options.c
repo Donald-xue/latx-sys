@@ -190,6 +190,11 @@ uint8 options_to_save(void)
 #include "qemu/option.h"
 #include "qemu/option_int.h"
 
+int latxs_allow_cross_page_link(void)
+{
+    return option_cross_page_jmp_link;
+}
+
 #define LATXS_OPT_by_hand       0
 #define LATXS_OPT_tb_link       1
 #define LATXS_OPT_lsfpu         2
