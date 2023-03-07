@@ -2660,6 +2660,9 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
             g_assert_not_reached();
         }
     }
+    if (latxs_cc_pro() && tb->cc_flags == 0) {
+        tb->flags = tb->flags & ~0xe00;
+    }
 #endif
     tb->tc.size = gen_code_size;
     tb->true_tc_size = gen_code_size - (tb->slow_path_icount << 2);
