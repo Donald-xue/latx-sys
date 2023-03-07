@@ -64,6 +64,8 @@
 #include "elf.h"
 #include "exec/log.h"
 
+#include "tcg/tcg-ng.h"
+
 /* Forward declarations for functions declared in tcg-target.c.inc and
    used here. */
 static void tcg_target_init(TCGContext *s);
@@ -517,6 +519,10 @@ static void tcg_region_trees_init(void)
 
         qemu_mutex_init(&rt->lock);
         rt->tree = g_tree_new(tb_tc_cmp);
+#ifdef NG_TCG_DEBUG_CC
+        printf("%-20s [TCG][%p] region[%d] tree=%p\n",
+                __func__, tcg_ctx, (int)i, rt->tree);
+#endif
     }
 }
 
@@ -688,6 +694,12 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
 
     tcg_region_bounds(curr_region, &start, &end);
 
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG][%p] region.curr=%d "\
+            "CGbuffer=%p CGptr=%p CGsize=0x%lx CGhw=%p\n",
+            __func__, s, (int)curr_region,
+            start, start, end-start, end-TCG_HIGHWATER);
+#endif
     s->code_gen_buffer = start;
     s->code_gen_ptr = start;
     s->code_gen_buffer_size = end - start;
@@ -834,6 +846,10 @@ void tcg_region_init(void)
     size_t i;
 
     n_regions = tcg_n_regions();
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] n_regions=%d\n",
+            __func__, (int)n_regions);
+#endif
 
     /* The first region will be 'aligned - buf' bytes larger than the others */
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
@@ -966,6 +982,11 @@ void tcg_register_thread(void)
     n = qatomic_fetch_inc(&n_tcg_ctxs);
     g_assert(n < ms->smp.max_cpus);
     qatomic_set(&tcg_ctxs[n], s);
+
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG][%p] n_tcg_ctxs=%d n=%d tcg_ctxs[%d]=%p\n",
+            __func__, s, n_tcg_ctxs, n, n, tcg_ctxs[n]);
+#endif
 
     if (n > 0) {
         alloc_tcg_plugin_context(s);
@@ -1110,6 +1131,9 @@ static TCGTemp *tcg_global_reg_new_internal(TCGContext *s, TCGType type,
 
 void tcg_context_init(TCGContext *s)
 {
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] init_ctx=%p\n", __func__, s);
+#endif
     int op, total_args, n, i;
     TCGOpDef *def;
     TCGArgConstraint *args_ct;
@@ -1179,6 +1203,10 @@ void tcg_context_init(TCGContext *s)
     MachineState *ms = MACHINE(qdev_get_machine());
     unsigned int max_cpus = ms->smp.max_cpus;
     tcg_ctxs = g_new(TCGContext *, max_cpus);
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] tcg_ctxs=%p max_cpus=%d\n",
+            __func__, tcg_ctxs, max_cpus);
+#endif
 #endif
 
     tcg_debug_assert(!tcg_regset_test_reg(s->reserved_regs, TCG_AREG0));

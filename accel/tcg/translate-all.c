@@ -73,6 +73,8 @@
 #endif
 #endif
 
+#include "tcg/tcg-ng.h"
+
 /* #define DEBUG_TB_INVALIDATE */
 /* #define DEBUG_TB_FLUSH */
 /* make various TB consistency checks */
@@ -1726,6 +1728,10 @@ static bool alloc_code_gen_buffer_splitwx(size_t size, Error **errp)
 
 static bool alloc_code_gen_buffer(size_t size, int splitwx, Error **errp)
 {
+#ifdef NG_TCG_DEBUG_CC
+    printf("[TCG] %s size=0x%lx\n",
+            __func__, size);
+#endif
     ERRP_GUARD();
     int prot, flags;
 

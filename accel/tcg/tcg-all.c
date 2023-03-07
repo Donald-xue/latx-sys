@@ -33,6 +33,8 @@
 #include "qemu/accel.h"
 #include "qapi/qapi-builtin-visit.h"
 
+#include "tcg/tcg-ng.h"
+
 struct TCGState {
     AccelState parent_obj;
 
@@ -103,6 +105,11 @@ static void tcg_accel_instance_init(Object *obj)
 #else
     s->splitwx_enabled = 0;
 #endif
+
+#ifdef NG_TCG_DEBUG_CC
+    printf("[TCG][%p] %s MTTCG=%d\n",
+            s, __func__, s->mttcg_enabled);
+#endif
 }
 
 bool mttcg_enabled;
@@ -111,6 +118,9 @@ bool tcg_bg_enabled;
 static int tcg_init(MachineState *ms)
 {
     TCGState *s = TCG_STATE(current_accel());
+#ifdef NG_TCG_DEBUG_CC
+    printf("[TCG][%p] %s\n", s, __func__);
+#endif
 
     tcg_exec_init(s->tb_size * 1024 * 1024, s->splitwx_enabled);
     mttcg_enabled = s->mttcg_enabled;
