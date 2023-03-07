@@ -49,6 +49,17 @@ int tracecc_has_tb_link(void)
     return option_trace_code_cache & LATXS_TRACECC_TB_LINK;
 }
 
+void latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
+        uint64_t p1, uint64_t p2, int exist)
+{
+    if (!tracecc_has_tb_tr()) {
+        return;
+    }
+
+    fprintf(stderr, "[CC] Insert %p %p %p %d 0x%lx\n",
+            (void *)tb, (void *)p1, (void *)p2, exist,
+            tb->tc.size);
+}
 
 void latxs_tracecc_target_to_host(
         CPUX86State *env, TranslationBlock *tb)

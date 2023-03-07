@@ -2712,6 +2712,9 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
      * TB visible in a consistent state.
      */
     existing_tb = tb_link_page(tb, phys_pc, phys_page2);
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    latxs_tracecc_gen_tb_insert(tb, phys_pc, phys_page2, (int)(existing_tb == tb));
+#endif
     /* if the TB already exists, discard what we just translated */
     if (unlikely(existing_tb != tb)) {
         uintptr_t orig_aligned = (uintptr_t)gen_code_buf;

@@ -17,6 +17,7 @@ int tracecc_has_tb_link(void);
 
 
 
+void latxs_tracecc_gen_tb_insert(TranslationBlock *tb, uint64_t p1, uint64_t p2, int exist);
 void latxs_tracecc_gen_tb_start(void);
 void latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb);
 void latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb);
