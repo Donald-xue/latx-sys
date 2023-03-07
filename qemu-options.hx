@@ -5256,6 +5256,14 @@ SRST
     Enable specific features of LATX.
 ERST
 
+DEF("bglogfile", HAS_ARG, QEMU_OPTION_bglogfile, \
+    "-bglogfile logfile output log to logfile (default stderr)\n",
+    QEMU_ARCH_ALL)
+SRST
+``-bglogfile logfile``
+    bg thread output log in logfile instead of to stderr
+ERST
+
 DEF("latxtest", HAS_ARG, QEMU_OPTION_latx_test,
     "\n"
     "-latxtest [testype=dump|runtb]\n"

@@ -11,6 +11,8 @@
 #include "tcg-accel-ops-icount.h"
 #include "tcg-bg-thread.h"
 
+#include "tcg/tcg-bg-log.h"
+
 //#define BG_THREAD_DEBUG
 
 static QemuCond   *tcg_bg_thread_cond;
@@ -306,4 +308,55 @@ static void __attribute__((__constructor__)) tcg_bg_init_static(void)
 
     tcg_bg_thread_goon  = 1;
     tcg_bg_thread_todo = 0; /* no work to do yet */
+}
+
+/* ================ bg thread log file ========================== */
+
+static const char *bglogfilename;
+QemuLogFile *qemu_bglogfile;
+
+void qemu_set_bglog_filename(const char *filename)
+{
+    QemuLogFile *logfile;
+
+    bglogfilename = filename;
+    logfile = g_new0(QemuLogFile, 1);
+
+    if (bglogfilename) {
+        logfile->fd = fopen(bglogfilename, "w");
+        if (!logfile->fd) {
+            g_free(logfile);
+            perror(bglogfilename);
+            _exit(1);
+        }
+    } else {
+        logfile->fd = stderr;
+    }
+
+    qemu_bglogfile = logfile;
+    fprintf(stderr, "BG thread log file %s\n", filename);
+}
+
+int qemu_bglog(const char *fmt, ...)
+{
+    int ret = 0;
+    if (qemu_bglogfile) {
+        va_list ap;
+        va_start(ap, fmt);
+        ret = vfprintf(qemu_bglogfile->fd, fmt, ap);
+        va_end(ap);
+
+        /* Don't pass back error results.  */
+        if (ret < 0) {
+            ret = 0;
+        }
+    }
+    return ret;
+}
+
+void qemu_bglog_flush(void)
+{
+    if (qemu_bglogfile) {
+        fflush(qemu_bglogfile->fd);
+    }
 }

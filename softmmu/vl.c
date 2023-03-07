@@ -129,6 +129,7 @@
 void latx_sys_parse_options(QemuOpts *opts);
 #include "latx-test-sys.h"
 #endif
+#include "tcg/tcg-bg-log.h"
 
 #define MAX_VIRTIO_CONSOLES 1
 
@@ -166,6 +167,7 @@ static int num_serial_hds;
 static Chardev **serial_hds;
 static const char *log_mask;
 static const char *log_file;
+static const char *bg_log_file;
 static bool list_data_dirs;
 static const char *watchdog;
 static const char *qtest_chrdev;
@@ -2424,6 +2426,9 @@ static void qemu_process_early_options(void)
     if (log_file) {
         qemu_set_log_filename(log_file, &error_fatal);
     }
+    if (bg_log_file) {
+        qemu_set_bglog_filename(bg_log_file);
+    }
     if (log_mask) {
         int mask;
         mask = qemu_str_to_log_mask(log_mask);
@@ -2918,6 +2923,9 @@ void qemu_init(int argc, char **argv, char **envp)
                 break;
             case QEMU_OPTION_D:
                 log_file = optarg;
+                break;
+            case QEMU_OPTION_bglogfile:
+                bg_log_file = optarg;
                 break;
             case QEMU_OPTION_DFILTER:
                 qemu_set_dfilter_ranges(optarg, &error_fatal);
