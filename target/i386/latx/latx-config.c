@@ -15,6 +15,7 @@
 #include "translate.h"
 #include "latx-config.h"
 #include "latxs-code-cache.h"
+#include "latx-counter-sys.h"
 
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
@@ -359,6 +360,8 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
 {
     CPUArchState *env = cpu->env_ptr;
 
+    latxs_counter_tb_tr(cpu);
+
     latxs_break_point(env, tb);
 
     latxs_tr_sys_init(tb, max_insns, code_highwater);
@@ -471,6 +474,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
     latxs_trace_simple(env, tb);
     latxs_break_point(env, tb);
     latxs_np_tb_print(env);
+    latxs_counter_wake(cpu);
 
     if (!option_lsfpu && !option_soft_fpu) {
         lsassert(lsenv_get_top_bias(lsenv) == 0);

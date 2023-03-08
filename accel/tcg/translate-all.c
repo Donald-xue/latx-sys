@@ -70,6 +70,7 @@
 #include "latx-fastcs-sys.h"
 #include "hamt.h"
 #include "latxs-cc-pro.h"
+#include "latx-counter-sys.h"
 #endif
 #endif
 
@@ -2105,6 +2106,7 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     latxs_tracecc_tb_inv(tb);
+    latxs_counter_tb_inv(current_cpu);
 #endif
 
     /* remove the TB from the hash list */

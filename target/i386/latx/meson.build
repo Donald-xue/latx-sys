@@ -56,7 +56,8 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: files(
 i386_ss.add(when: 'CONFIG_LATX', if_true: capStone)
 
 i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
-  'sys-test.c'
+  'sys-test.c',
+  'sys-counter.c'
 ))
 
 subdir('diStorm')

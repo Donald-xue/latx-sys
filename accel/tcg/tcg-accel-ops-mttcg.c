@@ -35,7 +35,7 @@
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-mttcg.h"
 
-#include "tcg-bg-thread.h"
+#include "tcg/tcg-bg-thread.h"
 
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)

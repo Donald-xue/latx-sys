@@ -9,9 +9,10 @@
 #include "tcg-accel-ops.h"
 #include "tcg-accel-ops-rr.h"
 #include "tcg-accel-ops-icount.h"
-#include "tcg-bg-thread.h"
+#include "tcg/tcg-bg-thread.h"
 
 #include "tcg/tcg-bg-log.h"
+#include "latx-counter-sys.h"
 
 //#define BG_THREAD_DEBUG
 
@@ -359,4 +360,42 @@ void qemu_bglog_flush(void)
     if (qemu_bglogfile) {
         fflush(qemu_bglogfile->fd);
     }
+}
+
+static void tcg_bg_worker_log_counter(int sec)
+{
+    latxs_counter_bg_log(sec);
+}
+
+static struct tcg_bg_work_item *tcg_bg_worker_counter_build(int sec)
+{
+    struct tcg_bg_work_item *wi;
+
+    wi = g_malloc0(sizeof(struct tcg_bg_work_item));
+    wi->jc_func = tcg_bg_worker_log_counter;
+    wi->jc_id = sec;
+
+#ifdef BG_THREAD_DEBUG
+    fprintf(stderr, "[BG] worker: create counter %d.\n", jc_id);
+#endif
+
+    return wi;
+}
+
+void tcg_bg_counter_wake(int sec)
+{
+    /* build worker for bg thread */
+    struct tcg_bg_work_item *wi =
+        tcg_bg_worker_counter_build(sec);
+
+    /* insert worker into bg work list */
+    qemu_mutex_lock(tcg_bg_work_mutex);
+    QSIMPLEQ_INSERT_TAIL(&tcg_bg_work_list, wi, node);
+    qemu_mutex_unlock(tcg_bg_work_mutex);
+
+    /* signal bg thread */
+    qemu_mutex_lock(tcg_bg_thread_mutex);
+    tcg_bg_thread_todo = 1;
+    qemu_cond_signal(tcg_bg_thread_cond);
+    qemu_mutex_unlock(tcg_bg_thread_mutex);
 }

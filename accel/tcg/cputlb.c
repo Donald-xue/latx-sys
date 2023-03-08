@@ -48,6 +48,7 @@
 /* #define DEBUG_TLB */
 /* #define DEBUG_TLB_LOG */
 /* #define HAMT_SOFTMMU_PROFILE */
+#include "latx-counter-sys.h"
 #endif
 
 #ifdef DEBUG_TLB
@@ -1921,6 +1922,10 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
     uint64_t res;
     size_t size = memop_size(op);
 
+#ifdef CONFIG_LATX
+    latxs_counter_helper_load(env_cpu(env));
+#endif
+
     /* Handle CPU specific unaligned behaviour */
     if (addr & ((1 << a_bits) - 1)) {
         cpu_unaligned_access(env_cpu(env), addr, access_type,
@@ -1935,6 +1940,9 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
     if (!tlb_hit(tlb_addr, addr)) {
         if (!victim_tlb_hit(env, mmu_idx, index, tlb_off,
                             addr & TARGET_PAGE_MASK)) {
+#ifdef CONFIG_LATX
+            latxs_counter_helper_load_stlbfill(env_cpu(env));
+#endif
             tlb_fill(env_cpu(env), addr, size,
                      access_type, mmu_idx, retaddr);
             index = tlb_index(env, mmu_idx, addr);
@@ -1973,6 +1981,9 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
 
         /* Handle I/O access.  */
         if (likely(tlb_addr & TLB_MMIO)) {
+#ifdef CONFIG_LATX
+            latxs_counter_helper_load_io(env_cpu(env));
+#endif
             return io_readx(env, iotlbentry, mmu_idx, addr, retaddr,
                             access_type, op ^ (need_swap * MO_BSWAP));
         }
@@ -2488,6 +2499,10 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
     void *haddr;
     size_t size = memop_size(op);
 
+#ifdef CONFIG_LATX
+    latxs_counter_helper_store(env_cpu(env));
+#endif
+
     /* Handle CPU specific unaligned behaviour */
     if (addr & ((1 << a_bits) - 1)) {
         cpu_unaligned_access(env_cpu(env), addr, MMU_DATA_STORE,
@@ -2502,6 +2517,9 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
     if (!tlb_hit(tlb_addr, addr)) {
         if (!victim_tlb_hit(env, mmu_idx, index, tlb_off,
             addr & TARGET_PAGE_MASK)) {
+#ifdef CONFIG_LATX
+            latxs_counter_helper_store_stlbfill(env_cpu(env));
+#endif
             tlb_fill(env_cpu(env), addr, size, MMU_DATA_STORE,
                      mmu_idx, retaddr);
             index = tlb_index(env, mmu_idx, addr);
@@ -2539,6 +2557,9 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
 
         /* Handle I/O access.  */
         if (tlb_addr & TLB_MMIO) {
+#ifdef CONFIG_LATX
+            latxs_counter_helper_store_io(env_cpu(env));
+#endif
             io_writex(env, iotlbentry, mmu_idx, val, addr, retaddr,
                       op ^ (need_swap * MO_BSWAP));
             return;
