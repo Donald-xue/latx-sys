@@ -113,7 +113,7 @@ static void tb_jmp_cache_clear_page(CPUState *cpu, target_ulong page_addr)
 {
     unsigned int i, i0 = tb_jmp_cache_hash_page(page_addr);
 
-    if (qemu_tcg_bg_enabled()) {
+    if (qemu_tcg_bg_jc_enabled(cpu)) {
         for (i = 0; i < TB_JMP_PAGE_SIZE; i++) {
             qatomic_set(&cpu->tcg_bg_jc[i0 + i], NULL);
         }

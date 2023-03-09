@@ -12,199 +12,79 @@
 #include "tcg/tcg-bg-thread.h"
 
 #include "tcg/tcg-bg-log.h"
+#include "tcg/tcg-bg-jc.h"
 #include "latx-counter-sys.h"
 
-//#define BG_THREAD_DEBUG
-
-static QemuCond   *tcg_bg_thread_cond;
-static QemuMutex  *tcg_bg_thread_mutex;
-static int tcg_bg_thread_todo;
-static int tcg_bg_thread_goon;
-
 /* ================== BG thread Work list ======================= */
-static QemuMutex  *tcg_bg_work_mutex;
+
+#define TCG_BG_WORK_TYPE_INT    1
+#define TCG_BG_WORK_TYPE_VOID   2
+#define TCG_BG_WORK_TYPE_PTR    3
+struct tcg_bg_work_int {
+    void (*func)(int data);
+    int data;
+};
+struct tcg_bg_work_void {
+    void (*func)(void);
+};
+struct tcg_bg_work_ptr {
+    void (*func)(void *data);
+    void *data;
+};
 struct tcg_bg_work_item {
     QSIMPLEQ_ENTRY(tcg_bg_work_item) node;
-    void (*jc_func)(int data);
-    int jc_id;
+    int type;
+    union {
+        struct tcg_bg_work_int  fn_i;
+        struct tcg_bg_work_void fn_v;
+        struct tcg_bg_work_ptr  fn_p;
+    } work;
 };
+
+static QemuMutex  *tcg_bg_work_mutex;
 static QSIMPLEQ_HEAD(, tcg_bg_work_item) tcg_bg_work_list;
 
-static void tcg_bg_worker_jc_clear(int jc_id);
-
-static struct tcg_bg_work_item *tcg_bg_worker_jc_build(int jc_id)
+static struct tcg_bg_work_item *tcg_bg_worker_build_int(void *func, int data)
 {
     struct tcg_bg_work_item *wi;
-
     wi = g_malloc0(sizeof(struct tcg_bg_work_item));
-    wi->jc_func = tcg_bg_worker_jc_clear;
-    wi->jc_id = jc_id;
-
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[BG] worker: create %d.\n", jc_id);
-#endif
-
+    wi->type = TCG_BG_WORK_TYPE_INT;
+    wi->work.fn_i.func = func;
+    wi->work.fn_i.data = data;
     return wi;
 }
 
-/* ================== BG thread TB Jmp Cache ======================= */
-#define TCG_BG_JC_MAX     16
-#define TCG_BG_JC_MASK    0xF
-TranslationBlock *tcg_bg_jc[TCG_BG_JC_MAX][TB_JMP_CACHE_SIZE];
-
-static QemuMutex  *tcg_bg_jc_mutex;
-static int tcg_bg_jc_free_ids[TCG_BG_JC_MAX];
-static int tcg_bg_jc_free_head;
-static int tcg_bg_jc_free_tail;
-static int tcg_bg_jc_free_num;
-
-static int tcg_bg_jc_get_freeid_locked(void)
+static void tcg_bg_work_run(struct tcg_bg_work_item *wi)
 {
-    int free_id = -1;
-    int free_head = tcg_bg_jc_free_head;
-    int free_tail = tcg_bg_jc_free_tail;
-    int *free_ids = tcg_bg_jc_free_ids;
-
-    if (free_head != free_tail) {
-        assert(tcg_bg_jc_free_num > 0);
-        free_id = free_ids[free_head];
-        free_ids[free_head] = -1;
-        assert(free_id >= 0);
-
-        tcg_bg_jc_free_head += 1;
-        tcg_bg_jc_free_head &= 0xF;
-        tcg_bg_jc_free_num -= 1;
-    } else {
-        assert(tcg_bg_jc_free_num == 0);
-    }
-
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[BG] jc: free %d head %d tail %d return %d.\n",
-            tcg_bg_jc_free_num,
-            tcg_bg_jc_free_head, tcg_bg_jc_free_tail,
-            free_id);
-#endif
-
-    return free_id;
-}
-
-static void tcg_bg_jc_add_id_locked(int jc_id)
-{
-    assert(tcg_bg_jc_free_num < (TCG_BG_JC_MAX - 1));
-    if (tcg_bg_jc_free_num == 0) {
-        assert(tcg_bg_jc_free_head == tcg_bg_jc_free_tail);
-    }
-
-    tcg_bg_jc_free_ids[tcg_bg_jc_free_tail] = jc_id;
-
-    tcg_bg_jc_free_tail += 1;
-    tcg_bg_jc_free_tail &= 0xF;
-
-    tcg_bg_jc_free_num += 1;
-
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[BG] JC: free %d head %d tail %d.\n",
-            tcg_bg_jc_free_num,
-            tcg_bg_jc_free_head, tcg_bg_jc_free_tail);
-#endif
-}
-
-void tcg_bg_worker_jc_clear(int id)
-{
-    unsigned int i;
-    for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
-        qatomic_set(&tcg_bg_jc[id][i], NULL);
-    }
-
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[BG] clear: add new empty %d.\n", id);
-#endif
-    qemu_mutex_lock(tcg_bg_jc_mutex);
-    tcg_bg_jc_add_id_locked(id);
-    qemu_mutex_unlock(tcg_bg_jc_mutex);
-}
-
-static void tcg_bg_func_jc_clear(void *_cpu)
-{
-    CPUState *cpu = _cpu;
-    CPUX86State *env = cpu->env_ptr;
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[vCPU][%d] clear: jmp cache.\n",
-            cpu->cpu_index);
-#endif
-
-    qemu_mutex_lock(tcg_bg_jc_mutex);
-    int free_id = tcg_bg_jc_get_freeid_locked();
-    qemu_mutex_unlock(tcg_bg_jc_mutex);
-
-    if (free_id >= 0) {
-        int old_id = cpu->tcg_bg_jc_id;
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[vCPU][%d] clear: send %d to bg thread and get %d.\n",
-            cpu->cpu_index, old_id, free_id);
-#endif
-
-        /* build worker for bg thread */
-        struct tcg_bg_work_item *wi =
-            tcg_bg_worker_jc_build(old_id);
-
-        /* insert worker into bg work list */
-        qemu_mutex_lock(tcg_bg_work_mutex);
-        QSIMPLEQ_INSERT_TAIL(&tcg_bg_work_list, wi, node);
-        qemu_mutex_unlock(tcg_bg_work_mutex);
-
-        /* set jmp cache to a new one */
-        qatomic_set(&cpu->tcg_bg_jc, tcg_bg_jc[free_id]);
-        qatomic_set(&cpu->tcg_bg_jc_id, free_id);
-        env->tb_jmp_cache_ptr = tcg_bg_jc[free_id];
-
-        /* signal bg thread */
-        qemu_mutex_lock(tcg_bg_thread_mutex);
-        tcg_bg_thread_todo = 1;
-        qemu_cond_signal(tcg_bg_thread_cond);
-        qemu_mutex_unlock(tcg_bg_thread_mutex);
-    } else {
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[vCPU][%d] clear: by vCPU-self.\n",
-            cpu->cpu_index);
-#endif
-        unsigned int i;
-        for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
-            qatomic_set(&cpu->tcg_bg_jc[i], NULL);
+    switch (wi->type) {
+    case TCG_BG_WORK_TYPE_INT:
+        if (wi->work.fn_i.func) {
+            wi->work.fn_i.func(wi->work.fn_i.data);
         }
-    }
-}
-
-static int tcg_bg_init_cpu_jc(void *_cpu, int check)
-{
-    CPUState *cpu = _cpu;
-    int free_id = -1;
-
-    qemu_mutex_lock(tcg_bg_jc_mutex);
-    free_id = tcg_bg_jc_get_freeid_locked();
-    qemu_mutex_unlock(tcg_bg_jc_mutex);
-
-    if (free_id >= 0) {
-        cpu->tcg_bg_jc = tcg_bg_jc[free_id];
-        cpu->tcg_bg_jc_id = free_id;
-    } else {
-        assert(!check);
-    }
-
-    return free_id;
-}
-
-static void tcg_bg_init_cpu_rr(void *cpu, int check)
-{
-    int ret = tcg_bg_init_cpu_jc(cpu, check);
-    if (ret < 0) {
-        fprintf(stderr, "%s fail\n", __func__);
-        assert(0);
+        break;
+    case TCG_BG_WORK_TYPE_VOID:
+        if (wi->work.fn_v.func) {
+            wi->work.fn_v.func();
+        }
+        break;
+    case TCG_BG_WORK_TYPE_PTR:
+        if (wi->work.fn_p.func) {
+            wi->work.fn_p.func(wi->work.fn_p.data);
+        }
+        break;
+    default:
+        break;
     }
 }
 
 /* ================== BG thread Main ======================= */
+
+static QemuCond   *tcg_bg_thread_cond;
+static QemuMutex  *tcg_bg_thread_mutex;
 static QemuThread *tcg_bg_thread;
+
+static int tcg_bg_thread_todo;
+static int tcg_bg_thread_goon;
 
 static void tcg_bg_work_processing(void)
 {
@@ -220,16 +100,16 @@ static void tcg_bg_work_processing(void)
         QSIMPLEQ_REMOVE_HEAD(&tcg_bg_work_list, node);
         qemu_mutex_unlock(tcg_bg_work_mutex);
 
-        if (wi->jc_func) {
-            wi->jc_func(wi->jc_id);
-        }
+        tcg_bg_work_run(wi);
+
+        g_free(wi);
 
         qemu_mutex_lock(tcg_bg_work_mutex);
     }
     qemu_mutex_unlock(tcg_bg_work_mutex);
 }
 
-static void *tcg_bg_thread_rr_func(void *arg)
+static void *tcg_bg_thread_func(void *arg)
 {
     while (tcg_bg_thread_goon) {
         qemu_mutex_lock(tcg_bg_thread_mutex);
@@ -257,11 +137,11 @@ static void tcg_bg_init_thread(void)
     sprintf(bg_thread_name, "BG thread");
     /*qemu_thread_create(tcg_bg_thread, "Background vCPU thread",*/
     qemu_thread_create(tcg_bg_thread, bg_thread_name,
-            tcg_bg_thread_rr_func,
+            tcg_bg_thread_func,
             NULL, QEMU_THREAD_JOINABLE);
 }
 
-static void tcg_bg_init_work(void)
+static void tcg_bg_init_work_list(void)
 {
     QSIMPLEQ_INIT(&tcg_bg_work_list);
     tcg_bg_work_mutex = g_malloc0(sizeof(QemuMutex));
@@ -271,19 +151,11 @@ static void tcg_bg_init_work(void)
 static void __tcg_bg_init(CPUState *cpu)
 {
     if (!tcg_bg_thread) {
-
-        cpu->tcg_bg_jc_clear = tcg_bg_func_jc_clear;
-        tcg_bg_jc_mutex = g_malloc0(sizeof(QemuMutex));
-        qemu_mutex_init(tcg_bg_jc_mutex);
-
-        tcg_bg_init_work();
+        tcg_bg_init_work_list();
         tcg_bg_init_thread();
-
-        tcg_bg_init_cpu_rr(cpu, 1);
-    } else {
-        cpu->tcg_bg_jc_clear = tcg_bg_func_jc_clear;
-        tcg_bg_init_cpu_rr(cpu, 1);
     }
+
+    tcg_bg_init_jc(cpu);
 }
 void tcg_bg_init_rr(CPUState *cpu)
 {
@@ -297,21 +169,32 @@ void tcg_bg_init_mt(CPUState *cpu)
 
 static void __attribute__((__constructor__)) tcg_bg_init_static(void)
 {
-    int i = 0;
-    for (; i < TCG_BG_JC_MAX; ++i) {
-        tcg_bg_jc_free_ids[i] = i;
-    }
-    tcg_bg_jc_free_ids[i - 1] = -1;
-
-    tcg_bg_jc_free_head = 0;
-    tcg_bg_jc_free_tail = TCG_BG_JC_MAX - 1;
-    tcg_bg_jc_free_num  = TCG_BG_JC_MAX - 1;
+    tcg_bg_jc_init_static();
 
     tcg_bg_thread_goon  = 1;
     tcg_bg_thread_todo = 0; /* no work to do yet */
 }
 
-/* ================ bg thread log file ========================== */
+/* ================== BG thread TB Jmp Cache ======================= */
+
+void tcg_bg_jc_wake(void *func, int id)
+{
+    /* build worker for bg thread */
+    struct tcg_bg_work_item *wi = tcg_bg_worker_build_int(func, id);
+
+    /* insert worker into bg work list */
+    qemu_mutex_lock(tcg_bg_work_mutex);
+    QSIMPLEQ_INSERT_TAIL(&tcg_bg_work_list, wi, node);
+    qemu_mutex_unlock(tcg_bg_work_mutex);
+
+    /* signal bg thread */
+    qemu_mutex_lock(tcg_bg_thread_mutex);
+    tcg_bg_thread_todo = 1;
+    qemu_cond_signal(tcg_bg_thread_cond);
+    qemu_mutex_unlock(tcg_bg_thread_mutex);
+}
+
+/* ================ BG thread log file ========================== */
 
 static const char *bglogfilename;
 QemuLogFile *qemu_bglogfile;
@@ -362,27 +245,9 @@ void qemu_bglog_flush(void)
     }
 }
 
-static void tcg_bg_worker_log_counter(int sec)
-{
-    latxs_counter_bg_log(sec);
-}
+/* ================== BG thread Counter ======================= */
 
-static struct tcg_bg_work_item *tcg_bg_worker_counter_build(int sec)
-{
-    struct tcg_bg_work_item *wi;
-
-    wi = g_malloc0(sizeof(struct tcg_bg_work_item));
-    wi->jc_func = tcg_bg_worker_log_counter;
-    wi->jc_id = sec;
-
-#ifdef BG_THREAD_DEBUG
-    fprintf(stderr, "[BG] worker: create counter %d.\n", jc_id);
-#endif
-
-    return wi;
-}
-
-void tcg_bg_counter_wake(int sec)
+void tcg_bg_counter_wake(void *func, int sec)
 {
     if (!qemu_tcg_bg_enabled()) {
         fprintf(stderr, "Warning: %s bg thead NOT enable in\n", __func__);
@@ -390,8 +255,7 @@ void tcg_bg_counter_wake(int sec)
     }
 
     /* build worker for bg thread */
-    struct tcg_bg_work_item *wi =
-        tcg_bg_worker_counter_build(sec);
+    struct tcg_bg_work_item *wi = tcg_bg_worker_build_int(func, sec);
 
     /* insert worker into bg work list */
     qemu_mutex_lock(tcg_bg_work_mutex);

@@ -464,13 +464,12 @@ extern __thread CPUState *current_cpu;
  */
 extern bool tcg_bg_enabled;
 #define qemu_tcg_bg_enabled() (tcg_bg_enabled)
+#define qemu_tcg_bg_jc_enabled(cpu) (tcg_bg_enabled && cpu->tcg_bg_jc_clear != NULL)
 
 static inline void cpu_tb_jmp_cache_clear(CPUState *cpu)
 {
-    if (qemu_tcg_bg_enabled()) {
-        if (cpu->tcg_bg_jc_clear) {
-            cpu->tcg_bg_jc_clear(cpu);
-        }
+    if (qemu_tcg_bg_jc_enabled(cpu)) {
+        cpu->tcg_bg_jc_clear(cpu);
     } else {
         unsigned int i;
 

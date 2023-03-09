@@ -71,7 +71,7 @@ IMP_COUNTER_FUNC(helper_load_stlbfill)
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
 /* worker function */
-void latxs_counter_bg_log(int sec)
+static void latxs_counter_bg_log(int sec)
 {
     qemu_bglog("[%7d] TR %-6d Lookup %-6d "\
             "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
@@ -104,7 +104,7 @@ void latxs_counter_wake(void *cpu)
     if (cur != st) {
         st = cur;
         /* construct worker and wake up bg thread */
-        tcg_bg_counter_wake(st);
+        tcg_bg_counter_wake(latxs_counter_bg_log, st);
     }
 }
 
@@ -128,7 +128,6 @@ IMP_COUNTER_FUNC(helper_load)
 IMP_COUNTER_FUNC(helper_load_io)
 IMP_COUNTER_FUNC(helper_load_stlbfill)
 
-void latxs_counter_bg_log(int sec) {}
 void latxs_counter_wake(void *cpu) {}
 
 #endif

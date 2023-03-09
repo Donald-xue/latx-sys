@@ -2143,7 +2143,7 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
     /* remove the TB from the hash list */
     h = tb_jmp_cache_hash_func(tb->pc);
     CPU_FOREACH(cpu) {
-        if (qemu_tcg_bg_enabled()) {
+        if (qemu_tcg_bg_jc_enabled(cpu)) {
             if (qatomic_read(&cpu->tcg_bg_jc[h]) == tb) {
                 qatomic_set(&cpu->tcg_bg_jc[h], NULL);
             }

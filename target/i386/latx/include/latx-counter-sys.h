@@ -17,6 +17,5 @@ void latxs_counter_helper_load_io(void *cpu);
 void latxs_counter_helper_load_stlbfill(void *cpu);
 
 void latxs_counter_wake(void *cpu);
-void latxs_counter_bg_log(int sec);
 
 #endif
