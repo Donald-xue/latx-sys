@@ -384,6 +384,11 @@ static struct tcg_bg_work_item *tcg_bg_worker_counter_build(int sec)
 
 void tcg_bg_counter_wake(int sec)
 {
+    if (!qemu_tcg_bg_enabled()) {
+        fprintf(stderr, "Warning: %s bg thead NOT enable in\n", __func__);
+        return;
+    }
+
     /* build worker for bg thread */
     struct tcg_bg_work_item *wi =
         tcg_bg_worker_counter_build(sec);
