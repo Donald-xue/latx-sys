@@ -4,7 +4,7 @@
 #include "tcg/tcg-bg-log.h"
 #include <string.h>
 
-/*#define BG_COUNTER_ENABLE*/
+#define BG_COUNTER_ENABLE
 
 typedef struct {
     uint64_t tb_tr_nr;
@@ -46,10 +46,19 @@ void __attribute__((__constructor__)) latx_counter_init(void)
 
 #ifdef BG_COUNTER_ENABLE
 
+#define COUNTER_OP_INC(id, name) do {       \
+__latxs_counter_data[id].name ## _nr += 1;  \
+} while (0)
+
+
 #define IMP_COUNTER_FUNC(name)                  \
 void latxs_counter_ ## name (void *cpu)         \
 {                                               \
-    __latxs_counter_data[0].name ## _nr += 1;   \
+    int cpuid = 0;                              \
+    if (qemu_tcg_mttcg_enabled()) {             \
+        cpuid = ((CPUState *)cpu)->cpu_index;   \
+    }                                           \
+    COUNTER_OP_INC(cpuid, name);                \
 }
 
 IMP_COUNTER_FUNC(tb_tr)
@@ -70,29 +79,57 @@ IMP_COUNTER_FUNC(helper_load_stlbfill)
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
+static void __latxs_counter_bg_log(int n, int sec)
+{
+    qemu_bglog("[%7d][%1d] TR %-6d Lookup %-6d "\
+            "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
+            "JCF[%-6d/%-6d] INV %-6d\n",
+            sec, n,
+            BG_LOG_DIFF(n, tb_tr                 ),
+            BG_LOG_DIFF(n, tb_lookup             ),
+
+            BG_LOG_DIFF(n, helper_store          ),
+            BG_LOG_DIFF(n, helper_store_stlbfill ),
+            BG_LOG_DIFF(n, helper_store_io       ),
+            BG_LOG_DIFF(n, helper_load           ),
+            BG_LOG_DIFF(n, helper_load_stlbfill  ),
+            BG_LOG_DIFF(n, helper_load_io        ),
+
+            BG_LOG_DIFF(n, jc_flush              ),
+            BG_LOG_DIFF(n, jc_flush_page         ),
+            BG_LOG_DIFF(n, tb_inv                )
+            );
+}
+
+#define BG_COUNTER_COPY(n) do {             \
+memcpy(&__latxs_counter_data[n],            \
+       &__local_latxs_counter_data[n],      \
+       sizeof(latxs_counter_t));            \
+} while (0)
+
 /* worker function */
 static void latxs_counter_bg_log(int sec)
 {
-    qemu_bglog("[%7d] TR %-6d Lookup %-6d "\
-            "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
-            "JCF[%-6d/%-6d] INV %-6d\n",
-            sec,
-            BG_LOG_DIFF(0, tb_tr                 ),
-            BG_LOG_DIFF(0, tb_lookup             ),
+    if (qemu_tcg_mttcg_enabled()) {
+        __latxs_counter_bg_log(0, sec);
+        __latxs_counter_bg_log(1, sec);
+        __latxs_counter_bg_log(2, sec);
+        __latxs_counter_bg_log(3, sec);
+        qemu_bglog("\n");
+    } else {
+        __latxs_counter_bg_log(0, sec);
+    }
 
-            BG_LOG_DIFF(0, helper_store          ),
-            BG_LOG_DIFF(0, helper_store_stlbfill ),
-            BG_LOG_DIFF(0, helper_store_io       ),
-            BG_LOG_DIFF(0, helper_load           ),
-            BG_LOG_DIFF(0, helper_load_stlbfill  ),
-            BG_LOG_DIFF(0, helper_load_io        ),
-
-            BG_LOG_DIFF(0, jc_flush              ),
-            BG_LOG_DIFF(0, jc_flush_page         ),
-            BG_LOG_DIFF(0, tb_inv                )
-            );
     qemu_bglog_flush();
-    memcpy(&__latxs_counter_data[0], &__local_latxs_counter_data[0], sizeof(latxs_counter_t));
+
+    if (qemu_tcg_mttcg_enabled()) {
+        BG_COUNTER_COPY(0);
+        BG_COUNTER_COPY(1);
+        BG_COUNTER_COPY(2);
+        BG_COUNTER_COPY(3);
+    } else {
+        BG_COUNTER_COPY(0);
+    }
 }
 
 void latxs_counter_wake(void *cpu)
