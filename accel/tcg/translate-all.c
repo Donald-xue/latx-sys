@@ -1887,6 +1887,7 @@ static void do_tb_flush(CPUState *cpu, run_on_cpu_data tb_flush_count)
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     latxs_tracecc_do_tb_flush();
+    latxs_counter_tb_flush(cpu);
 #endif
 
     if (DEBUG_TB_FLUSH_GATE) {
@@ -1899,6 +1900,9 @@ static void do_tb_flush(CPUState *cpu, run_on_cpu_data tb_flush_count)
     }
 
     CPU_FOREACH(cpu) {
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        latxs_counter_jc_flush(cpu);
+#endif
         cpu_tb_jmp_cache_clear(cpu);
     }
 

@@ -126,6 +126,9 @@ static void tb_jmp_cache_clear_page(CPUState *cpu, target_ulong page_addr)
 
 static void tb_flush_jmp_cache(CPUState *cpu, target_ulong addr)
 {
+#ifdef CONFIG_LATX
+    latxs_counter_jc_flush_page(cpu);
+#endif
     /* Discard jump cache entries for any tb which might potentially
        overlap the flushed page.  */
     tb_jmp_cache_clear_page(cpu, addr - TARGET_PAGE_SIZE);
@@ -383,6 +386,9 @@ static void tlb_flush_by_mmuidx_async_work(CPUState *cpu, run_on_cpu_data data)
 
     qemu_spin_unlock(&env_tlb(env)->c.lock);
 
+#ifdef CONFIG_LATX
+    latxs_counter_jc_flush(cpu);
+#endif
     TLB_FLUSH_TRACE(tlb_flush_jc_st);
     cpu_tb_jmp_cache_clear(cpu);
 

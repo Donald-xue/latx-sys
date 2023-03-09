@@ -3,6 +3,11 @@
 
 void latxs_counter_tb_tr(void *cpu);
 void latxs_counter_tb_inv(void *cpu);
+void latxs_counter_tb_flush(void *cpu);
+
+void latxs_counter_jc_flush(void *cpu);
+void latxs_counter_jc_flush_page(void *cpu);
+
 void latxs_counter_helper_store(void *cpu);
 void latxs_counter_helper_store_io(void *cpu);
 void latxs_counter_helper_store_stlbfill(void *cpu);
