@@ -45,6 +45,7 @@
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-test-sys.h"
 #include "latx-fastcs-sys.h"
+#include "latx-counter-sys.h"
 #include "latxs-cc-pro.h"
 #include "latx-options.h"
 #endif
@@ -579,7 +580,9 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
 #endif
 
     cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
-
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_counter_tb_lookup(cpu);
+#endif
     tb = tb_lookup(cpu, pc, cs_base, flags, cflags);
     if (tb == NULL) {
         mmap_lock();

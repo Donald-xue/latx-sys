@@ -4,6 +4,7 @@
 void latxs_counter_tb_tr(void *cpu);
 void latxs_counter_tb_inv(void *cpu);
 void latxs_counter_tb_flush(void *cpu);
+void latxs_counter_tb_lookup(void *cpu);
 
 void latxs_counter_jc_flush(void *cpu);
 void latxs_counter_jc_flush_page(void *cpu);

@@ -4,14 +4,17 @@
 #include "tcg/tcg-bg-log.h"
 #include <string.h>
 
-#define BG_COUNTER_ENABLE
+/*#define BG_COUNTER_ENABLE*/
 
 typedef struct {
     uint64_t tb_tr_nr;
     uint64_t tb_inv_nr;
     uint64_t tb_flush_nr;
+    uint64_t tb_lookup_nr;
+
     uint64_t jc_flush_nr;
     uint64_t jc_flush_page_nr;
+
     uint64_t helper_store_nr;
     uint64_t helper_store_io_nr;
     uint64_t helper_store_stlbfill_nr;
@@ -52,8 +55,11 @@ void latxs_counter_ ## name (void *cpu)     \
 IMP_COUNTER_FUNC(tb_tr,                 tb_tr_nr)
 IMP_COUNTER_FUNC(tb_inv,                tb_inv_nr)
 IMP_COUNTER_FUNC(tb_flush,              tb_flush_nr)
+IMP_COUNTER_FUNC(tb_lookup,             tb_lookup_nr)
+
 IMP_COUNTER_FUNC(jc_flush,              jc_flush_nr)
 IMP_COUNTER_FUNC(jc_flush_page,         jc_flush_page_nr)
+
 IMP_COUNTER_FUNC(helper_store,          helper_store_nr)
 IMP_COUNTER_FUNC(helper_store_io,       helper_store_io_nr)
 IMP_COUNTER_FUNC(helper_store_stlbfill, helper_store_stlbfill_nr)
@@ -67,11 +73,12 @@ IMP_COUNTER_FUNC(helper_load_stlbfill,  helper_load_stlbfill_nr)
 /* worker function */
 void latxs_counter_bg_log(int sec)
 {
-    qemu_bglog("[%7d] TR %-6d "\
+    qemu_bglog("[%7d] TR %-6d Lookup %-6d "\
             "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
             "JCF[%-6d/%-6d] INV %-6d\n",
             sec,
             BG_LOG_DIFF(0, tb_tr_nr                 ),
+            BG_LOG_DIFF(0, tb_lookup_nr             ),
 
             BG_LOG_DIFF(0, helper_store_nr          ),
             BG_LOG_DIFF(0, helper_store_stlbfill_nr ),
@@ -109,6 +116,7 @@ void latxs_counter_ ## name (void *cpu) {}
 IMP_COUNTER_FUNC(tb_tr,                 tb_tr_nr)
 IMP_COUNTER_FUNC(tb_inv,                tb_inv_nr)
 IMP_COUNTER_FUNC(tb_flush,              tb_flush_nr)
+IMP_COUNTER_FUNC(tb_lookup,             tb_lookup_nr)
 IMP_COUNTER_FUNC(jc_flush,              jc_flush_nr)
 IMP_COUNTER_FUNC(jc_flush_page,         jc_flush_page_nr)
 IMP_COUNTER_FUNC(helper_store,          helper_store_nr)
