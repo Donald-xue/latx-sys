@@ -46,29 +46,29 @@ void __attribute__((__constructor__)) latx_counter_init(void)
 
 #ifdef BG_COUNTER_ENABLE
 
-#define IMP_COUNTER_FUNC(name, var)         \
-void latxs_counter_ ## name (void *cpu)     \
-{                                           \
-    __latxs_counter_data[0].var += 1;       \
+#define IMP_COUNTER_FUNC(name)                  \
+void latxs_counter_ ## name (void *cpu)         \
+{                                               \
+    __latxs_counter_data[0].name ## _nr += 1;   \
 }
 
-IMP_COUNTER_FUNC(tb_tr,                 tb_tr_nr)
-IMP_COUNTER_FUNC(tb_inv,                tb_inv_nr)
-IMP_COUNTER_FUNC(tb_flush,              tb_flush_nr)
-IMP_COUNTER_FUNC(tb_lookup,             tb_lookup_nr)
+IMP_COUNTER_FUNC(tb_tr)
+IMP_COUNTER_FUNC(tb_inv)
+IMP_COUNTER_FUNC(tb_flush)
+IMP_COUNTER_FUNC(tb_lookup)
 
-IMP_COUNTER_FUNC(jc_flush,              jc_flush_nr)
-IMP_COUNTER_FUNC(jc_flush_page,         jc_flush_page_nr)
+IMP_COUNTER_FUNC(jc_flush)
+IMP_COUNTER_FUNC(jc_flush_page)
 
-IMP_COUNTER_FUNC(helper_store,          helper_store_nr)
-IMP_COUNTER_FUNC(helper_store_io,       helper_store_io_nr)
-IMP_COUNTER_FUNC(helper_store_stlbfill, helper_store_stlbfill_nr)
-IMP_COUNTER_FUNC(helper_load,           helper_load_nr)
-IMP_COUNTER_FUNC(helper_load_io,        helper_load_io_nr)
-IMP_COUNTER_FUNC(helper_load_stlbfill,  helper_load_stlbfill_nr)
+IMP_COUNTER_FUNC(helper_store)
+IMP_COUNTER_FUNC(helper_store_io)
+IMP_COUNTER_FUNC(helper_store_stlbfill)
+IMP_COUNTER_FUNC(helper_load)
+IMP_COUNTER_FUNC(helper_load_io)
+IMP_COUNTER_FUNC(helper_load_stlbfill)
 
 #define BG_LOG_DIFF(n, var) \
-(__latxs_counter_data[n].var - __local_latxs_counter_data[n].var)
+(__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
 /* worker function */
 void latxs_counter_bg_log(int sec)
@@ -77,19 +77,19 @@ void latxs_counter_bg_log(int sec)
             "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
             "JCF[%-6d/%-6d] INV %-6d\n",
             sec,
-            BG_LOG_DIFF(0, tb_tr_nr                 ),
-            BG_LOG_DIFF(0, tb_lookup_nr             ),
+            BG_LOG_DIFF(0, tb_tr                 ),
+            BG_LOG_DIFF(0, tb_lookup             ),
 
-            BG_LOG_DIFF(0, helper_store_nr          ),
-            BG_LOG_DIFF(0, helper_store_stlbfill_nr ),
-            BG_LOG_DIFF(0, helper_store_io_nr       ),
-            BG_LOG_DIFF(0, helper_load_nr           ),
-            BG_LOG_DIFF(0, helper_load_stlbfill_nr  ),
-            BG_LOG_DIFF(0, helper_load_io_nr        ),
+            BG_LOG_DIFF(0, helper_store          ),
+            BG_LOG_DIFF(0, helper_store_stlbfill ),
+            BG_LOG_DIFF(0, helper_store_io       ),
+            BG_LOG_DIFF(0, helper_load           ),
+            BG_LOG_DIFF(0, helper_load_stlbfill  ),
+            BG_LOG_DIFF(0, helper_load_io        ),
 
-            BG_LOG_DIFF(0, jc_flush_nr              ),
-            BG_LOG_DIFF(0, jc_flush_page_nr         ),
-            BG_LOG_DIFF(0, tb_inv_nr                )
+            BG_LOG_DIFF(0, jc_flush              ),
+            BG_LOG_DIFF(0, jc_flush_page         ),
+            BG_LOG_DIFF(0, tb_inv                )
             );
     qemu_bglog_flush();
     memcpy(&__latxs_counter_data[0], &__local_latxs_counter_data[0], sizeof(latxs_counter_t));
@@ -110,21 +110,23 @@ void latxs_counter_wake(void *cpu)
 
 #else
 
-#define IMP_COUNTER_FUNC(name, var)         \
+#define IMP_COUNTER_FUNC(name) \
 void latxs_counter_ ## name (void *cpu) {}
 
-IMP_COUNTER_FUNC(tb_tr,                 tb_tr_nr)
-IMP_COUNTER_FUNC(tb_inv,                tb_inv_nr)
-IMP_COUNTER_FUNC(tb_flush,              tb_flush_nr)
-IMP_COUNTER_FUNC(tb_lookup,             tb_lookup_nr)
-IMP_COUNTER_FUNC(jc_flush,              jc_flush_nr)
-IMP_COUNTER_FUNC(jc_flush_page,         jc_flush_page_nr)
-IMP_COUNTER_FUNC(helper_store,          helper_store_nr)
-IMP_COUNTER_FUNC(helper_store_io,       helper_store_io_nr)
-IMP_COUNTER_FUNC(helper_store_stlbfill, helper_store_stlbfill_nr)
-IMP_COUNTER_FUNC(helper_load,           helper_load_nr)
-IMP_COUNTER_FUNC(helper_load_io,        helper_load_io_nr)
-IMP_COUNTER_FUNC(helper_load_stlbfill,  helper_load_stlbfill_nr)
+IMP_COUNTER_FUNC(tb_tr)
+IMP_COUNTER_FUNC(tb_inv)
+IMP_COUNTER_FUNC(tb_flush)
+IMP_COUNTER_FUNC(tb_lookup)
+
+IMP_COUNTER_FUNC(jc_flush)
+IMP_COUNTER_FUNC(jc_flush_page)
+
+IMP_COUNTER_FUNC(helper_store)
+IMP_COUNTER_FUNC(helper_store_io)
+IMP_COUNTER_FUNC(helper_store_stlbfill)
+IMP_COUNTER_FUNC(helper_load)
+IMP_COUNTER_FUNC(helper_load_io)
+IMP_COUNTER_FUNC(helper_load_stlbfill)
 
 void latxs_counter_bg_log(int sec) {}
 void latxs_counter_wake(void *cpu) {}
