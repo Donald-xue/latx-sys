@@ -384,25 +384,11 @@ static IR2_OPCODE ir2_opcode_rrr_to_rri(IR2_OPCODE opcode)
     }
 }
 
-void ir2_set_id(IR2_INST *ir2, int id) { ir2->_id = id; }
-
-int ir2_get_id(IR2_INST *ir2) { return ir2->_id; }
-
 IR2_INST *ir2_get(int id)
 {
     lsassert(id >= 0 && id < lsenv->tr_data->ir2_cur_nr);
     return lsenv->tr_data->ir2_array + id;
 }
-
-IR2_OPCODE ir2_opcode(IR2_INST *ir2) { return (IR2_OPCODE)(ir2->_opcode); }
-
-void ir2_set_opcode(IR2_INST *ir2, IR2_OPCODE type) {
-    ir2->_opcode = type;
-}
-
-ADDR ir2_addr(IR2_INST *ir2) { return ir2->_addr; }
-
-void ir2_set_addr(IR2_INST *ir2, ADDR a) { ir2->_addr = a; }
 
 uint32 ir2_opnd_addr(IR2_OPND *ir2) { return ir2->_addr; }
 
@@ -2048,14 +2034,6 @@ void latxs_ir2_build4(
 }
 
 /* Fucntions ot access IR2_INST's fields */
-ADDR latxs_ir2_addr(IR2_INST *ir2)
-{
-    return ir2->_addr;
-}
-void latxs_ir2_set_addr(IR2_INST *ir2, ADDR a)
-{
-    ir2->_addr = a;
-}
 IR2_OPND *latxs_ir2_branch_get_label(IR2_INST *pir2)
 {
     int index = latxs_ir2_branch_label_index(pir2);

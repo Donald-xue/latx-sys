@@ -76,39 +76,17 @@ int ir2_opnd_to_string(IR2_OPND *, char *, bool);
 
 void ir2_opnd_convert_label_to_imm(IR2_OPND *, int imm);
 
-#ifndef CONFIG_SOFTMMU
-typedef struct IR2_INST {
-    ADDR _addr;
-    int16 _opcode;
-    int16 _id;
-    int op_count;
-    IR2_OPND _opnd[4]; /*LA has 4 opnds*/
-} IR2_INST;
-#else
-typedef struct IR2_INST {
-    ADDR _addr;
-    int _opcode;
-    int _id;
-    int op_count;
-    IR2_OPND _opnd[4];
-} IR2_INST;
-#endif
+#include "ir2-inst.h"
 
 void ir2_build(IR2_INST *, IR2_OPCODE, IR2_OPND, IR2_OPND, IR2_OPND);
 
-void ir2_set_id(IR2_INST *, int);
-int  ir2_get_id(IR2_INST *);
 IR2_INST *ir2_get(int id);
-IR2_OPCODE ir2_opcode(IR2_INST *);
-void ir2_set_opcode(IR2_INST *ir2, IR2_OPCODE type);
 int ir2_dump(IR2_INST *);
 int ir2_to_string(IR2_INST *, char *);
-ADDR ir2_addr(IR2_INST *);
-void ir2_set_addr(IR2_INST *, ADDR a);
 
 void ir2_append(IR2_INST *);
 
-uint32 ir2_assemble(IR2_INST *);
+uint32_t ir2_assemble(IR2_INST *);
 bool ir2_op_check(IR2_INST *);
 
 
@@ -278,8 +256,6 @@ void latxs_ir2_build4(IR2_INST *, IR2_OPCODE, IR2_OPND *, IR2_OPND *,
                                               IR2_OPND *, IR2_OPND *);
 
 /* Fucntions ot access IR2_INST's fields */
-ADDR        latxs_ir2_addr(IR2_INST *);
-void        latxs_ir2_set_addr(IR2_INST *, ADDR a);
 IR2_OPND   *latxs_ir2_branch_get_label(IR2_INST *);
 int         latxs_ir2_branch_label_index(IR2_INST *);
 
@@ -342,7 +318,6 @@ bool latxs_ir2_opcode_is_branch(IR2_OPCODE);
 bool latxs_ir2_opcode_is_convert(IR2_OPCODE);
 bool latxs_ir2_opcode_is_fcmp(IR2_OPCODE);
 
-uint32_t latxs_ir2_assemble(IR2_INST *pir2);
 bool latxs_ir2_op_check(IR2_INST *pir2);
 
 #endif

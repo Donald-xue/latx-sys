@@ -9,7 +9,7 @@ void set_operand_into_instruction(GM_OPERAND_TYPE operand_type,
 /*
  * FIXME: This is a intial port code, there is no any verification!!!
  */
-uint32 ir2_assemble(IR2_INST *ir2){
+uint32_t ir2_assemble(IR2_INST *ir2) {
     GM_LA_OPCODE_FORMAT format = lisa_format_table[ir2->_opcode - LISA_INVALID];
     assert(format.type == ir2->_opcode);
     
@@ -43,7 +43,8 @@ uint32 ir2_assemble(IR2_INST *ir2){
 
     return ins;
 }
-bool ir2_op_check(IR2_INST  *ir2){
+
+bool ir2_op_check(IR2_INST  *ir2) {
     /* get the instrution format in LA*/
     if(ir2->_opcode - LISA_INVALID < 0) {return 1;}
     GM_LA_OPCODE_FORMAT format = lisa_format_table[ir2->_opcode - LISA_INVALID];
@@ -81,11 +82,6 @@ bool ir2_op_check(IR2_INST  *ir2){
 }
 
 #ifdef CONFIG_SOFTMMU
-
-uint32_t latxs_ir2_assemble(IR2_INST *pir2)
-{
-    return ir2_assemble(pir2);
-}
 
 static
 void latxs_ir2_op_check_imm(IR2_OPND *opnd, GM_OPERAND_TYPE opnd_type)

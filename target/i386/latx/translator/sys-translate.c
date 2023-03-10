@@ -243,7 +243,7 @@ int latxs_tr_ir2_assemble(const void *code_base)
         }
 
         if (ir2_opc != LISA_LABEL) {
-            uint32_t ir2_binary = latxs_ir2_assemble(pir2);
+            uint32_t ir2_binary = ir2_assemble(pir2);
             if (option_dump_host && (!tb || qemu_log_in_addr_range(tb->pc))) {
                 fprintf(stderr, "IR2 at %p LISA Binary = 0x%08x ",
                         code_ptr, ir2_binary);
