@@ -147,7 +147,7 @@ void latxs_np_tr_cs_prologue(void)
 
         latxs_ra_free_temp(&tmp);
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = context_switch_bt_to_native + offset;
         int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
         fprintf(stderr, "prologue %ld\n", ins_offset);
@@ -185,7 +185,7 @@ void latxs_np_tr_cs_epilogue(void)
 
         latxs_ra_free_temp(&tmp);
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = context_switch_native_to_bt_ret_0 + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
         fprintf(stderr, "epilogue %ld\n", ins_offset);
@@ -220,7 +220,7 @@ void latxs_np_tr_scs_prologue(void)
         latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
                 offsetof(lsenv_fastcs_t, cs_type));
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = latxs_sc_scs_prologue + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
         fprintf(stderr, "static prologue %ld\n", ins_offset);
@@ -253,7 +253,7 @@ void latxs_np_tr_scs_epilogue(void)
         latxs_append_ir2_opnd2i(LISA_ST_D, stmp1, stmp2,
                 offsetof(lsenv_fastcs_t, cs_type));
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = latxs_sc_scs_epilogue + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
         fprintf(stderr, "static epilogue %ld\n", ins_offset);
@@ -291,7 +291,7 @@ void latxs_np_tr_hcs_prologue(void)
 
         latxs_ra_free_temp(&tmp);
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
@@ -330,7 +330,7 @@ void latxs_np_tr_hcs_epilogue(void)
 
         latxs_ra_free_temp(&tmp);
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
@@ -364,7 +364,7 @@ void latxs_np_tr_tb_start(void)
             latxs_append_ir2_opnd2i(LISA_ORI, arg4, zero, tb->fastcs_ctx);
         }
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
@@ -390,7 +390,7 @@ void latxs_np_tr_tb_end(void)
             latxs_append_ir2_opnd2i(LISA_ORI, arg4, zero, tb->fastcs_ctx);
         }
 
-        int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+        int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
         int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);

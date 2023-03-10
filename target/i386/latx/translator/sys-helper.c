@@ -122,7 +122,7 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
         TRANSLATION_DATA *td = lsenv->tr_data;
         TranslationBlock *tb = td->curr_tb;
         ADDR code_buf = (ADDR)tb->tc.ptr;
-        int offset = td->real_ir2_inst_num << 2;
+        int offset = td->ir2_asm_nr << 2;
 
         int64_t ins_offset = (latxs_sc_scs_prologue - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
@@ -241,7 +241,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     if (scs_enabled() && cmp_helper_cfg(cfg, default_helper_cfg)) {
         TranslationBlock *tb = td->curr_tb;
         ADDR code_buf = (ADDR)tb->tc.ptr;
-        int offset = td->real_ir2_inst_num << 2;
+        int offset = td->ir2_asm_nr << 2;
         int64_t ins_offset = (latxs_sc_scs_epilogue - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
         if (fix_em) {

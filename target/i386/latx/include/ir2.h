@@ -81,8 +81,6 @@ typedef struct IR2_INST {
     ADDR _addr;
     int16 _opcode;
     int16 _id;
-    int16 _prev;
-    int16 _next;
     int op_count;
     IR2_OPND _opnd[4]; /*LA has 4 opnds*/
 } IR2_INST;
@@ -91,8 +89,6 @@ typedef struct IR2_INST {
     ADDR _addr;
     int _opcode;
     int _id;
-    int _prev;
-    int _next;
     int op_count;
     IR2_OPND _opnd[4];
 } IR2_INST;
@@ -101,20 +97,16 @@ typedef struct IR2_INST {
 void ir2_build(IR2_INST *, IR2_OPCODE, IR2_OPND, IR2_OPND, IR2_OPND);
 
 void ir2_set_id(IR2_INST *, int);
-int ir2_get_id(IR2_INST *);
+int  ir2_get_id(IR2_INST *);
+IR2_INST *ir2_get(int id);
 IR2_OPCODE ir2_opcode(IR2_INST *);
 void ir2_set_opcode(IR2_INST *ir2, IR2_OPCODE type);
 int ir2_dump(IR2_INST *);
 int ir2_to_string(IR2_INST *, char *);
-IR2_INST *ir2_prev(IR2_INST *);
-IR2_INST *ir2_next(IR2_INST *);
 ADDR ir2_addr(IR2_INST *);
 void ir2_set_addr(IR2_INST *, ADDR a);
 
 void ir2_append(IR2_INST *);
-void ir2_remove(IR2_INST *);
-void ir2_insert_before(IR2_INST *ir2, IR2_INST *next);
-void ir2_insert_after(IR2_INST *ir2, IR2_INST *prev);
 
 uint32 ir2_assemble(IR2_INST *);
 bool ir2_op_check(IR2_INST *);
@@ -286,23 +278,10 @@ void latxs_ir2_build4(IR2_INST *, IR2_OPCODE, IR2_OPND *, IR2_OPND *,
                                               IR2_OPND *, IR2_OPND *);
 
 /* Fucntions ot access IR2_INST's fields */
-void        latxs_ir2_set_id(IR2_INST *, int);
-int         latxs_ir2_get_id(IR2_INST *);
-IR2_OPCODE  latxs_ir2_opcode(IR2_INST *);
 ADDR        latxs_ir2_addr(IR2_INST *);
 void        latxs_ir2_set_addr(IR2_INST *, ADDR a);
 IR2_OPND   *latxs_ir2_branch_get_label(IR2_INST *);
 int         latxs_ir2_branch_label_index(IR2_INST *);
-
-/* Functions to manage the linked list of IR2_INST */
-IR2_INST   *latxs_ir2_allocate(void);
-void        latxs_ir2_append(IR2_INST *);
-void        latxs_ir2_remove(IR2_INST *);
-void        latxs_ir2_insert_before(IR2_INST *ir2, IR2_INST *next);
-void        latxs_ir2_insert_after(IR2_INST *ir2, IR2_INST *prev);
-IR2_INST   *latxs_ir2_prev(IR2_INST *);
-IR2_INST   *latxs_ir2_next(IR2_INST *);
-IR2_INST   *latxs_ir2_get(int id);
 
 /* Functions to generate IR2_INST and add into the linked list */
 IR2_INST *latxs_append_ir2_opnd4(IR2_OPCODE, IR2_OPND *, IR2_OPND *,

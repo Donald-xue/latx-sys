@@ -205,7 +205,7 @@ void latxs_ir2_op_check_imm(IR2_OPND *opnd, GM_OPERAND_TYPE opnd_type)
 
 bool latxs_ir2_op_check(IR2_INST *pir2)
 {
-    IR2_OPCODE ir2_opc = latxs_ir2_opcode(pir2);
+    IR2_OPCODE ir2_opc = ir2_opcode(pir2);
     int idx = ir2_opc - LISA_INVALID;
 
     if (idx < 0) {

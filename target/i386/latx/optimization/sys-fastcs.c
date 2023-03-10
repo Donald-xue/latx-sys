@@ -708,7 +708,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
     }
 
     ADDR code_buf = (ADDR)tb->tc.ptr;
-    int offset = lsenv->tr_data->real_ir2_inst_num << 2;
+    int offset = lsenv->tr_data->ir2_asm_nr << 2;
     int64_t ins_offset = 0;
 
     if (tb->fastcs_ctx == FASTCS_CTX_NON) {
@@ -734,7 +734,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x1);
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label);
             /* load FPU */
-            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            offset = lsenv->tr_data->ir2_asm_nr << 2;
             ins_offset = (latxs_sc_fcs_load_F - code_buf - offset) >> 2;
             latxs_append_ir2_jmp_far(ins_offset, 1);
             /* update context */
@@ -747,7 +747,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x2);
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label);
             /* load SIMD */
-            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            offset = lsenv->tr_data->ir2_asm_nr << 2;
             ins_offset = (latxs_sc_fcs_load_S - code_buf - offset) >> 2;
             latxs_append_ir2_jmp_far(ins_offset, 1);
             /* update context */
@@ -763,7 +763,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             label1 = latxs_ir2_opnd_new_label();
             latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x1);
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label1);
-            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            offset = lsenv->tr_data->ir2_asm_nr << 2;
             ins_offset = (latxs_sc_fcs_load_F - code_buf - offset) >> 2;
             latxs_append_ir2_jmp_far(ins_offset, 1);
             latxs_append_ir2_opnd1(LISA_LABEL, &label1);
@@ -771,7 +771,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             label2 = latxs_ir2_opnd_new_label();
             latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x2);
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label2);
-            offset = lsenv->tr_data->real_ir2_inst_num << 2;
+            offset = lsenv->tr_data->ir2_asm_nr << 2;
             ins_offset = (latxs_sc_fcs_load_S - code_buf - offset) >> 2;
             latxs_append_ir2_opnd1(LISA_LABEL, &label2);
             latxs_append_ir2_jmp_far(ins_offset, 1);

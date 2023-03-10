@@ -87,15 +87,11 @@ typedef struct TRANSLATION_DATA {
     IR1_INST *curr_ir1_inst;
     /* uint8       ir1_dump_threshold[MAX_IR1_NUM_PER_TB]; */
 
-    /* ir2 */
-    IR2_INST *ir2_inst_array;
-    int ir2_inst_num_max;
-    int ir2_inst_num_current;
-    int real_ir2_inst_num;
-
-    /* the list of ir2 */
-    IR2_INST *first_ir2;
-    IR2_INST *last_ir2;
+    /* ir2 list */
+    IR2_INST *ir2_array;
+    int ir2_max_nr;
+    int ir2_cur_nr;
+    int ir2_asm_nr;
 
     /* label number */
     int label_num;

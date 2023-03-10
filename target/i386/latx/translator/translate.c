@@ -112,20 +112,16 @@ void tr_init(void *tb)
 #endif
 
     /* reset ir2 array */
-    if (t->ir2_inst_array == NULL) {
-        lsassert(t->ir2_inst_num_max == 0);
-        t->ir2_inst_array = (IR2_INST *)mm_calloc(400, sizeof(IR2_INST));
-        t->ir2_inst_num_max = 400;
+    if (t->ir2_array == NULL) {
+        lsassert(t->ir2_max_nr == 0);
+        t->ir2_array = (IR2_INST *)mm_calloc(400, sizeof(IR2_INST));
+        t->ir2_max_nr = 400;
     } else {
-        memset((void *)t->ir2_inst_array, 0,
-               t->ir2_inst_num_max * sizeof(IR2_INST));
+        memset((void *)t->ir2_array, 0,
+               t->ir2_max_nr * sizeof(IR2_INST));
     }
-    t->ir2_inst_num_current = 0;
-    t->real_ir2_inst_num = 0;
-
-    /* reset ir2 first/last/num */
-    t->first_ir2 = NULL;
-    t->last_ir2 = NULL;
+    t->ir2_cur_nr = 0;
+    t->ir2_asm_nr = 0;
 
     /* label number */
     t->label_num = 0;
@@ -179,12 +175,8 @@ void tr_fini(bool check_the_extension)
     t->curr_ir1_inst = NULL;
 
     /* reset ir2 array */
-    t->ir2_inst_num_current = 0;
-    t->real_ir2_inst_num = 0;
-
-    /* reset ir2 first/last/num */
-    t->first_ir2 = NULL;
-    t->last_ir2 = NULL;
+    t->ir2_cur_nr = 0;
+    t->ir2_asm_nr = 0;
 
     /* label number */
     t->label_num = 0;
@@ -349,8 +341,12 @@ static void label_dispose(void)
         (int *)alloca(lsenv->tr_data->label_num * 4 + 20);
     memset(label_num_to_ir2_num, -1, lsenv->tr_data->label_num * 4 + 20);
     int ir2_num = 0;
-    IR2_INST *ir2_current = lsenv->tr_data->first_ir2;
-    while (ir2_current != NULL) {
+    IR2_INST *ir2_current = NULL;
+
+    int id = 0;
+    int ir2_nr = lsenv->tr_data->ir2_cur_nr;
+    for (id = 0; id < ir2_nr; ++id) {
+        ir2_current = ir2_get(id);
         if (ir2_current->_opcode == LISA_LABEL) {
             int label_num = ir2_current->_opnd[0]._label_id;
             lsassertm(label_num_to_ir2_num[label_num] == -1,
@@ -361,7 +357,6 @@ static void label_dispose(void)
         } else {
             ir2_num++;
         }
-        ir2_current = ir2_next(ir2_current);
     }
 
     /* 2. resolve the offset of successor linkage code */
@@ -396,8 +391,8 @@ static void label_dispose(void)
 
     /* 3. resolve the branch instructions */
     ir2_num = 0;
-    ir2_current = lsenv->tr_data->first_ir2;
-    while (ir2_current != NULL) {
+    for (id = 0; id < ir2_nr; ++id) {
+        ir2_current = ir2_get(id);
         IR2_OPCODE opcode = ir2_current->_opcode;
         if (ir2_opcode_is_branch(opcode) || ir2_opcode_is_f_branch(opcode)) {
             IR2_OPND *label_opnd = NULL;
@@ -423,15 +418,16 @@ static void label_dispose(void)
             ir2_current->_opcode != LISA_X86_INST) {
             ir2_num++;
         }
-        ir2_current = ir2_next(ir2_current);
     }
 }
 
 int tr_ir2_assemble(const void *code_start_addr)
 {
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
     if (option_dump &&
         qemu_log_in_addr_range(
-            ((TranslationBlock *)(lsenv->tr_data->curr_tb))->pc)) {
+            ((TranslationBlock *)(td->curr_tb))->pc)) {
         fprintf(stderr, "[LATX] Assemble IR2.\n");
     }
 
@@ -442,12 +438,16 @@ int tr_ir2_assemble(const void *code_start_addr)
     label_dispose();
 
     /* 3. assemble */
-    IR2_INST *pir2 = lsenv->tr_data->first_ir2;
+    IR2_INST *pir2 = NULL;
 
     void *code_addr = (void *) code_start_addr;
     int code_nr = 0;
 
-    while (pir2 != NULL) {
+    int id = 0;
+    int ir2_nr = td->ir2_cur_nr;
+    for (id = 0; id < ir2_nr; ++id) {
+        pir2 = ir2_get(id);
+
         if (ir2_opcode(pir2) != LISA_LABEL &&
             ir2_opcode(pir2) != LISA_X86_INST) {
             uint32 result = ir2_assemble(pir2);
@@ -464,7 +464,6 @@ int tr_ir2_assemble(const void *code_start_addr)
             code_addr = code_addr + 4;
             code_nr += 1;
         }
-        pir2 = ir2_next(pir2);
     }
 
     return code_nr;
@@ -2119,12 +2118,11 @@ bool ir1_translate(IR1_INST *ir1)
 void tr_dump_current_ir2(void)
 {
     TRANSLATION_DATA *t = lsenv->tr_data;
-    IR2_INST *pir2 = t->first_ir2;
-
-    fprintf(stderr, "IR2 num = %d\n", lsenv->tr_data->ir2_inst_num_current);
-    while (pir2) {
-        ir2_dump(pir2);
-        pir2 = ir2_next(pir2);
+    int ir2_nr = t->ir2_cur_nr;
+    int id = 0;
+    fprintf(stderr, "IR2 num = %d\n", ir2_nr);
+    for (id = 0; id < ir2_nr; ++id) {
+        ir2_dump(ir2_get(id));
     }
 }
 
@@ -2169,7 +2167,7 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
         /*
          * gen_insn_end_off is used for store ir2 insn number.
          */
-        tcg_ctx->gen_insn_end_off[i] = (lsenv->tr_data->real_ir2_inst_num)<<2;
+        tcg_ctx->gen_insn_end_off[i] = (lsenv->tr_data->ir2_asm_nr) << 2;
 
         pir1++;
     }
@@ -2184,10 +2182,9 @@ bool tr_ir2_generate(struct TranslationBlock *tb)
     }
 
     if (option_dump_ir2 && qemu_log_in_addr_range(tb->pc)) {
-        fprintf(stderr, "IR2 num = %d\n", lsenv->tr_data->ir2_inst_num_current);
-        for (i = 0; i < t->ir2_inst_num_current; ++i) {
-            IR2_INST *pir2 = &t->ir2_inst_array[i];
-            ir2_dump(pir2);
+        fprintf(stderr, "IR2 num = %d\n", lsenv->tr_data->ir2_cur_nr);
+        for (i = 0; i < t->ir2_cur_nr; ++i) {
+            ir2_dump(ir2_get(i));
         }
     }
 
@@ -2347,7 +2344,7 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
             la_append_ir2_opnd2i_em(LISA_ORI, mips_ret_opnd, zero_ir2_opnd, succ_id);
         }
         /* jump to context_switch_native_to_bt */
-        curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
+        curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->ir2_asm_nr << 2);
         la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt - curr_ins_pos)>>2);
         break;
     case X86_INS_JMP:
@@ -2366,7 +2363,7 @@ void tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         } else {
             la_append_ir2_opnd2i_em(LISA_ORI, mips_ret_opnd, zero_ir2_opnd, succ_id);
         }
-        curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
+        curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->ir2_asm_nr << 2);
         la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt - curr_ins_pos)>>2);
         break;
     // case X86_INS_JMPIN:  JUMPIN and CALLIN (part of jmp and call) are not standard i386 instruction 
@@ -2388,7 +2385,7 @@ indirect_jmp :
             /* zero_ir2_opnd, env_ir2_opnd, */
             /*                   offsetof(CPUX86State, extra_tb) + */
             /*                   offsetof(struct ExtraBlock, next_tb)); */
-            curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
+            curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->ir2_asm_nr << 2);
             la_append_ir2_opnda(LISA_B, (native_jmp_glue_2 - curr_ins_pos) >> 2);
 
         } else {
@@ -2396,7 +2393,7 @@ indirect_jmp :
             la_append_ir2_opnd2i_em(LISA_ORI, mips_ret_opnd, zero_ir2_opnd, succ_id);
             /* jump to context switch (native to bt) */
             //la_append_ir2_opnda(LISA_B, context_switch_native_to_bt);
-            curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
+            curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->ir2_asm_nr << 2);
             la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt - curr_ins_pos)>>2);
         }
         break;
@@ -2435,7 +2432,7 @@ indirect_jmp :
         } else {
             la_append_ir2_opnd2i_em(LISA_ORI, mips_ret_opnd, zero_ir2_opnd, succ_id);
         }
-        curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->real_ir2_inst_num << 2);
+        curr_ins_pos = (unsigned long)tb->tc.ptr + (lsenv->tr_data->ir2_asm_nr << 2);
         la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt - curr_ins_pos)>>2);
         break;
     default:
@@ -2628,7 +2625,7 @@ static int generate_native_jmp_glue(void *code_buf, int n)
     /*
      * start/offset used for offset calculation.
      */
-    int start = (lsenv->tr_data->real_ir2_inst_num << 2);
+    int start = (lsenv->tr_data->ir2_asm_nr << 2);
     int offset = 0;
     tr_init(NULL);
 
@@ -2756,7 +2753,7 @@ static int generate_native_jmp_glue(void *code_buf, int n)
         la_append_ir2_opnd2i_em(LISA_LOAD_ADDR, tmp_opnd, env_ir2_opnd,
                           lsenv_offset_of_eip(lsenv));
 
-        offset = (lsenv->tr_data->real_ir2_inst_num << 2) - start;
+        offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
         la_append_ir2_opnda(LISA_B, (context_switch_native_to_bt_ret_0 - (ADDR)code_buf - offset) >> 2);
 
         /* else compare tb->top_out and next_tb->top_in */
@@ -2815,7 +2812,7 @@ static int generate_native_jmp_glue(void *code_buf, int n)
         la_append_ir2_opnd2i_em(
                 LISA_LOAD_ADDR, tmp_opnd, ret_opnd,
                 offsetof(TranslationBlock, tc) + offsetof(struct tb_tc, ptr));
-        offset = (lsenv->tr_data->real_ir2_inst_num << 2) - start;
+        offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
         la_append_ir2_opnda(LISA_B, (native_rotate_fpu_by - (ADDR)code_buf - offset) >> 2);
     } else {
         /* fetch native address of next_tb to arg2 */

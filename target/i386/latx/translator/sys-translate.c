@@ -45,15 +45,12 @@ void latxs_tr_tb_init(TRANSLATION_DATA *td, TranslationBlock *tb)
 
 void latxs_tr_ir2_array_init(TRANSLATION_DATA *td)
 {
-    if (td->ir2_inst_array == NULL) {
-        td->ir2_inst_array = mm_calloc(512, sizeof(IR2_INST));
-        td->ir2_inst_num_max = 512;
+    if (td->ir2_array == NULL) {
+        td->ir2_array = mm_calloc(512, sizeof(IR2_INST));
+        td->ir2_max_nr = 512;
     }
-    td->ir2_inst_num_current = 0;
-    td->real_ir2_inst_num = 0;
-
-    td->first_ir2 = NULL;
-    td->last_ir2 = NULL;
+    td->ir2_cur_nr = 0;
+    td->ir2_asm_nr = 0;
 
     td->label_num = 0;
 }
@@ -66,11 +63,8 @@ void latxs_tr_fini(void)
     td->curr_tb = NULL;
     td->curr_ir1_inst = NULL;
 
-    td->ir2_inst_num_current = 0;
-    td->real_ir2_inst_num = 0;
-
-    td->first_ir2 = NULL;
-    td->last_ir2 = NULL;
+    td->ir2_cur_nr = 0;
+    td->ir2_asm_nr = 0;
 
     td->label_num = 0;
     td->itemp_num = 32;
@@ -91,11 +85,15 @@ void latxs_label_dispose(const void *code_buffer)
     memset(label_pos , -1, label_nr * 4 + 20);
 
     int ir2_num = 0;
-    IR2_INST *ir2_current = td->first_ir2;
-    IR2_OPCODE ir2_opc = latxs_ir2_opcode(ir2_current);
 
-    while (ir2_current != NULL) {
-        ir2_opc = latxs_ir2_opcode(ir2_current);
+    int ir2_id = 0;
+    int ir2_nr = td->ir2_cur_nr;
+    IR2_INST *ir2_current = NULL;
+    IR2_OPCODE ir2_opc;
+    for (ir2_id = 0; ir2_id < ir2_nr; ++ir2_id) {
+
+        ir2_current = ir2_get(ir2_id);
+        ir2_opc = ir2_opcode(ir2_current);
 
         if (ir2_opc  == LISA_LABEL) {
             int label_id = latxs_ir2_opnd_label_id(&ir2_current->_opnd[0]);
@@ -107,8 +105,6 @@ void latxs_label_dispose(const void *code_buffer)
         } else {
             ir2_num++;
         }
-
-        ir2_current = latxs_ir2_next(ir2_current);
     }
 
     /*
@@ -140,10 +136,11 @@ void latxs_label_dispose(const void *code_buffer)
 
     /* 3. resolve the branch instructions */
     ir2_num = 0;
-    ir2_current = td->first_ir2;
+    for (ir2_id = 0; ir2_id < ir2_nr; ++ir2_id) {
 
-    while (ir2_current != NULL) {
-        ir2_opc = latxs_ir2_opcode(ir2_current);
+        ir2_current = ir2_get(ir2_id);
+        ir2_opc = ir2_opcode(ir2_current);
+
         if (latxs_ir2_opcode_is_branch(ir2_opc)) {
 
             IR2_OPND *label_opnd = latxs_ir2_branch_get_label(ir2_current);
@@ -167,8 +164,6 @@ void latxs_label_dispose(const void *code_buffer)
         if (ir2_opc != LISA_LABEL && ir2_opc != LISA_X86_INST) {
             ir2_num++;
         }
-
-        ir2_current = latxs_ir2_next(ir2_current);
     }
 }
 
@@ -179,7 +174,7 @@ int latxs_tr_check_buffer_overflow(
     uint64_t code_highwater = (uint64_t)td->code_highwater;
     uint64_t code_tb_end = (uint64_t)code_start;
 
-    int code_nr = td->ir2_inst_num_current;
+    int code_nr = td->ir2_cur_nr;
     code_nr -= td->label_num; /* lisa_label    */
     code_nr -= td->ir1_nr;    /* lisa_x86_inst */
 
@@ -198,7 +193,7 @@ int latxs_tr_ir2_assemble(const void *code_base)
     latxs_label_dispose(code_base);
 
     /* 2. assemble */
-    IR2_INST *pir2 = lsenv->tr_data->first_ir2;
+    IR2_INST *pir2 = NULL;
     void *code_ptr = (void *)(ADDR)code_base;
     int code_nr = 0;
 
@@ -220,8 +215,12 @@ int latxs_tr_ir2_assemble(const void *code_base)
     int x86ins_hcnt = 0; /* host instruction count */
     int x86ins_size = 0;
 
-    while (pir2 != NULL) {
-        IR2_OPCODE ir2_opc = latxs_ir2_opcode(pir2);
+    int ir2_id = 0;
+    int ir2_nr = td->ir2_cur_nr;
+    for (ir2_id = 0; ir2_id < ir2_nr; ++ir2_id) {
+
+        pir2 = ir2_get(ir2_id);
+        IR2_OPCODE ir2_opc = ir2_opcode(pir2);
 
         if (ir2_opc == LISA_X86_INST) {
 
@@ -234,13 +233,13 @@ int latxs_tr_ir2_assemble(const void *code_base)
                 td->x86_ins_idx[x86ins_nr] = x86ins_idx;
                 td->x86_ins_lisa_nr[x86ins_nr] = x86ins_hcnt;
             }
-            x86ins_idx = latxs_ir2_get_id(pir2);
+            x86ins_idx = ir2_get_id(pir2);
             x86ins_nr += 1;
             /* calculate TB size */
             IR1_INST *pir1 = &td->ir1_inst_array[x86ins_nr];
             x86ins_size += latxs_ir1_inst_size(pir1);
 
-            goto _NEXT_IR2_;
+            continue;
         }
 
         if (ir2_opc != LISA_LABEL) {
@@ -257,9 +256,6 @@ int latxs_tr_ir2_assemble(const void *code_base)
 
             x86ins_hcnt += 1;
         }
-
-_NEXT_IR2_:
-        pir2 = latxs_ir2_next(pir2);
     }
 
     if (td->curr_tb) {
@@ -456,7 +452,7 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
             tb->icount = real_ir1_nr;
             /* 3. ICOUNT: decrease real number of IR1 */
             if (tb->cflags & CF_USE_ICOUNT) { 
-                IR2_INST *pir2 = latxs_ir2_get(td->dec_icount_inst_id); 
+                IR2_INST *pir2 = ir2_get(td->dec_icount_inst_id); 
                 pir2->_opnd[2] = latxs_ir2_opnd_new(IR2_OPND_IMMH, 
                         0 - real_ir1_nr); 
             } 
@@ -500,7 +496,7 @@ void latxs_tr_gen_tb_start(void)
         int ir1_nr = td->ir1_nr;
         IR2_INST *pir2 = latxs_append_ir2_opnd2i(LISA_ADDI_D,
                 &count, &count, 0 - ir1_nr);
-        td->dec_icount_inst_id = latxs_ir2_get_id(pir2);
+        td->dec_icount_inst_id = ir2_get_id(pir2);
     }
 
     latxs_append_ir2_opnd3(LISA_BLT, &count, &latxs_zero_ir2_opnd,
@@ -571,7 +567,7 @@ void latxs_tr_gen_tb_end(void)
             &tb_ptr_opnd, TB_EXIT_REQUESTED);
 
     ADDR code_buf = (ADDR)tb->tc.ptr;
-    int offset = td->real_ir2_inst_num << 2;
+    int offset = td->ir2_asm_nr << 2;
     int64_t ins_offset =
         (context_switch_native_to_bt - code_buf - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 0);

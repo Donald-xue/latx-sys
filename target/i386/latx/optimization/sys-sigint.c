@@ -507,7 +507,7 @@ void latxs_sigint_prepare_check_jmp_glue_2(
 
     TRANSLATION_DATA *td = lsenv->tr_data;
 
-    IR2_INST *pir2 = td->ir2_inst_array;
+    IR2_INST *pir2 = NULL;
 
     /*
      * example:
@@ -526,11 +526,14 @@ void latxs_sigint_prepare_check_jmp_glue_2(
      * end   = 4       +----------> address = base + (start << 2)
      */
 
-    while (pir2) {
-        IR2_OPCODE opc = latxs_ir2_opcode(pir2);
+    int ir2_id = 0;
+    int ir2_nr = td->ir2_cur_nr;
+    for (ir2_id = 0; ir2_id < ir2_nr; ++ir2_id) {
+        pir2 = ir2_get(ir2_id);
+
+        IR2_OPCODE opc = ir2_opcode(pir2);
 
         if (opc == LISA_X86_INST) {
-            pir2 = ir2_next(pir2);
             continue;
         }
 
@@ -543,12 +546,10 @@ void latxs_sigint_prepare_check_jmp_glue_2(
                 sigint_check_jmp_glue_2_ed = code_nr - 1;
             }
 
-            pir2 = ir2_next(pir2);
             continue;
         }
 
         code_nr += 1;
-        pir2 = ir2_next(pir2);
     }
 
     native_jmp_glue_2_sigint_check_st = native_jmp_glue_2 +

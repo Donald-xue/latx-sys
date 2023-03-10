@@ -229,7 +229,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 
         latxs_append_ir2_opnd2_(lisa_mov, &tb_ptr_opnd, zero);
 
-        int inst_size = td->real_ir2_inst_num << 2;
+        int inst_size = td->ir2_asm_nr << 2;
         /*
          * native_to_bt -> 0x00 : xxxx
          *                 0x04 : xxxx
@@ -500,7 +500,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
 
     TRANSLATION_DATA *td = lsenv->tr_data;
 
-    int start = (td->real_ir2_inst_num << 2);
+    int start = (td->ir2_asm_nr << 2);
     int offset = 0;
     int64_t ins_offset = 0;
 
@@ -630,7 +630,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         }
 
         /* LL: helper_lookup_tb */
-        offset = (td->real_ir2_inst_num << 2) - start;
+        offset = (td->ir2_asm_nr << 2) - start;
         ins_offset = (latxs_sc_scs_prologue - (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
 
@@ -640,7 +640,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
 //        latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
 //        latxs_append_ir2_opnd2i(LISA_JIRL, ra, &tmp, 0);
 
-        offset = (td->real_ir2_inst_num << 2) - start;
+        offset = (td->ir2_asm_nr << 2) - start;
         ins_offset = (latxs_sc_scs_epilogue - (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
 
@@ -654,7 +654,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         }
 
         /* if next_tb == NULL, jump to epilogue */
-        offset = (td->real_ir2_inst_num << 2) - start;
+        offset = (td->ir2_asm_nr << 2) - start;
         ins_offset = (context_switch_native_to_bt_ret_0 -
                 (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 0);
@@ -733,7 +733,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd, ret0,
                 offsetof(TranslationBlock, tc) +
                 offsetof(struct tb_tc, ptr));
-        offset = (lsenv->tr_data->real_ir2_inst_num << 2) - start;
+        offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
 
         int64_t ins_offset =
             (native_rotate_fpu_by - (ADDR)code_ptr - offset) >> 2;
@@ -767,7 +767,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_end);
             latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
-            offset = (td->real_ir2_inst_num << 2) - start;
+            offset = (td->ir2_asm_nr << 2) - start;
             int64_t ins_offset =
                 (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
                 2;

@@ -388,6 +388,12 @@ void ir2_set_id(IR2_INST *ir2, int id) { ir2->_id = id; }
 
 int ir2_get_id(IR2_INST *ir2) { return ir2->_id; }
 
+IR2_INST *ir2_get(int id)
+{
+    lsassert(id >= 0 && id < lsenv->tr_data->ir2_cur_nr);
+    return lsenv->tr_data->ir2_array + id;
+}
+
 IR2_OPCODE ir2_opcode(IR2_INST *ir2) { return (IR2_OPCODE)(ir2->_opcode); }
 
 void ir2_set_opcode(IR2_INST *ir2, IR2_OPCODE type) {
@@ -399,24 +405,6 @@ ADDR ir2_addr(IR2_INST *ir2) { return ir2->_addr; }
 void ir2_set_addr(IR2_INST *ir2, ADDR a) { ir2->_addr = a; }
 
 uint32 ir2_opnd_addr(IR2_OPND *ir2) { return ir2->_addr; }
-
-IR2_INST *ir2_prev(IR2_INST *ir2)
-{
-    if (ir2->_prev == -1) {
-        return NULL;
-    } else {
-        return lsenv->tr_data->ir2_inst_array + ir2->_prev;
-    }
-}
-
-IR2_INST *ir2_next(IR2_INST *ir2)
-{
-    if (ir2->_next == -1) {
-        return NULL;
-    } else {
-        return lsenv->tr_data->ir2_inst_array + ir2->_next;
-    }
-}
 
 int ir2_to_string(IR2_INST *ir2, char *str)
 {
@@ -488,91 +476,8 @@ void ir2_build(IR2_INST *ir2, IR2_OPCODE opcode, IR2_OPND opnd0, IR2_OPND opnd1,
 
 void ir2_append(IR2_INST *ir2)
 {
-    TRANSLATION_DATA *t = lsenv->tr_data;
-    IR2_INST *former_last = t->last_ir2;
-
-    if (former_last != NULL) {
-        lsassert(t->first_ir2 != NULL);
-        ir2->_prev = ir2_get_id(former_last);
-        ir2->_next = -1;
-        t->last_ir2 = ir2;
-        former_last->_next = ir2_get_id(ir2);
-    } else {
-        lsassert(t->first_ir2 == NULL);
-        ir2->_prev = -1;
-        ir2->_next = -1;
-        t->last_ir2 = ir2;
-        t->first_ir2 = ir2;
-    }
-
-    if(ir2->_opcode >= LISA_GR2SCR)
-        t->real_ir2_inst_num++;
-}
-
-void ir2_remove(IR2_INST *ir2)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-
-    IR2_INST *next = ir2_next(ir2);
-    IR2_INST *prev = ir2_prev(ir2);
-
-    if (t->first_ir2 == ir2) {
-        if (t->last_ir2 == ir2) { /* head and tail */
-            t->first_ir2 = NULL;
-            t->last_ir2 = NULL;
-        } else { /* head but not tail */
-            t->first_ir2 = next;
-            next->_prev = -1;
-        }
-    } else if (t->last_ir2 == ir2) { /* tail but not head */
-        t->last_ir2 = prev;
-        prev->_next = -1;
-    } else {
-        prev->_next = ir2_get_id(next);
-        next->_prev = ir2_get_id(prev);
-    }
-
-    ir2->_prev = -1;
-    ir2->_next = -1;
-}
-
-void ir2_insert_before(IR2_INST *ir2, IR2_INST *next)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-
-    if (t->first_ir2 == next) {
-        t->first_ir2 = ir2;
-        ir2->_prev = -1;
-        ir2->_next = ir2_get_id(next);
-        next->_prev = ir2_get_id(ir2);
-    } else {
-        IR2_INST *prev = ir2_prev(next);
-
-        ir2->_prev = ir2_get_id(prev);
-        prev->_next = ir2_get_id(ir2);
-
-        ir2->_next = ir2_get_id(next);
-        next->_prev = ir2_get_id(ir2);
-    }
-}
-
-void ir2_insert_after(IR2_INST *ir2, IR2_INST *prev)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-
-    if (t->last_ir2 == prev) {
-        t->last_ir2 = ir2;
-        ir2->_next = -1;
-        ir2->_prev = ir2_get_id(prev);
-        prev->_next = ir2_get_id(ir2);
-    } else {
-        IR2_INST *next = ir2_next(prev);
-
-        ir2->_next = ir2_get_id(next);
-        next->_prev = ir2_get_id(ir2);
-
-        ir2->_prev = ir2_get_id(prev);
-        prev->_next = ir2_get_id(ir2);
+    if(ir2->_opcode >= LISA_GR2SCR) {
+        lsenv->tr_data->ir2_asm_nr++;
     }
 }
 
@@ -581,28 +486,17 @@ static IR2_INST *ir2_allocate(void)
     TRANSLATION_DATA *t = lsenv->tr_data;
 
     /* 1. make sure we have enough space */
-    if (t->ir2_inst_num_current == t->ir2_inst_num_max) {
-        /* printf("[LATX] [error] not implemented in %s : %d", __func__, */
-        /* __LINE__); exit(-1); 1.1. current array size in bytes */
-        int bytes = sizeof(IR2_INST) * t->ir2_inst_num_max;
-
+    if (t->ir2_cur_nr == t->ir2_max_nr) {
+        int bytes = sizeof(IR2_INST) * t->ir2_max_nr;
         /* 1.2. double the array */
-        t->ir2_inst_num_max *= 2;
-        IR2_INST *back_ir2_inst_array = t->ir2_inst_array;
-        t->ir2_inst_array =
-            (IR2_INST *)mm_realloc(t->ir2_inst_array, bytes << 1);
-        t->first_ir2 =
-            (IR2_INST *)((ADDR)t->first_ir2 - (ADDR)back_ir2_inst_array +
-                         (ADDR)t->ir2_inst_array);
-        t->last_ir2 =
-            (IR2_INST *)((ADDR)t->last_ir2 - (ADDR)back_ir2_inst_array +
-                         (ADDR)t->ir2_inst_array);
+        t->ir2_max_nr *= 2;
+        t->ir2_array = (IR2_INST *)mm_realloc(t->ir2_array, bytes << 1);
     }
 
     /* 2. allocate one */
-    IR2_INST *p = t->ir2_inst_array + t->ir2_inst_num_current;
-    ir2_set_id(p, t->ir2_inst_num_current);
-    t->ir2_inst_num_current++;
+    IR2_INST *p = t->ir2_array + t->ir2_cur_nr;
+    ir2_set_id(p, t->ir2_cur_nr);
+    t->ir2_cur_nr++;
 
     /* 3. return it */
     return p;
@@ -1947,7 +1841,7 @@ int latxs_ir2_dump(IR2_INST *ir2)
     char str[64];
     int size = 0;
 
-    if (latxs_ir2_opcode(ir2) == 0) {
+    if (ir2_opcode(ir2) == 0) {
         /*
          * an empty IR2_INST was inserted into the ir2 list,
          * but not assigned yet.
@@ -1968,10 +1862,10 @@ int latxs_ir2_to_string(IR2_INST *ir2, char *str)
 
     length = sprintf(str, "%-8s  ", ir2_name(ir2_opcode(ir2)));
 
-    if (latxs_ir2_opcode(ir2) == LISA_ANDI ||
-        latxs_ir2_opcode(ir2) == LISA_ORI  ||
-        latxs_ir2_opcode(ir2) == LISA_XORI ||
-        latxs_ir2_opcode(ir2) == LISA_LU12I_W) {
+    if (ir2_opcode(ir2) == LISA_ANDI ||
+        ir2_opcode(ir2) == LISA_ORI  ||
+        ir2_opcode(ir2) == LISA_XORI ||
+        ir2_opcode(ir2) == LISA_LU12I_W) {
         hex = true;
     }
 
@@ -2154,18 +2048,6 @@ void latxs_ir2_build4(
 }
 
 /* Fucntions ot access IR2_INST's fields */
-void latxs_ir2_set_id(IR2_INST *ir2, int id)
-{
-    ir2->_id = id;
-}
-int latxs_ir2_get_id(IR2_INST *ir2)
-{
-    return ir2->_id;
-}
-IR2_OPCODE latxs_ir2_opcode(IR2_INST *ir2)
-{
-    return (IR2_OPCODE)(ir2->_opcode);
-}
 ADDR latxs_ir2_addr(IR2_INST *ir2)
 {
     return ir2->_addr;
@@ -2191,7 +2073,7 @@ IR2_OPND *latxs_ir2_branch_get_label(IR2_INST *pir2)
 }
 int latxs_ir2_branch_label_index(IR2_INST *pir2)
 {
-    IR2_OPCODE opc = latxs_ir2_opcode(pir2);
+    IR2_OPCODE opc = ir2_opcode(pir2);
     lsassert(latxs_ir2_opcode_is_branch(opc));
     switch (opc) {
     case LISA_BEQZ:
@@ -2211,136 +2093,12 @@ int latxs_ir2_branch_label_index(IR2_INST *pir2)
     return -1;
 }
 
-/* Functions to manage the linked list of IR2_INST */
-IR2_INST *latxs_ir2_allocate(void)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-    /* 1. make sure we have enough space */
-    if (t->ir2_inst_num_current == t->ir2_inst_num_max) {
-        int bytes = sizeof(IR2_INST) * t->ir2_inst_num_max;
-        /* double the array */
-        t->ir2_inst_num_max *= 2;
-        IR2_INST *back_ir2_inst_array = t->ir2_inst_array;
-        t->ir2_inst_array = mm_realloc(t->ir2_inst_array, bytes << 1);
-        t->first_ir2 = (IR2_INST *)((ADDR)t->first_ir2 -
-                                    (ADDR)back_ir2_inst_array +
-                                    (ADDR)t->ir2_inst_array);
-        t->last_ir2  = (IR2_INST *)((ADDR)t->last_ir2  -
-                                    (ADDR)back_ir2_inst_array +
-                                    (ADDR)t->ir2_inst_array);
-    }
-    /* 2. allocate one */
-    IR2_INST *p = t->ir2_inst_array + t->ir2_inst_num_current;
-    latxs_ir2_set_id(p, t->ir2_inst_num_current);
-    t->ir2_inst_num_current++;
-    return p;
-}
-
-void latxs_ir2_append(IR2_INST *ir2)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-    IR2_INST *former_last = t->last_ir2;
-    if (former_last != NULL) {
-        lsassert(t->first_ir2 != NULL);
-        ir2->_prev = latxs_ir2_get_id(former_last);
-        ir2->_next = -1;
-        t->last_ir2 = ir2;
-        former_last->_next = latxs_ir2_get_id(ir2);
-    } else {
-        lsassert(t->first_ir2 == NULL);
-        ir2->_prev = -1;
-        ir2->_next = -1;
-        t->last_ir2 = ir2;
-        t->first_ir2 = ir2;
-    }
-    if (ir2->_opcode >= LISA_GR2SCR) {
-        t->real_ir2_inst_num++;
-    }
-}
-void latxs_ir2_remove(IR2_INST *ir2)
-{
-    lsassert(0);
-    TRANSLATION_DATA *t = lsenv->tr_data;
-    IR2_INST *next = latxs_ir2_next(ir2);
-    IR2_INST *prev = latxs_ir2_prev(ir2);
-    if (t->first_ir2 == ir2) {
-        if (t->last_ir2 == ir2) { /* head and tail */
-            t->first_ir2 = NULL;
-            t->last_ir2 = NULL;
-        } else { /* head but not tail */
-            t->first_ir2 = next;
-            next->_prev = -1;
-        }
-    } else if (t->last_ir2 == ir2) { /* tail but not head */
-        t->last_ir2 = prev;
-        prev->_next = -1;
-    } else {
-        prev->_next = latxs_ir2_get_id(next);
-        next->_prev = latxs_ir2_get_id(prev);
-    }
-    ir2->_prev = -1;
-    ir2->_next = -1;
-}
-void latxs_ir2_insert_before(IR2_INST *ir2, IR2_INST *next)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-    if (t->first_ir2 == next) {
-        t->first_ir2 = ir2;
-        ir2->_prev = -1;
-        ir2->_next = latxs_ir2_get_id(next);
-        next->_prev = latxs_ir2_get_id(ir2);
-    } else {
-        IR2_INST *prev = latxs_ir2_prev(next);
-        ir2->_prev = latxs_ir2_get_id(prev);
-        prev->_next = latxs_ir2_get_id(ir2);
-        ir2->_next = latxs_ir2_get_id(next);
-        next->_prev = latxs_ir2_get_id(ir2);
-    }
-}
-void latxs_ir2_insert_after(IR2_INST *ir2, IR2_INST *prev)
-{
-    TRANSLATION_DATA *t = lsenv->tr_data;
-    if (t->last_ir2 == prev) {
-        t->last_ir2 = ir2;
-        ir2->_next = -1;
-        ir2->_prev = latxs_ir2_get_id(prev);
-        prev->_next = latxs_ir2_get_id(ir2);
-    } else {
-        IR2_INST *next = latxs_ir2_next(prev);
-        ir2->_next = latxs_ir2_get_id(next);
-        next->_prev = latxs_ir2_get_id(ir2);
-        ir2->_prev = latxs_ir2_get_id(prev);
-        prev->_next = latxs_ir2_get_id(ir2);
-    }
-}
-IR2_INST *latxs_ir2_prev(IR2_INST *ir2)
-{
-    if (ir2->_prev == -1) {
-        return NULL;
-    } else {
-        return lsenv->tr_data->ir2_inst_array + ir2->_prev;
-    }
-}
-IR2_INST *latxs_ir2_next(IR2_INST *ir2)
-{
-    if (ir2->_next == -1) {
-        return NULL;
-    } else {
-        return lsenv->tr_data->ir2_inst_array + ir2->_next;
-    }
-}
-IR2_INST *latxs_ir2_get(int id)
-{
-    lsassert(id >= 0 && id < lsenv->tr_data->ir2_inst_num_current);
-    return lsenv->tr_data->ir2_inst_array + id;
-}
-
 /* Functions to generate IR2_INST and add into the linked list */
 IR2_INST *latxs_append_ir2_opnd3i(IR2_OPCODE opcode,
         IR2_OPND *opnd0, IR2_OPND *opnd1,
         IR2_OPND *opnd2, int imm)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
 
     IR2_OPND imm_opnd = latxs_ir2_opnd_new(IR2_OPND_IMMH, imm);
     latxs_ir2_build4(pir2, opcode, opnd0, opnd1, opnd2, &imm_opnd);
@@ -2349,7 +2107,7 @@ IR2_INST *latxs_append_ir2_opnd3i(IR2_OPCODE opcode,
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
@@ -2357,7 +2115,7 @@ IR2_INST *latxs_append_ir2_opnd2ii(IR2_OPCODE opcode,
         IR2_OPND *opnd0, IR2_OPND *opnd1,
         int imm1, int imm2)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     IR2_OPND ir2_opnd2, ir2_opnd3;
     latxs_ir2_opnd_build(&ir2_opnd2, IR2_OPND_IMMH, imm1);
     latxs_ir2_opnd_build(&ir2_opnd3, IR2_OPND_IMMH, imm2);
@@ -2380,40 +2138,40 @@ IR2_INST *latxs_append_ir2_opnd2ii(IR2_OPCODE opcode,
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnd3(IR2_OPCODE opcode,
         IR2_OPND  *opnd0, IR2_OPND *opnd1, IR2_OPND *opnd2)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     latxs_ir2_build3(pir2, opcode, opnd0, opnd1, opnd2);
 
     lsassertm(latxs_ir2_op_check(pir2),
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnd4(IR2_OPCODE opcode,
     IR2_OPND  *opnd0, IR2_OPND *opnd1, IR2_OPND *opnd2, IR2_OPND *opnd3)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     latxs_ir2_build4(pir2, opcode, opnd0, opnd1, opnd2, opnd3);
     lsassertm(latxs_ir2_op_check(pir2),
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnd2i(IR2_OPCODE opcode,
         IR2_OPND  *opnd0, IR2_OPND *opnd1, int32_t imm)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
 
     IR2_OPND imm_opnd = latxs_ir2_opnd_new(IR2_OPND_IMMH, imm);
     latxs_ir2_build3(pir2, opcode, opnd0, opnd1, &imm_opnd);
@@ -2422,7 +2180,7 @@ IR2_INST *latxs_append_ir2_opnd2i(IR2_OPCODE opcode,
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
@@ -2439,21 +2197,21 @@ IR2_INST *latxs_append_ir2_opnd2(IR2_OPCODE opcode,
         }
     }
 
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     latxs_ir2_build2(pir2, opcode, opnd0, opnd1);
 
     lsassertm(latxs_ir2_op_check(pir2),
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnd1i(IR2_OPCODE opcode,
         IR2_OPND  *opnd0, int32 imm)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     IR2_OPND imm_opnd = latxs_ir2_opnd_new(IR2_OPND_IMMH, imm);
     latxs_ir2_build2(pir2, opcode, opnd0, &imm_opnd);
 
@@ -2461,28 +2219,28 @@ IR2_INST *latxs_append_ir2_opnd1i(IR2_OPCODE opcode,
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnd1(IR2_OPCODE opcode,
         IR2_OPND  *opnd0)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     latxs_ir2_build1(pir2, opcode, opnd0);
 
     lsassertm(latxs_ir2_op_check(pir2),
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opndi(IR2_OPCODE opcode,
         int32_t imm)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     IR2_OPND imm_opnd = latxs_ir2_opnd_new(IR2_OPND_IMMH, imm);
     latxs_ir2_build1(pir2, opcode, &imm_opnd);
 
@@ -2490,14 +2248,14 @@ IR2_INST *latxs_append_ir2_opndi(IR2_OPCODE opcode,
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnda(IR2_OPCODE opcode,
         ADDR addr)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     IR2_OPND imm_opnd = latxs_ir2_opnd_new(IR2_OPND_IMMH, addr);
 
     switch (opcode) {
@@ -2520,21 +2278,21 @@ IR2_INST *latxs_append_ir2_opnda(IR2_OPCODE opcode,
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 
 IR2_INST *latxs_append_ir2_opnd0(
         IR2_OPCODE opcode)
 {
-    IR2_INST *pir2 = latxs_ir2_allocate();
+    IR2_INST *pir2 = ir2_allocate();
     latxs_ir2_build0(pir2, opcode);
 
     lsassertm(latxs_ir2_op_check(pir2),
             "Maybe you should check the type of operand %s\n",
             latxs_ir2_name(opcode));
 
-    latxs_ir2_append(pir2);
+    ir2_append(pir2);
     return pir2;
 }
 

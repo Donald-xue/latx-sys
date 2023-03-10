@@ -239,7 +239,7 @@ static void tr_gen_lookup_qemu_tlb(
         latxs_load_imm64(&latxs_arg7_ir2_opnd, ir1_addr);
 
         ADDR code_buf = (ADDR)tb->tc.ptr;
-        int offset = td->real_ir2_inst_num << 2;
+        int offset = td->ir2_asm_nr << 2;
 
         int64_t ins_offset = (latxs_native_printer - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
@@ -378,7 +378,7 @@ static void td_rcd_softmmu_slow_path(
     sp->is_load = is_load;
 
     sp->retaddr = (ADDR)(tb->tc.ptr) +
-                  (ADDR)((td->real_ir2_inst_num - 2) << 2);
+                  (ADDR)((td->ir2_asm_nr - 2) << 2);
 
     if (!option_lsfpu && !option_soft_fpu) {
         sp->fpu_top = latxs_td_fpu_get_top();
@@ -701,7 +701,7 @@ void tr_gen_softmmu_slow_path(void)
     TRANSLATION_DATA *td = lsenv->tr_data;
     td->in_gen_slow_path = 1;
 
-    int real_ir2_before_slow_path = td->real_ir2_inst_num;
+    int real_ir2_before_slow_path = td->ir2_asm_nr;
 
     int i = 0;
     int sp_nr = td->slow_path_rcd_nr;
@@ -714,7 +714,7 @@ void tr_gen_softmmu_slow_path(void)
         __tr_gen_softmmu_sp_rcd(sp);
     }
 
-    int real_ir2_after_slow_path = td->real_ir2_inst_num;
+    int real_ir2_after_slow_path = td->ir2_asm_nr;
 
     TranslationBlock *curr_tb = td->curr_tb;
     curr_tb->slow_path_icount = real_ir2_after_slow_path - real_ir2_before_slow_path;
