@@ -8,6 +8,8 @@ void latxs_counter_tb_lookup(void *cpu);
 
 void latxs_counter_jc_flush(void *cpu);
 void latxs_counter_jc_flush_page(void *cpu);
+void latxs_counter_jc_flush_page_go(void *cpu);
+void latxs_counter_jc_flush_page_do(void *cpu);
 
 void latxs_counter_helper_store(void *cpu);
 void latxs_counter_helper_store_io(void *cpu);

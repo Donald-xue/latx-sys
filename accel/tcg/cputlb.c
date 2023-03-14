@@ -113,6 +113,13 @@ static void tb_jmp_cache_clear_page(CPUState *cpu, target_ulong page_addr)
 {
     unsigned int i, i0 = tb_jmp_cache_hash_page(page_addr);
 
+    if (cpu->tb_jc_flag[(i0 >> TB_JC_PAGE_BITS)] == 0) {
+        return;
+    }
+#ifdef CONFIG_LATX
+    latxs_counter_jc_flush_page_go(cpu);
+#endif
+
     if (qemu_tcg_bg_jc_enabled(cpu)) {
         for (i = 0; i < TB_JMP_PAGE_SIZE; i++) {
             qatomic_set(&cpu->tcg_bg_jc[i0 + i], NULL);
@@ -122,6 +129,10 @@ static void tb_jmp_cache_clear_page(CPUState *cpu, target_ulong page_addr)
             qatomic_set(&cpu->tb_jmp_cache[i0 + i], NULL);
         }
     }
+
+#ifdef CONFIG_LATX
+    latxs_counter_jc_flush_page_do(cpu);
+#endif
 }
 
 static void tb_flush_jmp_cache(CPUState *cpu, target_ulong addr)

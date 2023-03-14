@@ -2,7 +2,13 @@
 #include "latx-counter-sys.h"
 #include "tcg/tcg-bg-thread.h"
 #include "tcg/tcg-bg-log.h"
+#include "exec/tb-hash.h"
 #include <string.h>
+
+#define BUILD_ASSERT(cond)                  \
+do {                                        \
+    (void)sizeof(char[1 - 2 * !(cond)]);    \
+} while (0)
 
 /*#define BG_COUNTER_ENABLE*/
 
@@ -14,6 +20,8 @@ typedef struct {
 
     uint64_t jc_flush_nr;
     uint64_t jc_flush_page_nr;
+    uint64_t jc_flush_page_go_nr;
+    uint64_t jc_flush_page_do_nr;
 
     uint64_t helper_store_nr;
     uint64_t helper_store_io_nr;
@@ -42,6 +50,11 @@ void __attribute__((__constructor__)) latx_counter_init(void)
     memset(&__local_latxs_counter_data[3], 0, sizeof(latxs_counter_t));
 
     latxs_counter_data = __latxs_counter_data;
+
+    BUILD_ASSERT(TB_JC_PAGE_BITS == TB_JMP_PAGE_BITS);
+    lsassertm(TB_JC_PAGE_BITS == TB_JMP_PAGE_BITS,
+            "TB_JC_PAGE_BITS != TB_JMP_PAGE_BITS " \
+            "see hw/core/cpu.h and exec/tb-hash.h");
 }
 
 #ifdef BG_COUNTER_ENABLE
@@ -68,6 +81,8 @@ IMP_COUNTER_FUNC(tb_lookup)
 
 IMP_COUNTER_FUNC(jc_flush)
 IMP_COUNTER_FUNC(jc_flush_page)
+IMP_COUNTER_FUNC(jc_flush_page_go)
+IMP_COUNTER_FUNC(jc_flush_page_do)
 
 IMP_COUNTER_FUNC(helper_store)
 IMP_COUNTER_FUNC(helper_store_io)
@@ -83,7 +98,7 @@ static void __latxs_counter_bg_log(int n, int sec)
 {
     qemu_bglog("[%7d][%1d] TR %-6d Lookup %-6d "\
             "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
-            "JCF[%-6d/%-6d] INV %-6d\n",
+            "JCF[%-6d/%-6d/%-6d/%-6d] INV %-6d\n",
             sec, n,
             BG_LOG_DIFF(n, tb_tr                 ),
             BG_LOG_DIFF(n, tb_lookup             ),
@@ -97,6 +112,9 @@ static void __latxs_counter_bg_log(int n, int sec)
 
             BG_LOG_DIFF(n, jc_flush              ),
             BG_LOG_DIFF(n, jc_flush_page         ),
+            BG_LOG_DIFF(n, jc_flush_page_go      ),
+            BG_LOG_DIFF(n, jc_flush_page_do      ),
+
             BG_LOG_DIFF(n, tb_inv                )
             );
 }
@@ -157,6 +175,8 @@ IMP_COUNTER_FUNC(tb_lookup)
 
 IMP_COUNTER_FUNC(jc_flush)
 IMP_COUNTER_FUNC(jc_flush_page)
+IMP_COUNTER_FUNC(jc_flush_page_go)
+IMP_COUNTER_FUNC(jc_flush_page_do)
 
 IMP_COUNTER_FUNC(helper_store)
 IMP_COUNTER_FUNC(helper_store_io)

@@ -252,6 +252,8 @@ struct hax_vcpu_state;
 #define TB_JMP_CACHE_BITS 12
 #endif
 #define TB_JMP_CACHE_SIZE (1 << TB_JMP_CACHE_BITS)
+#define TB_JC_PAGE_BITS   (TB_JMP_CACHE_BITS / 2)
+#define TB_JC_FLAG_SIZE   (1 << TB_JC_PAGE_BITS)
 
 /* work queue */
 
@@ -381,6 +383,7 @@ struct CPUState {
     /* Accessed in parallel; all accesses must be atomic */
     TranslationBlock *tb_jmp_cache[TB_JMP_CACHE_SIZE];
     TranslationBlock **tcg_bg_jc;
+    uint8_t tb_jc_flag[TB_JC_FLAG_SIZE];
     int tcg_bg_jc_id;
     void (*tcg_bg_jc_clear)(void *cpu);
 
@@ -472,7 +475,7 @@ static inline void cpu_tb_jmp_cache_clear(CPUState *cpu)
         cpu->tcg_bg_jc_clear(cpu);
     } else {
         unsigned int i;
-
+        memset(cpu->tb_jc_flag, 0, TB_JC_FLAG_SIZE);
         for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
             qatomic_set(&cpu->tb_jmp_cache[i], NULL);
         }

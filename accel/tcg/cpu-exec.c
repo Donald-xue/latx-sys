@@ -599,6 +599,10 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
         }
 #endif
         mmap_unlock();
+#ifdef CONFIG_SOFTMMU
+        int page_idx = tb_jmp_cache_hash_page(pc) >> TB_JC_PAGE_BITS;
+        cpu->tb_jc_flag[page_idx] = 1;
+#endif
         /* We add the TB in the virtual pc hash table for the fast lookup */
         if (qemu_tcg_bg_jc_enabled(cpu)) {
             qatomic_set(&cpu->tcg_bg_jc[tb_jmp_cache_hash_func(pc)], tb);

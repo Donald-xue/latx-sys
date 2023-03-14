@@ -126,6 +126,9 @@ static void tcg_bg_func_jc_clear(void *_cpu)
         qatomic_set(&cpu->tcg_bg_jc_id, free_id);
         env->tb_jmp_cache_ptr = tcg_bg_jc[free_id];
 
+        /* flush jmp cache flags */
+        memset(cpu->tb_jc_flag, 0, TB_JC_FLAG_SIZE);
+
         /* let bg thread flush the old jmp cache */
         tcg_bg_jc_wake(tcg_bg_worker_jc_clear, old_id);
     } else {
