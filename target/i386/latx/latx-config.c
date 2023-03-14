@@ -18,6 +18,7 @@
 #include "latx-counter-sys.h"
 #include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
+#include "latx-tb-trace-sys.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {
@@ -373,71 +374,6 @@ static void latxs_print_before_enter(CPUX86State *env, TranslationBlock *tb)
     }
 }
 
-static void latxs_trace_simple(CPUX86State *env, TranslationBlock *tb)
-{
-    if (!option_trace_simple) {
-        return;
-    }
-
-    int cpl = (option_trace_simple & 0xF0) >> 4;
-    if ((tb->flags & 0x3) < cpl) {
-        return;
-    }
-
-    static int latxs_sttb;
-    if (option_trace_start_tb_set &&
-        !latxs_sttb &&
-        tb->pc != option_trace_start_tb) {
-        return;
-    }
-    latxs_sttb = 1;
-
-    static int latxs_stnr;
-    if (latxs_stnr < option_trace_start_nr) {
-        latxs_stnr += 1;
-        return;
-    }
-
-    uint32_t eflags = cpu_compute_eflags(env);
-
-    fprintf(stderr, "[tracesp] ");
-    fprintf(stderr, "PC=0x"TARGET_FMT_lx" / ", tb->pc);
-    fprintf(stderr, "CS=0x"TARGET_FMT_lx" / ", tb->cs_base);
-    fprintf(stderr, "EF=0x%x / ", eflags);
-    if (tb->cflags & CF_USE_ICOUNT) {
-        X86CPU *xcpu = env_archcpu(env);
-        fprintf(stderr, "ICOUNT=0x%x / ", xcpu->neg.icount_decr.u32);
-    }
-    switch (option_trace_simple & 0xF) {
-    case 2: /* Print with FPU state */
-        fprintf(stderr, "TOP=%d / ",  env->fpstt);
-        if (!option_lsfpu) {
-            fprintf(stderr, "TOPin=%d / ", tb->_top_in);
-            fprintf(stderr, "TOPot=%d / ", tb->_top_out);
-        }
-        fprintf(stderr, "RM=%d / ", env->fp_status.float_rounding_mode);
-        fprintf(stderr, "FP=0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx"
-                           "0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx 0x%x.0x%lx / ",
-                           env->fpregs[0].d.high, env->fpregs[0].d.low,
-                           env->fpregs[1].d.high, env->fpregs[1].d.low,
-                           env->fpregs[2].d.high, env->fpregs[2].d.low,
-                           env->fpregs[3].d.high, env->fpregs[3].d.low,
-                           env->fpregs[4].d.high, env->fpregs[4].d.low,
-                           env->fpregs[5].d.high, env->fpregs[5].d.low,
-                           env->fpregs[6].d.high, env->fpregs[6].d.low,
-                           env->fpregs[7].d.high, env->fpregs[7].d.low);
-        break;
-    default:
-        break;
-    }
-    fprintf(stderr, "REGS=0x"TARGET_FMT_lx",0x"TARGET_FMT_lx
-                        ",0x"TARGET_FMT_lx",0x"TARGET_FMT_lx
-                        ",0x"TARGET_FMT_lx",0x"TARGET_FMT_lx
-                        ",0x"TARGET_FMT_lx",0x"TARGET_FMT_lx"\n",
-            env->regs[0], env->regs[1], env->regs[2], env->regs[3],
-            env->regs[4], env->regs[5], env->regs[6], env->regs[7]);
-}
-
 void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
 {
     CPUX86State *env = cpu->env_ptr;
@@ -451,7 +387,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
 
     latxs_print_before_enter(env, tb);
     latxs_tracecc_before_exec_tb(env, tb);
-    latxs_trace_simple(env, tb);
+    latxs_tb_trace(env, tb);
     latxs_break_point(env, tb);
     latxs_np_tb_print(env);
     latxs_counter_wake(cpu);

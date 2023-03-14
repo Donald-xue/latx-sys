@@ -58,6 +58,7 @@ i386_ss.add(when: 'CONFIG_LATX', if_true: capStone)
 i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-test.c',
   'sys-bpc.c',
+  'sys-tb-trace.c',
   'sys-counter.c'
 ))
 
