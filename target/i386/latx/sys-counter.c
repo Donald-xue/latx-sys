@@ -4,7 +4,7 @@
 #include "tcg/tcg-bg-log.h"
 #include <string.h>
 
-#define BG_COUNTER_ENABLE
+/*#define BG_COUNTER_ENABLE*/
 
 typedef struct {
     uint64_t tb_tr_nr;
