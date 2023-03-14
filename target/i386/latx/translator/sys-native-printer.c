@@ -6,6 +6,8 @@
 #include "translate.h"
 #include <string.h>
 
+#ifdef LATXS_NP_ENABLE
+
 int latxs_np_enabled(void)
 {
     return option_native_printer;
@@ -488,3 +490,28 @@ void latxs_np_tb_print(CPUX86State *env)
         npd->np_tb_chain_nr = 0;
     }
 }
+
+#else
+
+int latxs_np_enabled(void) { return 0; }
+int latxs_np_cs_enabled(void) { return 0; }
+int latxs_np_tlbcmp_enabled(void) { return 0; }
+int latxs_np_tb_enabled(void) { return 0; }
+
+int gen_latxs_native_printer(void *code_ptr) { return 0; }
+void latxs_np_env_init(CPUX86State *env) {}
+
+void latxs_np_tr_cs_prologue(void) {}
+void latxs_np_tr_cs_epilogue(void) {}
+void latxs_np_tr_scs_prologue(void) {}
+void latxs_np_tr_scs_epilogue(void) {}
+void latxs_np_tr_hcs_prologue(void) {}
+void latxs_np_tr_hcs_epilogue(void) {}
+void latxs_np_tr_tb_start(void) {}
+void latxs_np_tr_tb_end(void) {}
+
+void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
+        int r1, int r2, int r3, int r4, int r5) {}
+void latxs_np_tb_print(CPUX86State *env) {}
+
+#endif

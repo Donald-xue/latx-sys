@@ -7,6 +7,8 @@
 #include <string.h>
 #include "latxs-fastcs-cfg.h"
 
+#include "latx-np-sys.h"
+
 /* BPC: Break Point Codes */
 ADDR latxs_sc_bpc;
 
@@ -843,6 +845,7 @@ int target_latxs_static_codes(void *code_base)
     code_ptr = code_base + (code_nr_all << 2);      \
 } while (0)
 
+#ifdef LATXS_NP_ENABLE
     /* print something in native codes */
     if (latxs_np_enabled()) {
         latxs_native_printer = (ADDR)code_ptr;
@@ -851,6 +854,7 @@ int target_latxs_static_codes(void *code_base)
                 "latxs do something %p\n",
                 (void *)latxs_native_printer);
     }
+#endif
 
     /* epilogue */
     context_switch_native_to_bt_ret_0 = (ADDR)code_ptr;

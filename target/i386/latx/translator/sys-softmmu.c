@@ -7,6 +7,8 @@
 #include <string.h>
 #include "hamt.h"
 
+#include "latx-np-sys.h"
+
 static int is_ldst_realized_by_softmmu(IR2_OPCODE op)
 {
     if (option_fast_fpr_ldst) {
@@ -209,6 +211,7 @@ static void tr_gen_lookup_qemu_tlb(
     latxs_append_ir2_opnd2ii(LISA_BSTRINS_D, &cmp_opnd, zero,
             TARGET_PAGE_BITS - 1, align_bits);
 
+#ifdef LATXS_NP_ENABLE
     /* 6.5 do something before tlb compare */
     if (latxs_np_tlbcmp_enabled()) {
         latxs_append_ir2_opnd2i(LISA_ORI, &latxs_arg1_ir2_opnd,
@@ -244,6 +247,7 @@ static void tr_gen_lookup_qemu_tlb(
         int64_t ins_offset = (latxs_native_printer - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
     }
+#endif /* native printer tlb cmp */
 
     /* 7. compare cmp and tag */
     if (!option_smmu_slow) {

@@ -16,7 +16,7 @@
 #include "latx-config.h"
 #include "latxs-code-cache.h"
 #include "latx-counter-sys.h"
-
+#include "latx-np-sys.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {
