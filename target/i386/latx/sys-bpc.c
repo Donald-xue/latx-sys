@@ -2,6 +2,7 @@
 #include "cpu.h"
 #include "lsenv.h"
 #include "reg-alloc.h"
+#include "translate.h"
 #include "latx-options.h"
 #include "latx-bpc-sys.h"
 
@@ -25,7 +26,7 @@ int gen_latxs_sc_bpc(void *code_ptr)
 
 static unsigned long long latxs_bpc_tb_cnt;
 
-void latxs_break_point(CPUX86State *env, TranslationBlock *tb)
+void __latxs_break_point(CPUX86State *env, TranslationBlock *tb)
 {
     if (!option_break_point) {
         return;
@@ -43,10 +44,5 @@ void latxs_break_point(CPUX86State *env, TranslationBlock *tb)
         }
     }
 }
-
-#else
-
-int gen_latxs_sc_bpc(void *code_ptr) { return  0; }
-void latxs_break_point(CPUX86State *env, TranslationBlock *tb) {}
 
 #endif

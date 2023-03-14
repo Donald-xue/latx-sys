@@ -10,8 +10,10 @@
 #include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
 
+#ifdef LATX_BPC_ENABLE
 /* BPC: Break Point Codes */
 ADDR latxs_sc_bpc;
+#endif
 
 /* NJC: Native Jmp Cache lookup */
 ADDR latxs_sc_njc;
