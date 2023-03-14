@@ -7,6 +7,7 @@
 #include "sys-excp.h"
 #include <string.h>
 #include "latxs-fastcs-cfg.h"
+#include "latx-np-sys.h"
 
 int scs_enabled(void)
 {

@@ -113,7 +113,7 @@ int gen_latxs_native_printer(void *code_ptr)
     return i;
 }
 
-void latxs_np_env_init(CPUX86State *env)
+void __latxs_np_env_init(CPUX86State *env)
 {
     env->np_data_ptr = &lsenv->np_data;
     lsenv->np_data.env = env;
@@ -127,7 +127,7 @@ void latxs_np_env_init(CPUX86State *env)
 }
 
 /* context switch */
-void latxs_np_tr_cs_prologue(void)
+void __latxs_np_tr_cs_prologue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
@@ -165,7 +165,7 @@ void latxs_np_tr_cs_prologue(void)
     }
 }
 
-void latxs_np_tr_cs_epilogue(void)
+void __latxs_np_tr_cs_epilogue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
@@ -203,7 +203,7 @@ void latxs_np_tr_cs_epilogue(void)
     }
 }
 
-void latxs_np_tr_scs_prologue(void)
+void __latxs_np_tr_scs_prologue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
@@ -236,7 +236,7 @@ void latxs_np_tr_scs_prologue(void)
     }
 }
 
-void latxs_np_tr_scs_epilogue(void)
+void __latxs_np_tr_scs_epilogue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
@@ -269,7 +269,7 @@ void latxs_np_tr_scs_epilogue(void)
     }
 }
 
-void latxs_np_tr_hcs_prologue(void)
+void __latxs_np_tr_hcs_prologue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
@@ -308,7 +308,7 @@ void latxs_np_tr_hcs_prologue(void)
     }
 }
 
-void latxs_np_tr_hcs_epilogue(void)
+void __latxs_np_tr_hcs_epilogue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
@@ -348,7 +348,7 @@ void latxs_np_tr_hcs_epilogue(void)
 }
 
 /* TB execution */
-void latxs_np_tr_tb_start(void)
+void __latxs_np_tr_tb_start(void)
 {
     if (latxs_np_tb_enabled()) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
@@ -374,7 +374,7 @@ void latxs_np_tr_tb_start(void)
     }
 }
 
-void latxs_np_tr_tb_end(void)
+void __latxs_np_tr_tb_end(void)
 {
     if (latxs_np_tb_enabled()) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
@@ -460,7 +460,7 @@ void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
     }
 }
 
-void latxs_np_tb_print(CPUX86State *env)
+void __latxs_np_tb_print(CPUX86State *env)
 {
     if (latxs_np_tb_enabled()) {
         lsenv_np_data_t *npd = env->np_data_ptr;
@@ -491,32 +491,5 @@ void latxs_np_tb_print(CPUX86State *env)
         npd->np_tb_chain_nr = 0;
     }
 }
-
-#else
-
-int latxs_np_enabled(void) { return 0; }
-int latxs_np_cs_enabled(void) { return 0; }
-int latxs_np_tlbcmp_enabled(void) { return 0; }
-int latxs_np_tb_enabled(void) { return 0; }
-
-int gen_latxs_native_printer(void *code_ptr) { return 0; }
-void latxs_np_env_init(CPUX86State *env) {}
-
-void latxs_np_tr_cs_prologue(void) {}
-void latxs_np_tr_cs_epilogue(void) {}
-void latxs_np_tr_scs_prologue(void) {}
-void latxs_np_tr_scs_epilogue(void) {}
-void latxs_np_tr_hcs_prologue(void) {}
-void latxs_np_tr_hcs_epilogue(void) {}
-void latxs_np_tr_tb_start(void) {}
-void latxs_np_tr_tb_end(void) {}
-
-void latxs_native_printer_cs(lsenv_np_data_t *npd,
-        int type, int r1, int r2, int r3, int r4, int r5) {}
-void latxs_native_printer_tb(lsenv_np_data_t *npd, int type,
-        int r1, int r2, int r3, int r4, int r5) {}
-void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
-        int type, int r1, int r2, int r3, int r4, int r5, uint32_t r6)  {}
-void latxs_np_tb_print(CPUX86State *env) {}
 
 #endif

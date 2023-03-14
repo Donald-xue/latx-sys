@@ -22,7 +22,10 @@ ADDR latxs_sc_fcs_jmp_glue_fpu_1;
 ADDR latxs_sc_fcs_jmp_glue_xmm_0;
 ADDR latxs_sc_fcs_jmp_glue_xmm_1;
 
+#ifdef LATXS_NP_ENABLE
+/* NP: call printer from native codes */
 ADDR latxs_native_printer;
+#endif
 
 /* SCS: Static Context Switch */
 ADDR latxs_sc_scs_prologue;
