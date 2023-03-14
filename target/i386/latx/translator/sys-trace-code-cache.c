@@ -51,7 +51,7 @@ int tracecc_has_tb_link(void)
     return option_trace_code_cache & LATXS_TRACECC_TB_LINK;
 }
 
-void latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
+void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
         uint64_t p1, uint64_t p2, int exist)
 {
     if (!tracecc_has_tb_tr()) {
@@ -63,7 +63,7 @@ void latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
             tb->tc.size);
 }
 
-void latxs_tracecc_target_to_host(
+void __latxs_tracecc_target_to_host(
         CPUX86State *env, TranslationBlock *tb)
 {
     if (!tracecc_has_tb_tr()) {
@@ -99,7 +99,7 @@ static int tb_trace_cc_done(TranslationBlock *tb)
     return tb->trace_cc & 0x1;
 }
 
-void latxs_tracecc_before_exec_tb(
+void __latxs_tracecc_before_exec_tb(
         CPUX86State *env, TranslationBlock *tb)
 {
     if (!tracecc_has_tb_exec() || tb_trace_cc_done(tb)) {
@@ -137,7 +137,7 @@ static gboolean latxs_tracecc_tb(
     return false;
 }
 
-void latxs_tracecc_do_tb_flush(void)
+void __latxs_tracecc_do_tb_flush(void)
 {
     if (tracecc_has_tb_flush()) {
         fprintf(stderr, "[CC] TB FLUSH\n");
@@ -148,7 +148,7 @@ void latxs_tracecc_do_tb_flush(void)
     }
 }
 
-void latxs_tracecc_tb_inv(TranslationBlock *tb)
+void __latxs_tracecc_tb_inv(TranslationBlock *tb)
 {
     if (!tracecc_has_tb_inv()) {
         return;
@@ -162,7 +162,7 @@ void latxs_tracecc_tb_inv(TranslationBlock *tb)
             (uint32_t)tb->page_addr[1]);
 }
 
-void latxs_tracecc_gen_tb_start(void)
+void __latxs_tracecc_gen_tb_start(void)
 {
     if (tracecc_has_tb_flush_print()) {
         TRANSLATION_DATA *td = lsenv->tr_data;
@@ -182,7 +182,7 @@ void latxs_tracecc_gen_tb_start(void)
     }
 }
 
-void latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
+void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
 {
     if (!tracecc_has_tb_link()) {
         return;
@@ -202,12 +202,12 @@ int tracecc_has_tb_flush(void)       { return 0; }
 int tracecc_has_tb_flush_print(void) { return 0; }
 int tracecc_has_tb_link(void)        { return 0; }
 
-void latxs_tracecc_gen_tb_insert(TranslationBlock *tb, uint64_t p1, uint64_t p2, int exist) {}
-void latxs_tracecc_gen_tb_start(void) {}
-void latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb) {}
-void latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb) {}
-void latxs_tracecc_do_tb_flush(void) {}
-void latxs_tracecc_tb_inv(TranslationBlock *tb) {}
-void latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb) {}
+void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb, uint64_t p1, uint64_t p2, int exist) {}
+void __latxs_tracecc_gen_tb_start(void) {}
+void __latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb) {}
+void __latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb) {}
+void __latxs_tracecc_do_tb_flush(void) {}
+void __latxs_tracecc_tb_inv(TranslationBlock *tb) {}
+void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb) {}
 
 #endif
