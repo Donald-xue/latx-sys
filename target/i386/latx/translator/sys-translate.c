@@ -7,6 +7,7 @@
 #include <string.h>
 #include "qemu/cacheflush.h"
 #include "latxs-code-cache.h"
+#include "latx-np-sys.h"
 
 /* Main Translation Process */
 

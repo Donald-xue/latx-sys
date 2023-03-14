@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include "latxs-fastcs-cfg.h"
+#include "latx-np-sys.h"
 
 /*
  * option_fastcs
@@ -100,6 +101,7 @@ void latxs_fastcs_env_init(CPUX86State *env)
     lsenv->fastcs_data.env = env;
 }
 
+#ifdef LATXS_NP_ENABLE
 void latxs_native_printer_cs(lsenv_np_data_t *npd,
         int type, int r1, int r2, int r3, int r4, int r5)
 {
@@ -133,6 +135,7 @@ void latxs_native_printer_cs(lsenv_np_data_t *npd,
     lsassertm(r == 1 || r == 2, "write %d", (int)r);
     (void)r;
 }
+#endif
 
 void latxs_reset_tb_fastcs_ctx(TranslationBlock *tb)
 {

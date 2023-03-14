@@ -800,6 +800,7 @@ void gen_ldst_c1_softmmu_helper(
     }
 }
 
+#ifdef LATXS_NP_ENABLE
 void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
         int type, int r1, int r2, int r3, int r4, int r5, uint32_t r6)
 {
@@ -872,3 +873,4 @@ void latxs_native_printer_tlbcmp(lsenv_np_data_t *npd,
         fprintf(stderr, "miss\n");
     }
 }
+#endif

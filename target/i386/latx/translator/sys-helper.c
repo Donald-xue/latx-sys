@@ -7,6 +7,7 @@
 #include "fpu/softfloat.h"
 #include <string.h>
 #include "latxs-fastcs-cfg.h"
+#include "latx-np-sys.h"
 
 helper_cfg_t all_helper_cfg = {.sv_allgpr = 1, .sv_eflags = 1, .cvt_fp80 = 1};
 helper_cfg_t zero_helper_cfg = {.sv_allgpr = 0, .sv_eflags = 0, .cvt_fp80 = 0};
