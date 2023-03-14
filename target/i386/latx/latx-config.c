@@ -14,7 +14,7 @@
 #include "trace.h"
 #include "translate.h"
 #include "latx-config.h"
-#include "latxs-code-cache.h"
+#include "latx-tracecc-sys.h"
 #include "latx-counter-sys.h"
 #include "latx-bpc-sys.h"
 #include "latx-np-sys.h"

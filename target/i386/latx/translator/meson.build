@@ -56,7 +56,6 @@ i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-tr-fcmovcc.c',
   'sys-tr-simd.c',
   'sys-devel.c',
-  'sys-trace-code-cache.c',
   'sys-fpu.c',
   'sys-tr-softfpu.c',
   'sys-tr-byhand64.c',

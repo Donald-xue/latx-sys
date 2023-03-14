@@ -10,7 +10,7 @@
 #include "profile.h"
 #include "ibtc.h"
 #include "translate.h"
-#include "latxs-code-cache.h"
+#include "latx-tracecc-sys.h"
 
 extern void *helper_tb_lookup_ptr(CPUArchState *);
 static int ss_generate_match_fail_native_code(void* code_buf);

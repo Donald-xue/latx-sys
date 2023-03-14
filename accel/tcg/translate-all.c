@@ -66,7 +66,7 @@
 #include "sigint-i386-tcg-la.h"
 #if defined(CONFIG_LATX)
 #include "latx-test-sys.h"
-#include "latxs-code-cache.h"
+#include "latx-tracecc-sys.h"
 #include "latx-fastcs-sys.h"
 #include "hamt.h"
 #include "latxs-cc-pro.h"

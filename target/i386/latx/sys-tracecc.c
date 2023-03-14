@@ -6,7 +6,7 @@
 #include "translate.h"
 #include <string.h>
 #include "trace.h"
-#include "latxs-code-cache.h"
+#include "latx-tracecc-sys.h"
 #include "latxs-fastcs-cfg.h"
 #include "latxs-cc-pro.h"
 
@@ -192,22 +192,5 @@ void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
             (void *)tb, n, (void *)ntb,
             tb->tc.ptr, ntb->tc.ptr);
 }
-
-#else
-
-int tracecc_has_tb_tr(void)          { return 0; }
-int tracecc_has_tb_exec(void)        { return 0; }
-int tracecc_has_tb_inv(void)         { return 0; }
-int tracecc_has_tb_flush(void)       { return 0; }
-int tracecc_has_tb_flush_print(void) { return 0; }
-int tracecc_has_tb_link(void)        { return 0; }
-
-void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb, uint64_t p1, uint64_t p2, int exist) {}
-void __latxs_tracecc_gen_tb_start(void) {}
-void __latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb) {}
-void __latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb) {}
-void __latxs_tracecc_do_tb_flush(void) {}
-void __latxs_tracecc_tb_inv(TranslationBlock *tb) {}
-void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb) {}
 
 #endif
