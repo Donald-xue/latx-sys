@@ -10,6 +10,8 @@
 #include "latxs-fastcs-cfg.h"
 #include "latxs-cc-pro.h"
 
+#ifdef LATXS_TRACECC_ENABLE
+
 /*
  * option_trace_code_cache
  * [0] : trace TB translation
@@ -190,3 +192,22 @@ void latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
             (void *)tb, n, (void *)ntb,
             tb->tc.ptr, ntb->tc.ptr);
 }
+
+#else
+
+int tracecc_has_tb_tr(void)          { return 0; }
+int tracecc_has_tb_exec(void)        { return 0; }
+int tracecc_has_tb_inv(void)         { return 0; }
+int tracecc_has_tb_flush(void)       { return 0; }
+int tracecc_has_tb_flush_print(void) { return 0; }
+int tracecc_has_tb_link(void)        { return 0; }
+
+void latxs_tracecc_gen_tb_insert(TranslationBlock *tb, uint64_t p1, uint64_t p2, int exist) {}
+void latxs_tracecc_gen_tb_start(void) {}
+void latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb) {}
+void latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb) {}
+void latxs_tracecc_do_tb_flush(void) {}
+void latxs_tracecc_tb_inv(TranslationBlock *tb) {}
+void latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb) {}
+
+#endif
