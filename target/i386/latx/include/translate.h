@@ -1204,8 +1204,6 @@ static inline ADDR cpu_get_guest_base(void)
 
 #include "env.h"
 
-extern ADDR latxs_sc_bpc;
-
 /* main translation procees */
 uint8_t latxs_cpu_read_code_via_qemu(CPUX86State *env, ADDRX pc);
 void latxs_tr_disasm(TranslationBlock *);

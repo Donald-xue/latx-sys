@@ -16,6 +16,7 @@
 #include "latx-config.h"
 #include "latxs-code-cache.h"
 #include "latx-counter-sys.h"
+#include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
@@ -332,27 +333,6 @@ void latxs_lsenv_switch(CPUArchState *env)
 
     lsassert(lsenv->after_exec_tb_fixed == 1);
     lsassert(lsenv->tr_data->slow_path_rcd != NULL);
-}
-
-static unsigned long long latxs_bpc_tb_cnt;
-
-static void latxs_break_point(CPUX86State *env, TranslationBlock *tb)
-{
-    if (!option_break_point) {
-        return;
-    }
-
-    if (option_break_point &&
-            latxs_sc_bpc &&
-            tb->pc == option_break_point_addrx) {
-        latxs_bpc_tb_cnt += 1;
-        fprintf(stderr, "[debug] BP at TB 0x"TARGET_FMT_lx" cnt = %lld\n",
-                tb->pc, latxs_bpc_tb_cnt);
-
-        if (latxs_bpc_tb_cnt >= option_break_point_count) {
-            ((void(*)(void))latxs_sc_bpc)();
-        }
-    }
 }
 
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,

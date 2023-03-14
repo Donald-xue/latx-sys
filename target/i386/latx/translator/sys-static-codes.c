@@ -7,6 +7,7 @@
 #include <string.h>
 #include "latxs-fastcs-cfg.h"
 
+#include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
 
 /* BPC: Break Point Codes */
@@ -86,22 +87,6 @@ static void latxs_set_lsenv_tmp(void)
     lsenv = &latxs_lsenv_tmp;
     lsenv->cpu_state = &latxs_env_tmp;
     lsenv->tr_data = &latxs_tr_data_tmp;
-}
-
-static int gen_latxs_sc_bpc(void *code_ptr)
-{
-    int code_nr = 0;
-    latxs_tr_init(NULL);
-
-    latxs_append_ir2_opnd0_(lisa_nop);
-    latxs_append_ir2_opnd0_(lisa_nop);
-    latxs_append_ir2_opnd0_(lisa_return);
-
-    code_nr = latxs_tr_ir2_assemble(code_ptr);
-
-    latxs_tr_fini();
-
-    return code_nr;
 }
 
 static int gen_latxs_sc_prologue(void *code_ptr)
@@ -883,12 +868,14 @@ int target_latxs_static_codes(void *code_base)
                 (void *)native_rotate_fpu_by);
     }
 
+#ifdef LATX_BPC_ENABLE
     /* BPC: Break Point Code */
     latxs_sc_bpc = (ADDR)code_ptr;
     LATXS_GEN_STATIC_CODES(gen_latxs_sc_bpc, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO(
             "latxs BPC: break point code %p\n",
             (void *)latxs_sc_bpc);
+#endif
 
     if (scs_enabled()) {
         latxs_sc_scs_prologue = (ADDR)code_ptr;
