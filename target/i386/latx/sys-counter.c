@@ -5,12 +5,12 @@
 #include "exec/tb-hash.h"
 #include <string.h>
 
+#ifdef BG_COUNTER_ENABLE
+
 #define BUILD_ASSERT(cond)                  \
 do {                                        \
     (void)sizeof(char[1 - 2 * !(cond)]);    \
 } while (0)
-
-/*#define BG_COUNTER_ENABLE*/
 
 typedef struct {
     uint64_t tb_tr_nr;
@@ -57,15 +57,13 @@ void __attribute__((__constructor__)) latx_counter_init(void)
             "see hw/core/cpu.h and exec/tb-hash.h");
 }
 
-#ifdef BG_COUNTER_ENABLE
-
 #define COUNTER_OP_INC(id, name) do {       \
 __latxs_counter_data[id].name ## _nr += 1;  \
 } while (0)
 
 
 #define IMP_COUNTER_FUNC(name)                  \
-void latxs_counter_ ## name (void *cpu)         \
+void __latxs_counter_ ## name (void *cpu)       \
 {                                               \
     int cpuid = 0;                              \
     if (qemu_tcg_mttcg_enabled()) {             \
@@ -150,7 +148,7 @@ static void latxs_counter_bg_log(int sec)
     }
 }
 
-void latxs_counter_wake(void *cpu)
+void __latxs_counter_wake(void *cpu)
 {
     static int64_t st = 0, cur = 0;
     struct timespec ts;
@@ -162,29 +160,5 @@ void latxs_counter_wake(void *cpu)
         tcg_bg_counter_wake(latxs_counter_bg_log, st);
     }
 }
-
-#else
-
-#define IMP_COUNTER_FUNC(name) \
-void latxs_counter_ ## name (void *cpu) {}
-
-IMP_COUNTER_FUNC(tb_tr)
-IMP_COUNTER_FUNC(tb_inv)
-IMP_COUNTER_FUNC(tb_flush)
-IMP_COUNTER_FUNC(tb_lookup)
-
-IMP_COUNTER_FUNC(jc_flush)
-IMP_COUNTER_FUNC(jc_flush_page)
-IMP_COUNTER_FUNC(jc_flush_page_go)
-IMP_COUNTER_FUNC(jc_flush_page_do)
-
-IMP_COUNTER_FUNC(helper_store)
-IMP_COUNTER_FUNC(helper_store_io)
-IMP_COUNTER_FUNC(helper_store_stlbfill)
-IMP_COUNTER_FUNC(helper_load)
-IMP_COUNTER_FUNC(helper_load_io)
-IMP_COUNTER_FUNC(helper_load_stlbfill)
-
-void latxs_counter_wake(void *cpu) {}
 
 #endif
