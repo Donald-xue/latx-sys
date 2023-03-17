@@ -48,6 +48,7 @@ void latxs_sys_farith_register_ir1(void)
     latxs_register_ir1(X86_INS_FXCH);
     latxs_register_ir1(X86_INS_FTST);
     latxs_register_ir1(X86_INS_FPTAN);
+    latxs_register_ir1(X86_INS_FISTTP);
 }
 
 bool latxs_translate_fadd(IR1_INST *pir1)
@@ -1026,5 +1027,39 @@ bool latxs_translate_fptan(IR1_INST *pir1)
         latxs_tr_fpu_push();
     }
 
+    return true;
+}
+
+bool latxs_translate_fisttp(IR1_INST *pir1)
+{
+    if (option_soft_fpu) {
+        return latxs_translate_fisttp_softfpu(pir1);
+    }
+    if (latxs_tr_gen_fp_common_excp_check(pir1)) {
+        return true;
+    }
+
+    IR1_OPND *opnd0   = ir1_get_opnd(pir1, 0);
+    IR2_OPND st0_opnd = ra_alloc_st(0);
+    IR2_OPND fp_opnd  = ra_alloc_ftemp();
+    IR2_OPND dest_int = ra_alloc_itemp();
+
+    if (ir1_opnd_size(opnd0) == 32) {
+        /*la_ftintrz_w_d(fp_opnd, st0_opnd);*/
+        latxs_append_ir2_opnd2(LISA_FTINTRZ_W_D, &fp_opnd, &st0_opnd);
+    } else if (ir1_opnd_size(opnd0) == 64) {
+        /*la_ftintrz_l_d(fp_opnd, st0_opnd);*/
+        latxs_append_ir2_opnd2(LISA_FTINTRZ_L_D, &fp_opnd, &st0_opnd);
+    } else {
+        lsassertm(0, "Invalid operand size (%d) in %s.\n",
+                    ir1_opnd_size(opnd0), __func__);
+    }
+
+    latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &dest_int, &fp_opnd);
+    latxs_store_ir2_to_ir1(&dest_int, ir1_get_opnd(pir1, 0));
+    latxs_ra_free_temp(&fp_opnd);
+    latxs_ra_free_temp(&dest_int);
+
+    latxs_tr_fpu_pop();
     return true;
 }

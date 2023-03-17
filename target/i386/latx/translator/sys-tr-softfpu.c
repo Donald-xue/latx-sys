@@ -228,6 +228,13 @@ bool latxs_translate_fstp_softfpu(IR1_INST *pir1)
     return false;
 }
 
+bool latxs_translate_fisttp_softfpu(IR1_INST *pir1)
+{
+    /* TODO */
+    lsassertm(0, "TODO softfpu support fisttp.\n");
+    return false;
+}
+
 bool latxs_translate_fistp_softfpu(IR1_INST *pir1)
 {
     if (latxs_tr_gen_fp_common_excp_check(pir1)) {

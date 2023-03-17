@@ -1848,6 +1848,7 @@ bool latxs_translate_fsincos(IR1_INST *pir1);
 bool latxs_translate_fxch(IR1_INST *pir1);
 bool latxs_translate_ftst(IR1_INST *pir1);
 bool latxs_translate_fptan(IR1_INST *pir1);
+bool latxs_translate_fisttp(IR1_INST *pir1);
 
 /* sys-fldst */
 bool latxs_translate_fld(IR1_INST *pir1);
@@ -2086,6 +2087,7 @@ bool latxs_translate_fstp_softfpu(IR1_INST *pir1);
 bool latxs_translate_fst_softfpu(IR1_INST *pir1);
 bool latxs_translate_fist_softfpu(IR1_INST *pir1);
 bool latxs_translate_fistp_softfpu(IR1_INST *pir1);
+bool latxs_translate_fisttp_softfpu(IR1_INST *pir1);
 bool latxs_translate_fbld_softfpu(IR1_INST *pir1);
 bool latxs_translate_fbstp_softfpu(IR1_INST *pir1);
 

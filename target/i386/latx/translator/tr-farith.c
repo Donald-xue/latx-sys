@@ -1440,8 +1440,12 @@ bool translate_fptan(IR1_INST *pir1)
 
 bool translate_fisttp(IR1_INST *pir1)
 {
+#ifdef CONFIG_SOFTMMU
+    return latxs_translate_fisttp(pir1);
+#else
     fprintf(stderr, "%s not implemented. translation failed.\n", __FUNCTION__);
     return false;
+#endif
 }
 bool translate_feni(IR1_INST *pir1)
 {
