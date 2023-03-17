@@ -66,6 +66,10 @@
 
 #include "tcg/tcg-ng.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latx-perfmap.h"
+#endif
+
 /* Forward declarations for functions declared in tcg-target.c.inc and
    used here. */
 static void tcg_target_init(TCGContext *s);
@@ -1298,6 +1302,11 @@ void tcg_prologue_init(TCGContext *s)
     s->code_buf = buf1;
     total_size -= prologue_size;
     s->code_gen_buffer_size = total_size;
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latx_perfmap_insert(s->code_gen_ptr, total_size, "latxs_code_cache");
+    latx_perfmap_flush();
+#endif
 
     tcg_register_jit(tcg_splitwx_to_rx(s->code_gen_buffer), total_size);
 

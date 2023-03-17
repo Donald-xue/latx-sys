@@ -6,7 +6,7 @@
 #include "translate.h"
 #include <string.h>
 #include "latxs-fastcs-cfg.h"
-
+#include "latx-perfmap.h"
 #include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
 
@@ -829,17 +829,19 @@ int target_latxs_static_codes(void *code_base)
 
     latxs_set_lsenv_tmp();
 
-#define LATXS_GEN_STATIC_CODES(genfn, ...) do {     \
-    code_nr = genfn(__VA_ARGS__);                   \
-    code_nr_all += code_nr;                         \
-    code_ptr = code_base + (code_nr_all << 2);      \
+#define LATXS_GEN_STATIC_CODES(name, genfn, ...) do {   \
+    code_nr = genfn(__VA_ARGS__);                       \
+    code_nr_all += code_nr;                             \
+    latx_perfmap_insert(code_ptr, code_nr << 2, name);  \
+    code_ptr = code_base + (code_nr_all << 2);          \
 } while (0)
 
 #ifdef LATXS_NP_ENABLE
     /* print something in native codes */
     if (latxs_np_enabled()) {
         latxs_native_printer = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_native_printer, code_ptr);
+        LATXS_GEN_STATIC_CODES("latxs_native_printer",
+                gen_latxs_native_printer, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs do something %p\n",
                 (void *)latxs_native_printer);
@@ -849,7 +851,8 @@ int target_latxs_static_codes(void *code_base)
     /* epilogue */
     context_switch_native_to_bt_ret_0 = (ADDR)code_ptr;
     context_switch_native_to_bt = (ADDR)code_ptr + 4;
-    LATXS_GEN_STATIC_CODES(gen_latxs_sc_epilogue, code_ptr);
+    LATXS_GEN_STATIC_CODES("latxs_epilogue",
+            gen_latxs_sc_epilogue, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO("latxs epilogue: %p\n",
             (void *)context_switch_native_to_bt);
 
@@ -862,13 +865,15 @@ int target_latxs_static_codes(void *code_base)
      * context switch native to bt here.
      */
     context_switch_bt_to_native = (ADDR)code_ptr;
-    LATXS_GEN_STATIC_CODES(gen_latxs_sc_prologue, code_ptr);
+    LATXS_GEN_STATIC_CODES("latxs_prologue",
+            gen_latxs_sc_prologue, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO("latxs prologue: %p\n",
             (void *)context_switch_bt_to_native);
 
     if (!option_soft_fpu) {
         /* fpu rorate */
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fpu_rotate, code_ptr);
+        LATXS_GEN_STATIC_CODES("latxs_rotate_fpu",
+                gen_latxs_sc_fpu_rotate, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO("latxs fpu rotate: %p\n",
                 (void *)native_rotate_fpu_by);
     }
@@ -876,7 +881,8 @@ int target_latxs_static_codes(void *code_base)
 #ifdef LATX_BPC_ENABLE
     /* BPC: Break Point Code */
     latxs_sc_bpc = (ADDR)code_ptr;
-    LATXS_GEN_STATIC_CODES(gen_latxs_sc_bpc, code_ptr);
+    LATXS_GEN_STATIC_CODES("latxs_break_point_code",
+            gen_latxs_sc_bpc, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO(
             "latxs BPC: break point code %p\n",
             (void *)latxs_sc_bpc);
@@ -884,15 +890,15 @@ int target_latxs_static_codes(void *code_base)
 
     if (scs_enabled()) {
         latxs_sc_scs_prologue = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_scs_prologue_cfg,
-                code_ptr, default_helper_cfg);
+        LATXS_GEN_STATIC_CODES("latxs_static_prologue",
+                gen_latxs_scs_prologue_cfg, code_ptr, default_helper_cfg);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs SCS: static CS prologue %p\n",
                 (void *)latxs_sc_scs_prologue);
 
         latxs_sc_scs_epilogue = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_scs_epilogue_cfg,
-                code_ptr, default_helper_cfg);
+        LATXS_GEN_STATIC_CODES("latxs_static_epilogue",
+                gen_latxs_scs_epilogue_cfg, code_ptr, default_helper_cfg);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs SCS: static CS epilogue %p\n",
                 (void *)latxs_sc_scs_epilogue);
@@ -904,70 +910,76 @@ int target_latxs_static_codes(void *code_base)
         if (latxs_fastcs_is_jmp_glue() &&
             !latxs_fastcs_is_jmp_glue_direct()) {
         latxs_sc_fcs_F_0 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 0);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_fpu0",
+                gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 0: %p\n",
                 (void *)latxs_sc_fcs_F_0);
 
         latxs_sc_fcs_F_1 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_fpu1",
+                gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 1: %p\n",
                 (void *)latxs_sc_fcs_F_1);
 
         latxs_sc_fcs_S_0 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 0);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_simd0",
+                gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS SIMD 0: %p\n",
                 (void *)latxs_sc_fcs_S_0);
 
         latxs_sc_fcs_S_1 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_simd1",
+                gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS SIMD 1: %p\n",
                 (void *)latxs_sc_fcs_S_1);
 
         latxs_sc_fcs_FS_0 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 0);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_both0",
+                gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 0: %p\n",
                 (void *)latxs_sc_fcs_FS_0);
 
         latxs_sc_fcs_FS_1 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_both1",
+                gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 1: %p\n",
                 (void *)latxs_sc_fcs_FS_1);
         }
 
         if (latxs_fastcs_is_jmp_glue_direct()) {
         latxs_sc_fcs_F_0 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
-                code_ptr, 0x1, 0);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_fpu0_ret",
+                gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x1, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU 0: %p\n",
                 (void *)latxs_sc_fcs_F_0);
 
         latxs_sc_fcs_F_1 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
-                code_ptr, 0x1, 1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_fpu1_ret",
+                gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x1, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU 1: %p\n",
                 (void *)latxs_sc_fcs_F_1);
 
         latxs_sc_fcs_S_0 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
-                code_ptr, 0x2, 0);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_simd0_ret",
+                gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x2, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret SIMD 0: %p\n",
                 (void *)latxs_sc_fcs_S_0);
 
         latxs_sc_fcs_S_1 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
-                code_ptr, 0x2, 1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_simd1_ret",
+                gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x2, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret SIMD 1: %p\n",
                 (void *)latxs_sc_fcs_S_1);
 
         latxs_sc_fcs_FS_0 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
-                code_ptr, 0x3, 0);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_both0_ret",
+                gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x3, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU/SIMD 0: %p\n",
                 (void *)latxs_sc_fcs_FS_0);
 
         latxs_sc_fcs_FS_1 = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_jmp_glue_return,
-                code_ptr, 0x3, 1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_both1_ret",
+                gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x3, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU/SIMD 1: %p\n",
                 (void *)latxs_sc_fcs_FS_1);
         }
@@ -976,38 +988,38 @@ int target_latxs_static_codes(void *code_base)
         if (latxs_fastcs_is_jmp_glue() ||
             latxs_fastcs_is_ld_branch()) {
         latxs_sc_fcs_check_load_F = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_check_load,
-                code_ptr, 0x1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_fpu_check",
+                gen_latxs_sc_fcs_check_load, code_ptr, 0x1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU: %p\n",
                 (void *)latxs_sc_fcs_check_load_F);
 
         latxs_sc_fcs_check_load_S = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_check_load,
-                code_ptr, 0x2);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_simd_check",
+                gen_latxs_sc_fcs_check_load, code_ptr, 0x2);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load SIMD: %p\n",
                 (void *)latxs_sc_fcs_check_load_S);
 
         latxs_sc_fcs_check_load_FS = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_check_load,
-                code_ptr, 0x3);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_both_check",
+                gen_latxs_sc_fcs_check_load, code_ptr, 0x3);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU/SIMD: %p\n",
                 (void *)latxs_sc_fcs_check_load_FS);
 
         latxs_sc_fcs_load_F = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_load,
-                code_ptr, 0x1);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_fpu_load",
+                gen_latxs_sc_fcs_load, code_ptr, 0x1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load FPU: %p\n",
                 (void *)latxs_sc_fcs_load_F);
 
         latxs_sc_fcs_load_S = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_load,
-                code_ptr, 0x2);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_simd_load",
+                gen_latxs_sc_fcs_load, code_ptr, 0x2);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load SIMD: %p\n",
                 (void *)latxs_sc_fcs_load_S);
 
         latxs_sc_fcs_load_FS = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_sc_fcs_load,
-                code_ptr, 0x3);
+        LATXS_GEN_STATIC_CODES("latxs_fcs_both_load",
+                gen_latxs_sc_fcs_load, code_ptr, 0x3);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load FPU/SIMD: %p\n",
                 (void *)latxs_sc_fcs_load_FS);
         }
@@ -1016,7 +1028,8 @@ int target_latxs_static_codes(void *code_base)
     /* Native Jmp Cache Lookup */
     if (njc_enabled()) {
         latxs_sc_njc = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES(gen_latxs_njc_lookup_tb, code_ptr);
+        LATXS_GEN_STATIC_CODES("latxs_njc",
+                gen_latxs_njc_lookup_tb, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs NJC : native jmp cache lookup %p\n",
                 (void *)latxs_sc_njc);
@@ -1024,8 +1037,11 @@ int target_latxs_static_codes(void *code_base)
 
     /* jmp glue for tb-link */
     if (option_tb_link) {
-        LATXS_GEN_STATIC_CODES(gen_latxs_jmp_glue_all, code_ptr);
+        LATXS_GEN_STATIC_CODES("latxs_jmp_glue",
+                gen_latxs_jmp_glue_all, code_ptr);
     }
+
+    latx_perfmap_flush();
 
     return code_nr_all;
 }
