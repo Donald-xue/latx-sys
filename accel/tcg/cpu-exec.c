@@ -48,6 +48,7 @@
 #include "latx-counter-sys.h"
 #include "latxs-cc-pro.h"
 #include "latx-options.h"
+#define USE_LATX_SYS_TB_FUNCTIONS
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
@@ -520,49 +521,92 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
     return;
 }
 
-#ifdef CONFIG_LATX
-TranslationBlock* latx_tb_find(void *cpu_state, ADDRX x86_pc)
+#ifdef USE_LATX_SYS_TB_FUNCTIONS
+
+static inline void __cpu_jmp_cache_set(CPUState *cpu,
+        unsigned int idx, TranslationBlock *tb)
 {
-    CPUState* cpu = env_cpu(cpu_state);
-    CPUArchState* env = (CPUArchState*)cpu_state;
-    target_ulong cs_base,pc;
-    TranslationBlock *tb;
-    uint32_t flags, hash;
-
-    /* get cflags */
-    uint32_t cflags = (curr_cflags(cpu) & ~CF_CLUSTER_MASK) |
-                       cpu->cluster_index << CF_CLUSTER_SHIFT;
-
-    /* get cs_base,flags,pc */
-    cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
-    pc = cs_base + (target_ulong)x86_pc;
-    hash = tb_jmp_cache_hash_func(pc);
     if (qemu_tcg_bg_jc_enabled(cpu)) {
-        tb = qatomic_rcu_read(&cpu->tcg_bg_jc[hash]);
+        qatomic_set(&cpu->tcg_bg_jc[idx], tb);
     } else {
-        tb = qatomic_rcu_read(&cpu->tb_jmp_cache[hash]);
+        qatomic_set(&cpu->tb_jmp_cache[idx], tb);
     }
+}
+
+static inline void *__cpu_jmp_cache_get(CPUState *cpu,
+        unsigned int idx)
+{
+    if (qemu_tcg_bg_jc_enabled(cpu)) {
+        return qatomic_rcu_read(&cpu->tcg_bg_jc[idx]);
+    } else {
+        return qatomic_rcu_read(&cpu->tb_jmp_cache[idx]);
+    }
+}
+
+static inline TranslationBlock *__tb_lookup(CPUState *cpu, target_ulong pc,
+        target_ulong cs_base, uint32_t flags, uint32_t cflags)
+{
+    TranslationBlock *tb;
+    uint32_t hash;
+
+    hash = tb_jmp_cache_hash_func(pc);
+    tb = __cpu_jmp_cache_get(cpu, hash);
 
     if (likely(tb &&
                tb->pc == pc &&
                tb->cs_base == cs_base &&
-               tb->flags == flags &&
                tb->trace_vcpu_dstate == *cpu->trace_dstate &&
-               tb_cflags(tb) == cflags)) {
-        return tb;
+               tb_cflags(tb) == cflags))
+    {
+        if (latxs_cc_pro_tb_flags_cmp(tb, flags)) {
+            return tb;
+        }
     }
+
     tb = tb_htable_lookup(cpu, pc, cs_base, flags, cflags);
-    if (tb == NULL) {
-        return NULL;
-    }
-    if (qemu_tcg_bg_jc_enabled(cpu)) {
-        qatomic_set(&cpu->tcg_bg_jc[hash], tb);
-    } else {
-        qatomic_set(&cpu->tb_jmp_cache[hash], tb);
-    }
+    if (tb == NULL) return NULL;
+
+    __cpu_jmp_cache_set(cpu, hash, tb);
     return tb;
 }
-#endif
+
+static inline TranslationBlock *tb_find(CPUState *cpu,
+        TranslationBlock *last_tb, int tb_exit, uint32_t cflags)
+{
+    CPUArchState *env = (CPUArchState *)cpu->env_ptr;
+    TranslationBlock *tb;
+    target_ulong cs_base, pc;
+    uint32_t flags;
+
+    if (latx_test_sys_enabled()) {
+        return latx_test_sys_start(cpu);
+    }
+
+    latxs_counter_tb_lookup(cpu);
+
+    cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
+    tb = __tb_lookup(cpu, pc, cs_base, flags, cflags);
+    if (tb == NULL) {
+        tb = tb_gen_code(cpu, pc, cs_base, flags, cflags);
+
+        int page_idx = tb_jmp_cache_hash_page(pc) >> TB_JC_PAGE_BITS;
+        cpu->tb_jc_flag[page_idx] = 1;
+
+        __cpu_jmp_cache_set(cpu, tb_jmp_cache_hash_func(pc), tb);
+    }
+
+    if (tb->page_addr[1] != -1 && !option_cross_page_jmp_link) {
+        last_tb = NULL;
+    }
+
+    if (last_tb) {
+        tb_add_jump(last_tb, tb_exit, tb);
+    }
+
+    return tb;
+}
+
+#else
 
 static inline TranslationBlock *tb_find(CPUState *cpu,
                                         TranslationBlock *last_tb,
@@ -573,16 +617,7 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
     target_ulong cs_base, pc;
     uint32_t flags;
 
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-    if (latx_test_sys_enabled()) {
-        return latx_test_sys_start(cpu);
-    }
-#endif
-
     cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-    latxs_counter_tb_lookup(cpu);
-#endif
     tb = tb_lookup(cpu, pc, cs_base, flags, cflags);
     if (tb == NULL) {
         mmap_lock();
@@ -616,9 +651,6 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
      * spanning two pages because the mapping for the second page can change.
      */
     if (tb->page_addr[1] != -1) {
-#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-        if (!option_cross_page_jmp_link)
-#endif
         last_tb = NULL;
     }
 #endif
@@ -628,6 +660,8 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
     }
     return tb;
 }
+
+#endif
 
 static inline bool cpu_handle_halt(CPUState *cpu)
 {
