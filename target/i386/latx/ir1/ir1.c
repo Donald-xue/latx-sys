@@ -1678,6 +1678,8 @@ int ir1_dump(IR1_INST *ir1)
 
     fprintf(stderr, "%s\t\t%s\t", ir1->info->mnemonic, ir1->info->op_str);
 
+    fprintf(stderr, "[%x %x]\t", ir1->_eflag_use, ir1->_eflag_def);
+
     int grp_nr = latxs_ir1_grp_nr(ir1);
     uint8_t *grps = latxs_ir1_get_grps(ir1);
     if (grp_nr > 0) {

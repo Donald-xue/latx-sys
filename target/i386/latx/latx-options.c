@@ -55,6 +55,7 @@ int option_fastcs;
 int option_hamt;
 int option_hamt_delay;
 int option_code_cache_pro;
+int option_sys_flag_reduction;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -294,6 +295,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "code cache pro",
         }, {
+            .name = "sysflag",
+            .type = QEMU_OPT_NUMBER,
+            .help = "optimization for eflags",
+        }, {
             .name = "smmu",
             .type = QEMU_OPT_BOOL,
             .help = "use softmmu slow path only (debug)",
@@ -478,6 +483,12 @@ static void parse_options_code_cache_pro(unsigned long long t)
     option_code_cache_pro = t;
 }
 
+#define LATXS_OPT_FLAG_REDUCTION    (1 << 0)
+static void parse_options_sys_flag(unsigned long long t)
+{
+    option_sys_flag_reduction = t & LATXS_OPT_FLAG_REDUCTION;
+}
+
 static void parse_options_tbsizei(unsigned long long i)
 {
     if (i && i < 255) {
@@ -649,6 +660,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_code_cache_pro(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "sysflag");
+    if (opt) {
+        parse_options_sys_flag(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "intblink");
     if (opt) {
         parse_options_bool(LATXS_OPT_intb_link, opt->value.boolean);
@@ -809,6 +825,7 @@ void latxs_options_init(void)
     option_fast_fpr_ldst = 0;
     option_by_hand_64 = 0;
     option_code_cache_pro = 0;
+    option_sys_flag_reduction = 0;
 
     option_smmu_slow = 0;
 
