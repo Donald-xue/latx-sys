@@ -6,6 +6,7 @@
 #include "translate.h"
 #include "sys-excp.h"
 #include <string.h>
+#include "latx-sys-flag-rdtn.h"
 
 static void latxs_translate_test_byhand_gpr_gpr(
         IR1_OPND *opnd0, IR1_OPND *opnd1)
@@ -121,7 +122,7 @@ bool latxs_translate_test_byhand(IR1_INST *pir1)
 
 
 
-static void latxs_translate_xor_and_or_byhand_gpr_gpr(
+static void latxs_translate_xor_and_or_byhand_gpr_gpr(IR1_INST *pir1,
         IR1_OPND   *opnd0,
         IR1_OPND   *opnd1,
         IR2_OPCODE  lisa_op,
@@ -137,11 +138,17 @@ static void latxs_translate_xor_and_or_byhand_gpr_gpr(
             /* xor 8H, 8H */
             IR2_OPND tmp1 = latxs_ra_alloc_itemp();
             latxs_append_ir2_opnd2i(LISA_SRLI_D, &tmp1, &reg1, 8);
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(lbt_op, &tmp0, &tmp1);
             latxs_append_ir2_opnd3(lisa_op, &tmp0, &tmp0, &tmp1);
             latxs_store_ir2_to_ir1_gpr_em(&tmp0, opnd0);
         } else {
             /* xor, 8H, reg8 */
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(lbt_op, &tmp0, &reg1);
             latxs_append_ir2_opnd3(lisa_op, &tmp0, &tmp0, &reg1);
             latxs_store_ir2_to_ir1_gpr_em(&tmp0, opnd0);
@@ -151,12 +158,18 @@ static void latxs_translate_xor_and_or_byhand_gpr_gpr(
             /* xor reg8, 8H */
             IR2_OPND tmp1 = latxs_ra_alloc_itemp();
             latxs_append_ir2_opnd2i(LISA_SRLI_D, &tmp1, &reg1, 8);
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(lbt_op, &reg0, &tmp1);
             latxs_append_ir2_opnd3(lisa_op, &tmp1, &reg0, &tmp1);
             latxs_store_ir2_to_ir1_gpr_em(&tmp1, opnd0);
         } else {
             /* xor reg8/16/32, reg8/16/32 */
             int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);
             if (os == 32) {
                 latxs_append_ir2_opnd3(lisa_op, &reg0, &reg0, &reg1);
@@ -170,7 +183,7 @@ static void latxs_translate_xor_and_or_byhand_gpr_gpr(
     }
 }
 
-static void latxs_translate_xor_and_or_byhand_gpr_imm(
+static void latxs_translate_xor_and_or_byhand_gpr_imm(IR1_INST *pir1,
         IR1_OPND   *opnd0,
         IR1_OPND   *opnd1,
         IR2_OPCODE  lisa_op,
@@ -185,12 +198,18 @@ static void latxs_translate_xor_and_or_byhand_gpr_imm(
         /* xor 8H, imm */
         IR2_OPND tmp0 = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &tmp0, &reg0, 8);
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(lbt_op,  &tmp0, &reg1);
         latxs_append_ir2_opnd3(lisa_op, &tmp0, &tmp0, &reg1);
         latxs_store_ir2_to_ir1_gpr_em(&tmp0, opnd0);
     } else {
         /* xor reg8/16/32, imm */
         int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);
         if (os == 32) {
             latxs_append_ir2_opnd3(lisa_op, &reg0, &reg0, &reg1);
@@ -208,7 +227,7 @@ static void latxs_translate_xor_and_or_byhand_gpr_imm(
     }
 }
 
-static void latxs_translate_xor_and_or_byhand_gpr_mem(
+static void latxs_translate_xor_and_or_byhand_gpr_mem(IR1_INST *pir1,
         IR1_OPND   *opnd0,
         IR1_OPND   *opnd1,
         IR2_OPCODE  lisa_op,
@@ -223,12 +242,18 @@ static void latxs_translate_xor_and_or_byhand_gpr_mem(
         /* xor 8H, mem */
         IR2_OPND tmp0 = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_SRLI_D, &tmp0, &reg0, 8);
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(lbt_op,  &tmp0, &reg1);
         latxs_append_ir2_opnd3(lisa_op, &tmp0, &tmp0, &reg1);
         latxs_store_ir2_to_ir1_gpr_em(&tmp0, opnd0);
     } else {
         /* xor reg8/16/32, mem */
         int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);
         if (os == 32) {
             latxs_append_ir2_opnd3(lisa_op, &reg0, &reg0, &reg1);
@@ -241,7 +266,7 @@ static void latxs_translate_xor_and_or_byhand_gpr_mem(
     }
 }
 
-static void latxs_translate_xor_and_or_byhand_mem_gpr(
+static void latxs_translate_xor_and_or_byhand_mem_gpr(IR1_INST *pir1,
         IR1_OPND   *opnd0,
         IR1_OPND   *opnd1,
         IR2_OPCODE  lisa_op,
@@ -261,6 +286,9 @@ static void latxs_translate_xor_and_or_byhand_mem_gpr(
         latxs_append_ir2_opnd3(lisa_op, &dest, &reg0, &tmp1);
         latxs_store_ir2_to_ir1_mem(&dest, opnd0, -1);
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(lbt_op, &reg0, &tmp1);
     } else {
         /* xor mem, reg8/16/32 */
@@ -269,11 +297,14 @@ static void latxs_translate_xor_and_or_byhand_mem_gpr(
         latxs_store_ir2_to_ir1_mem(&dest, opnd0, -1);
 
         int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);
     }
 }
 
-static void latxs_translate_xor_and_or_byhand_mem_imm(
+static void latxs_translate_xor_and_or_byhand_mem_imm(IR1_INST *pir1,
         IR1_OPND   *opnd0,
         IR1_OPND   *opnd1,
         IR2_OPCODE  lisa_op,
@@ -290,6 +321,9 @@ static void latxs_translate_xor_and_or_byhand_mem_imm(
     latxs_store_ir2_to_ir1_mem(&dest, opnd0, -1);
 
     int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
     latxs_append_ir2_opnd2(lbt_op + (os >> 4), &reg0, &reg1);
 }
 
@@ -314,21 +348,21 @@ static inline bool latxs_translate_xor_and_or_byhand(
 
     if (ir1_opnd_is_gpr(opnd0)) {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_xor_and_or_byhand_gpr_gpr(opnd0, opnd1,
+            latxs_translate_xor_and_or_byhand_gpr_gpr(pir1, opnd0, opnd1,
                     lisa_op, lbt_op);
         } else if (ir1_opnd_is_imm(opnd1)) {
-            latxs_translate_xor_and_or_byhand_gpr_imm(opnd0, opnd1,
+            latxs_translate_xor_and_or_byhand_gpr_imm(pir1, opnd0, opnd1,
                     lisa_op, lbt_op);
         } else {
-            latxs_translate_xor_and_or_byhand_gpr_mem(opnd0, opnd1,
+            latxs_translate_xor_and_or_byhand_gpr_mem(pir1, opnd0, opnd1,
                     lisa_op, lbt_op);
         }
     } else {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_xor_and_or_byhand_mem_gpr(opnd0, opnd1,
+            latxs_translate_xor_and_or_byhand_mem_gpr(pir1, opnd0, opnd1,
                     lisa_op, lbt_op);
         } else {
-            latxs_translate_xor_and_or_byhand_mem_imm(opnd0, opnd1,
+            latxs_translate_xor_and_or_byhand_mem_imm(pir1, opnd0, opnd1,
                     lisa_op, lbt_op);
         }
     }
@@ -444,7 +478,7 @@ bool latxs_translate_not_byhand(IR1_INST *pir1)
 
 
 
-static void latxs_translate_shr_byhand_gpr_cl(
+static void latxs_translate_shr_byhand_gpr_cl(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg1 = latxs_ra_alloc_gpr(ecx_index);
@@ -453,6 +487,9 @@ static void latxs_translate_shr_byhand_gpr_cl(
     if (os == 32) {
         IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SRL_B + (os >> 4), &reg0, &reg1);
         latxs_append_ir2_opnd3(LISA_SRL_W, &reg0, &reg0, &reg1);
         latxs_ir2_opnd_set_emb(&reg0, EXMode_S, 32);
@@ -460,6 +497,9 @@ static void latxs_translate_shr_byhand_gpr_cl(
         IR2_OPND reg0 = latxs_ra_alloc_itemp();
         latxs_load_ir1_gpr_to_ir2(&reg0, opnd0, EXMode_Z);
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SRL_B + (os >> 4), &reg0, &reg1);
         latxs_append_ir2_opnd3(LISA_SRL_W, &reg0, &reg0, &reg1);
 
@@ -467,7 +507,7 @@ static void latxs_translate_shr_byhand_gpr_cl(
     }
 }
 
-static void latxs_translate_shr_byhand_gpr_imm8(
+static void latxs_translate_shr_byhand_gpr_imm8(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     int num = ir1_opnd_simm(opnd1) & 0x1f;
@@ -479,6 +519,9 @@ static void latxs_translate_shr_byhand_gpr_imm8(
     if (os == 32) {
         IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd1i(LISA_X86SRLI_W, &reg0, num);
         latxs_append_ir2_opnd2i(LISA_SRLI_W, &reg0, &reg0, num);
         latxs_ir2_opnd_set_emb(&reg0, EXMode_S, 32);
@@ -489,9 +532,15 @@ static void latxs_translate_shr_byhand_gpr_imm8(
         if ((os == 16 && num > 0xf) || (os == 8 && num > 0x7)) {
             IR2_OPND tmp = latxs_ra_alloc_itemp();
             latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &zero_ir2_opnd, num);
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(LISA_X86SRL_B + (os >> 4), &reg0, &tmp);
             latxs_append_ir2_opnd2i(LISA_SRLI_W, &reg0, &reg0, num);
         } else {
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd1i(LISA_X86SRLI_B + (os >> 4), &reg0, num);
             latxs_append_ir2_opnd2i(LISA_SRLI_W, &reg0, &reg0, num);
         }
@@ -500,7 +549,7 @@ static void latxs_translate_shr_byhand_gpr_imm8(
     }
 }
 
-static void latxs_translate_shr_byhand_mem_cl(
+static void latxs_translate_shr_byhand_mem_cl(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
@@ -546,12 +595,15 @@ static void latxs_translate_shr_byhand_mem_cl(
         break;
     }
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+    if (ir1_need_calculate_any_flag(pir1))
+#endif
     latxs_append_ir2_opnd2(LISA_X86SRL_B + (os >> 4), &reg0, &reg1);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
 }
 
-static void latxs_translate_shr_byhand_mem_imm8(
+static void latxs_translate_shr_byhand_mem_imm8(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     int num = ir1_opnd_simm(opnd1) & 0x1f;
@@ -600,8 +652,14 @@ static void latxs_translate_shr_byhand_mem_imm8(
     if ((os == 16 && num > 0xf) || (os == 8 && num > 0x7)) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &zero_ir2_opnd, num);
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SRL_B + (os >> 4), &reg0, &tmp);
     } else {
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd1i(LISA_X86SRLI_B + (os >> 4), &reg0, num);
     }
 }
@@ -622,15 +680,15 @@ bool latxs_translate_shr_byhand(IR1_INST *pir1)
 
     if (ir1_opnd_is_gpr(opnd0)) {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_shr_byhand_gpr_cl(opnd0, opnd1);
+            latxs_translate_shr_byhand_gpr_cl(pir1, opnd0, opnd1);
         } else {
-            latxs_translate_shr_byhand_gpr_imm8(opnd0, opnd1);
+            latxs_translate_shr_byhand_gpr_imm8(pir1, opnd0, opnd1);
         }
     } else {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_shr_byhand_mem_cl(opnd0, opnd1);
+            latxs_translate_shr_byhand_mem_cl(pir1, opnd0, opnd1);
         } else {
-            latxs_translate_shr_byhand_mem_imm8(opnd0, opnd1);
+            latxs_translate_shr_byhand_mem_imm8(pir1, opnd0, opnd1);
         }
     }
 
@@ -641,7 +699,7 @@ bool latxs_translate_shr_byhand(IR1_INST *pir1)
 
 
 
-static void latxs_translate_shl_byhand_gpr_cl(
+static void latxs_translate_shl_byhand_gpr_cl(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg1 = latxs_ra_alloc_gpr(ecx_index);
@@ -650,6 +708,9 @@ static void latxs_translate_shl_byhand_gpr_cl(
     if (os == 32) {
         IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SLL_B + (os >> 4), &reg0, &reg1);
         latxs_append_ir2_opnd3(LISA_SLL_W, &reg0, &reg0, &reg1);
         latxs_ir2_opnd_set_emb(&reg0, EXMode_S, 32);
@@ -657,6 +718,9 @@ static void latxs_translate_shl_byhand_gpr_cl(
         IR2_OPND reg0 = latxs_ra_alloc_itemp();
         latxs_load_ir1_gpr_to_ir2(&reg0, opnd0, EXMode_S);
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SLL_B + (os >> 4), &reg0, &reg1);
         latxs_append_ir2_opnd3(LISA_SLL_W, &reg0, &reg0, &reg1);
 
@@ -665,7 +729,7 @@ static void latxs_translate_shl_byhand_gpr_cl(
 
 }
 
-static void latxs_translate_shl_byhand_gpr_imm8(
+static void latxs_translate_shl_byhand_gpr_imm8(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     int num = ir1_opnd_simm(opnd1) & 0x1f;
@@ -677,6 +741,9 @@ static void latxs_translate_shl_byhand_gpr_imm8(
     if (os == 32) {
         IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd1i(LISA_X86SLLI_W, &reg0, num);
         latxs_append_ir2_opnd2i(LISA_SLLI_W, &reg0, &reg0, num);
         latxs_ir2_opnd_set_emb(&reg0, EXMode_S, 32);
@@ -687,9 +754,15 @@ static void latxs_translate_shl_byhand_gpr_imm8(
         if ((os == 16 && num > 0xf) || (os == 8 && num > 0x7)) {
             IR2_OPND tmp = latxs_ra_alloc_itemp();
             latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &zero_ir2_opnd, num);
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(LISA_X86SLL_B + (os >> 4), &reg0, &tmp);
             latxs_append_ir2_opnd2i(LISA_SLLI_W, &reg0, &reg0, num);
         } else {
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd1i(LISA_X86SLLI_B + (os >> 4), &reg0, num);
             latxs_append_ir2_opnd2i(LISA_SLLI_W, &reg0, &reg0, num);
         }
@@ -698,7 +771,7 @@ static void latxs_translate_shl_byhand_gpr_imm8(
     }
 }
 
-static void latxs_translate_shl_byhand_mem_cl(
+static void latxs_translate_shl_byhand_mem_cl(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
@@ -744,12 +817,15 @@ static void latxs_translate_shl_byhand_mem_cl(
         break;
     }
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+    if (ir1_need_calculate_any_flag(pir1))
+#endif
     latxs_append_ir2_opnd2(LISA_X86SLL_B + (os >> 4), &reg0, &reg1);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
 }
 
-static void latxs_translate_shl_byhand_mem_imm8(
+static void latxs_translate_shl_byhand_mem_imm8(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     int num = ir1_opnd_simm(opnd1) & 0x1f;
@@ -799,8 +875,14 @@ static void latxs_translate_shl_byhand_mem_imm8(
     if ((os == 16 && num > 0xf) || (os == 8 && num > 0x7)) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &zero_ir2_opnd, num);
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SLL_B + (os >> 4), &reg0, &tmp);
     } else {
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd1i(LISA_X86SLLI_B + (os >> 4), &reg0, num);
     }
 }
@@ -820,15 +902,15 @@ bool latxs_translate_shl_byhand(IR1_INST *pir1)
 
     if (ir1_opnd_is_gpr(opnd0)) {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_shl_byhand_gpr_cl(opnd0, opnd1);
+            latxs_translate_shl_byhand_gpr_cl(pir1, opnd0, opnd1);
         } else {
-            latxs_translate_shl_byhand_gpr_imm8(opnd0, opnd1);
+            latxs_translate_shl_byhand_gpr_imm8(pir1, opnd0, opnd1);
         }
     } else {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_shl_byhand_mem_cl(opnd0, opnd1);
+            latxs_translate_shl_byhand_mem_cl(pir1, opnd0, opnd1);
         } else {
-            latxs_translate_shl_byhand_mem_imm8(opnd0, opnd1);
+            latxs_translate_shl_byhand_mem_imm8(pir1, opnd0, opnd1);
         }
     }
 
@@ -839,7 +921,7 @@ bool latxs_translate_shl_byhand(IR1_INST *pir1)
 
 
 
-static void latxs_translate_sar_byhand_gpr_cl(
+static void latxs_translate_sar_byhand_gpr_cl(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg1 = latxs_ra_alloc_gpr(ecx_index);
@@ -848,6 +930,9 @@ static void latxs_translate_sar_byhand_gpr_cl(
     if (os == 32) {
         IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SRA_B + (os >> 4), &reg0, &reg1);
         latxs_append_ir2_opnd3(LISA_SRA_W, &reg0, &reg0, &reg1);
         latxs_ir2_opnd_set_emb(&reg0, EXMode_S, 32);
@@ -855,6 +940,9 @@ static void latxs_translate_sar_byhand_gpr_cl(
         IR2_OPND reg0 = latxs_ra_alloc_itemp();
         latxs_load_ir1_gpr_to_ir2(&reg0, opnd0, EXMode_S);
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SRA_B + (os >> 4), &reg0, &reg1);
         latxs_append_ir2_opnd3(LISA_SRA_W, &reg0, &reg0, &reg1);
 
@@ -862,7 +950,7 @@ static void latxs_translate_sar_byhand_gpr_cl(
     }
 }
 
-static void latxs_translate_sar_byhand_gpr_imm8(
+static void latxs_translate_sar_byhand_gpr_imm8(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     int num = ir1_opnd_simm(opnd1) & 0x1f;
@@ -874,6 +962,9 @@ static void latxs_translate_sar_byhand_gpr_imm8(
     if (os == 32) {
         IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd1i(LISA_X86SRAI_W, &reg0, num);
         latxs_append_ir2_opnd2i(LISA_SRAI_W, &reg0, &reg0, num);
         latxs_ir2_opnd_set_emb(&reg0, EXMode_S, 32);
@@ -884,9 +975,15 @@ static void latxs_translate_sar_byhand_gpr_imm8(
         if ((os == 16 && num > 0xf) || (os == 8 && num > 0x7)) {
             IR2_OPND tmp = latxs_ra_alloc_itemp();
             latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &zero_ir2_opnd, num);
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd2(LISA_X86SRA_B + (os >> 4), &reg0, &tmp);
             latxs_append_ir2_opnd2i(LISA_SRAI_W, &reg0, &reg0, num);
         } else {
+#ifdef LATXS_FLAGRDTN_ENABLE
+            if (ir1_need_calculate_any_flag(pir1))
+#endif
             latxs_append_ir2_opnd1i(LISA_X86SRAI_B + (os >> 4), &reg0, num);
             latxs_append_ir2_opnd2i(LISA_SRAI_W, &reg0, &reg0, num);
         }
@@ -895,7 +992,7 @@ static void latxs_translate_sar_byhand_gpr_imm8(
     }
 }
 
-static void latxs_translate_sar_byhand_mem_cl(
+static void latxs_translate_sar_byhand_mem_cl(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     IR2_OPND reg0 = latxs_ra_alloc_itemp();
@@ -941,12 +1038,15 @@ static void latxs_translate_sar_byhand_mem_cl(
         break;
     }
 
+#ifdef LATXS_FLAGRDTN_ENABLE
+    if (ir1_need_calculate_any_flag(pir1))
+#endif
     latxs_append_ir2_opnd2(LISA_X86SRA_B + (os >> 4), &reg0, &reg1);
 
     latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
 }
 
-static void latxs_translate_sar_byhand_mem_imm8(
+static void latxs_translate_sar_byhand_mem_imm8(IR1_INST *pir1,
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
     int num = ir1_opnd_simm(opnd1) & 0x1f;
@@ -995,8 +1095,14 @@ static void latxs_translate_sar_byhand_mem_imm8(
     if ((os == 16 && num > 0xf) || (os == 8 && num > 0x7)) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ORI, &tmp, &zero_ir2_opnd, num);
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd2(LISA_X86SRA_B + (os >> 4), &reg0, &tmp);
     } else {
+#ifdef LATXS_FLAGRDTN_ENABLE
+        if (ir1_need_calculate_any_flag(pir1))
+#endif
         latxs_append_ir2_opnd1i(LISA_X86SRAI_B + (os >> 4), &reg0, num);
     }
 }
@@ -1016,15 +1122,15 @@ bool latxs_translate_sar_byhand(IR1_INST *pir1)
 
     if (ir1_opnd_is_gpr(opnd0)) {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_sar_byhand_gpr_cl(opnd0, opnd1);
+            latxs_translate_sar_byhand_gpr_cl(pir1, opnd0, opnd1);
         } else {
-            latxs_translate_sar_byhand_gpr_imm8(opnd0, opnd1);
+            latxs_translate_sar_byhand_gpr_imm8(pir1, opnd0, opnd1);
         }
     } else {
         if (ir1_opnd_is_gpr(opnd1)) {
-            latxs_translate_sar_byhand_mem_cl(opnd0, opnd1);
+            latxs_translate_sar_byhand_mem_cl(pir1, opnd0, opnd1);
         } else {
-            latxs_translate_sar_byhand_mem_imm8(opnd0, opnd1);
+            latxs_translate_sar_byhand_mem_imm8(pir1, opnd0, opnd1);
         }
     }
 
