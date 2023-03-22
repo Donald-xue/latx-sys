@@ -1,6 +1,7 @@
 #ifndef _LATX_SYS_FLAG_RDTN_H_
 #define _LATX_SYS_FLAG_RDTN_H_
 
+#include "ir1.h"
 #include "flag-reduction.h"
 
 #define LATXS_FLAGRDTN_ENABLE
@@ -14,8 +15,13 @@
       __latxs_flag_reduction(tb);       \
 } while (0)
 void __latxs_flag_reduction(TranslationBlock *tb);
+#define LATXS_FLAG_REDUCTION_CHECKIF(pir1) \
+if (ir1_need_calculate_any_flag(pir1))
+
 #else /* no LATXS_FLAGRDTN_ENABLE */
+
 #define latxs_flag_reduction(tb) tb_flag(tb)
+#define LATXS_FLAG_REDUCTION_CHECKIF(pir1)
 #endif /* LATXS_FLAGRDTN_ENABLE */
 
 #ifdef LATXS_FLAGRDTN_OPTION_CHECK
