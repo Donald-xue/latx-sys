@@ -310,4 +310,6 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     } else {
         td->need_save_currtb_for_int = 0;
     }
+
+    td->curr_top_save = -1;
 }

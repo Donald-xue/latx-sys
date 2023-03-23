@@ -83,17 +83,21 @@ void latxs_tr_gen_save_curr_top(void)
     TRANSLATION_DATA *td = lsenv->tr_data;
 
     int ctop = td->curr_top;
+    int last_ctop = td->curr_top_save;
 
     if (!option_lsfpu) {
-        if (ctop) {
-            IR2_OPND top = latxs_ra_alloc_itemp();
-            latxs_load_imm32_to_ir2(&top, ctop, EXMode_N);
-            latxs_append_ir2_opnd2i(LISA_ST_W, &top,
-                    &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
-            latxs_ra_free_temp(&top);
-        } else {
-            latxs_append_ir2_opnd2i(LISA_ST_W, &latxs_zero_ir2_opnd,
-                    &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
+        if (ctop != last_ctop) {
+            if (ctop) {
+                IR2_OPND top = latxs_ra_alloc_itemp();
+                latxs_load_imm32_to_ir2(&top, ctop, EXMode_N);
+                latxs_append_ir2_opnd2i(LISA_ST_W, &top,
+                        &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
+                latxs_ra_free_temp(&top);
+            } else {
+                latxs_append_ir2_opnd2i(LISA_ST_W, &latxs_zero_ir2_opnd,
+                        &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
+            }
+            td->curr_top_save = ctop;
         }
     } else {
         IR2_OPND top = latxs_ra_alloc_itemp();

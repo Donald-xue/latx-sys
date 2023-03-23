@@ -190,6 +190,13 @@ typedef struct TRANSLATION_DATA {
     int sys_eob_can_link;
 
     int need_save_currtb_for_int;
+
+    /*
+     * for latxs_tr_gen_save_curr_top() when !LSFPU
+     *
+     * record the last curr_top that is writen into ENV
+     */
+    int curr_top_save;
 #endif
 
 } TRANSLATION_DATA;
