@@ -360,8 +360,20 @@ static int __gen_fpu_rotate_step(void *code_base,
     int i = 0;
     int step = 0;
 
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    IR2_OPND *env  = &latxs_env_ir2_opnd;  /* $23 s0   */
+    IR2_OPND *zero = &latxs_zero_ir2_opnd; /* $0  zero */
+
     for (step = 1; step <= 7; ++step) {
         latxs_tr_init(NULL);
+
+        int start = (td->ir2_asm_nr << 2);
+
+
+
+
+
 
         /* 2.1 load top_bias early. It will be modified later */
         IR2_OPND top_bias = latxs_ra_alloc_itemp();
@@ -404,13 +416,30 @@ static int __gen_fpu_rotate_step(void *code_base,
         /* 1.4 adjust the top_bias */
         latxs_append_ir2_opnd2i(LISA_ADDI_W, &top_bias, &top_bias, step);
         latxs_append_ir2_opnd2i(LISA_ANDI,   &top_bias, &top_bias, 0x7);
-
-        latxs_append_ir2_opnd2i(LISA_ST_W, &top_bias,
-                &latxs_env_ir2_opnd,
+        latxs_append_ir2_opnd2i(LISA_ST_W,   &top_bias, env,
                 lsenv_offset_of_top_bias(lsenv));
+
+        /* SIGINT check */
+        if (sigint_enabled() == 1) {
+            IR2_OPND tmp = latxs_ra_alloc_itemp();
+            latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                    (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+                    (int32_t)offsetof(X86CPU, env));
+
+            int offset = (td->ir2_asm_nr << 2) - start;
+            int64_t ins_offset =
+                (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+                2;
+            latxs_append_ir2_opnd2i(LISA_BLT, &tmp, zero, ins_offset);
+        }
+
         /* 1.5 jump to next TB's native code, saved in ra by jump glue */
         latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_zero_ir2_opnd,
                 &latxs_ra_ir2_opnd, 0);
+
+
+
+
 
         rotate_step_array[step] = (ADDR)code_ptr;
         rotate_step_array[step - 8] = (ADDR)code_ptr;
@@ -484,7 +513,7 @@ static int gen_latxs_sc_fpu_rotate(void *code_base)
     return code_nr_all;
 }
 
-static int __gen_latxs_jmp_glue(void *code_ptr, int n)
+static int __gen_latxs_jmp_glue_indirect(void *code_ptr)
 {
     int code_nr = 0;
 
@@ -496,229 +525,330 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
     int offset = 0;
     int64_t ins_offset = 0;
 
-    IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
-    IR2_OPND *zero = &latxs_zero_ir2_opnd;
-    IR2_OPND *env  = &latxs_env_ir2_opnd;
+    IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;    /* $4   a0/v0 */
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;    /* $0   zero  */
+    IR2_OPND *env  = &latxs_env_ir2_opnd;     /* $23  s0    */
+                                                      
+    IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;    /* $4   a0/v0 */
+                                                      
+    IR2_OPND tb = latxs_ra_alloc_dbt_arg1();  /* $10  a6    */
 
-    IR2_OPND *arg0 = &latxs_arg0_ir2_opnd;
+    IR2_OPND tmp  = latxs_ra_alloc_itemp();
+    IR2_OPND tmp0 = latxs_ra_alloc_itemp();
+    IR2_OPND tmp1 = latxs_ra_alloc_itemp();
 
-    IR2_OPND tb  = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
-
-    IR2_OPND tmp    = latxs_ra_alloc_itemp();
-    IR2_OPND param0 = latxs_ra_alloc_itemp();
-    IR2_OPND param1 = latxs_ra_alloc_itemp();
+    IR2_OPND label_next_tb_exist = latxs_ir2_opnd_new_label();
 
     /*
-     * arguments passed to native rotate FPU
-     * DBT arg 1 : FPU rotate step
-     * DBT arg 2 : next TB's native codes
+     * 1. Native Jmp Cache Lookup
+     *    1.1 lookup jmp cache // => 2. if NULL
+     *    1.2 check PC // => 2. if miss
+     *    1.3 check TB.cflags CF_INVALID // => 2. if miss
+     *    1.4 check CS_BASE // => 2. if miss
+     *    1.5 check TB.flags with env->hflags // => 2. if miss
+     *    1.6 => 3.
+     * 2. Helper Lookup TB
+     *    2.1 call helper lookup tb // => 3. if find TB
+     *    2.2 jump to epilogue //  => epilogue if no valid TB
+     * 3. Jmp Glue Check
+     *    3.1 (FastCS.nolink) check // => 2.2 if check fail
+     *    3.2 (FastCS.jmpglue) process
+     *    3.3 (FPU Rotate) process
+     *    3.4 (SIGINT) check // => epilogue if interrupt pending
+     *    3.5 jump to next TB
      */
-    IR2_OPND step_opnd = latxs_ra_alloc_dbt_arg1();
 
-    if (n == 0 || n == 1) {
-        /* load tb->next_tb[n] into a0/v0 */
-        latxs_append_ir2_opnd2i(LISA_LD_D, ret0, &tb,
-                offsetof(TranslationBlock, next_tb) +
-                n * sizeof(void *));
-    } else {
-        /* Indirect jmp lookup TB */
+    /*
+     * $a6: previous TB
+     *
+     * $a0/v0: next TB (lookup result)       @ret0
+     *         > valid after TB lookup
+     */
 
-        IR2_OPND label_next_tb_exist = latxs_ir2_opnd_new_label();
+    /* ======== 1. NJC Lookup TB ======== */
+    IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
+    if (njc_enabled()) {
+        /* 1.1 */
+        latxs_load_addr_to_ir2(&tmp, latxs_sc_njc);
+        latxs_append_ir2_opnd1_(lisa_call, &tmp);
+        latxs_append_ir2_opnd3(LISA_BEQ, ret0, zero,
+                                         &njc_miss);
+#ifdef TARGET_X86_64
+#define LISA_LOAD_PC    LISA_LD_D
+#else
+#define LISA_LOAD_PC    LISA_LD_WU
+#endif
+
+        /* 1.2 check if PC == TB.PC */
+        latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp0, ret0,
+                offsetof(TranslationBlock, pc));
+        IR2_OPND eip = latxs_ra_alloc_itemp();
+        latxs_append_ir2_opnd2i(LISA_LOAD_PC, &eip, &latxs_env_ir2_opnd,
+                                lsenv_offset_of_eip(lsenv));
+        latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &eip, &njc_miss);
+        latxs_ra_free_temp(&eip);
+
+        /* 1.3 check next TB cflags CF_INVALID */
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp0, ret0,
+                offsetof(TranslationBlock, cflags));
+        latxs_append_ir2_opnd2i(LISA_SRAI_D, &tmp0, &tmp0, 16);
+        latxs_append_ir2_opnd2i(LISA_ANDI, &tmp0, &tmp0,
+                                           (CF_INVALID >> 16));
+        latxs_append_ir2_opnd3(LISA_BNE, &tmp0, zero, &njc_miss);
+
+        /* 1.4 check next TB's CSBASE */
+        latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp0, ret0,
+                offsetof(TranslationBlock, cs_base));
+        latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp1, env,
+                offsetof(CPUX86State, segs[R_CS].base));
+        latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &tmp1, &njc_miss);
+
+        /* 1.5 check next TB's flags */
+        /*
+         * *flags = env->hflags |
+         * (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK |
+         *                 VM_MASK | AC_MASK));
+         */
+        IR2_OPND eflags = latxs_ra_alloc_itemp();
+        /* eflags is target_ulong, but high 32 bits is all zeros */
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &eflags, &latxs_env_ir2_opnd,
+            lsenv_offset_of_eflags(lsenv));
+        latxs_load_imm64_to_ir2(&tmp0, (IOPL_MASK | TF_MASK | RF_MASK |
+                                          VM_MASK | AC_MASK));
+        latxs_append_ir2_opnd3(LISA_AND, &tmp0, &eflags, &tmp0);
+        latxs_ra_free_temp(&eflags);
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp1, env,
+                offsetof(CPUX86State, hflags));
+        latxs_append_ir2_opnd3(LISA_OR, &tmp1, &tmp1, &tmp0);
+        /* tb->flags */
+        latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp0, ret0,
+                offsetof(TranslationBlock, flags));
+        latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &tmp1, &njc_miss);
+
+        /* 1.6 NJC lookup success, finish lookup */
+        latxs_append_ir2_opnd1(LISA_B, &label_next_tb_exist);
+
+        latxs_append_ir2_opnd1(LISA_LABEL, &njc_miss);
+    }
+
+    /* ======== 2. helper_lookup_tb ======== */
+
+    /* 2.1 call helper lookup tb    => 3. if find TB */
+    offset = (td->ir2_asm_nr << 2) - start;
+    ins_offset = (latxs_sc_scs_prologue - (ADDR)code_ptr - offset) >> 2;
+    latxs_append_ir2_jmp_far(ins_offset, 1);
+
+    latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
+    latxs_tr_gen_call_to_helper((ADDR)helper_lookup_tb);
+
+    offset = (td->ir2_asm_nr << 2) - start;
+    ins_offset = (latxs_sc_scs_epilogue - (ADDR)code_ptr - offset) >> 2;
+    latxs_append_ir2_jmp_far(ins_offset, 1);
+
+    latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
+
+    /* label for 3.1 FastCS.nolink check */
+    IR2_OPND fastcs_no_link = latxs_invalid_ir2_opnd;
+    if (latxs_fastcs_is_no_link()) {
+        fastcs_no_link = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd1(LISA_LABEL, &fastcs_no_link);
+    }
+
+    /* 2.2 if TB is NULL, jump to epilogue */
+    offset = (td->ir2_asm_nr << 2) - start;
+    ins_offset = (context_switch_native_to_bt_ret_0 -
+            (ADDR)code_ptr - offset) >> 2;
+    latxs_append_ir2_jmp_far(ins_offset, 0);
+
+    /* ======== 3. Jmp Glue Check ======== */
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_next_tb_exist);
+
+    /* 3.1 FastCS.nolink check      => 2.2 if context is not equal */
+    if (latxs_fastcs_is_no_link()) {
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp0, ret0,
+                offsetof(TranslationBlock, fastcs_ctx));
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp1, env,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &tmp1, &fastcs_no_link);
+    }
+
+    /* 3.2 FastCS.jmpglue check : load native context */
+    if (latxs_fastcs_is_jmp_glue()) {
+#if 1
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp0, ret0,
+                offsetof(TranslationBlock, fastcs_ctx));
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp1, env,
+                offsetof(CPUX86State, fastcs_ctx));
+        latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp1, &tmp1, 2);
+        latxs_append_ir2_opnd3(LISA_ADD_D,  &tmp1, &tmp1, &tmp0);
+#else
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp1, ret0,
+                offsetof(TranslationBlock, fastcs_ctx));
+#endif
+        latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp1, &tmp1, 3);
+
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tmp0, env,
+                offsetof(CPUX86State, fastcs_ptr));
+        latxs_append_ir2_opnd3(LISA_ADD_D, &tmp0, &tmp0, &tmp1);
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tmp1, &tmp0, 8);
+
+        IR2_OPND just_go_on = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd3(LISA_BEQ, &tmp1, zero, &just_go_on);
+        latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_ra_ir2_opnd, &tmp1, 0);
+        latxs_append_ir2_opnd1(LISA_LABEL, &just_go_on);
+    }
+
+    /* 3.3 FPU Rotate + SIGINT check + jump to next TB */
+    if (!option_lsfpu && !option_soft_fpu) {
+        IR2_OPND step_opnd = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
+
+        /* 1. tb->_top_out from @tb */
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp1, &tb,
+                offsetof(TranslationBlock, _top_out));
+        /* 2. next_tb->_top_in from @ret0 */
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp0, ret0,
+                offsetof(TranslationBlock, _top_in));
+        /* 3. calculate top_bias, store rotate step in arg1 */
+        latxs_append_ir2_opnd3(LISA_SUB_D, &step_opnd, &tmp1, &tmp0);
 
         /*
-         * $a6: prev TB           @tb         @step_opnd
-         *
-         * tmp: EIP for next TB   @eip
-         * tmp: free to use here  @param0
-         * tmp: free to use here  @param1
-         * tmp: free to use here  @tmp
-         *      > used to verify next TB
-         *      > used to record monitor data
-         *
-         * $a0/v0: next TB (lookup result)       @ret0
-         *         > valid after TB lookup
+         * For indirect jmps, we will check step to
+         * decide wehter to rotate FPU or not
          */
+        IR2_OPND label_rotate = latxs_ir2_opnd_new_label();
+        latxs_append_ir2_opnd3(LISA_BNE, &step_opnd, zero,
+                &label_rotate);
+        /* bias ==0, no need to ratate */
+        /* fetch native address of next_tb to arg2 */
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tmp1, ret0,
+                offsetof(TranslationBlock, tc) +
+                offsetof(struct tb_tc, ptr));
+        {
+            /* SIGINT check */
+            if (sigint_enabled() == 1) {
+                latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                        (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+                        (int32_t)offsetof(X86CPU, env));
 
-        /* NJC Lookup TB */
-        IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
-        if (njc_enabled()) {
-            latxs_load_addr_to_ir2(&tmp, latxs_sc_njc);
-            latxs_append_ir2_opnd1_(lisa_call, &tmp);
-            latxs_append_ir2_opnd3(LISA_BEQ, ret0, zero,
-                                             &njc_miss);
-
-            /* check if PC == TB.PC */
-#ifdef TARGET_X86_64
-            latxs_append_ir2_opnd2i(LISA_LD_D, &param0, ret0,
-                    offsetof(TranslationBlock, pc));
-#else
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
-                    offsetof(TranslationBlock, pc));
-#endif
-            IR2_OPND eip = latxs_ra_alloc_itemp();
-#ifdef TARGET_X86_64
-            latxs_append_ir2_opnd2i(LISA_LD_D, &eip, &latxs_env_ir2_opnd,
-                                    lsenv_offset_of_eip(lsenv));
-#else
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &eip, &latxs_env_ir2_opnd,
-                                    lsenv_offset_of_eip(lsenv));
-#endif
-            latxs_append_ir2_opnd3(LISA_BNE, &param0, &eip, &njc_miss);
-            latxs_ra_free_temp(&eip);
-
-            /*
-             * check next TB cflags CF_INVALID
-             *
-             * For normal indirect jmp, it can's modify cs_base, hflags, ...
-             * So we only check if TB is invalid
-             */
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
-                    offsetof(TranslationBlock, cflags));
-            latxs_append_ir2_opnd2i(LISA_SRAI_D, &param0, &param0, 16);
-            latxs_append_ir2_opnd2i(LISA_ANDI, &param0, &param0,
-                                               (CF_INVALID >> 16));
-            latxs_append_ir2_opnd3(LISA_BNE, &param0, zero, &njc_miss);
-
-            /* check next TB's CSBASE */
-#ifdef TARGET_X86_64
-            latxs_append_ir2_opnd2i(LISA_LD_D, &param0, ret0,
-                    offsetof(TranslationBlock, cs_base));
-            latxs_append_ir2_opnd2i(LISA_LD_D, &param1, env,
-                    offsetof(CPUX86State, segs[R_CS].base));
-#else
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
-                    offsetof(TranslationBlock, cs_base));
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &param1, env,
-                    offsetof(CPUX86State, segs[R_CS].base));
-#endif
-            latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &njc_miss);
-
-            /* check next TB's flags */
-            /*
-             * *flags = env->hflags |
-             * (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK |
-             *                 VM_MASK | AC_MASK));
-             */
-            IR2_OPND eflags = latxs_ra_alloc_itemp();
-            /* eflags is target_ulong, but high 32 bits is all zeros */
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &eflags, &latxs_env_ir2_opnd,
-                lsenv_offset_of_eflags(lsenv));
-            latxs_load_imm64_to_ir2(&param0, (IOPL_MASK | TF_MASK | RF_MASK |
-                                              VM_MASK | AC_MASK));
-            latxs_append_ir2_opnd3(LISA_AND, &param0, &eflags, &param0);
-            latxs_ra_free_temp(&eflags);
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &param1, env,
-                    offsetof(CPUX86State, hflags));
-            latxs_append_ir2_opnd3(LISA_OR, &param1, &param1, &param0);
-            /* tb->flags */
-            latxs_append_ir2_opnd2i(LISA_LD_WU, &param0, ret0,
-                    offsetof(TranslationBlock, flags));
-            latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &njc_miss);
-
-            /* NJC lookup success, finish lookup */
-            latxs_append_ir2_opnd1(LISA_B, &label_next_tb_exist);
-
-            latxs_append_ir2_opnd1(LISA_LABEL, &njc_miss);
+                int offset = (td->ir2_asm_nr << 2) - start;
+                int64_t ins_offset =
+                    (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+                    2;
+                latxs_append_ir2_opnd2i(LISA_BLT, &tmp, zero, ins_offset);
+            }
         }
+        latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp1, 0);
+        latxs_append_ir2_opnd1(LISA_LABEL, &label_rotate);
 
-        /* LL: helper_lookup_tb */
-        offset = (td->ir2_asm_nr << 2) - start;
-        ins_offset = (latxs_sc_scs_prologue - (ADDR)code_ptr - offset) >> 2;
-        latxs_append_ir2_jmp_far(ins_offset, 1);
+        /* top_bias != 0, need to rotate, step is in arg1 */
+        /* fetch native address of next_tb to ra */
+        latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd, ret0,
+                offsetof(TranslationBlock, tc) +
+                offsetof(struct tb_tc, ptr));
+        offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
 
-        latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
-        latxs_tr_gen_call_to_helper((ADDR)helper_lookup_tb);
-//        latxs_load_addr_to_ir2(&tmp, (ADDR)helper_lookup_tb);
-//        latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
-//        latxs_append_ir2_opnd2i(LISA_JIRL, ra, &tmp, 0);
-
-        offset = (td->ir2_asm_nr << 2) - start;
-        ins_offset = (latxs_sc_scs_epilogue - (ADDR)code_ptr - offset) >> 2;
-        latxs_append_ir2_jmp_far(ins_offset, 1);
-
-        latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
-
-        /* check fastcs_ctx if mode is nolink */
-        IR2_OPND fastcs_no_link = latxs_invalid_ir2_opnd;
-        if (latxs_fastcs_is_no_link()) {
-            fastcs_no_link = latxs_ir2_opnd_new_label();
-            latxs_append_ir2_opnd1(LISA_LABEL, &fastcs_no_link);
-        }
-
-        /* if next_tb == NULL, jump to epilogue */
-        offset = (td->ir2_asm_nr << 2) - start;
-        ins_offset = (context_switch_native_to_bt_ret_0 -
-                (ADDR)code_ptr - offset) >> 2;
+        int64_t ins_offset =
+            (native_rotate_fpu_by - (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 0);
+    }
 
-        /* else compare tb->top_out and next_tb->top_in */
-        latxs_append_ir2_opnd1(LISA_LABEL, &label_next_tb_exist);
+    /* 3.4 SIGINT check interrupt */
+    if (option_lsfpu || option_soft_fpu) {
+        IR2_OPND sigint_label;
+        IR2_OPND sigint_check_label_start;
+        IR2_OPND sigint_check_label_end;
+        if (sigint_enabled() == 1) {
+            sigint_check_label_start = latxs_ir2_opnd_new_label();
+            sigint_check_label_end   = latxs_ir2_opnd_new_label();
 
-        /* check fastcs_ctx if mode is nolink */
-        if (latxs_fastcs_is_no_link()) {
-            latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
-                    offsetof(TranslationBlock, fastcs_ctx));
-            latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, env,
-                    offsetof(CPUX86State, fastcs_ctx));
-            latxs_append_ir2_opnd3(LISA_BNE, &param0, &param1, &fastcs_no_link);
+            sigint_label = latxs_ir2_opnd_new_label();
+            latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+                    (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+                    (int32_t)offsetof(X86CPU, env));
+
+            latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_start);
+            latxs_append_ir2_opnd3(LISA_BLT, &tmp, zero,
+                    &sigint_label);
         }
 
-        /* load context if mode in jmp glue */
-        if (latxs_fastcs_is_jmp_glue()) {
-#if 1
-            latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
-                    offsetof(TranslationBlock, fastcs_ctx));
-            latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, env,
-                    offsetof(CPUX86State, fastcs_ctx));
-            latxs_append_ir2_opnd2i(LISA_SLLI_D, &param1, &param1, 2);
-            latxs_append_ir2_opnd3(LISA_ADD_D,  &param1, &param1, &param0);
-#else
-            latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, ret0,
-                    offsetof(TranslationBlock, fastcs_ctx));
-#endif
-            latxs_append_ir2_opnd2i(LISA_SLLI_D, &param1, &param1, 3);
+        /* 3.5 jump to next TB (with LSFPU or SoftFPU enabled) */
+        latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
+                offsetof(TranslationBlock, tc) +
+                offsetof(struct tb_tc, ptr));
+        latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
 
-            latxs_append_ir2_opnd2i(LISA_LD_D, &param0, env,
-                    offsetof(CPUX86State, fastcs_ptr));
-            latxs_append_ir2_opnd3(LISA_ADD_D, &param0, &param0, &param1);
-            latxs_append_ir2_opnd2i(LISA_LD_D, &param1, &param0, 8);
+        if (sigint_enabled() == 1) {
+            latxs_append_ir2_opnd1(LISA_LABEL, &sigint_check_label_end);
+            latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
-            IR2_OPND just_go_on = latxs_ir2_opnd_new_label();
-            latxs_append_ir2_opnd3(LISA_BEQ, &param1, zero, &just_go_on);
-            latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_ra_ir2_opnd, &param1, 0);
-            latxs_append_ir2_opnd1(LISA_LABEL, &just_go_on);
+            offset = (td->ir2_asm_nr << 2) - start;
+            int64_t ins_offset =
+                (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+                2;
+            latxs_append_ir2_jmp_far(ins_offset, 0);
+
+            /* calculate offset from start to end for sigint check */
+            latxs_sigint_prepare_check_jmp_glue_2(
+                    sigint_check_label_start,
+                    sigint_check_label_end);
         }
     }
 
+    code_nr = latxs_tr_ir2_assemble(code_ptr);
+
+    latxs_tr_fini();
+
+    return code_nr;
+}
+
+static int __gen_latxs_jmp_glue(void *code_ptr, int n)
+{
+    if (n == 2) {
+        return __gen_latxs_jmp_glue_indirect(code_ptr);
+    }
+
+    int code_nr = 0;
+
+    latxs_tr_init(NULL);
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    int start = (td->ir2_asm_nr << 2);
+    int offset = 0;
+
+    IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+
+    IR2_OPND tb  = latxs_ra_alloc_dbt_arg1();
+
+    IR2_OPND tmp  = latxs_ra_alloc_itemp();
+    IR2_OPND tmp0 = latxs_ra_alloc_itemp();
+    IR2_OPND tmp1 = latxs_ra_alloc_itemp();
+
+    lsassert(n == 0 || n == 1);
+
+    /* load tb->next_tb[n] into a0/v0 */
+    latxs_append_ir2_opnd2i(LISA_LD_D, ret0, &tb,
+            offsetof(TranslationBlock, next_tb) +
+            n * sizeof(void *));
+
     if (!option_lsfpu && !option_soft_fpu) {
+        IR2_OPND step_opnd = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
+
         /* 1. tb->_top_out from @tb */
-        latxs_append_ir2_opnd2i(LISA_LD_BU, &param1, &tb,
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp1, &tb,
                 offsetof(TranslationBlock, _top_out));
         /* 2. next_tb->_top_in from @ret0 */
-        latxs_append_ir2_opnd2i(LISA_LD_BU, &param0, ret0,
+        latxs_append_ir2_opnd2i(LISA_LD_BU, &tmp0, ret0,
                 offsetof(TranslationBlock, _top_in));
         /* 3. calculate top_bias, store rotate step in arg1 */
-        latxs_append_ir2_opnd3(LISA_SUB_D, &step_opnd, &param1, &param0);
+        latxs_append_ir2_opnd3(LISA_SUB_D, &step_opnd, &tmp1, &tmp0);
 
         /*
          * For direct jmps, if no need to rotate,
          * we will make direct link without this glue
-         *
-         * For indirect jmps, we will check step to
-         * decide wehter to rotate FPU or not
          */
-        if (n == 2) {
-            IR2_OPND label_rotate = latxs_ir2_opnd_new_label();
-            latxs_append_ir2_opnd3(LISA_BNE, &step_opnd, zero,
-                    &label_rotate);
-            /* bias ==0, no need to ratate */
-            /* fetch native address of next_tb to arg2 */
-            latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
-                    offsetof(TranslationBlock, tc) +
-                    offsetof(struct tb_tc, ptr));
-            latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
-            latxs_append_ir2_opnd1(LISA_LABEL, &label_rotate);
-        }
 
         /* top_bias != 0, need to rotate, step is in arg1 */
         /* fetch native address of next_tb to ra */
