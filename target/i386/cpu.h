@@ -1440,7 +1440,8 @@ typedef struct CPUX86State {
      *          = 0 vCPU is executing TB
      *          = 1 vCPU is not executing TB
      */
-    uint64_t sigint_flag;
+    uint32_t sigint_flag;
+    uint32_t sigint_hamt_flag;
     struct TranslationBlock *latxs_int_tb;
     uint32_t latxs_fpu;
     /* helper use */

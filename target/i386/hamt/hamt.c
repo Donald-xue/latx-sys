@@ -1904,10 +1904,12 @@ void hamt_exception_handler(uint64_t hamt_badvaddr,
         int is_unalign_2, CPUTLBEntry *unalign_entry1, int unalign_size,
         int is_unalign_clean_ram)
 {
+    env->sigint_hamt_flag = 1;
     hamt_do_delay(hamt_badvaddr);
 
     if (hamt_softmmu()) {
         hamt_exception_handler_softmmu(hamt_badvaddr, env, epc);
+        env->sigint_hamt_flag = 0;
         return;
     }
 

@@ -552,6 +552,7 @@ void latxs_fix_after_excp_or_int(void)
 {
     CPUX86State *env = lsenv->cpu_state;
     env->sigint_flag = 1;
+    env->sigint_hamt_flag = 0;
     lsassertm(env->is_fcsr_simd == 0, "fcsr simd %s\n", __func__);
     env->is_fcsr_simd = 0;
 

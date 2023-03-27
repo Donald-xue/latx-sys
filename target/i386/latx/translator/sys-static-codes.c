@@ -202,7 +202,7 @@ static int gen_latxs_sc_prologue(void *code_ptr)
 
     if (sigint_enabled() == 1) {
         /* 3.0 set sigint_flag in ENV to 0 */
-        latxs_append_ir2_opnd2i(LISA_ST_D, zero,
+        latxs_append_ir2_opnd2i(LISA_ST_W, zero,
                 &latxs_env_ir2_opnd,
                 offsetof(CPUX86State, sigint_flag));
     }
@@ -270,7 +270,7 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
         /* 5.0 set sigint_flag in ENV to 1 */
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         latxs_append_ir2_opnd2i(LISA_ADDI_D, &tmp, zero, 1);
-        latxs_append_ir2_opnd2i(LISA_ST_D, &tmp,
+        latxs_append_ir2_opnd2i(LISA_ST_W, &tmp,
                 &latxs_env_ir2_opnd,
                 offsetof(CPUX86State, sigint_flag));
         latxs_ra_free_temp(&tmp);
