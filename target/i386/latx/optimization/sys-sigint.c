@@ -7,6 +7,7 @@
 #include <string.h>
 #include "qemu/timer.h"
 #include "trace.h"
+#include "latx-intb-sys.h"
 
 #include <signal.h>
 #include <ucontext.h>
@@ -215,10 +216,12 @@ void latxs_tb_relink(TranslationBlock *utb)
 
     LATX_TRACE(relink, utb->pc, utb->is_indir_tb);
 
+#ifdef LATXS_INTB_LINK_ENABLE
     if (utb->is_indir_tb) {
-        tb_set_jmp_target(utb, 0, native_jmp_glue_2);
+        tb_set_jmp_target(utb, 0, latxs_sc_intb_lookup);
         goto relink_done;
     }
+#endif
 
 #ifdef SIGINT_NO_RELINK
     goto relink_done;
@@ -276,11 +279,11 @@ void latxs_rr_interrupt_self(CPUState *cpu)
     latxs_tb_unlink(ctb);
 }
 
-static int sigint_check_jmp_glue_2_st;
-static int sigint_check_jmp_glue_2_ed;
+static int sigint_check_intb_lookup_st;
+static int sigint_check_intb_lookup_ed;
 
-static ADDR native_jmp_glue_2_sigint_check_st;
-static ADDR native_jmp_glue_2_sigint_check_ed;
+static ADDR intb_lookup_sigint_check_st;
+static ADDR intb_lookup_sigint_check_ed;
 
 //#define LATXS_SIGINT_EXTRA_OVERHEAD
 
@@ -386,11 +389,13 @@ static void latxs_rr_interrupt_signal_handler(
         if (ctb == NULL) {
             ctb = env->latxs_int_tb;
             LATX_TRACE(event, "tbinenv", ctb ? ctb->pc : 0, __func__);
-            if (native_jmp_glue_2_sigint_check_st <= pc &&
-                native_jmp_glue_2_sigint_check_ed >= pc) {
+#ifdef LATXS_INTB_LINK_ENABLE
+            if (intb_lookup_sigint_check_st <= pc &&
+                intb_lookup_sigint_check_ed >= pc) {
                 fprintf(stderr, "[warning] in %s unhandled case\n",
                         __func__);
             }
+#endif
         } else {
             LATX_TRACE(event, "tcglookuptb", ctb ? ctb->pc : 0, __func__);
         }
@@ -493,7 +498,9 @@ void latxs_tr_gen_save_currtb_for_int(void)
     }
 }
 
-void latxs_sigint_prepare_check_jmp_glue_2(
+#ifdef LATXS_INTB_LINK_ENABLE
+
+void latxs_sigint_prepare_check_intb_lookup(
         IR2_OPND lst, IR2_OPND led)
 {
     if (sigint_enabled() != 1) return;
@@ -540,10 +547,10 @@ void latxs_sigint_prepare_check_jmp_glue_2(
         if (opc == LISA_LABEL) {
             lid = latxs_ir2_opnd_label_id(&pir2->_opnd[0]);
             if (lid == st_id) {
-                sigint_check_jmp_glue_2_st = code_nr;
+                sigint_check_intb_lookup_st = code_nr;
             }
             if (lid == ed_id) {
-                sigint_check_jmp_glue_2_ed = code_nr - 1;
+                sigint_check_intb_lookup_ed = code_nr - 1;
             }
 
             continue;
@@ -552,15 +559,21 @@ void latxs_sigint_prepare_check_jmp_glue_2(
         code_nr += 1;
     }
 
-    native_jmp_glue_2_sigint_check_st = native_jmp_glue_2 +
-        (sigint_check_jmp_glue_2_st << 2);
-    native_jmp_glue_2_sigint_check_ed = native_jmp_glue_2 +
-        (sigint_check_jmp_glue_2_ed << 2);
+    intb_lookup_sigint_check_st = latxs_sc_intb_lookup +
+        (sigint_check_intb_lookup_st << 2);
+    intb_lookup_sigint_check_ed = latxs_sc_intb_lookup +
+        (sigint_check_intb_lookup_ed << 2);
 
-    fprintf(stderr, "[SIGINT] jmp glue 2 check start %d at %llx\n",
-            sigint_check_jmp_glue_2_st,
-            (unsigned long long)native_jmp_glue_2_sigint_check_st);
-    fprintf(stderr, "[SIGINT] jmp glue 2 check end   %d at %llx\n",
-            sigint_check_jmp_glue_2_ed,
-            (unsigned long long)native_jmp_glue_2_sigint_check_ed);
+    fprintf(stderr, "[SIGINT] intb lookup check start %d at %llx\n",
+            sigint_check_intb_lookup_st,
+            (unsigned long long)intb_lookup_sigint_check_st);
+    fprintf(stderr, "[SIGINT] intb lookup  check end   %d at %llx\n",
+            sigint_check_intb_lookup_ed,
+            (unsigned long long)intb_lookup_sigint_check_ed);
 }
+
+#else
+
+void latxs_sigint_prepare_check_intb_lookup(IR2_OPND s, IR2_OPND e) {}
+
+#endif

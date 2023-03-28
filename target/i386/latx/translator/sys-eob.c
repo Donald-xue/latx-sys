@@ -4,6 +4,7 @@
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "translate.h"
+#include "latx-intb-sys.h"
 #include <string.h>
 
 static int latxs_is_system_eob(IR1_INST *ir1)
@@ -751,10 +752,9 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
 indirect_call:
 indirect_jmp:
 
-        can_link = can_link && option_intb_link;
-
         if (sigint_enabled() == 1) {
-            if (can_link) {
+#ifdef LATXS_INTB_LINK_ENABLE
+            if (can_link && intb_link_enable()) {
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->ir2_asm_nr << 2;
 
@@ -762,7 +762,7 @@ indirect_jmp:
                 latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
                 int64_t ins_offset =
-                    (native_jmp_glue_2 - code_buf - offset) >> 2;
+                    (latxs_sc_intb_lookup - code_buf - offset) >> 2;
                 latxs_append_ir2_jmp_far(ins_offset, 0);
 
                 /* will be resolved in label_dispose() */
@@ -771,14 +771,17 @@ indirect_jmp:
                 latxs_append_ir2_opnd0_(lisa_nop);
                 tb->is_indir_tb = 1;
             }
+#endif
             latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
         } else {
-            if (can_link) {
+            if (can_link && intb_link_enable()) {
+#ifdef LATXS_INTB_LINK_ENABLE
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->ir2_asm_nr << 2;
                 int64_t ins_offset =
-                    (native_jmp_glue_2 - code_buf - offset) >> 2;
+                    (latxs_sc_intb_lookup - code_buf - offset) >> 2;
                 latxs_append_ir2_jmp_far(ins_offset, 0);
+#endif
             } else {
                 latxs_tr_gen_exit_tb_j_context_switch(NULL, 0, succ_id);
             }
