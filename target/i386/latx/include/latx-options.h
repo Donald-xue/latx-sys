@@ -62,6 +62,7 @@ extern int option_large_code_cache;
 extern int option_soft_fpu;
 extern int option_fast_fpr_ldst;
 extern int option_njc;
+extern int option_pb;
 extern int option_sigint;
 extern int option_fastcs;
 extern int option_hamt;

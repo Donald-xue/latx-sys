@@ -2464,6 +2464,8 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->sigint_link_flag[3] = -1;
     tb->trace_cc = 0;
     tb->cc_flags = 0;
+    tb->intb_target[0].pc = 0xffffffffffffffff;
+    tb->intb_target[0].tc_ptr = NULL;
 #endif
 #endif
 

@@ -569,6 +569,11 @@ struct TranslationBlock {
     int cc_flags;
     int trace_cc;
     uint64_t tb_exec_nr;
+    /* indirect branch private buffer */
+    struct {
+        uint64_t pc;
+        void *tc_ptr;
+    } intb_target[1];
 #endif
 #endif
 };
