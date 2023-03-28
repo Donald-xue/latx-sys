@@ -2244,9 +2244,9 @@ int gen_latxs_sc_fcs_check_load(void *, int ctx);
 int gen_latxs_sc_fcs_load(void *, int ctx);
 int latxs_fastcs_set_jmp_target(void *tb, int n, void *nextb);
 
-extern ADDR latxs_sc_njc;
-int njc_enabled(void);
-int gen_latxs_njc_lookup_tb(void *code_ptr);
+extern ADDR latxs_sc_intb_njc;
+int intb_njc_enabled(void);
+int gen_latxs_intb_njc_lookup(void *code_ptr);
 
 void latxs_tb_unlink(TranslationBlock *utb);
 void latxs_tb_relink(TranslationBlock *utb);

@@ -16,7 +16,7 @@ ADDR latxs_sc_bpc;
 #endif
 
 /* NJC: Native Jmp Cache lookup */
-ADDR latxs_sc_njc;
+ADDR latxs_sc_intb_njc;
 
 /* FCS: Fast Context Switch */
 ADDR latxs_sc_fcs_jmp_glue_fpu_0;
@@ -580,7 +580,7 @@ static int __gen_latxs_jmp_glue_indirect(void *code_ptr)
 
 #ifdef USE_PRIVATE_BUFFER
     /* ======== 0. Private Buffer ========  */
-    if (option_pb) {
+    if (option_intb_pb) {
         IR2_OPND pb_miss = latxs_ir2_opnd_new_label();
         latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp0, &tb,
                 offsetof(TranslationBlock, intb_target[0].pc));
@@ -599,9 +599,9 @@ static int __gen_latxs_jmp_glue_indirect(void *code_ptr)
 
     /* ======== 1. NJC Lookup TB ======== */
     IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
-    if (njc_enabled()) {
+    if (intb_njc_enabled()) {
         /* 1.1 */
-        latxs_load_addr_to_ir2(&tmp, latxs_sc_njc);
+        latxs_load_addr_to_ir2(&tmp, latxs_sc_intb_njc);
         latxs_append_ir2_opnd1_(lisa_call, &tmp);
         latxs_append_ir2_opnd3(LISA_BEQ, ret0, zero,
                                          &njc_miss);
@@ -731,7 +731,7 @@ static int __gen_latxs_jmp_glue_indirect(void *code_ptr)
         IR2_OPND step_opnd = latxs_ra_alloc_dbt_arg1(); /* $10 a6 */
 
 #ifdef USE_PRIVATE_BUFFER
-        if (option_pb)
+        if (option_intb_pb)
             latxs_append_ir2_opnd2_(lisa_mov, &tmp, &tb);
 #endif
         /* 1. tb->_top_out from @tb */
@@ -770,7 +770,7 @@ static int __gen_latxs_jmp_glue_indirect(void *code_ptr)
             }
         }
 #ifdef USE_PRIVATE_BUFFER
-        if (option_pb) {
+        if (option_intb_pb) {
             /* insert into private buffer */
             latxs_append_ir2_opnd2i(LISA_ST_D, &tmp1, &tmp,
                 offsetof(TranslationBlock, intb_target[0].tc_ptr));
@@ -819,7 +819,7 @@ static int __gen_latxs_jmp_glue_indirect(void *code_ptr)
                 offsetof(TranslationBlock, tc) +
                 offsetof(struct tb_tc, ptr));
 #ifdef USE_PRIVATE_BUFFER
-        if (option_pb) {
+        if (option_intb_pb) {
             /* insert into private buffer */
             latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &tb,
                 offsetof(TranslationBlock, intb_target[0].tc_ptr));
@@ -1209,13 +1209,13 @@ int target_latxs_static_codes(void *code_base)
     }
 
     /* Native Jmp Cache Lookup */
-    if (njc_enabled()) {
-        latxs_sc_njc = (ADDR)code_ptr;
-        LATXS_GEN_STATIC_CODES("latxs_njc",
-                gen_latxs_njc_lookup_tb, code_ptr);
+    if (intb_njc_enabled()) {
+        latxs_sc_intb_njc = (ADDR)code_ptr;
+        LATXS_GEN_STATIC_CODES("latxs_intb_njc",
+                gen_latxs_intb_njc_lookup, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs NJC : native jmp cache lookup %p\n",
-                (void *)latxs_sc_njc);
+                (void *)latxs_sc_intb_njc);
     }
 
     /* jmp glue for tb-link */

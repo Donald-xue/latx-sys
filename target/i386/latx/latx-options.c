@@ -42,13 +42,13 @@ int option_trace_start_tb_set;
 
 /* Optimization in softmmu */
 int option_staticcs;
-int option_njc;
-int option_pb;
 int option_sigint;
 int option_cross_page_check;
 int option_cross_page_jmp_link;
 int option_by_hand_64;
 int option_intb_link;
+int option_intb_njc;
+int option_intb_pb;
 int option_soft_fpu;
 int option_fast_fpr_ldst;
 int option_large_code_cache;
@@ -196,23 +196,23 @@ int latxs_allow_cross_page_link(void)
     return option_cross_page_jmp_link;
 }
 
-#define LATXS_OPT_by_hand       0
-#define LATXS_OPT_tb_link       1
-#define LATXS_OPT_lsfpu         2
-#define LATXS_OPT_staticcs      3
-#define LATXS_OPT_njc           4
-#define LATXS_OPT_smmu_slow     5
-#define LATXS_OPT_trace_simple      6
-#define LATXS_OPT_cross_page_check  7
-#define LATXS_OPT_sigint        8
-#define LATXS_OPT_cross_page_jmp_link   9
-#define LATXS_OPT_large_code_cache 10
-#define LATXS_OPT_intb_link     11
-#define LATXS_OPT_soft_fpu 12
-#define LATXS_OPT_fast_fpr_ldst 13
-#define LATXS_OPT_by_hand_64 14
-#define LATXS_OPT_fastcs 15
-#define LATXS_OPT_pb 16
+#define LATXS_OPT_by_hand               0
+#define LATXS_OPT_tb_link               1
+#define LATXS_OPT_intb_link             2
+#define LATXS_OPT_intb_njc              3
+#define LATXS_OPT_intb_pb               4
+#define LATXS_OPT_lsfpu                 5
+#define LATXS_OPT_staticcs              6
+#define LATXS_OPT_smmu_slow             7
+#define LATXS_OPT_trace_simple          8
+#define LATXS_OPT_cross_page_check      9
+#define LATXS_OPT_sigint                10
+#define LATXS_OPT_cross_page_jmp_link   11
+#define LATXS_OPT_large_code_cache      12
+#define LATXS_OPT_soft_fpu              13
+#define LATXS_OPT_fast_fpr_ldst         14
+#define LATXS_OPT_by_hand_64            15
+#define LATXS_OPT_fastcs                16
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -408,12 +408,6 @@ void set_options(int index, int v)
     case LATXS_OPT_fast_fpr_ldst:
         option_fast_fpr_ldst = v;
         break;
-    case LATXS_OPT_njc:
-        option_njc = v;
-        break;
-    case LATXS_OPT_pb:
-        option_pb = v;
-        break;
     case LATXS_OPT_sigint:
         option_sigint = v;
         break;
@@ -431,6 +425,12 @@ void set_options(int index, int v)
         break;
     case LATXS_OPT_intb_link:
         option_intb_link = v;
+        break;
+    case LATXS_OPT_intb_njc:
+        option_intb_njc = v;
+        break;
+    case LATXS_OPT_intb_pb:
+        option_intb_pb = v;
         break;
     case LATXS_OPT_by_hand_64:
         option_by_hand_64 = v;
@@ -533,7 +533,7 @@ void latx_sys_parse_options(QemuOpts *opts)
         set_options(LATXS_OPT_tb_link, 1);
         set_options(LATXS_OPT_lsfpu, 1);
         set_options(LATXS_OPT_staticcs, 1);
-        set_options(LATXS_OPT_njc, 1);
+        set_options(LATXS_OPT_intb_njc, 1);
         need_parse_optimizations = 0;
     } else if (strncmp(str, "none", 4) == 0) {
         if (verbose) {
@@ -642,10 +642,10 @@ void latx_sys_parse_options(QemuOpts *opts)
     }
 
     opt = qemu_opt_find(opts, "njc");
-    if (opt) parse_options_bool(LATXS_OPT_njc, opt->value.boolean);
+    if (opt) parse_options_bool(LATXS_OPT_intb_njc, opt->value.boolean);
 
     opt = qemu_opt_find(opts, "pb");
-    if (opt) parse_options_bool(LATXS_OPT_pb, opt->value.boolean);
+    if (opt) parse_options_bool(LATXS_OPT_intb_pb, opt->value.boolean);
 
     opt = qemu_opt_find(opts, "sigint");
     if (opt) {
@@ -795,8 +795,9 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] large code cache = %d\n", option_large_code_cache);
     printf("[LATXS-OPT] large code cache = %d\n", option_soft_fpu);
     printf("[LATXS-OPT] fast frp ldst = %d\n", option_fast_fpr_ldst);
-    printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_njc);
-    printf("[LATXS-OPT] private buffer loolup = %d\n", option_pb);
+    printf("[LATXS-OPT] indirect branch loolup helper = %d\n", option_intb_link);
+    printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_intb_njc);
+    printf("[LATXS-OPT] private buffer loolup = %d\n", option_intb_pb);
     printf("[LATXS-OPT] by_hand_64 = %d\n", option_by_hand_64);
     printf("[LATXS-OPT] fastcs = %d\n", option_fastcs);
     printf("[LATXS-OPT] Code Cache Pro = %d\n", option_code_cache_pro);
@@ -826,8 +827,8 @@ void latxs_options_init(void)
     option_lsfpu = 1;
 
     option_intb_link = 0;
-    option_njc = 0;
-    option_pb = 0;
+    option_intb_njc  = 0;
+    option_intb_pb   = 0;
     option_sigint = 0;
     option_fastcs = 0;
     option_hamt = 0;

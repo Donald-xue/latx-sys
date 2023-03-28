@@ -9,12 +9,12 @@
 
 #include "exec/tb-hash.h"
 
-int njc_enabled(void)
+int intb_njc_enabled(void)
 {
-    return option_njc;
+    return option_intb_njc;
 }
 
-int gen_latxs_njc_lookup_tb(void *code_ptr)
+int gen_latxs_intb_njc_lookup(void *code_ptr)
 {
     int code_nr = 0;
 
