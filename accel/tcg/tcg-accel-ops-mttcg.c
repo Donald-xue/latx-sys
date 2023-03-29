@@ -142,6 +142,11 @@ static void *mttcg_cpu_thread_fn(void *arg)
 void mttcg_kick_vcpu_thread(CPUState *cpu)
 {
     cpu_exit(cpu);
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (sigint_enabled()) {
+        pthread_kill(cpu->thread->thread, 63);
+    }
+#endif
 }
 
 void mttcg_start_vcpu_thread(CPUState *cpu)
