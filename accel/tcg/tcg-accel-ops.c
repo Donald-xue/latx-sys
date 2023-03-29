@@ -42,6 +42,7 @@
 #include "trace.h"
 #if defined(CONFIG_LATX)
 #include "latx-config.h"
+#include "latx-sigint-fn-sys.h"
 #endif
 #if defined(CONFIG_SIGINT)
 #include "sigint-i386-tcg-la.h"

@@ -9,6 +9,7 @@
 #include "latx-perfmap.h"
 #include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
+#include "latx-sigint-sys.h"
 #include "latx-intb-sys.h"
 
 #ifdef LATX_BPC_ENABLE

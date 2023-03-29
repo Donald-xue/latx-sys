@@ -7,6 +7,8 @@
 #include <string.h>
 #include "qemu/timer.h"
 #include "trace.h"
+#include "latx-sigint-sys.h"
+#include "latx-sigint-fn-sys.h"
 #include "latx-intb-sys.h"
 
 #include <signal.h>

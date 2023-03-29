@@ -43,8 +43,6 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
 void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb);
 void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb);
 void latxs_fix_after_excp_or_int(void);
-void latxs_init_rr_thread_signal(CPUState *cpu);
-void latxs_rr_interrupt_self(CPUState *cpu);
 
 void latxs_update_fcsr(void *env);
 

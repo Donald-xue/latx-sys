@@ -20,6 +20,7 @@
 #include "latx-np-sys.h"
 #include "latx-tb-trace-sys.h"
 #include "latx-sys-flag-rdtn.h"
+#include "latx-sigint-sys.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {

@@ -10,6 +10,7 @@
 #include "latx-bpc-sys.h"
 #include "latx-np-sys.h"
 #include "latx-intb-sys.h"
+#include "latx-sigint-sys.h"
 
 #ifdef LATXS_INTB_LINK_ENABLE
 

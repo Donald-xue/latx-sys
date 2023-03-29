@@ -2248,10 +2248,7 @@ extern ADDR latxs_sc_intb_njc;
 int intb_njc_enabled(void);
 int gen_latxs_intb_njc_lookup(void *code_ptr);
 
-void latxs_tb_unlink(TranslationBlock *utb);
-void latxs_tb_relink(TranslationBlock *utb);
 void latxs_tr_gen_save_currtb_for_int(void);
-void latxs_sigint_prepare_check_intb_lookup(IR2_OPND, IR2_OPND);
 void latxs_enter_mmx(void);
 void do_func(ADDRX addr, int func);
 

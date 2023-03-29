@@ -40,6 +40,7 @@
 #if defined(CONFIG_SOFTMMU)
 #if defined(CONFIG_LATX)
 #include "latx-config.h"
+#include "latx-sigint-fn-sys.h"
 #include "hamt.h"
 #endif
 #endif
