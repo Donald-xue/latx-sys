@@ -38,6 +38,7 @@
 #include "qapi/qmp/qdict.h"
 
 #include "latx-options.h"
+#include "latx-sigint-fn-sys.h"
 
 #define HAMT_TYPE_BASE          1
 #define HAMT_TYPE_INTERPRETER   2
@@ -1875,6 +1876,8 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
         load_into_reg(val, epc, cpuid);
     }
 
+    latxs_sigint_check_in_hamt(env, epc);
+ 
     hamt_restore_to_native(env);
 }
 

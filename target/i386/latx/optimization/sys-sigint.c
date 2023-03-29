@@ -129,32 +129,8 @@ void latxs_sigint_cpu_id(CPUState *cpu)
     qemu_spin_unlock(&latx_sigint_slk);
 }
 
-void latxs_tb_unlink(TranslationBlock *ctb)
+static void __latxs_tb_unlink(TranslationBlock *ctb)
 {
-    if (sigint_enabled() != 1) return;
-
-    if (!ctb) {
-        return;
-    }
-
-    latxs_sigint_block_signal();
-    qemu_spin_lock(&latx_sigint_link_lock);
-    
-    int sid = current_cpu->sigint_id;
-    if (ctb->sigint_link_flag[sid] == -1) {
-        ctb->sigint_link_flag[sid] = sid;
-    } else {
-        lsassertm(0, "unexpected sigint");
-    }
-
-    sid = sid ? 0 : 1;
-    if (ctb->sigint_link_flag[sid] != -1) {
-        fprintf(stderr, "SIGINT unlink conflict\n");
-    }
-//    else {
-//        fprintf(stderr, "0");
-//    }
-
     LATX_TRACE(unlink, ctb->pc, ctb->is_indir_tb);
 
     uintptr_t addr = 0;
@@ -193,7 +169,44 @@ void latxs_tb_unlink(TranslationBlock *ctb)
         }
 #endif
     }
+}
 
+void latxs_tb_unlink(TranslationBlock *ctb)
+{
+    if (sigint_enabled() != 1) return;
+    if (!ctb) return;
+
+    int i = 0;
+
+    latxs_sigint_block_signal();
+    qemu_spin_lock(&latx_sigint_link_lock);
+    
+    int sid = current_cpu->sigint_id;
+
+    for (i = 0; i < 4; ++i) {
+        /* check this thread */
+        if (i == sid) {
+            if (ctb->sigint_link_flag[sid] == -1) {
+                /* mark this thread unlink this TB */
+                ctb->sigint_link_flag[sid] = sid;
+            } else {
+                lsassertm(ctb->sigint_link_flag[sid] == sid,
+                        "unexpected sigint %d\n", sid);
+                /* this TB is already unlinked by this thread */
+                goto unlink_done;
+            }
+            continue;
+        }
+        /* check other thread */
+        if (ctb->sigint_link_flag[sid] != -1) {
+            /* this TB is already unlinked by other thread */
+            goto unlink_done;
+        }
+    }
+
+    __latxs_tb_unlink(ctb);
+
+unlink_done:
     qemu_spin_unlock(&latx_sigint_link_lock);
     latxs_sigint_unblock_signal();
 }
@@ -355,6 +368,30 @@ void __attribute__((__constructor__)) latx_sigint_extra_overhead_test(void)
 }
 #endif
 
+void latxs_sigint_check_in_hamt(CPUX86State *env, void *epc)
+{
+    if (sigint_enabled() != 1) {
+        return;
+    }
+
+    /* we must be executing TBs */
+    lsassertm(env->sigint_flag == 0,
+            "SIGINT die in %s\n", __func__);
+
+    CPUState *cpu = env_cpu(env);
+    int f = (int16_t)qatomic_read(&cpu->icount_decr_ptr->u16.high);
+    if (f < 0) {
+        TranslationBlock *ctb = tcg_tb_lookup((uintptr_t)epc);
+        if (ctb) {
+            /*fprintf(stderr, "SIGINT in hamt %p\n", epc);*/
+            lsenv->sigint_data.tb_unlinked = ctb;
+            __latxs_tb_unlink(ctb);
+        } else {
+            lsassertm(0, "SIGINT no TB in %s\n", __func__);
+        }
+    }
+}
+
 static void latxs_rr_interrupt_signal_handler(
         int n, siginfo_t *siginfo, void *ctx)
 {
@@ -366,6 +403,9 @@ static void latxs_rr_interrupt_signal_handler(
         latxsigint_unlink_tb_all(lsenv->cpu_state);
         return;
     }
+
+    lsassertm(sigint_enabled() == 1,
+            "SIGINT mode wrong %s\n", __func__);
 
     ucontext_t *uc = ctx;
 
@@ -390,6 +430,15 @@ static void latxs_rr_interrupt_signal_handler(
     CPUX86State *env = lsenv->cpu_state;
     TranslationBlock *ctb = NULL;
     TranslationBlock *oldtb = NULL;
+
+    /* signal comes inside hamt exception */
+    if (env->sigint_hamt_flag == 1) {
+        /* we must be executing TBs */
+        lsassertm(env->sigint_flag == 0, "SIGINT die %s\n", __func__);
+        /* just do nothing here. */
+        /* interrupt will be checked befoer hamt return */
+        return;
+    }
 
     if (code_buffer_lo <= pc && pc <= code_buffer_hi) {
         ctb = tcg_tb_lookup(pc);
