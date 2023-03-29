@@ -24,11 +24,17 @@ void __attribute__((__constructor__)) latx_sigint_init_lock(void)
 
 #include "sigint-i386-tcg-la.h"
 
+/*#define SIGINT_DO_TRACE*/
+
+#ifdef SIGINT_DO_TRACE
 #define LATX_TRACE(name, ...) do {                  \
     trace_latx_sigint_##name(                       \
             pthread_self(), get_clock()             \
            , __VA_ARGS__);                          \
 } while (0)
+#else /* no SIGINT_DO_TRACE */
+#define LATX_TRACE(name, ...)
+#endif /* SIGINT_DO_TRACE */
 
 static uint64_t code_buffer_lo;
 static uint64_t code_buffer_hi;
