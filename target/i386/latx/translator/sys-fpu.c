@@ -74,6 +74,16 @@ void latxs_tr_fpu_dec(void)
     }
 }
 
+void latxs_tr_gen_save_curr_top_force(void)
+{
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    td->force_curr_top_save_bak = td->force_curr_top_save;
+    td->force_curr_top_save = 1;
+    latxs_tr_gen_save_curr_top();
+    lsenv->tr_data->force_curr_top_save = 0;
+    td->force_curr_top_save = td->force_curr_top_save_bak;
+}
+
 void latxs_tr_gen_save_curr_top(void)
 {
     if (option_soft_fpu) {
@@ -86,7 +96,7 @@ void latxs_tr_gen_save_curr_top(void)
     int last_ctop = td->curr_top_save;
 
     if (!option_lsfpu) {
-        if (ctop != last_ctop) {
+        if (td->force_curr_top_save || ctop != last_ctop) {
             if (ctop) {
                 IR2_OPND top = latxs_ra_alloc_itemp();
                 latxs_load_imm32_to_ir2(&top, ctop, EXMode_N);
@@ -97,7 +107,9 @@ void latxs_tr_gen_save_curr_top(void)
                 latxs_append_ir2_opnd2i(LISA_ST_W, &latxs_zero_ir2_opnd,
                         &latxs_env_ir2_opnd, lsenv_offset_of_top(lsenv));
             }
-            td->curr_top_save = ctop;
+            if (!td->ignore_rcd_curr_top) {
+                td->curr_top_save = ctop;
+            }
         }
     } else {
         IR2_OPND top = latxs_ra_alloc_itemp();

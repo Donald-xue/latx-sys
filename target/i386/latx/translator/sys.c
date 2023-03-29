@@ -312,4 +312,7 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     }
 
     td->curr_top_save = -1;
+    td->ignore_rcd_curr_top = 0;
+    td->force_curr_top_save = 0;
+    td->force_curr_top_save_bak = 0;
 }

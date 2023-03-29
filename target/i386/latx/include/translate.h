@@ -1304,6 +1304,7 @@ void latxs_tr_fpu_pop(void);
 void latxs_tr_fpu_inc(void);
 void latxs_tr_fpu_dec(void);
 void latxs_tr_gen_save_curr_top(void);
+void latxs_tr_gen_save_curr_top_force(void);
 
 void latxs_fpu_fix_before_exec_tb(CPUX86State *env, TranslationBlock *tb);
 void latxs_fpu_fix_after_exec_tb(CPUX86State *env, TranslationBlock *tb);

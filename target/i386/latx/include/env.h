@@ -194,9 +194,16 @@ typedef struct TRANSLATION_DATA {
     /*
      * for latxs_tr_gen_save_curr_top() when !LSFPU
      *
-     * record the last curr_top that is writen into ENV
+     * @curr_top_save record the last curr_top that is writen into ENV
+     * - ignore saving curr_top if it is the same with last curr_top saved
+     * - if @ignore_rcd_curr_top is set to 1, @curr_top_save will not be updated
+     *
+     * @force_curr_top_save set to 1 to force saving curr_top
      */
     int curr_top_save;
+    int ignore_rcd_curr_top;
+    int force_curr_top_save;
+    int force_curr_top_save_bak;
 #endif
 
 } TRANSLATION_DATA;

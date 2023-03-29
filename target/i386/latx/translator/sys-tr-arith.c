@@ -555,6 +555,7 @@ bool latxs_translate_imul(IR1_INST *pir1)
 void latxs_tr_gen_div_result_check(IR1_INST *pir1,
         IR2_OPND result, int size, int is_idiv)
 {
+    TRANSLATION_DATA *td = lsenv->tr_data;
     /*
      * u8   [0,     2^8 -1] = [0x0,         0xff        ]
      * u16  [0,     2^16-1] = [0x0,         0xffff      ]
@@ -599,7 +600,12 @@ void latxs_tr_gen_div_result_check(IR1_INST *pir1,
     latxs_ra_free_temp(&tmp);
 
     /* 2. not branch: generate exception */
+    td->force_curr_top_save_bak = td->force_curr_top_save;
+    td->force_curr_top_save = 1;
+    td->ignore_rcd_curr_top = 1;
     latxs_tr_gen_excp_divz(pir1, 0);
+    td->force_curr_top_save = td->force_curr_top_save_bak;
+    td->ignore_rcd_curr_top = 0;
 
     /* 3. branch: no exception */
     latxs_append_ir2_opnd1(LISA_LABEL, &label_no_excp);

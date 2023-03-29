@@ -307,11 +307,10 @@ void latxs_tr_gen_eob(void)
      */
     if (!(td->ignore_top_update) && !option_lsfpu && !option_soft_fpu) {
         /*
-         * Func tr_gen_save_curr_top is controled by the flag
-         * td->is_top_saved. Here we should always save TOP
-         * so we clear this flag.
+         * tr_gen_save_curr_top() is controled by td->force_curr_top_save.
+         * Here we should always save TOP.
          */
-        latxs_tr_gen_save_curr_top();
+        latxs_tr_gen_save_curr_top_force();
     }
 
     /* reset to 32s for TB-Link */

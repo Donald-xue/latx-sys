@@ -523,7 +523,10 @@ static void __tr_gen_softmmu_sp_rcd(softmmu_sp_rcd_t *sp)
 
     /* 1. save native context */
     helper_cfg_t cfg = default_helper_cfg;
+    td->force_curr_top_save_bak = td->force_curr_top_save;
+    td->force_curr_top_save = 1;
     latxs_tr_gen_call_to_helper_prologue_cfg(cfg);
+    td->force_curr_top_save = td->force_curr_top_save_bak;
 
     /* 2. prepare arguments for softmmu helper */
 
