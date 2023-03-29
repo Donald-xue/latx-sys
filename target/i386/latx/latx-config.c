@@ -367,6 +367,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
 
     lsassertm(env->is_fcsr_simd == 0, "fcsr simd %s\n", __func__);
     env->is_fcsr_simd = 0;
+    lsassertm(env->sigint_hamt_flag == 0, "sigint hamt wrong.\n");
 
     if (sigint_enabled() == 2) {
         env->latxs_int_tb = tb;
