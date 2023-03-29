@@ -366,15 +366,15 @@ static int __gen_fpu_rotate_step(void *code_base,
     int i = 0;
     int step = 0;
 
-    TRANSLATION_DATA *td = lsenv->tr_data;
+//    TRANSLATION_DATA *td = lsenv->tr_data;
 
     IR2_OPND *env  = &latxs_env_ir2_opnd;  /* $23 s0   */
-    IR2_OPND *zero = &latxs_zero_ir2_opnd; /* $0  zero */
+//    IR2_OPND *zero = &latxs_zero_ir2_opnd; /* $0  zero */
 
     for (step = 1; step <= 7; ++step) {
         latxs_tr_init(NULL);
 
-        int start = (td->ir2_asm_nr << 2);
+//        int start = (td->ir2_asm_nr << 2);
 
 
 
@@ -425,19 +425,19 @@ static int __gen_fpu_rotate_step(void *code_base,
         latxs_append_ir2_opnd2i(LISA_ST_W,   &top_bias, env,
                 lsenv_offset_of_top_bias(lsenv));
 
-        /* SIGINT check */
-        if (sigint_enabled() == 1) {
-            IR2_OPND tmp = latxs_ra_alloc_itemp();
-            latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
-                    (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
-                    (int32_t)offsetof(X86CPU, env));
+        /* TODO  SIGINT check */
+//      if (sigint_enabled() == 1) {
+//          IR2_OPND tmp = latxs_ra_alloc_itemp();
+//          latxs_append_ir2_opnd2i(LISA_LD_W, &tmp, env,
+//                  (int32_t)offsetof(X86CPU, neg.icount_decr.u32) -
+//                  (int32_t)offsetof(X86CPU, env));
 
-            int offset = (td->ir2_asm_nr << 2) - start;
-            int64_t ins_offset =
-                (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
-                2;
-            latxs_append_ir2_opnd2i(LISA_BLT, &tmp, zero, ins_offset);
-        }
+//          int offset = (td->ir2_asm_nr << 2) - start;
+//          int64_t ins_offset =
+//              (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+//              2;
+//          latxs_append_ir2_opnd2i(LISA_BLT, &tmp, zero, ins_offset);
+//      }
 
         /* 1.5 jump to next TB's native code, saved in ra by jump glue */
         latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_zero_ir2_opnd,
