@@ -310,7 +310,7 @@ void latxs_tr_gen_eob(void)
          * tr_gen_save_curr_top() is controled by td->force_curr_top_save.
          * Here we should always save TOP.
          */
-        latxs_tr_gen_save_curr_top_force();
+        latxs_tr_gen_save_curr_top();
     }
 
     /* reset to 32s for TB-Link */
