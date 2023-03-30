@@ -14,14 +14,20 @@
 #include <signal.h>
 #include <ucontext.h>
 
+#define SIGINT_LINK_LOCK
+
 static QemuSpin latx_sigint_slk;
+#ifdef SIGINT_LINK_LOCK
 static QemuSpin latx_sigint_link_lock;
+#endif
 
 static
 void __attribute__((__constructor__)) latx_sigint_init_lock(void)
 {
     qemu_spin_init(&latx_sigint_slk);
+#ifdef SIGINT_LINK_LOCK
     qemu_spin_init(&latx_sigint_link_lock);
+#endif
 }
 
 #include "sigint-i386-tcg-la.h"
@@ -176,12 +182,12 @@ void latxs_tb_unlink(TranslationBlock *ctb)
     if (sigint_enabled() != 1) return;
     if (!ctb) return;
 
-    int i = 0;
-
     latxs_sigint_block_signal();
+#ifdef SIGINT_LINK_LOCK
     qemu_spin_lock(&latx_sigint_link_lock);
     
     int sid = current_cpu->sigint_id;
+    int i = 0;
 
     for (i = 0; i < 4; ++i) {
         /* check this thread */
@@ -203,11 +209,14 @@ void latxs_tb_unlink(TranslationBlock *ctb)
             goto unlink_done;
         }
     }
+#endif
 
     __latxs_tb_unlink(ctb);
 
+#ifdef SIGINT_LINK_LOCK
 unlink_done:
     qemu_spin_unlock(&latx_sigint_link_lock);
+#endif
     latxs_sigint_unblock_signal();
 }
 
@@ -220,6 +229,7 @@ void latxs_tb_relink(TranslationBlock *utb)
     }
 
     latxs_sigint_block_signal();
+#ifdef SIGINT_LINK_LOCK
     qemu_spin_lock(&latx_sigint_link_lock);
 
     int sid = current_cpu->sigint_id;
@@ -234,6 +244,7 @@ void latxs_tb_relink(TranslationBlock *utb)
         }
     }
     utb->sigint_link_flag[sid] = -1;
+#endif
 
     LATX_TRACE(relink, utb->pc, utb->is_indir_tb);
 
@@ -261,7 +272,9 @@ void latxs_tb_relink(TranslationBlock *utb)
     }
 
 relink_done:
+#ifdef SIGINT_LINK_LOCK
     qemu_spin_unlock(&latx_sigint_link_lock);
+#endif
     latxs_sigint_unblock_signal();
 }
 
