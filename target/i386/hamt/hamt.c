@@ -1646,6 +1646,8 @@ static void hamt_process_addr_mapping(CPUState *cpu, uint64_t hamt_badvaddr,
     return;
 }
 
+#define HAMT_USE_LSFPU
+
 /* save native context into ENV */
 static void hamt_save_from_native(CPUX86State *env)
 {
@@ -1664,12 +1666,12 @@ static void hamt_save_from_native(CPUX86State *env)
     }
 
     __asm__ __volatile__ (
-/*
+#ifdef HAMT_USE_LSFPU
             "x86mftop   $t1\n\r"
             "andi       $t1,  $t1, 0x7\n\r"
-            "st.w       $t1,  %0,  1280\n\r"
+            "st.w       $t1,  %0,  1312\n\r"
             "x86clrtm\n\r"
-*/
+#endif
             "fst.d      $fa0, %0,  1328\n\r"
             "fst.d      $fa1, %0,  1344\n\r"
             "fst.d      $fa2, %0,  1360\n\r"
@@ -1722,7 +1724,9 @@ static void hamt_restore_to_native(CPUX86State *env)
     __asm__ __volatile__ (                    
             "ld.w       $t0,  %0,1008\n\r"    
             "x86mtflag  $t0,  63\n\r"         
-                                              
+#ifdef HAMT_USE_LSFPU
+            "x86clrtm\n\r"
+#endif
             "fld.d      $fa0, %0,  1328\n\r"  
             "fld.d      $fa1, %0,  1344\n\r"  
             "fld.d      $fa2, %0,  1360\n\r"  
@@ -1731,6 +1735,34 @@ static void hamt_restore_to_native(CPUX86State *env)
             "fld.d      $fa5, %0,  1408\n\r"  
             "fld.d      $fa6, %0,  1424\n\r"  
             "fld.d      $fa7, %0,  1440\n\r"  
+#ifdef HAMT_USE_LSFPU
+            "x86settm\n\r"
+            "ld.h       $t0,  %0,  1312\n\r"    
+            "x86mttop   0\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   1\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   2\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   3\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   4\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   5\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   6\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "addi.w     $t0, $t0, -1\n\r"
+            "x86mttop   7\n\r"
+            "beq        $t0, $zero, 1f\n\r"
+            "1:\n\r"
+#endif
             "vld        $vr16,%0,  0\n\r"     
             "vld        $vr17,%0,  64\n\r"    
             "vld        $vr18,%0,  128\n\r"   
@@ -1753,6 +1785,9 @@ static void hamt_restore_to_native(CPUX86State *env)
             ".word 0x0114c001\n\r"            
 //            "movgr2fcsr  fcsr2, zero\n\r"   
             ".word 0x0114c002\n\r"            
+#ifdef HAMT_USE_LSFPU
+            "x86settm\n\r"
+#endif
             :                                 
             :"r"(env)                         
             :"memory", "t1", "t0"             
