@@ -220,6 +220,34 @@ unlink_done:
     latxs_sigint_unblock_signal();
 }
 
+static void __latxs_tb_relink(TranslationBlock *utb)
+{
+    LATX_TRACE(relink, utb->pc, utb->is_indir_tb);
+
+#ifdef LATXS_INTB_LINK_ENABLE
+    if (utb->is_indir_tb) {
+        tb_set_jmp_target(utb, 0, latxs_sc_intb_lookup);
+        return;
+    }
+#endif
+
+#ifdef SIGINT_NO_RELINK
+    return;
+#endif
+
+    TranslationBlock *utb_next = NULL;
+
+    utb_next = utb->next_tb[0];
+    if (utb_next && !(tb_cflags(utb_next) & CF_INVALID)) {
+        latx_tb_set_jmp_target(utb, 0, utb_next);
+    }
+
+    utb_next = utb->next_tb[1];
+    if (utb_next && !(tb_cflags(utb_next) & CF_INVALID)) {
+        latx_tb_set_jmp_target(utb, 1, utb_next);
+    }
+}
+
 void latxs_tb_relink(TranslationBlock *utb)
 {
     if (sigint_enabled() != 1) return;
@@ -246,30 +274,7 @@ void latxs_tb_relink(TranslationBlock *utb)
     utb->sigint_link_flag[sid] = -1;
 #endif
 
-    LATX_TRACE(relink, utb->pc, utb->is_indir_tb);
-
-#ifdef LATXS_INTB_LINK_ENABLE
-    if (utb->is_indir_tb) {
-        tb_set_jmp_target(utb, 0, latxs_sc_intb_lookup);
-        goto relink_done;
-    }
-#endif
-
-#ifdef SIGINT_NO_RELINK
-    goto relink_done;
-#endif
-
-    TranslationBlock *utb_next = NULL;
-
-    utb_next = utb->next_tb[0];
-    if (utb_next && !(tb_cflags(utb_next) & CF_INVALID)) {
-        latx_tb_set_jmp_target(utb, 0, utb_next);
-    }
-
-    utb_next = utb->next_tb[1];
-    if (utb_next && !(tb_cflags(utb_next) & CF_INVALID)) {
-        latx_tb_set_jmp_target(utb, 1, utb_next);
-    }
+    __latxs_tb_relink(utb);
 
 relink_done:
 #ifdef SIGINT_LINK_LOCK
@@ -394,11 +399,26 @@ void latxs_sigint_check_in_hamt(CPUX86State *env, void *epc)
     CPUState *cpu = env_cpu(env);
     int f = (int16_t)qatomic_read(&cpu->icount_decr_ptr->u16.high);
     if (f < 0) {
+        TranslationBlock *ltb = lsenv->sigint_data.tb_unlinked;
+        if (ltb &&
+            ((uint64_t)epc) >= (uint64_t)(ltb->tc.ptr) &&
+            ((uint64_t)epc) <  (uint64_t)(ltb->tc.ptr + ltb->tc.size)) {
+            /* this TB is already unlinked, no need to lookup */
+            return;
+        }
         TranslationBlock *ctb = tcg_tb_lookup((uintptr_t)epc);
         if (ctb) {
             /*fprintf(stderr, "SIGINT in hamt %p\n", epc);*/
+            if (ltb) {
+                if (ltb != ctb) {
+                    /*fprintf(stderr, "SIGINT in hamt relink last Tb %x\n", ltb->pc);*/
+                    latxs_tb_relink(ltb);
+                } else {
+                    lsassertm(0, "SIGINT ltb == ctb\n");
+                }
+           }
             lsenv->sigint_data.tb_unlinked = ctb;
-            __latxs_tb_unlink(ctb);
+            latxs_tb_unlink(ctb);
         } else {
             lsassertm(0, "SIGINT no TB in %s\n", __func__);
         }
