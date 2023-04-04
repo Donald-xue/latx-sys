@@ -802,7 +802,44 @@ bool latxs_translate_f2xm1(IR1_INST *pir1)
         return latxs_translate_f2xm1_softfpu(pir1);
     }
 
+    /* Y = 2^x - 1 (x = st(0)) */
+
+#ifdef LATXS_USE_F2XM1_HELPER
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_f2xm1, all_helper_cfg);
+#else
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND st0_opnd = latxs_ra_alloc_st(0);
+
+    IR2_OPND fparam0 = latxs_ir2_opnd_new(IR2_OPND_FPR, 0);
+    IR2_OPND fparam1 = latxs_ir2_opnd_new(IR2_OPND_FPR, 1);
+
+    IR2_OPND ftemp1 = latxs_ra_alloc_ftemp(); /* x (st(0)) */
+    IR2_OPND ftemp2 = latxs_ra_alloc_ftemp(); /* 2         */
+    IR2_OPND fvalue = latxs_ra_alloc_ftemp(); /* Y         */
+
+    latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp1, &st0_opnd);
+
+    IR2_OPND itemp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &itemp, zero, 2);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &ftemp2, &itemp);
+    latxs_append_ir2_opnd2(LISA_FFINT_D_L, &ftemp2, &ftemp2);
+    latxs_ra_free_temp(&itemp);
+
+    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam0, &ftemp2);
+    latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam1, &ftemp1);
+    latxs_tr_gen_call_to_helper((ADDR)pow);
+    latxs_append_ir2_opnd2(LISA_FMOV_D, &fvalue, &fparam0);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+
+    latxs_append_ir2_opnd2(LISA_FMOV_D, &st0_opnd, &fvalue);
+
+    itemp = latxs_ra_alloc_itemp();
+    latxs_append_ir2_opnd2i(LISA_ORI, &itemp, zero, 1);
+    latxs_append_ir2_opnd2(LISA_MOVGR2FR_D, &fvalue, &itemp);
+    latxs_append_ir2_opnd2(LISA_FFINT_D_L, &fvalue, &fvalue);
+    latxs_append_ir2_opnd3(LISA_FSUB_D, &st0_opnd, &st0_opnd, &fvalue);
+#endif
     return true;
 }
 
