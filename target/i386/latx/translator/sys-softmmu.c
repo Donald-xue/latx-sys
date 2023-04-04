@@ -739,8 +739,6 @@ void gen_ldst_softmmu_helper(
         if (hamt_enable()) {
             if (!option_lsfpu) {
                 latxs_tr_gen_save_curr_top();
-            } else {
-                lsassertm(0, "HAMT does not support LSFPU\n");
             }
             IR2_OPND base = latxs_ir2_opnd_mem_get_base(opnd_mem);
             int offset  = latxs_ir2_opnd_mem_get_offset(opnd_mem);
