@@ -33,11 +33,14 @@ void latxs_sys_fp_register_ir1(void)
     latxs_register_ir1(X86_INS_XSETBV);
 }
 
+#if defined(LATX_SYS_FCSR_EXCP)
+/* TODO: support fpu exception */
 static void latxs_tr_gen_fwait(void)
 {
     helper_cfg_t cfg = all_helper_cfg;
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fwait, cfg);
 }
+#endif
 
 bool latxs_translate_wait(IR1_INST *pir1)
 {
@@ -48,7 +51,9 @@ bool latxs_translate_wait(IR1_INST *pir1)
         return true;
     }
 
+#if defined(LATX_SYS_FCSR_EXCP)
     latxs_tr_gen_fwait();
+#endif
 
     return true;
 }
