@@ -1038,6 +1038,8 @@ void tcg_exec_realizefn(CPUState *cpu, Error **errp)
     tlb_init(cpu);
     qemu_plugin_vcpu_init_hook(cpu);
 
+    cpu->tb_jc_flag = g_malloc0(TB_JC_FLAG_SIZE);
+
 #ifndef CONFIG_USER_ONLY
     tcg_iommu_init_notifier_list(cpu);
 #endif /* !CONFIG_USER_ONLY */
@@ -1049,6 +1051,10 @@ void tcg_exec_unrealizefn(CPUState *cpu)
 #ifndef CONFIG_USER_ONLY
     tcg_iommu_free_notifier_list(cpu);
 #endif /* !CONFIG_USER_ONLY */
+
+    if (cpu->tb_jc_flag) {
+        g_free(cpu->tb_jc_flag);
+    }
 
     qemu_plugin_vcpu_exit_hook(cpu);
     tlb_destroy(cpu);

@@ -383,7 +383,7 @@ struct CPUState {
     /* Accessed in parallel; all accesses must be atomic */
     TranslationBlock *tb_jmp_cache[TB_JMP_CACHE_SIZE];
     TranslationBlock **tcg_bg_jc;
-    uint8_t tb_jc_flag[TB_JC_FLAG_SIZE];
+    uint8_t *tb_jc_flag;
     int tcg_bg_jc_id;
     void (*tcg_bg_jc_clear)(void *cpu);
 

@@ -28,6 +28,7 @@ static void tcg_bg_worker_jc_clear(int jc_id);
 #define TCG_BG_JC_MAX     16
 #define TCG_BG_JC_MASK    0xF
 TranslationBlock *tcg_bg_jc[TCG_BG_JC_MAX][TB_JMP_CACHE_SIZE];
+uint8_t tcg_bg_jc_flag[TCG_BG_JC_MAX][TB_JC_FLAG_SIZE];
 
 static QemuMutex  *tcg_bg_jc_mutex;
 static int tcg_bg_jc_free_ids[TCG_BG_JC_MAX];
@@ -88,10 +89,8 @@ static void tcg_bg_jc_add_id_locked(int jc_id)
 
 void tcg_bg_worker_jc_clear(int id)
 {
-    unsigned int i;
-    for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
-        qatomic_set(&tcg_bg_jc[id][i], NULL);
-    }
+    memset(tcg_bg_jc[id], 0, sizeof(TranslationBlock*) * TB_JMP_CACHE_SIZE);
+    memset(tcg_bg_jc_flag[id], 0, sizeof(uint8_t) * TB_JC_FLAG_SIZE);
 
 #ifdef BG_JMP_CACHE_DEBUG
     fprintf(stderr, "[BG] clear: add new empty %d.\n", id);
@@ -123,11 +122,9 @@ static void tcg_bg_func_jc_clear(void *_cpu)
 
         /* set jmp cache to a new one */
         qatomic_set(&cpu->tcg_bg_jc, tcg_bg_jc[free_id]);
+        qatomic_set(&cpu->tb_jc_flag, tcg_bg_jc_flag[free_id]);
         qatomic_set(&cpu->tcg_bg_jc_id, free_id);
         env->tb_jmp_cache_ptr = tcg_bg_jc[free_id];
-
-        /* flush jmp cache flags */
-        memset(cpu->tb_jc_flag, 0, TB_JC_FLAG_SIZE);
 
         /* let bg thread flush the old jmp cache */
         tcg_bg_jc_wake(tcg_bg_worker_jc_clear, old_id);
@@ -140,6 +137,7 @@ static void tcg_bg_func_jc_clear(void *_cpu)
         for (i = 0; i < TB_JMP_CACHE_SIZE; i++) {
             qatomic_set(&cpu->tcg_bg_jc[i], NULL);
         }
+        memset(cpu->tb_jc_flag, 0, sizeof(uint8_t) * TB_JC_FLAG_SIZE);
     }
 }
 
@@ -154,12 +152,18 @@ static int tcg_bg_init_jc_cpu(CPUState *cpu)
 
     tcg_bg_init_jc_clear_func(cpu);
 
+    if (cpu->tb_jc_flag != NULL) {
+        g_free(cpu->tb_jc_flag);
+        cpu->tb_jc_flag = NULL;
+    }
+
     qemu_mutex_lock(tcg_bg_jc_mutex);
     free_id = tcg_bg_jc_get_freeid_locked();
     qemu_mutex_unlock(tcg_bg_jc_mutex);
 
     if (free_id >= 0) {
         cpu->tcg_bg_jc = tcg_bg_jc[free_id];
+        cpu->tb_jc_flag = tcg_bg_jc_flag[free_id];
         cpu->tcg_bg_jc_id = free_id;
     }
 
