@@ -1135,32 +1135,22 @@ bool latxs_translate_pop(IR1_INST *pir1)
     (void)data_size; /* to avoid compile warning */
     (void)opnd_size; /* to avoid compile warning */
 
-    /*
-     * TODO
-    if (option_by_hand && lsenv->tr_data->sys.ss32 &&
-        !lsenv->tr_data->sys.addseg && ir1_opnd_is_gpr(opnd0) &&
-        ir1_opnd_num(pir1) == 1 && !is_gpr_esp && data_size == 32) {
-        IR2_OPND esp_mem_opnd;
-        IR2_OPND esp = ra_alloc_gpr(esp_index);
-        ir2_opnd_build2(&esp_mem_opnd, IR2_OPND_MEM, esp._reg_num, 0);
-        IR2_OPND dest_reg = ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
-        gen_ldst_softmmu_helper(
-            ir1_opnd_default_em(opnd0) == SIGN_EXTENSION ? mips_lw : mips_lwu,
-            &dest_reg, &esp_mem_opnd, 0);
-        IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-        append_ir2_opnd2i(mips_addi_addrx, &esp_opnd, &esp_opnd, esp_inc);
-        return true;
-    }
-    */
-
     /* 1.1 build MEM(SS:ESP) */
     IR1_OPND mem_ir1_opnd;
     latxs_ir1_opnd_build_full_mem(&mem_ir1_opnd, data_size,
             X86_REG_SS, X86_REG_ESP, 0, 0, 0);
 
     /* 1.2 read data from stack   : might generate exception */
-    IR2_OPND tmp = latxs_ra_alloc_itemp();
     int ss_addr_size = latxs_get_sys_stack_addr_size();
+    int pop_to_gpr_directly = 0;
+    IR2_OPND tmp;
+    if (option_by_hand && ir1_opnd_is_gpr(opnd0)
+        && !is_gpr_esp && ss32 && data_size == 32) {
+        pop_to_gpr_directly = 1;
+        tmp = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+    } else {
+        tmp = latxs_ra_alloc_itemp();
+    }
     latxs_load_ir1_mem_to_ir2(&tmp, &mem_ir1_opnd, EXMode_Z,
              ss_addr_size);
 
@@ -1197,7 +1187,9 @@ bool latxs_translate_pop(IR1_INST *pir1)
         latxs_store_ir2_to_ir1_mem(&tmp, opnd0, ss_addr_size);
         td->sys.popl_esp_hack = 0;
     } else {
-        latxs_store_ir2_to_ir1(&tmp, opnd0);
+        if (!pop_to_gpr_directly) {
+            latxs_store_ir2_to_ir1(&tmp, opnd0);
+        }
     }
 
     /*
@@ -1282,25 +1274,14 @@ bool latxs_translate_push(IR1_INST *pir1)
 
     (void)opnd_size; /* to avoid compile warning */
 
-    /*
-     * TODO
-    if (option_by_hand && lsenv->tr_data->sys.ss32 &&
-        !lsenv->tr_data->sys.addseg && ir1_opnd_is_gpr(opnd0) &&
-        ir1_opnd_num(pir1) == 1 && data_size == 32) {
-        IR2_OPND esp_mem_opnd;
-        IR2_OPND esp = ra_alloc_gpr(esp_index);
-        ir2_opnd_build2(&esp_mem_opnd, IR2_OPND_MEM, esp._reg_num, esp_dec);
-        IR2_OPND src_reg = ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
-        gen_ldst_softmmu_helper(mips_sw, &src_reg, &esp_mem_opnd, 0);
-        IR2_OPND esp_opnd = ra_alloc_gpr(esp_index);
-        append_ir2_opnd2i(mips_addi_addrx, &esp_opnd, &esp_opnd, esp_dec);
-        return true;
-    }
-    */
-
     /* 1. load source data   : might generate exception */
-    IR2_OPND tmp = latxs_ra_alloc_itemp();
-    latxs_load_ir1_to_ir2(&tmp, opnd0, EXMode_N);
+    IR2_OPND tmp;
+    if (option_by_hand && ir1_opnd_is_gpr(opnd0)) {
+        tmp = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
+    } else {
+        tmp = latxs_ra_alloc_itemp();
+        latxs_load_ir1_to_ir2(&tmp, opnd0, EXMode_N);
+    }
 
     /* 2.1 build MEM(SS:ESP - 2/4)*/
     IR1_OPND mem_ir1_opnd;
