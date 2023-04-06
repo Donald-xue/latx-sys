@@ -142,13 +142,25 @@ static bool latxs_translate_mov_byhand_gpr_mem(
 static bool latxs_translate_mov_byhand_mem_gpr(
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
-    return latxs_translate_mov_byhand_normal(opnd0, opnd1);
+    if (!ir1_opnd_is_8h(opnd1)) {
+        int gpr_num = ir1_opnd_base_reg_num(opnd1);
+        IR2_OPND gpr = latxs_ra_alloc_gpr(gpr_num);
+        latxs_store_ir2_to_ir1(&gpr, opnd0);
+        return true;
+    } else {
+        return latxs_translate_mov_byhand_normal(opnd0, opnd1);
+    }
 }
 
 static bool latxs_translate_mov_byhand_mem_imm(
         IR1_OPND *opnd0, IR1_OPND *opnd1)
 {
-    return latxs_translate_mov_byhand_normal(opnd0, opnd1);
+    if (ir1_opnd_uimm(opnd1) == 0) {
+        latxs_store_ir2_to_ir1(&latxs_zero_ir2_opnd, opnd0);
+        return true;
+    } else {
+        return latxs_translate_mov_byhand_normal(opnd0, opnd1);
+    }
 }
 
 bool latxs_translate_mov_byhand(IR1_INST *pir1)
