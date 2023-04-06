@@ -1674,7 +1674,10 @@ int ir1_dump(IR1_INST *ir1)
     for (; i < ir1->info->size; i++) {
         fprintf(stderr, "%02x", ir1->info->bytes[i]);
     }
-    fprintf(stderr, "\t\t");
+    for (; i < 16; i++) {
+        fprintf(stderr, "  ");
+    }
+    fprintf(stderr, "\tAS=%1d ", latxs_ir1_addr_size(ir1));
 
     fprintf(stderr, "%s\t\t%s\t", ir1->info->mnemonic, ir1->info->op_str);
 
