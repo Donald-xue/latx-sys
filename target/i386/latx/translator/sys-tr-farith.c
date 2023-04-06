@@ -789,7 +789,108 @@ bool latxs_translate_fxam(IR1_INST *pir1)
         return true;
     }
 
+#ifdef LATXS_USE_FXAM_HELPER
     latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_fxam_ST0, all_helper_cfg);
+#else
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND *env  = &latxs_env_ir2_opnd;
+    IR2_OPND fpst0 = latxs_ra_alloc_st(0);
+
+    IR2_OPND st0  = latxs_ra_alloc_itemp();
+    IR2_OPND fpus = latxs_ra_alloc_itemp();
+    IR2_OPND ftag = latxs_ra_alloc_itemp();
+    IR2_OPND tmp1 = latxs_ra_alloc_itemp();
+    IR2_OPND tmp2 = latxs_ra_alloc_itemp();
+    IR2_OPND ftop = latxs_ra_alloc_itemp();
+
+    IR2_OPND label_no_set_c1     = latxs_ir2_opnd_new_label();
+    IR2_OPND label_slow_path     = latxs_ir2_opnd_new_label();
+    IR2_OPND label_exit          = latxs_ir2_opnd_new_label();
+    IR2_OPND label_infinity      = latxs_ir2_opnd_new_label();
+    IR2_OPND label_infinity_nan  = latxs_ir2_opnd_new_label();
+    IR2_OPND label_zero          = latxs_ir2_opnd_new_label();
+    IR2_OPND label_zero_denormal = latxs_ir2_opnd_new_label();
+
+    /* C3, C2, C1, C0 ← 0000 */
+    latxs_load_imm32_to_ir2(&tmp1, 0xb8ff, EXMode_Z);
+    latxs_append_ir2_opnd2i(LISA_LD_HU, &fpus, env,
+            lsenv_offset_of_status_word(lsenv));
+    latxs_append_ir2_opnd3(LISA_AND, &fpus, &fpus, &tmp1);
+
+    /* C1 <= sign bit of ST0 */
+    latxs_append_ir2_opnd2(LISA_MOVFR2GR_D, &st0, &fpst0);
+    latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, zero, 0x80); /* bit 7 */
+    latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp1, &tmp1, 63-7); /* bit 63 */
+    latxs_append_ir2_opnd3(LISA_AND, &tmp2, &st0, &tmp1);
+    latxs_append_ir2_opnd3(LISA_BNE, &tmp2, &tmp1, &label_no_set_c1);
+    latxs_append_ir2_opnd2i(LISA_ORI, &fpus, &fpus, 0x200);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_no_set_c1);
+    
+    /* check tag wrod */
+    latxs_append_ir2_opnd2i(LISA_LD_D, &ftag, env,
+            lsenv_offset_of_tag_word(lsenv));
+    if (option_lsfpu) {
+        latxs_append_ir2_opnd1(LISA_X86MFTOP, &ftop);
+        latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, zero, 0xffUL);
+        latxs_append_ir2_opnd2i(LISA_SLLI_D, &ftop, &ftop, 3);
+        latxs_append_ir2_opnd3(LISA_SRL_D, &ftag, &ftag, &ftop);
+        latxs_append_ir2_opnd3(LISA_AND, &ftag, &ftag, &tmp1);
+        latxs_append_ir2_opnd3(LISA_BEQ, &ftag, zero,  &label_slow_path);
+        latxs_append_ir2_opnd3(LISA_BNE, &ftop, zero,  &label_slow_path);
+    } else {
+        lsassert(0);
+    }
+    latxs_load_imm32_to_ir2(&tmp1, 0x4100UL, EXMode_Z);
+    latxs_append_ir2_opnd3(LISA_OR, &fpus, &fpus, &tmp1);
+    latxs_append_ir2_opnd1(LISA_B, &label_exit);
+
+
+
+    /* slow path */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_slow_path);
+    latxs_load_imm64_to_ir2(&tmp1, 0x7ff0000000000000ULL);
+    /*latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, zero, 0x7ff);*/
+    /*latxs_append_ir2_opnd2i(LISA_SLLI_D, &tmp1, &tmp1, 63-11);*/
+    latxs_append_ir2_opnd3(LISA_AND, &tmp2, &st0, &tmp1);
+    latxs_append_ir2_opnd3(LISA_BEQ, &tmp2, &tmp1, &label_infinity_nan);
+    latxs_append_ir2_opnd3(LISA_BEQ, &tmp2, zero,  &label_zero_denormal);
+        /* Normal finite number */
+        latxs_append_ir2_opnd2i(LISA_ORI, &fpus, &fpus, 0x400);
+        latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* infinity nan */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_infinity_nan);
+    latxs_load_imm64_to_ir2(&tmp1, 0xfffffffffffffULL);
+    latxs_append_ir2_opnd3(LISA_AND, &tmp2, &st0, &tmp1);
+    latxs_append_ir2_opnd3(LISA_BEQ, &tmp2, zero, &label_infinity);
+        /* nan */
+        latxs_append_ir2_opnd2i(LISA_ORI, &fpus, &fpus, 0x100);
+        latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_infinity);
+        /* infinity */
+        latxs_append_ir2_opnd2i(LISA_ORI, &fpus, &fpus, 0x500);
+        latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    /* zero denormal */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_zero_denormal);
+    latxs_load_imm64_to_ir2(&tmp1, 0xfffffffffffffULL);
+    latxs_append_ir2_opnd3(LISA_AND, &tmp2, &st0, &tmp1);
+    latxs_append_ir2_opnd3(LISA_BEQ, &tmp2, zero, &label_zero);
+        /* denormal */
+        latxs_load_imm32_to_ir2(&tmp1, 0x4400UL, EXMode_Z);
+        latxs_append_ir2_opnd3(LISA_OR, &fpus, &fpus, &tmp1);
+        latxs_append_ir2_opnd1(LISA_B, &label_exit);
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_zero);
+        /* zero */
+        latxs_load_imm32_to_ir2(&tmp1, 0x4000UL, EXMode_Z);
+        latxs_append_ir2_opnd3(LISA_OR, &fpus, &fpus, &tmp1);
+        //latxs_append_ir2_opnd1(LISA_B, &label_exit);
+
+
+
+    /* exit */
+    latxs_append_ir2_opnd1(LISA_LABEL, &label_exit);
+    latxs_append_ir2_opnd2i(LISA_ST_H, &fpus, env,
+            lsenv_offset_of_status_word(lsenv));
+#endif
     return true;
 }
 
