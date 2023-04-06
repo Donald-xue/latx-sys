@@ -28,38 +28,8 @@ static int latxs_is_system_eob(IR1_INST *ir1)
             case X86_INS_RDTSC:
             case X86_INS_RDTSCP:
 
-            case X86_INS_OUTSB:
-            case X86_INS_OUTSD:
-            case X86_INS_OUTSW:
-
-            case X86_INS_INSB:
-            case X86_INS_INSD:
-            case X86_INS_INSW:
-
             case X86_INS_IN:
             case X86_INS_OUT:
-
-            /* string instruction is also eob in icount mode */
-            case X86_INS_MOVSB:
-            case X86_INS_MOVSD:
-            case X86_INS_MOVSQ:
-            case X86_INS_MOVSW:
-            case X86_INS_STOSB:
-            case X86_INS_STOSD:
-            case X86_INS_STOSQ:
-            case X86_INS_STOSW:
-            case X86_INS_LODSB:
-            case X86_INS_LODSD:
-            case X86_INS_LODSQ:
-            case X86_INS_LODSW:
-            case X86_INS_CMPSB:
-            case X86_INS_CMPSD:
-            case X86_INS_CMPSQ:
-            case X86_INS_CMPSW:
-            case X86_INS_SCASB:
-            case X86_INS_SCASD:
-            case X86_INS_SCASQ:
-            case X86_INS_SCASW:
 
                 return 1;
             default:
@@ -192,6 +162,7 @@ int latxs_ir1_is_eob_in_sys(IR1_INST *ir1)
            latxs_ir1_is_mwait(ir1) ||             /* mwait */
            latxs_ir1_is_vmrun(ir1) ||             /* vmrun */
            latxs_ir1_is_stgi(ir1) ||              /* stgi */
+           latxs_ir1_is_string_op(ir1) || /* ins/outs/movs/cmps/stoc/lods/scas */
            latxs_is_system_eob(ir1) ||
            latxs_ir1_is_hit_breakpoint(ir1);
 }

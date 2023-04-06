@@ -15,7 +15,8 @@ static int check_icount_mode(void)
         return 1;
     }
 
-    return 0;
+    /* need to be EOB in sys-eob.c */
+    return 1;
 }
 
 void latxs_sys_string_register_ir1(void)
