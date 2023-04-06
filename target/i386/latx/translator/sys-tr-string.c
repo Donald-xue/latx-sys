@@ -5,6 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include "sys-excp.h"
+#include "latx-string-sys.h"
 #include <string.h>
 
 static int check_icount_mode(void)
@@ -12,11 +13,14 @@ static int check_icount_mode(void)
     TranslationBlock *tb = lsenv->tr_data->curr_tb;
     uint32_t cflags = tb->cflags;
     if (cflags & CF_USE_ICOUNT) {
-        return 1;
+        return 1; /* need to be EOB in sys-eob.c */
     }
 
-    /* need to be EOB in sys-eob.c */
-    return 1;
+#ifdef LATXS_STRING_LOOP_INSIDE
+    return 0;
+#else
+    return 1; /* need to be EOB in sys-eob.c */
+#endif
 }
 
 void latxs_sys_string_register_ir1(void)

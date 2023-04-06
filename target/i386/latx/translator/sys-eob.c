@@ -5,6 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include "latx-intb-sys.h"
+#include "latx-string-sys.h"
 #include <string.h>
 
 static int latxs_is_system_eob(IR1_INST *ir1)
@@ -23,6 +24,11 @@ static int latxs_is_system_eob(IR1_INST *ir1)
                    || (pc_next & ~TARGET_PAGE_MASK) == 0)) {
             return 1;
         } else {
+            /* string instructions are eob in icount mode */
+            if (latxs_ir1_is_string_op(ir1)) {
+                /* string in/out are included */
+                return 1;
+            }
             /* io instructions is eob in icount mode */
             switch (ir1_opcode(ir1)) {
             case X86_INS_RDTSC:
@@ -162,7 +168,9 @@ int latxs_ir1_is_eob_in_sys(IR1_INST *ir1)
            latxs_ir1_is_mwait(ir1) ||             /* mwait */
            latxs_ir1_is_vmrun(ir1) ||             /* vmrun */
            latxs_ir1_is_stgi(ir1) ||              /* stgi */
+#ifndef LATXS_STRING_LOOP_INSIDE
            latxs_ir1_is_string_op(ir1) || /* ins/outs/movs/cmps/stoc/lods/scas */
+#endif
            latxs_is_system_eob(ir1) ||
            latxs_ir1_is_hit_breakpoint(ir1);
 }
