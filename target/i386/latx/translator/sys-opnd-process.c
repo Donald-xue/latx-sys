@@ -287,7 +287,8 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
         }
         ea_base_only = 0;
     } else if (ea_base_only) {
-        latxs_append_ir2_opnd2_(lisa_mov, &ea, &ea_base);
+        latxs_ra_free_temp(&ea);
+        ea = ea_base;
         ea_base_only = 0;
     }
 
@@ -309,7 +310,9 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
     }
 
     /* 3. move to value */
-    latxs_append_ir2_opnd2_(lisa_mov, value_opnd, &ea);
+    if (!ir2_opnd_cmp(value_opnd, &ea)) {
+        latxs_append_ir2_opnd2_(lisa_mov, value_opnd, &ea);
+    }
 }
 
 void latxs_convert_mem_opnd(IR2_OPND *opnd2,

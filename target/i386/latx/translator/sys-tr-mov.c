@@ -102,12 +102,20 @@ bool latxs_translate_movsxd(IR1_INST *pir1)
 
 bool latxs_translate_lea(IR1_INST *pir1)
 {
-    IR2_OPND value_opnd = latxs_ra_alloc_itemp();
-    int addr_size = latxs_ir1_addr_size(pir1);
-    latxs_load_ir1_mem_addr_to_ir2(&value_opnd,
-            ir1_get_opnd(pir1, 1), addr_size);
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* GPR */
 
-    latxs_store_ir2_to_ir1(&value_opnd, ir1_get_opnd(pir1, 0));
+    int addr_size = latxs_ir1_addr_size(pir1);
+    if (addr_size == 4) {
+        int gpr_num = ir1_opnd_base_reg_num(opnd0);
+        IR2_OPND gpr = latxs_ra_alloc_gpr(gpr_num);
+        latxs_load_ir1_mem_addr_to_ir2(&gpr,
+                ir1_get_opnd(pir1, 1), addr_size);
+    } else {
+        IR2_OPND value_opnd = latxs_ra_alloc_itemp();
+        latxs_load_ir1_mem_addr_to_ir2(&value_opnd,
+                ir1_get_opnd(pir1, 1), addr_size);
+        latxs_store_ir2_to_ir1(&value_opnd, opnd0);
+    }
     return true;
 }
 
