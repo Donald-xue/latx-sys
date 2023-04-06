@@ -53,6 +53,23 @@
       __latxs_counter_helper_load_stlbfill(cpu);        \
 } while (0)
 
+#define latxs_counter_helper_store_cpl3(env, cpu) do {  \
+    if ((env->hflags & 0x3) == 0x3)                     \
+      __latxs_counter_helper_store_cpl3(cpu);           \
+} while (0)
+#define latxs_counter_helper_store_stlbfill_cpl3(env, cpu) do { \
+    if ((env->hflags & 0x3) == 0x3)                             \
+      __latxs_counter_helper_store_stlbfill_cpl3(cpu);          \
+} while (0)
+#define latxs_counter_helper_load_cpl3(env, cpu) do {   \
+    if ((env->hflags & 0x3) == 0x3)                     \
+      __latxs_counter_helper_load_cpl3(cpu);            \
+} while (0)
+#define latxs_counter_helper_load_stlbfill_cpl3(env, cpu) do {  \
+    if ((env->hflags & 0x3) == 0x3)                             \
+      __latxs_counter_helper_load_stlbfill_cpl3(cpu);           \
+} while (0)
+
 #define latxs_counter_wake(cpu) do {    \
       __latxs_counter_wake(cpu);        \
 } while (0)
@@ -75,6 +92,11 @@ void __latxs_counter_helper_load(void *cpu);
 void __latxs_counter_helper_load_io(void *cpu);
 void __latxs_counter_helper_load_stlbfill(void *cpu);
 
+void __latxs_counter_helper_store_cpl3(void *cpu);
+void __latxs_counter_helper_store_stlbfill_cpl3(void *cpu);
+void __latxs_counter_helper_load_cpl3(void *cpu);
+void __latxs_counter_helper_load_stlbfill_cpl3(void *cpu);
+
 void __latxs_counter_wake(void *cpu);
 
 #else /* disable bg thread counter */
@@ -96,6 +118,11 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_helper_load(cpu)
 #define latxs_counter_helper_load_io(cpu)
 #define latxs_counter_helper_load_stlbfill(cpu)
+
+#define latxs_counter_helper_store_cpl3(env, cpu)
+#define latxs_counter_helper_store_stlbfill_cpl3(env, cpu)
+#define latxs_counter_helper_load_cpl3(env, cpu)
+#define latxs_counter_helper_load_stlbfill_cpl3(env, cpu)
 
 #define latxs_counter_wake(cpu)
 

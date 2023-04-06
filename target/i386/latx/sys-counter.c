@@ -34,6 +34,11 @@ typedef struct {
     uint64_t helper_load_nr;
     uint64_t helper_load_io_nr;
     uint64_t helper_load_stlbfill_nr;
+
+    uint64_t helper_store_cpl3_nr;
+    uint64_t helper_store_stlbfill_cpl3_nr;
+    uint64_t helper_load_cpl3_nr;
+    uint64_t helper_load_stlbfill_cpl3_nr;
 } latxs_counter_t;
 
 latxs_counter_t *latxs_counter_data;
@@ -95,6 +100,11 @@ IMP_COUNTER_FUNC(helper_load)
 IMP_COUNTER_FUNC(helper_load_io)
 IMP_COUNTER_FUNC(helper_load_stlbfill)
 
+IMP_COUNTER_FUNC(helper_store_cpl3)
+IMP_COUNTER_FUNC(helper_store_stlbfill_cpl3)
+IMP_COUNTER_FUNC(helper_load_cpl3)
+IMP_COUNTER_FUNC(helper_load_stlbfill_cpl3)
+
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
@@ -102,6 +112,7 @@ static void __latxs_counter_bg_log(int n, int sec)
 {
     qemu_bglog("[%7d][%1d] TR %-6d Lookup[%-6d/%-6d]"\
             "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
+            "ST3[%-6d/%-6d] LD3[%-6d/%-6d] "\
             "JCF[%-6d/%-6d/%-6d/%-6d] INV %-6d\n",
             sec, n,
             BG_LOG_DIFF(n, tb_tr                 ),
@@ -114,6 +125,11 @@ static void __latxs_counter_bg_log(int n, int sec)
             BG_LOG_DIFF(n, helper_load           ),
             BG_LOG_DIFF(n, helper_load_stlbfill  ),
             BG_LOG_DIFF(n, helper_load_io        ),
+
+            BG_LOG_DIFF(n, helper_store_cpl3          ),
+            BG_LOG_DIFF(n, helper_store_stlbfill_cpl3 ),
+            BG_LOG_DIFF(n, helper_load_cpl3           ),
+            BG_LOG_DIFF(n, helper_load_stlbfill_cpl3  ),
 
             BG_LOG_DIFF(n, jc_flush              ),
             BG_LOG_DIFF(n, jc_flush_page         ),

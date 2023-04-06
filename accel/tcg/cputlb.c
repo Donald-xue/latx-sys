@@ -1941,6 +1941,7 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
 
 #ifdef CONFIG_LATX
     latxs_counter_helper_load(env_cpu(env));
+    latxs_counter_helper_load_cpl3(env, env_cpu(env));
 #endif
 
     /* Handle CPU specific unaligned behaviour */
@@ -1959,6 +1960,7 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
                             addr & TARGET_PAGE_MASK)) {
 #ifdef CONFIG_LATX
             latxs_counter_helper_load_stlbfill(env_cpu(env));
+            latxs_counter_helper_load_stlbfill_cpl3(env, env_cpu(env));
 #endif
             tlb_fill(env_cpu(env), addr, size,
                      access_type, mmu_idx, retaddr);
@@ -2518,6 +2520,7 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
 
 #ifdef CONFIG_LATX
     latxs_counter_helper_store(env_cpu(env));
+    latxs_counter_helper_store_cpl3(env, env_cpu(env));
 #endif
 
     /* Handle CPU specific unaligned behaviour */
@@ -2536,6 +2539,7 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
             addr & TARGET_PAGE_MASK)) {
 #ifdef CONFIG_LATX
             latxs_counter_helper_store_stlbfill(env_cpu(env));
+            latxs_counter_helper_store_stlbfill_cpl3(env, env_cpu(env));
 #endif
             tlb_fill(env_cpu(env), addr, size, MMU_DATA_STORE,
                      mmu_idx, retaddr);
