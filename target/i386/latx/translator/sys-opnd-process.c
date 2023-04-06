@@ -357,6 +357,8 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
     int ea_base_only = 0;
     IR2_OPND ea_base;
 
+    int disp_only = 0;
+    uint64_t disp_value = 0;
     int ea_ir1_reg = 0;
     int ea_off = 0;
 
@@ -432,6 +434,8 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
         /* 1.3 ea = disp */
         longx offset = ir1_opnd_simm(opnd1) + bias;
         latxs_load_imm64_to_ir2(&ea, offset);
+        disp_only = 1;
+        disp_value = offset;
     } else if (ir1_opnd_simm(opnd1) != 0 || bias != 0) {
         /* 1.4 ea = disp + ea */
         longx offset = ir1_opnd_simm(opnd1) + bias;
@@ -476,10 +480,12 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
     /* 2.0 apply address size */
     switch (addr_size) {
     case 2:
+        if (!disp_only || (disp_value >> 16))
         latxs_append_ir2_opnd2_(lisa_mov16z, &ea,
                 ea_base_only ? &ea_base : &ea);
         break;
     case 4:
+        if (!disp_only || (disp_value >> 32))
         latxs_append_ir2_opnd2_(lisa_mov32z, &ea,
                 ea_base_only ? &ea_base : &ea);
         break;
