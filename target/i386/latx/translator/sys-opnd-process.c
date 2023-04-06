@@ -439,18 +439,14 @@ void latxs_convert_mem_opnd_with_bias(IR2_OPND *opnd2,
     } else if (ir1_opnd_simm(opnd1) != 0 || bias != 0) {
         /* 1.4 ea = disp + ea */
         longx offset = ir1_opnd_simm(opnd1) + bias;
-        /* TARGET_X86_64 int32 is ok */
         if (int32_in_int12(offset)) {
-            /* allow to do risk optimization */
-            /* if (xtm_risk_opt() && TODO */
-                    /* ea_ir1_reg != esp_index && */
-                    /* ea_ir1_reg != ebp_index) { */
-                /* ea_off = offset; */
-            /* } else { */
-            latxs_append_ir2_opnd2i(LISA_ADDI_D, &ea,
-                    ea_base_only ? &ea_base : &ea, offset);
-            ea_base_only = 0;
-            /* } */
+            if (option_risk_mem_offset) {
+                ea_off = offset; 
+            } else {
+                latxs_append_ir2_opnd2i(LISA_ADDI_D, &ea,
+                        ea_base_only ? &ea_base : &ea, offset);
+                ea_base_only = 0;
+            } 
         } else {
             IR2_OPND offset_opnd = latxs_ra_alloc_itemp();
             latxs_load_imm64_to_ir2(&offset_opnd, offset);

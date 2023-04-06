@@ -77,6 +77,7 @@ extern int option_by_hand_64;
 extern int option_code_cache_pro;
 int latxs_allow_cross_page_link(void);
 extern int option_sys_flag_reduction;
+extern int option_risk_mem_offset;
 
 /* For QEMU monitor in softmmu */
 extern int option_monitor_sc; /* Simple Counter */

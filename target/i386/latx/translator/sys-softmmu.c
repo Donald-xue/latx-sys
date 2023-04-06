@@ -742,6 +742,8 @@ void gen_ldst_softmmu_helper(
             }
             IR2_OPND base = latxs_ir2_opnd_mem_get_base(opnd_mem);
             int offset  = latxs_ir2_opnd_mem_get_offset(opnd_mem);
+            lsassertm(int32_in_int12(offset),
+                    "memory offset out of range 0x%x\n", offset);
             latxs_append_ir2_opnd2i(op, opnd_gpr, &base, offset);
         } else {
             __gen_ldst_softmmu_helper_native(op, opnd_gpr, opnd_mem, save_temp);

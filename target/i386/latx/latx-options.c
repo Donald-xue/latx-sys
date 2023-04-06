@@ -58,6 +58,7 @@ int option_hamt;
 int option_hamt_delay;
 int option_code_cache_pro;
 int option_sys_flag_reduction;
+int option_risk_mem_offset;
 
 /* For QEMU monitor in softmmu */
 int option_monitor_sc; /* Simple Counter */
@@ -339,6 +340,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "optimization for eflags",
         }, {
+            .name = "risky",
+            .type = QEMU_OPT_NUMBER,
+            .help = "optimization with risk",
+        }, {
             .name = "smmu",
             .type = QEMU_OPT_BOOL,
             .help = "use softmmu slow path only (debug)",
@@ -532,6 +537,12 @@ static void parse_options_sys_flag(unsigned long long t)
     option_sys_flag_reduction = t & LATXS_OPT_FLAG_REDUCTION;
 }
 
+#define LATXS_RISKY_MEM_OFFSET  0x1
+static void parse_options_risky(unsigned long long t)
+{
+    option_risk_mem_offset = t & LATXS_RISKY_MEM_OFFSET;
+}
+
 static void parse_options_tbsizei(unsigned long long i)
 {
     if (i && i < 255) {
@@ -709,6 +720,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "sysflag");
     if (opt) {
         parse_options_sys_flag(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "risky");
+    if (opt) {
+        parse_options_risky(opt->value.uint);
     }
 
     opt = qemu_opt_find(opts, "intblink");
