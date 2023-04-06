@@ -14,6 +14,7 @@ extern int option_dump;
 extern int option_dump_host;
 extern int option_dump_ir1;
 extern int option_dump_ir2;
+extern int option_dump_cpl3;
 extern int option_trace_tb;
 extern int option_trace_ir1;
 extern int option_check;
@@ -22,6 +23,8 @@ extern int option_shadow_stack;
 extern int option_lsfpu;
 extern int option_xmm128map;
 extern int option_ibtc;
+
+void option_config_dump(int cpl);
 
 extern unsigned long long counter_tb_exec;
 extern unsigned long long counter_tb_tr;

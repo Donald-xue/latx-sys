@@ -13,6 +13,7 @@ int option_dump;
 int option_dump_host;
 int option_dump_ir1;
 int option_dump_ir2;
+int option_dump_cpl3;
 int option_trace_tb;
 int option_trace_ir1;
 int option_check;
@@ -111,11 +112,44 @@ void options_init(void)
 #define OPTIONS_DUMP_IR1 1
 #define OPTIONS_DUMP_IR2 2
 #define OPTIONS_DUMP_HOST 3
+#define OPTIONS_DUMP_CPL3 4
+
+static inline void __enable_dump_all(void)
+{
+    option_dump      = 1;
+    option_dump_ir1  = 1;
+    option_dump_ir2  = 1;
+    option_dump_host = 1;
+}
+
+static inline void __disable_dump_all(void)
+{
+    option_dump      = 0;
+    option_dump_ir1  = 0;
+    option_dump_ir2  = 0;
+    option_dump_host = 0;
+}
+
+void option_config_dump(int cpl)
+{
+    if (option_dump_cpl3) {
+        if (cpl == 3) __enable_dump_all();
+        else __disable_dump_all();
+    }
+}
 
 void options_parse_dump(const char *bits)
 {
     if (!bits) {
         return;
+    }
+
+    if (bits[OPTIONS_DUMP_CPL3] == '1') {
+        option_dump_cpl3 = 1;
+    } else if (bits[OPTIONS_DUMP_CPL3] == '0') {
+        option_dump_cpl3 = 0;
+    } else {
+        lsassertm(0, "wrong options for dump cpl3.");
     }
 
     if (bits[OPTIONS_DUMP_IR1] == '1') {

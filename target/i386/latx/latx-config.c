@@ -343,6 +343,8 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
 {
     CPUArchState *env = cpu->env_ptr;
 
+    option_config_dump(tb->flags & 0x3);
+
     latxs_counter_tb_tr(cpu);
 
     latxs_break_point(env, tb);
