@@ -549,6 +549,7 @@ static inline TranslationBlock *__tb_lookup(CPUState *cpu, target_ulong pc,
     TranslationBlock *tb;
     uint32_t hash;
 
+    latxs_counter_tb_lookup(cpu);
     hash = tb_jmp_cache_hash_func(pc);
     tb = __cpu_jmp_cache_get(cpu, hash);
 
@@ -563,6 +564,7 @@ static inline TranslationBlock *__tb_lookup(CPUState *cpu, target_ulong pc,
         }
     }
 
+    latxs_counter_tb_lookup_ht(cpu);
     tb = tb_htable_lookup(cpu, pc, cs_base, flags, cflags);
     if (tb == NULL) return NULL;
 
@@ -581,8 +583,6 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
     if (latx_test_sys_enabled()) {
         return latx_test_sys_start(cpu);
     }
-
-    latxs_counter_tb_lookup(cpu);
 
     cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
     tb = __tb_lookup(cpu, pc, cs_base, flags, cflags);

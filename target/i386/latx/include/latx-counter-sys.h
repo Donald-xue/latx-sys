@@ -17,6 +17,9 @@
 #define latxs_counter_tb_lookup(cpu) do {   \
       __latxs_counter_tb_lookup(cpu);       \
 } while (0)
+#define latxs_counter_tb_lookup_ht(cpu) do {   \
+      __latxs_counter_tb_lookup_ht(cpu);       \
+} while (0)
 
 #define latxs_counter_jc_flush(cpu) do {    \
       __latxs_counter_jc_flush(cpu);        \
@@ -58,6 +61,7 @@ void __latxs_counter_tb_tr(void *cpu);
 void __latxs_counter_tb_inv(void *cpu);
 void __latxs_counter_tb_flush(void *cpu);
 void __latxs_counter_tb_lookup(void *cpu);
+void __latxs_counter_tb_lookup_ht(void *cpu);
 
 void __latxs_counter_jc_flush(void *cpu);
 void __latxs_counter_jc_flush_page(void *cpu);
@@ -79,6 +83,7 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_tb_inv(cpu)
 #define latxs_counter_tb_flush(cpu)
 #define latxs_counter_tb_lookup(cpu)
+#define latxs_counter_tb_lookup_ht(cpu)
 
 #define latxs_counter_jc_flush(cpu)
 #define latxs_counter_jc_flush_page(cpu)

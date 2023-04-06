@@ -16,7 +16,12 @@ typedef struct {
     uint64_t tb_tr_nr;
     uint64_t tb_inv_nr;
     uint64_t tb_flush_nr;
-    uint64_t tb_lookup_nr;
+    /*
+     * (1) TB -> helper lookup  -> lookup ------------> TB
+     * (2) TB -> context switch -> tb find -> lookup -> TB
+     */
+    uint64_t tb_lookup_nr;    /* case (2) */
+    uint64_t tb_lookup_ht_nr; /* case (2) */
 
     uint64_t jc_flush_nr;
     uint64_t jc_flush_page_nr;
@@ -76,6 +81,7 @@ IMP_COUNTER_FUNC(tb_tr)
 IMP_COUNTER_FUNC(tb_inv)
 IMP_COUNTER_FUNC(tb_flush)
 IMP_COUNTER_FUNC(tb_lookup)
+IMP_COUNTER_FUNC(tb_lookup_ht)
 
 IMP_COUNTER_FUNC(jc_flush)
 IMP_COUNTER_FUNC(jc_flush_page)
@@ -94,12 +100,13 @@ IMP_COUNTER_FUNC(helper_load_stlbfill)
 
 static void __latxs_counter_bg_log(int n, int sec)
 {
-    qemu_bglog("[%7d][%1d] TR %-6d Lookup %-6d "\
+    qemu_bglog("[%7d][%1d] TR %-6d Lookup[%-6d/%-6d]"\
             "ST[%-6d/%-6d/%-6d] LD[%-6d/%-6d/%-6d] "\
             "JCF[%-6d/%-6d/%-6d/%-6d] INV %-6d\n",
             sec, n,
             BG_LOG_DIFF(n, tb_tr                 ),
             BG_LOG_DIFF(n, tb_lookup             ),
+            BG_LOG_DIFF(n, tb_lookup_ht          ),
 
             BG_LOG_DIFF(n, helper_store          ),
             BG_LOG_DIFF(n, helper_store_stlbfill ),
