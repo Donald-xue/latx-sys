@@ -226,7 +226,7 @@ int latxs_tr_ir2_assemble(const void *code_base)
         if (ir2_opc == LISA_X86_INST) {
 
             if (option_dump_host && qemu_log_in_addr_range(tb->pc)) {
-                fprintf(stderr, "IR2 at %p LISA X86Ins = %x\n",
+                fprintf(stderr, "IR2 at %p LISA X86Ins = 0x%x\n",
                         code_ptr, latxs_ir2_opnd_imm(&pir2->_opnd[0]));
             }
 
