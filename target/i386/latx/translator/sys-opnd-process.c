@@ -292,13 +292,13 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
         ea_base_only = 0;
     }
 
-    /* 2. apply address size */
+    /* 2. apply address size to get final result */
     switch (addr_size) {
     case 2:
-        latxs_append_ir2_opnd2_(lisa_mov16z, &ea, &ea);
+        latxs_append_ir2_opnd2_(lisa_mov16z, value_opnd, &ea);
         break;
     case 4:
-        latxs_append_ir2_opnd2_(lisa_mov32z, &ea, &ea);
+        latxs_append_ir2_opnd2_(lisa_mov32z, value_opnd, &ea);
         break;
 #ifdef TARGET_X86_64
     case 8:
@@ -307,11 +307,6 @@ void latxs_load_ir1_mem_addr_to_ir2(IR2_OPND *value_opnd,
     default:
         lsassertm(0, "unknown addr size %d in convert mem opnd.\n", addr_size);
         break;
-    }
-
-    /* 3. move to value */
-    if (!ir2_opnd_cmp(value_opnd, &ea)) {
-        latxs_append_ir2_opnd2_(lisa_mov, value_opnd, &ea);
     }
 }
 
