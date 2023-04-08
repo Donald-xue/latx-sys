@@ -26,6 +26,7 @@
 #include "helper-tcg.h"
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "hamt.h"
+#include "latx-counter-sys.h"
 #endif
 
 void helper_raise_interrupt(CPUX86State *env, int intno, int next_eip_addend)
@@ -730,6 +731,8 @@ bool x86_cpu_tlb_fill(CPUState *cs, vaddr addr, int size,
     if (handle_mmu_fault(cs, addr, size, access_type, mmu_idx)) {
         /* FIXME: On error in get_hphys we have already jumped out.  */
         g_assert(!probe);
+        latxs_counter_excp_pf(cs);
+        latxs_counter_excp_pf_cpl3(env, cs);
         raise_exception_err_ra(env, cs->exception_index,
                                env->error_code, retaddr);
     }
