@@ -142,7 +142,7 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_helper_load_stlbfill_cpl3(env, cpu)
 
 #define latxs_counter_excp_pf(cpu)
-#define latxs_counter_excp_pf_cpl3(cpu)
+#define latxs_counter_excp_pf_cpl3(env, cpu)
 
 #define latxs_counter_interrupt(cpu)
 
