@@ -789,6 +789,9 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
     qatomic_mb_set(&cpu_neg(cpu)->icount_decr.u16.high, 0);
 
     if (unlikely(qatomic_read(&cpu->interrupt_request))) {
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        latxs_counter_interrupt(cpu);
+#endif
         int interrupt_request;
         qemu_mutex_lock_iothread();
         interrupt_request = cpu->interrupt_request;

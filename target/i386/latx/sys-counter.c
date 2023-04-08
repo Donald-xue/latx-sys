@@ -26,6 +26,8 @@ typedef struct {
     uint64_t excp_pf_nr;
     uint64_t excp_pf_cpl3_nr;
 
+    uint64_t interrupt_nr;
+
     uint64_t jc_flush_nr;
     uint64_t jc_flush_page_nr;
     uint64_t jc_flush_page_go_nr;
@@ -94,6 +96,8 @@ IMP_COUNTER_FUNC(tb_lookup_ht)
 IMP_COUNTER_FUNC(excp_pf)
 IMP_COUNTER_FUNC(excp_pf_cpl3)
 
+IMP_COUNTER_FUNC(interrupt)
+
 IMP_COUNTER_FUNC(jc_flush)
 IMP_COUNTER_FUNC(jc_flush_page)
 IMP_COUNTER_FUNC(jc_flush_page_go)
@@ -123,6 +127,7 @@ static void __latxs_counter_bg_log(int n, int sec)
             "ST3 %d %d LD3 %d %d "\
             "JCF %d %d %d %d "\
             "E_PF %d %d " \
+            "INT %d " \
             "INV %d\n",
             sec, n,
             BG_LOG_DIFF(n, tb_tr                 ),
@@ -148,6 +153,8 @@ static void __latxs_counter_bg_log(int n, int sec)
 
             BG_LOG_DIFF(n, excp_pf               ),
             BG_LOG_DIFF(n, excp_pf_cpl3          ),
+
+            BG_LOG_DIFF(n, interrupt             ),
 
             BG_LOG_DIFF(n, tb_inv                )
             );
