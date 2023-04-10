@@ -550,6 +550,7 @@ static inline TranslationBlock *__tb_lookup(CPUState *cpu, target_ulong pc,
     uint32_t hash;
 
     latxs_counter_tb_lookup(cpu);
+    latxs_counter_tb_lookup_cpl3(((CPUArchState *)cpu->env_ptr), cpu);
     hash = tb_jmp_cache_hash_func(pc);
     tb = __cpu_jmp_cache_get(cpu, hash);
 
@@ -565,6 +566,7 @@ static inline TranslationBlock *__tb_lookup(CPUState *cpu, target_ulong pc,
     }
 
     latxs_counter_tb_lookup_ht(cpu);
+    latxs_counter_tb_lookup_ht_cpl3(((CPUArchState *)cpu->env_ptr), cpu);
     tb = tb_htable_lookup(cpu, pc, cs_base, flags, cflags);
     if (tb == NULL) return NULL;
 

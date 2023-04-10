@@ -20,6 +20,14 @@
 #define latxs_counter_tb_lookup_ht(cpu) do {   \
       __latxs_counter_tb_lookup_ht(cpu);       \
 } while (0)
+#define latxs_counter_tb_lookup_cpl3(env, cpu) do { \
+    if ((env->hflags & 0x3) == 0x3)                 \
+      __latxs_counter_tb_lookup_cpl3(cpu);          \
+} while (0)
+#define latxs_counter_tb_lookup_ht_cpl3(env, cpu) do {  \
+    if ((env->hflags & 0x3) == 0x3)                     \
+      __latxs_counter_tb_lookup_ht_cpl3(cpu);           \
+} while (0)
 
 #define latxs_counter_excp_pf(cpu) do {    \
       __latxs_counter_excp_pf(cpu);        \
@@ -91,6 +99,8 @@ void __latxs_counter_tb_inv(void *cpu);
 void __latxs_counter_tb_flush(void *cpu);
 void __latxs_counter_tb_lookup(void *cpu);
 void __latxs_counter_tb_lookup_ht(void *cpu);
+void __latxs_counter_tb_lookup_cpl3(void *cpu);
+void __latxs_counter_tb_lookup_ht_cpl3(void *cpu);
 
 void __latxs_counter_excp_pf(void *cpu);
 void __latxs_counter_excp_pf_cpl3(void *cpu);
@@ -123,6 +133,8 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_tb_flush(cpu)
 #define latxs_counter_tb_lookup(cpu)
 #define latxs_counter_tb_lookup_ht(cpu)
+#define latxs_counter_tb_lookup_cpl3(env, cpu)
+#define latxs_counter_tb_lookup_ht_cpl3(env, cpu)
 
 #define latxs_counter_jc_flush(cpu)
 #define latxs_counter_jc_flush_page(cpu)
