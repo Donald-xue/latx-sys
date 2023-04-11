@@ -119,6 +119,10 @@ typedef struct IR1_INST {
     uint8_t _eflag_def;
     uint8_t _native_inst_num;
     uint8_t flags;
+    struct {
+        int opc;
+        int next; /* index of IR1 list */
+    } instptn;
 } IR1_INST;
 
 extern IR1_OPND al_ir1_opnd;

@@ -20,6 +20,7 @@
 #include "latx-np-sys.h"
 #include "latx-tb-trace-sys.h"
 #include "latx-sys-flag-rdtn.h"
+#include "latx-sys-inst-ptn.h"
 #include "latx-sigint-sys.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
@@ -355,6 +356,8 @@ int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
 
     /* perform flag reduction OR just set flag */
     latxs_flag_reduction(tb);
+    /* perform instruction pattern */
+    latxs_inst_pattern(tb);
 
     if (!option_lsfpu && !option_soft_fpu) {
         tb->_top_in = env->fpstt & 0x7;

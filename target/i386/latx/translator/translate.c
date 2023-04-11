@@ -11,6 +11,7 @@
 #include "ibtc.h"
 #include "translate.h"
 #include "latx-tracecc-sys.h"
+#include "latx-sys-inst-ptn.h"
 
 extern void *helper_tb_lookup_ptr(CPUArchState *);
 static int ss_generate_match_fail_native_code(void* code_buf);
@@ -2038,6 +2039,11 @@ bool ir1_translate(IR1_INST *ir1)
     lsassertm(latxs_is_ir1_ok(ir1),
             "IR1 is not ready in sys %s\n",
             ir1_name(ir1_opcode(ir1)));
+#ifdef LATXS_INSTPTN_ENABLE
+    if (try_translate_instptn(ir1)) {
+        return true;
+    }
+#endif
 #endif
 
     /* 2. call translate_xx function */

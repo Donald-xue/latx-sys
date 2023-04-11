@@ -53,6 +53,10 @@ ADDRX latxs_ir1_disasm(IR1_INST *ir1,
     ir1->_eflag_def = 0;
     ir1->_eflag_use = 0;
     ir1->_native_inst_num = 0;
+#ifdef LATXS_INSTPTN_ENABLE
+    ir1->instptn.opc  = INSTPTN_OPC_NONE;
+    ir1->instptn.next = -1;
+#endif
 
     latxs_fix_up_ir1(ir1);
     t_pc = ir1_addr(ir1) + td->sys.cs_base;

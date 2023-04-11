@@ -58,6 +58,7 @@ int option_hamt;
 int option_hamt_delay;
 int option_code_cache_pro;
 int option_sys_flag_reduction;
+int option_instptn;
 int option_risk_mem_offset;
 
 /* For QEMU monitor in softmmu */
@@ -340,6 +341,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "optimization for eflags",
         }, {
+            .name = "instptn",
+            .type = QEMU_OPT_NUMBER,
+            .help = "instruction pattern",
+        }, {
             .name = "risky",
             .type = QEMU_OPT_NUMBER,
             .help = "optimization with risk",
@@ -537,6 +542,11 @@ static void parse_options_sys_flag(unsigned long long t)
     option_sys_flag_reduction = t & LATXS_OPT_FLAG_REDUCTION;
 }
 
+static void parse_options_instptn(unsigned long long t)
+{
+    option_instptn = t;
+}
+
 #define LATXS_RISKY_MEM_OFFSET  0x1
 static void parse_options_risky(unsigned long long t)
 {
@@ -722,6 +732,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_sys_flag(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "instptn");
+    if (opt) {
+        parse_options_instptn(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "risky");
     if (opt) {
         parse_options_risky(opt->value.uint);
@@ -891,6 +906,7 @@ void latxs_options_init(void)
     option_by_hand_64 = 0;
     option_code_cache_pro = 0;
     option_sys_flag_reduction = 0;
+    option_instptn = 0;
 
     option_smmu_slow = 0;
 
