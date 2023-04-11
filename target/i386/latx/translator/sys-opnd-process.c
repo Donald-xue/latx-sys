@@ -63,7 +63,11 @@ void latxs_load_imm32_to_ir2(IR2_OPND *opnd2, uint32_t value, EXMode em)
 {
     lsassertm(latxs_ir2_opnd_is_gpr(opnd2),
             "load imm 32 to ir2: IR2 OPND is not GPR\n");
-    latxs_load_imm64(opnd2, value);
+    if (em == EXMode_S) {
+        latxs_load_imm64(opnd2, (int32_t)value);
+    } else {
+        latxs_load_imm64(opnd2, value);
+    }
 }
 
 /* TODO: remove this function, work was done by latxs_load_imm64*/
