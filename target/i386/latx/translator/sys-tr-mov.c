@@ -105,11 +105,12 @@ bool latxs_translate_lea(IR1_INST *pir1)
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0); /* GPR */
 
     int addr_size = latxs_ir1_addr_size(pir1);
-    if (addr_size == 4) {
+    if (option_by_hand && addr_size == 4) {
         int gpr_num = ir1_opnd_base_reg_num(opnd0);
         IR2_OPND gpr = latxs_ra_alloc_gpr(gpr_num);
         latxs_load_ir1_mem_addr_to_ir2(&gpr,
                 ir1_get_opnd(pir1, 1), addr_size);
+        latxs_td_set_reg_extmb(gpr_num, EXMode_Z, 32);
     } else {
         IR2_OPND value_opnd = latxs_ra_alloc_itemp();
         latxs_load_ir1_mem_addr_to_ir2(&value_opnd,
