@@ -30,9 +30,17 @@ bool try_translate_instptn(IR1_INST *pir1);
 #define latxs_instptn_check_false() do {    \
     if (!option_instptn) return false;      \
 } while (0)
+#define latxs_instptn_check_cmp_jcc_0() do {    \
+    if (!(option_instptn & 0x1)) return 0;      \
+} while (0)
+#define latxs_instptn_check_test_jcc_0() do {   \
+    if (!(option_instptn & 0x2)) return 0;      \
+} while (0)
 #else
 #define latxs_instptn_check_void(option)
 #define latxs_instptn_check_false(option)
+#define latxs_instptn_check_cmp_jcc_0()
+#define latxs_instptn_check_test_jcc_0()
 #endif
 
 #ifdef LATXS_INSTPTN_CPL_FILTER

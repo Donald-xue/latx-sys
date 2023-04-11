@@ -85,6 +85,7 @@ static int inst_pattern(TranslationBlock *tb,
     switch (ir1_opcode(pir1)) {
     case WRAP(CMP):
         SCAN_CHECK(scan, 0, 0);
+        latxs_instptn_check_cmp_jcc_0();
 
         ir1 = SCAN_IR1(tb, scan, 0);
         switch (ir1_opcode(ir1)) {
@@ -108,6 +109,7 @@ static int inst_pattern(TranslationBlock *tb,
         }
     case WRAP(TEST):
         SCAN_CHECK(scan, 0, 0);
+        latxs_instptn_check_test_jcc_0();
 
         opnd0 = ir1_get_opnd(pir1, 0);
         opnd1 = ir1_get_opnd(pir1, 1);
