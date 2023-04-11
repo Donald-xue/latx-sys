@@ -227,6 +227,7 @@ int ir1_opnd_is_ymm(IR1_OPND *opnd);
 #ifdef TARGET_X86_64
 int ir1_opnd_is_pc_relative(IR1_OPND *opnd);
 #endif
+int ir1_opnd_is_same_reg(IR1_OPND *opnd0, IR1_OPND *opnd1);
 int ir1_opnd_has_base(IR1_OPND *opnd);
 int ir1_opnd_has_index(IR1_OPND *opnd);
 int ir1_opnd_has_seg(IR1_OPND *opnd);

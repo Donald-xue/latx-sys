@@ -979,6 +979,12 @@ int ir1_opnd_is_pc_relative(IR1_OPND *opnd)
 }
 #endif
 
+int ir1_opnd_is_same_reg(IR1_OPND *opnd0, IR1_OPND *opnd1)
+{
+    return ir1_opnd_is_gpr(opnd0) && ir1_opnd_is_gpr(opnd1) &&
+        opnd0->reg == opnd1->reg;
+}
+
 int ir1_opnd_has_base(IR1_OPND *opnd)
 {
     // may unnecessary to judge mem opnd
