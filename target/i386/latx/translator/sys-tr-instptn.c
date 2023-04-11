@@ -147,13 +147,103 @@ bool translate_test_jcc(IR1_INST *pir1)
 
     nir1 = tb_ir1_inst(tb, pir1->instptn.next);
 
-    /*ir1_dump(pir1);*/
-    /*ir1_dump(nir1);*/
-    /*fprintf(stderr, "---------------\n");*/
+#if 0
+    latxs_translate_test_byhand(pir1);
+    switch (ir1_opcode(nir1)) {
+    case WRAP(JB):  latxs_translate_jb(nir1); break;
+    case WRAP(JAE): latxs_translate_jae(nir1); break;
+    case WRAP(JE):  latxs_translate_jz(nir1); break;
+    case WRAP(JNE): latxs_translate_jnz(nir1); break;
+    case WRAP(JBE): latxs_translate_jbe(nir1); break;
+    case WRAP(JA):  latxs_translate_ja(nir1); break;
+    case WRAP(JL):  latxs_translate_jl(nir1); break;
+    case WRAP(JGE): latxs_translate_jge(nir1); break;
+    case WRAP(JLE): latxs_translate_jle(nir1); break;
+    case WRAP(JG):  latxs_translate_jg(nir1); break;
+    default:        lsassert(0);        break;
+    }
+    return true;
+#endif
 
+#if 0
+    ir1_dump(pir1);
+    ir1_dump(nir1);
+    fprintf(stderr, "---------------\n");
+#endif
+
+    IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
+    lsassert(ir1_opnd_is_gpr(opnd0));
+    IR2_OPND src = latxs_convert_gpr_opnd(opnd0, EXMode_S);
+
+    int os = ir1_opnd_size(opnd0); /* 8, 16, 32 */
+    latxs_append_ir2_opnd2(LISA_X86AND_B + (os >> 4), &src, &src);
+
+    IR2_OPND *zero = &latxs_zero_ir2_opnd;
+    IR2_OPND target_label = latxs_ir2_opnd_new_label();
+
+    latxs_tr_gen_eob();
+    LOAD_TB_PTR_TO_DBT_ARG1();
+
+    switch (ir1_opcode(nir1)) {
+    case WRAP(JE):
+        latxs_append_ir2_opnd2(LISA_BEQZ, &src, &target_label);
+        break;
+    case WRAP(JNE):
+        latxs_append_ir2_opnd2(LISA_BNEZ, &src, &target_label);
+        break;
+    case WRAP(JS):
+        latxs_append_ir2_opnd3(LISA_BLT, &src, zero, &target_label);
+        break;
+    case WRAP(JNS):
+        latxs_append_ir2_opnd3(LISA_BGE, &src, zero, &target_label);
+        break;
+    case WRAP(JLE):
+        latxs_append_ir2_opnd3(LISA_BGE, zero, &src, &target_label);
+        break;
+    case WRAP(JG):
+        latxs_append_ir2_opnd3(LISA_BLT, zero, &src, &target_label);
+        break;
+    case WRAP(JNO):
+        /* OF = 0 For compatibility with bcc+b */
+        latxs_append_ir2_opnd2(LISA_BEQZ, zero, &target_label);
+        break;
+    case WRAP(JO):
+        /* OF = 1 */
+        break;
+    case WRAP(JB):
+        /* CF = 1 */
+        break;
+    case WRAP(JBE):
+        /* CF = 1 or ZF = 1 */
+        latxs_append_ir2_opnd2(LISA_BEQZ, &src, &target_label);
+        break;
+    case WRAP(JA):
+        /* CF = 0 and ZF = 0 */
+        latxs_append_ir2_opnd2(LISA_BNEZ, &src, &target_label);
+        break;
+    case WRAP(JAE):
+        /* CF = 0 For compatibility with bcc+b */
+        latxs_append_ir2_opnd2(LISA_BEQZ, zero, &target_label);
+        break;
+    default:
+        lsassert(0);
+        break;
+    }
+
+    /* not taken */
+    latxs_tr_generate_exit_tb(nir1, 0);
+    latxs_append_ir2_opnd1(LISA_LABEL, &target_label);
+    /* taken */
+    latxs_tr_generate_exit_tb(nir1, 1);
+
+    return true;
+
+#if 0
+pattern_fail:
     pir1->instptn.opc = INSTPTN_OPC_NONE;
     nir1->instptn.opc = INSTPTN_OPC_NONE;
     return false;
+#endif
 }
 
 bool try_translate_instptn(IR1_INST *pir1)
