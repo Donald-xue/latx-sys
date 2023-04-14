@@ -17,6 +17,7 @@
 #include <sched.h>
 
 #include "hamt.h"
+#include "latx-perfmap.h"
 
 void arch_dump_regs(int debug_fd, struct kvm_regs regs);
 void arch_dump_regs(int debug_fd, struct kvm_regs regs)
@@ -229,6 +230,10 @@ if (cpuid == val) {                                     \
     assert((ed - st) < 512);                            \
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL,   \
             st, ed - st);                               \
+    latx_perfmap_insert( \
+        cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL, \
+        ed - st, \
+        "hamt_tlb_load_entry_" #cpuid ); \
     /* tlb store exception entry */                     \
     st = tlb_store_entry_s ## val ## _begin;            \
     ed = tlb_store_entry_s ## val ## _end;              \
@@ -236,6 +241,10 @@ if (cpuid == val) {                                     \
     assert((ed - st) < 512);                            \
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS,   \
             st, ed - st);                               \
+    latx_perfmap_insert( \
+        cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS, \
+        ed - st, \
+        "hamt_tlb_store_entry_" #cpuid ); \
     /* tlb modify exception entry */                    \
     st = tlb_modified_entry_s ## val ## _begin;         \
     ed = tlb_modified_entry_s ## val ## _end;           \
@@ -243,6 +252,10 @@ if (cpuid == val) {                                     \
     assert((ed - st) < 512);                            \
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM,   \
             st, ed - st);                               \
+    latx_perfmap_insert( \
+        cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM, \
+        ed - st, \
+        "hamt_tlb_modify_entry_" #cpuid ); \
     /* break entry */                                   \
     st = break_entry_s ## val ## _begin;                \
     ed = break_entry_s ## val ## _end;                  \
@@ -250,6 +263,10 @@ if (cpuid == val) {                                     \
     assert((ed - st) < 512);                            \
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_BP,     \
             st, ed - st);                               \
+    latx_perfmap_insert( \
+        cpu->info.ebase + VEC_SIZE * EXCCODE_BP, \
+        ed - st, \
+        "hamt_tlb_break_entry_" #cpuid ); \
 } } while (0)
 
 static void init_ebase(struct kvm_cpu *cpu,
@@ -282,10 +299,18 @@ static void init_ebase(struct kvm_cpu *cpu,
         assert((tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin) < 512);
         memcpy(cpu->info.ebase, tlb_fast_refill_entry_begin,
                tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin);
+        latx_perfmap_insert(
+                cpu->info.ebase,
+                tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin,
+                "hamt_tlb_fast_refill_entry");
     } else {
         assert((tlb_refill_entry_end - tlb_refill_entry_begin) < 512);
         memcpy(cpu->info.ebase, tlb_refill_entry_begin,
                tlb_refill_entry_end - tlb_refill_entry_begin);
+        latx_perfmap_insert(
+                cpu->info.ebase,
+                tlb_refill_entry_end - tlb_refill_entry_begin,
+                "hamt_tlb_refill_entry");
     }
 
     // EXCCODE_TLBL 1
@@ -294,6 +319,10 @@ static void init_ebase(struct kvm_cpu *cpu,
         memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL,
                 tlb_load_entry_s0_begin,
                 tlb_load_entry_s0_end - tlb_load_entry_s0_begin);
+        latx_perfmap_insert(
+                cpu->info.ebase + VEC_SIZE * EXCCODE_TLBL,
+                tlb_load_entry_s0_end - tlb_load_entry_s0_begin,
+                "hamt_tlb_load_entry");
     }
 
     // EXCCODE_TLBS 2
@@ -302,12 +331,20 @@ static void init_ebase(struct kvm_cpu *cpu,
         memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS,
                 tlb_store_entry_s0_begin,
                 tlb_store_entry_s0_end - tlb_store_entry_s0_begin);
+        latx_perfmap_insert(
+                cpu->info.ebase + VEC_SIZE * EXCCODE_TLBS,
+                tlb_store_entry_s0_end - tlb_store_entry_s0_begin,
+                "hamt_tlb_store_entry");
     }
 
     // EXCCODE_TLBI 3
     assert((tlb_ifetch_entry_end - tlb_ifetch_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBI, tlb_ifetch_entry_begin,
             tlb_ifetch_entry_end - tlb_ifetch_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_TLBI,
+            tlb_ifetch_entry_end - tlb_ifetch_entry_begin,
+            "hamt_tlb_ifetch_entry");
 
     // EXCCODE_TLBM 4
     if (mode == HAMT_MODE_RR) { /* single vcpu thread  */
@@ -315,37 +352,65 @@ static void init_ebase(struct kvm_cpu *cpu,
         memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM,
                 tlb_modified_entry_s0_begin,
                 tlb_modified_entry_s0_end - tlb_modified_entry_s0_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_TLBM,
+            tlb_modified_entry_s0_end - tlb_modified_entry_s0_begin,
+            "hamt_tlb_modify_entry");
     }
 
     // EXCCODE_TLBRI 5
     assert((tlb_read_inhibit_entry_end - tlb_read_inhibit_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBRI, tlb_read_inhibit_entry_begin,
             tlb_read_inhibit_entry_end - tlb_read_inhibit_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_TLBRI,
+            tlb_read_inhibit_entry_end - tlb_read_inhibit_entry_begin,
+            "hamt_tlb_read_inhibit_entry");
 
     // EXCCODE_TLBXI 6
     assert((tlb_exe_inhibit_entry_end - tlb_exe_inhibit_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBXI, tlb_exe_inhibit_entry_begin,
             tlb_exe_inhibit_entry_end - tlb_exe_inhibit_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_TLBXI,
+            tlb_exe_inhibit_entry_end - tlb_exe_inhibit_entry_begin,
+            "hamt_tlb_exec_inhibit_entry");
 
     // EXCCODE_TLBPE 7
     assert((tlb_privilege_err_entry_end - tlb_privilege_err_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_TLBPE, tlb_privilege_err_entry_begin,
             tlb_privilege_err_entry_end - tlb_privilege_err_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_TLBPE,
+            tlb_privilege_err_entry_end - tlb_privilege_err_entry_begin,
+            "hamt_tlb_privilege_err_entry");
 
     // EXCCODE_ADE 8
     assert((addr_err_entry_end - addr_err_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_ADE, addr_err_entry_begin,
             addr_err_entry_end - addr_err_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_ADE,
+            addr_err_entry_end - addr_err_entry_begin,
+            "hamt_addr_err_entry");
 
     // EXCCODE_ALE 9
     assert((unaligned_access_entry_end - unaligned_access_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_ALE, unaligned_access_entry_begin,
             unaligned_access_entry_end - unaligned_access_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_ALE,
+            unaligned_access_entry_end - unaligned_access_entry_begin,
+            "hamt_unaligned_access_entry");
 
     // EXCCODE_SYS 11
     assert((syscall_entry_end - syscall_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_SYS, syscall_entry_begin,
            syscall_entry_end - syscall_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_SYS,
+            syscall_entry_end - syscall_entry_begin,
+            "hamt_syscall_entry");
 
     // EXCCODE_BP 12 
     if (mode == HAMT_MODE_RR) { /* single vcpu thread  */
@@ -353,18 +418,31 @@ static void init_ebase(struct kvm_cpu *cpu,
         memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_BP,
                 break_entry_s0_begin,
                 break_entry_s0_end - break_entry_s0_begin);
+        latx_perfmap_insert(
+                cpu->info.ebase + VEC_SIZE * EXCCODE_BP,
+                break_entry_s0_end - break_entry_s0_begin,
+                "hamt_break_entry");
     }
 
     // EXCCODE_INE 13
     assert((ine_entry_end - ine_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE * EXCCODE_INE, ine_entry_begin,
             ine_entry_end - ine_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE * EXCCODE_INE,
+            ine_entry_end - ine_entry_begin,
+            "hamt_ine_entry");
 
     //EXCCODE_FPE 18
     assert((fpe_entry_end - fpe_entry_begin) < 512);
     memcpy(cpu->info.ebase + VEC_SIZE*18, fpe_entry_begin, 
            fpe_entry_end - fpe_entry_begin);
+    latx_perfmap_insert(
+            cpu->info.ebase + VEC_SIZE*18,
+            fpe_entry_end - fpe_entry_begin,
+            "hamt_fpe_entry");
 
+    latx_perfmap_flush();
     // pr_info("ebase address : %llx", cpu->info.ebase);
 }
 

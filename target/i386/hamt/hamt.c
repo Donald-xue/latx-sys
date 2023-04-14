@@ -40,6 +40,8 @@
 #include "latx-options.h"
 #include "latx-sigint-fn-sys.h"
 
+#include "latx-perfmap.h"
+
 #define HAMT_TYPE_BASE          1
 #define HAMT_TYPE_INTERPRETER   2
 #define HAMT_TYPE_PG_ASID       3
@@ -2637,6 +2639,10 @@ static void enable_x86vm_hamt_rr(void)
     assert(data_storage_s[0] == DATA_STORAGE_ADDRESS);
     assert(code_storage_s[0] == CODE_STORAGE_ADDRESS);
 
+    latx_perfmap_insert(code_storage_s[0], 4096,
+            "hamt_codes_to_excphandler");
+    latx_perfmap_flush();
+
     for(i = 0; i < MAX_ASID; ++i) {
         QLIST_INIT(&(hamt_cr3_htable[i].pgtables_list));
         hamt_cr3_htable[i].pgtable_num = 0;
@@ -2668,6 +2674,15 @@ static void enable_x86vm_hamt_mt(int cpuid)
     HAMT_MTTCG_STORAGE_ALLOC(cpuid, 1);
     HAMT_MTTCG_STORAGE_ALLOC(cpuid, 2);
     HAMT_MTTCG_STORAGE_ALLOC(cpuid, 3);
+    latx_perfmap_insert(code_storage_s[0], 4096,
+            "hamt_codes_to_excphandler_0");
+    latx_perfmap_insert(code_storage_s[1], 4096,
+            "hamt_codes_to_excphandler_1");
+    latx_perfmap_insert(code_storage_s[2], 4096,
+            "hamt_codes_to_excphandler_2");
+    latx_perfmap_insert(code_storage_s[3], 4096,
+            "hamt_codes_to_excphandler_3");
+    latx_perfmap_flush();
     build_tlb_invalid_trampoline_mt(cpuid);
     /* TODO: asdid map in hamt multi vcpu mode */
     /* TODO: tlb fast exception in hamt multi vcpu mode */
