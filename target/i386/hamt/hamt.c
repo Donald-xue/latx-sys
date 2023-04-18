@@ -555,11 +555,17 @@ static inline int is_write_inst(uint32_t *epc)
         case OPC_LD_HU:
         case OPC_LD_WU:
         case OPC_LD_D:
+        case OPC_FLD_S:
+        case OPC_FLD_D:
+        case OPC_VLD:
             return 0;
         case OPC_ST_B:
         case OPC_ST_H:
         case OPC_ST_W:
         case OPC_ST_D:
+        case OPC_FST_S:
+        case OPC_FST_D:
+        case OPC_VST:
             return 1;
         default: {
             pr_info("inst: %x", *epc);
@@ -613,6 +619,147 @@ static inline uint64_t hamt_get_mem_address(uint32_t *epc, int cpuid)
     return base + simm;
 }
 
+static inline int is_env_fpr(int fp, int is_simd)
+{
+    /*
+     * [ 0- 7] mapping fp registers
+     * [ 9-15] temp fp registers
+     * [16-23] mapping simd registers
+     */
+    assert(0 <= fp && fp <= 23);
+    return is_simd ? (16 <= fp && fp <= 23) : (0 <= fp && fp <= 7);
+}
+
+static inline void __fst_native_9_15(uint64_t *res)
+{
+    __asm__ __volatile__ (
+            "fst.d $ft1, %0, 0\n\r"
+            "fst.d $ft2, %0, 8\n\r"
+            "fst.d $ft3, %0, 16\n\r"
+            "fst.d $ft4, %0, 24\n\r"
+            "fst.d $ft5, %0, 32\n\r"
+            "fst.d $ft6, %0, 40\n\r"
+            "fst.d $ft7, %0, 48\n\r"
+            ::"r"(res):"memory");
+}
+static inline void __vst_native_9_15(uint64_t *res)
+{
+    __asm__ __volatile__ (
+            "vst  $vr9,  %0, 0\n\r"
+            "vst  $vr10, %0, 16\n\r"
+            "vst  $vr11, %0, 32\n\r"
+            "vst  $vr12, %0, 48\n\r"
+            "vst  $vr13, %0, 64\n\r"
+            "vst  $vr14, %0, 80\n\r"
+            "vst  $vr15, %0, 96\n\r"
+            ::"r"(res):"memory");
+}
+
+static inline void __fld32_native_09(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft1,  %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_10(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft2, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_11(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft3, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_12(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft4, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_13(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft5, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_14(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft6, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_15(uint64_t *src) {
+    __asm__ __volatile__ ("fld.s $ft7, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld32_native_9_15(uint64_t val, int fp)
+{
+    switch (fp) {
+    case  9: __fld32_native_09(&val); break;
+    case 10: __fld32_native_10(&val); break;
+    case 11: __fld32_native_11(&val); break;
+    case 12: __fld32_native_12(&val); break;
+    case 13: __fld32_native_13(&val); break;
+    case 14: __fld32_native_14(&val); break;
+    case 15: __fld32_native_15(&val); break;
+    default: assert(0); break;
+    }
+}
+
+static inline void __fld64_native_09(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft1,  %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_10(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft2, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_11(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft3, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_12(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft4, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_13(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft5, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_14(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft6, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_15(uint64_t *src) {
+    __asm__ __volatile__ ("fld.d $ft7, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __fld64_native_9_15(uint64_t val, int fp)
+{
+    switch (fp) {
+    case  9: __fld64_native_09(&val); break;
+    case 10: __fld64_native_10(&val); break;
+    case 11: __fld64_native_11(&val); break;
+    case 12: __fld64_native_12(&val); break;
+    case 13: __fld64_native_13(&val); break;
+    case 14: __fld64_native_14(&val); break;
+    case 15: __fld64_native_15(&val); break;
+    default: assert(0); break;
+    }
+}
+
+static inline void __vld128_native_09(void *src) {
+    __asm__ __volatile__ ("vld $vr9,  %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_10(void *src) {
+    __asm__ __volatile__ ("vld $vr10, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_11(void *src) {
+    __asm__ __volatile__ ("vld $vr11, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_12(void *src) {
+    __asm__ __volatile__ ("vld $vr12, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_13(void *src) {
+    __asm__ __volatile__ ("vld $vr13, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_14(void *src) {
+    __asm__ __volatile__ ("vld $vr14, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_15(void *src) {
+    __asm__ __volatile__ ("vld $vr15, %0, 0\n\r"::"r"(src):"memory");
+}
+static inline void __vld128_native_9_15(void *src, int fp)
+{
+    switch (fp) {
+    case  9: __vld128_native_09(src); break;
+    case 10: __vld128_native_10(src); break;
+    case 11: __vld128_native_11(src); break;
+    case 12: __vld128_native_12(src); break;
+    case 13: __vld128_native_13(src); break;
+    case 14: __vld128_native_14(src); break;
+    case 15: __vld128_native_15(src); break;
+    default: assert(0); break;
+    }
+}
+
 static inline uint64_t hamt_get_st_val(uint32_t *epc, int cpuid)
 {
     uint32_t inst = *epc;
@@ -638,6 +785,84 @@ static inline uint64_t hamt_get_st_val(uint32_t *epc, int cpuid)
 
     // would and should never reach here
     exit(1);
+}
+
+static uint64_t hamt_get_st_val_softmmu(CPUX86State *env,
+        uint32_t *epc, int cpuid)
+{
+    uint32_t inst = *epc;
+    uint32_t opc = inst >> 22 << 22;
+    uint32_t rd = inst & 0x1f; /* rd */
+    uint64_t native_fp_9_15[(15 - 9 + 1) << 1];
+
+    switch(opc) {
+    case OPC_ST_B:
+        return ((uint64_t*)(data_storage_s[cpuid]))[rd] & (uint64_t)0xff;
+    case OPC_ST_H:
+        return ((uint64_t*)(data_storage_s[cpuid]))[rd] & (uint64_t)0xffff;
+    case OPC_ST_W:
+        return ((uint64_t*)(data_storage_s[cpuid]))[rd] & (uint64_t)0xffffffff;
+    case OPC_ST_D:
+        return ((uint64_t*)(data_storage_s[cpuid]))[rd];
+    case OPC_FST_S:
+        if (is_env_fpr(rd, 0)) {
+            assert(option_lsfpu);
+            assert(rd <= 7);
+            rd = (rd + env->fpstt) & 0x7;
+            return env->fpregs[rd].d.low & (uint64_t)0xffffffff;
+        } else if (is_env_fpr(rd, 1)) {
+            assert(16 <= rd && rd <= 23);
+            return env->xmm_regs[rd - 16]._l_ZMMReg[0];
+        } else {
+            assert(9 <= rd && rd <= 15);
+            __fst_native_9_15(native_fp_9_15);
+            return native_fp_9_15[rd - 9] & (uint64_t)0xffffffff;
+        }
+    case OPC_FST_D:
+        if (is_env_fpr(rd, 0)) {
+            assert(option_lsfpu);
+            assert(rd <= 7);
+            rd = (rd + env->fpstt) & 0x7;
+            return env->fpregs[rd].d.low;
+        } else if (is_env_fpr(rd, 1)) {
+            assert(16 <= rd && rd <= 23);
+            return env->xmm_regs[rd - 16]._q_ZMMReg[0];
+        } else {
+            assert(9 <= rd && rd <= 15);
+            __fst_native_9_15(native_fp_9_15);
+            return native_fp_9_15[rd - 9];
+        }
+       break;
+    case OPC_VST:
+       if (is_env_fpr(rd, 1)) {
+           env->temp_xmm._q_ZMMReg[0] = env->xmm_regs[rd - 16]._q_ZMMReg[0];
+           env->temp_xmm._q_ZMMReg[1] = env->xmm_regs[rd - 16]._q_ZMMReg[1];
+           return 0;
+       } else {
+           assert(9 <= rd && rd <= 15);
+            __vst_native_9_15(native_fp_9_15);
+            /*
+             * 9  -  0, 1 - ( 9-9)=0
+             * 10 -  2, 3 - (10-9)=1
+             * 11 -  4, 5 - (11-9)=2
+             * 12 -  6, 7 - (12-9)=3
+             * 13 -  8, 9 - (13-9)=4
+             * 14 - 10,11 - (14-9)=5
+             * 15 - 12,13 - (15-9)=6
+             */
+            env->temp_xmm._q_ZMMReg[0] = native_fp_9_15[((rd - 9) << 1) + 0];
+            env->temp_xmm._q_ZMMReg[1] = native_fp_9_15[((rd - 9) << 1) + 1];
+            return 0;
+       }
+       break;
+    default:
+       pr_info("inst: %x", *epc);
+       die("invalid opc in hamt_get_st_val_softmmu");
+       break;
+    }
+
+    die("can not reach here in hamt_get_st_val_softmmu");
+    return 0;
 }
 
 static inline void set_attr(int r, int w, int x, uint64_t *addr)
@@ -947,12 +1172,18 @@ static TCGMemOpIdx hamt_get_oi(uint32_t *epc, int mmu_idx)
             return make_memop_idx(MO_LESL, mmu_idx);
         case OPC_LD_D:
         case OPC_ST_D:
+        case OPC_FLD_D:
+        case OPC_FST_D:
+        case OPC_VLD:
             return make_memop_idx(MO_LEQ, mmu_idx);
         case OPC_LD_BU:
             return make_memop_idx(MO_UB, mmu_idx);
         case OPC_LD_HU:
             return make_memop_idx(MO_LEUW, mmu_idx);
         case OPC_LD_WU:
+        case OPC_FLD_S:
+        case OPC_FST_S:
+        case OPC_VST:
             return make_memop_idx(MO_LEUL, mmu_idx);
         default: {
             pr_info("inst: %x", *epc);
@@ -1012,6 +1243,84 @@ static void load_into_reg(uint64_t val, uint32_t *epc, int cpuid)
             pr_info("inst: %x", *epc);
             die("invalid opc in load_into_reg");
         }
+    }
+
+    ((uint64_t *)(data_storage_s[cpuid]))[rt] = val;
+}
+
+static void load_into_reg_softmmu(CPUX86State *env,
+        uint64_t val, uint32_t *epc, int cpuid)
+{
+    uint32_t inst = *epc;
+    int rt = inst & 0x1f; /* fd */
+    uint32_t opc = inst >> 22 << 22;
+
+    switch(opc) {
+    case OPC_FLD_S:
+        if (is_env_fpr(rt, 0)) {
+            assert(option_lsfpu);
+            assert(0 <= rt && rt <= 7);
+            rt = (rt + env->fpstt) & 0x7;
+            *((uint32_t*)&env->fpregs[rt].d.low) = val & 0xffffffff;
+        } else if (is_env_fpr(rt, 1)) {
+            assert(16 <= rt && rt <= 23);
+            env->xmm_regs[rt - 16]._l_ZMMReg[0] = val & 0xffffffff;
+        } else {
+            assert(9 <= rt && rt <= 15);
+            __fld32_native_9_15(val, rt);
+        }
+        return;
+    case OPC_FLD_D:
+        if (is_env_fpr(rt, 0)) {
+            assert(option_lsfpu);
+            rt = (rt + env->fpstt) & 0x7;
+            *((uint64_t*)&env->fpregs[rt].d.low) = val;
+        } else if (is_env_fpr(rt, 1)) {
+            assert(16 <= rt && rt <= 23);
+            env->xmm_regs[rt - 16]._q_ZMMReg[0] = val;
+        } else {
+            assert(9 <= rt && rt <= 15);
+            __fld64_native_9_15(val, rt);
+        }
+        return;
+    case OPC_VLD:
+        if (is_env_fpr(rt, 1)) {
+            env->xmm_regs[rt-16]._q_ZMMReg[0] = env->temp_xmm._q_ZMMReg[0];
+            env->xmm_regs[rt-16]._q_ZMMReg[1] = env->temp_xmm._q_ZMMReg[1];
+        } else {
+            assert(9 <= rt && rt <= 15);
+            __vld128_native_9_15(&env->temp_xmm, rt);
+        }
+        return;
+    case OPC_LD_B: {
+        uint64_t temp;
+        temp = val & 0xff;
+        temp |= (val & 0x80) ? LB_MASK : 0;
+        val = temp;
+        break;
+    }
+    case OPC_LD_H: {
+        uint64_t temp;
+        temp = val & 0xffff;
+        temp |= (val & 0x8000) ? LH_MASK : 0;
+        val = temp;
+        break;
+    }
+    case OPC_LD_W: {
+        uint64_t temp;
+        temp = val & 0xffffffff;
+        temp |= (val & 0xffffffff80000000) ? LW_MASK : 0;
+        val = temp;
+        break;
+    }
+    case OPC_LD_BU: val &= 0xff;       break;
+    case OPC_LD_HU: val &= 0xffff;     break;
+    case OPC_LD_WU: val &= 0xffffffff; break;
+    case OPC_LD_D:                     break;
+    default:
+        pr_info("inst: %x", *epc);
+        die("invalid opc in load_into_reg_softmmu");
+        break;
     }
 
     ((uint64_t *)(data_storage_s[cpuid]))[rt] = val;
@@ -1889,29 +2198,38 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
 
     uint64_t val = 0;
     if (is_write) {
-        val = hamt_get_st_val(epc, cpuid);
+        val = hamt_get_st_val_softmmu(env, epc, cpuid);
         switch(opc) {
-            case OPC_ST_B: helper_ret_stb_mmu(env, addr, val, oi, retaddr); break;
-            case OPC_ST_H: helper_le_stw_mmu(env, addr, val, oi, retaddr);  break;
-            case OPC_ST_W: helper_le_stl_mmu(env, addr, val, oi, retaddr);  break;
-            case OPC_ST_D: helper_le_stq_mmu(env, addr, val, oi, retaddr);  break;
-            default: assert(0); break;
+        case OPC_ST_B: helper_ret_stb_mmu(env, addr, val, oi, retaddr); break;
+        case OPC_ST_H: helper_le_stw_mmu(env, addr, val, oi, retaddr);  break;
+        case OPC_FST_S:
+        case OPC_ST_W: helper_le_stl_mmu(env, addr, val, oi, retaddr);  break;
+        case OPC_FST_D:
+        case OPC_ST_D: helper_le_stq_mmu(env, addr, val, oi, retaddr);  break;
+        /* @val is not used for VST, env->temp_xmm will be used */
+        case OPC_VST: latxs_helper_le_stdq_mmu(env, addr, val, oi, retaddr); break;
+        default: assert(0); break;
         }
-        ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
     } else {
         switch(opc) {
-            case OPC_LD_B:  val = helper_ret_ldsb_mmu(env, addr, oi, retaddr); break;
-            case OPC_LD_BU: val = helper_ret_ldub_mmu(env, addr, oi, retaddr); break;
-            case OPC_LD_H:  val = helper_le_ldsw_mmu(env, addr, oi, retaddr);  break;
-            case OPC_LD_HU: val = helper_le_lduw_mmu(env, addr, oi, retaddr);  break;
-            case OPC_LD_W:  val = helper_le_ldsl_mmu(env, addr, oi, retaddr);  break;
-            case OPC_LD_WU: val = helper_le_ldul_mmu(env, addr, oi, retaddr);  break;
-            case OPC_LD_D:  val = helper_le_ldq_mmu(env, addr, oi, retaddr);   break;
-            default: assert(0); break;
+        case OPC_LD_B:  val = helper_ret_ldsb_mmu(env, addr, oi, retaddr); break;
+        case OPC_LD_BU: val = helper_ret_ldub_mmu(env, addr, oi, retaddr); break;
+        case OPC_LD_H:  val = helper_le_ldsw_mmu(env, addr, oi, retaddr);  break;
+        case OPC_LD_HU: val = helper_le_lduw_mmu(env, addr, oi, retaddr);  break;
+        case OPC_LD_W:  val = helper_le_ldsl_mmu(env, addr, oi, retaddr);  break;
+        case OPC_FLD_S:
+        case OPC_LD_WU: val = helper_le_ldul_mmu(env, addr, oi, retaddr);  break;
+        case OPC_FLD_D:
+        case OPC_LD_D:  val = helper_le_ldq_mmu(env, addr, oi, retaddr);   break;
+        /* no return for VLD, env->temp_xmm will be used */
+        case OPC_VLD:  latxs_helper_le_lddq_mmu(env, addr, oi, retaddr);   break;
+        default: assert(0); break;
         }
-        ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
-        load_into_reg(val, epc, cpuid);
+        load_into_reg_softmmu(env, val, epc, cpuid);
     }
+
+    /* return to the next instruction in native */
+    ((uint64_t *)(data_storage_s[cpuid]))[32] += 4;
 
     latxs_sigint_check_in_hamt(env, epc);
  

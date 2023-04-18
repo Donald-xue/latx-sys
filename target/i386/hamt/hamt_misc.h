@@ -81,6 +81,14 @@ typedef enum {
     OPC_LD_BU    = 0b0010101000 << 22,
     OPC_LD_HU    = 0b0010101001 << 22,
     OPC_LD_WU    = 0b0010101010 << 22,
+
+    OPC_FLD_S    = 0x2B000000,
+    OPC_FST_S    = 0x2B400000,
+    OPC_FLD_D    = 0x2B800000,
+    OPC_FST_D    = 0x2BC00000,
+    OPC_VLD      = 0x2C000000,
+    OPC_VST      = 0x2C400000,
+
 /*
     OPC_LDX_B    = 0b00111000000000 << 18,
     OPC_LDX_H    = 0b00111000000001 << 18,
