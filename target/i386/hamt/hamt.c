@@ -2957,7 +2957,7 @@ static void enable_x86vm_hamt_rr(void)
     assert(data_storage_s[0] == DATA_STORAGE_ADDRESS);
     assert(code_storage_s[0] == CODE_STORAGE_ADDRESS);
 
-    latx_perfmap_insert(code_storage_s[0], 4096,
+    latx_perfmap_insert((void *)code_storage_s[0], 4096,
             "hamt_codes_to_excphandler");
     latx_perfmap_flush();
 
@@ -2982,6 +2982,8 @@ if (id == val) {                                        \
         PROT_RWX, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);  \
     assert(data_storage_s[id] == DATA_STORAGE_ADDRESS_S ## val);    \
     assert(code_storage_s[id] == CODE_STORAGE_ADDRESS_S ## val);    \
+    latx_perfmap_insert((void *)code_storage_s[id], 4096,           \
+            "hamt_codes_to_excphandler_" #val);                     \
     pr_info("data[%d] %p", id, (void *)(data_storage_s[id]));       \
     pr_info("code[%d] %p", id, (void *)code_storage_s[id]);         \
 } } while (0)
@@ -2992,14 +2994,6 @@ static void enable_x86vm_hamt_mt(int cpuid)
     HAMT_MTTCG_STORAGE_ALLOC(cpuid, 1);
     HAMT_MTTCG_STORAGE_ALLOC(cpuid, 2);
     HAMT_MTTCG_STORAGE_ALLOC(cpuid, 3);
-    latx_perfmap_insert(code_storage_s[0], 4096,
-            "hamt_codes_to_excphandler_0");
-    latx_perfmap_insert(code_storage_s[1], 4096,
-            "hamt_codes_to_excphandler_1");
-    latx_perfmap_insert(code_storage_s[2], 4096,
-            "hamt_codes_to_excphandler_2");
-    latx_perfmap_insert(code_storage_s[3], 4096,
-            "hamt_codes_to_excphandler_3");
     latx_perfmap_flush();
     build_tlb_invalid_trampoline_mt(cpuid);
     /* TODO: asdid map in hamt multi vcpu mode */
