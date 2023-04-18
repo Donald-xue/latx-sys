@@ -13,7 +13,7 @@ static int is_ldst_realized_by_softmmu(IR2_OPCODE op)
 {
     if (option_fast_fpr_ldst) {
         switch (op) {
-        default:
+        default: break;
         case LISA_VLD:
         case LISA_VST:
         case LISA_FLD_S:
