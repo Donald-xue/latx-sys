@@ -11,6 +11,7 @@
 #include "latx-np-sys.h"
 #include "latx-sigint-sys.h"
 #include "latx-intb-sys.h"
+#include "latx-multi-region-sys.h"
 
 #ifdef LATX_BPC_ENABLE
 /* BPC: Break Point Codes */
@@ -606,18 +607,22 @@ static int gen_latxs_jmp_glue_all(void *code_base)
     return code_nr_all;
 }
 
-int target_latxs_static_codes(void *code_base)
+int target_latxs_static_codes(void *code_base, int region_id)
 {
     int code_nr = 0;
     int code_nr_all = 0;
     void *code_ptr = code_base;
 
     latxs_set_lsenv_tmp();
+#ifdef LATX_USE_MULTI_REGION
+    lsenv->tr_data->region_id = region_id;
+#endif
 
 #define LATXS_GEN_STATIC_CODES(name, genfn, ...) do {   \
     code_nr = genfn(__VA_ARGS__);                       \
     code_nr_all += code_nr;                             \
-    latx_perfmap_insert(code_ptr, code_nr << 2, name);  \
+    latx_perfmap_insert(code_ptr, code_nr << 2, \
+            region_id ? name "_R1" : name "_R0");  \
     code_ptr = code_base + (code_nr_all << 2);          \
 } while (0)
 
@@ -839,6 +844,8 @@ int target_latxs_static_codes(void *code_base)
 #endif
 
     latx_perfmap_flush();
+
+    latx_multi_region_save(region_id);
 
     return code_nr_all;
 }

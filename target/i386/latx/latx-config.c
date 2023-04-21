@@ -22,6 +22,7 @@
 #include "latx-sys-flag-rdtn.h"
 #include "latx-sys-inst-ptn.h"
 #include "latx-sigint-sys.h"
+#include "latx-multi-region-sys.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {
@@ -340,9 +341,12 @@ void latxs_lsenv_switch(CPUArchState *env)
 }
 
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
-        int max_insns, void *code_highwater, int *search_size)
+        int max_insns, void *code_highwater, int region_id,
+        int *search_size)
 {
     CPUArchState *env = cpu->env_ptr;
+
+    latx_multi_region_switch(region_id);
 
     option_config_dump(tb->flags & 0x3);
 

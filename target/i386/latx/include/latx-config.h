@@ -5,7 +5,7 @@
 #include "qemu/osdep.h"
 #include "exec/exec-all.h"
 
-extern ADDR context_switch_bt_to_native;
+#include "latx-static-codes.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb);
 int target_latx_prologue(void *code_buf_addr);
@@ -37,9 +37,10 @@ void latxs_lsenv_switch(CPUArchState *env);
 void latxs_sigint_cpu_id(CPUState *cpu);
 
 /* For Functions defined in latx and used outside */
-int target_latxs_static_codes(void *code_ptr);
+int target_latxs_static_codes(void *code_ptr, int region_id);
 int target_latxs_host(CPUState *cpu, TranslationBlock *tb,
-        int max_insns, void *code_highwater, int *search_size);
+        int max_insns, void *code_highwater, int region_id,
+        int *search_size);
 void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb);
 void latxs_after_exec_tb(CPUState *cpu, TranslationBlock *tb);
 void latxs_fix_after_excp_or_int(void);

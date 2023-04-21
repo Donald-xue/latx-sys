@@ -589,6 +589,22 @@ typedef struct TCGProfile {
     int64_t table_op_count[NB_OPS];
 } TCGProfile;
 
+#include "tcg/tcg-ng.h"
+
+#ifdef TCG_USE_MULTI_REGION
+#define TCG_MULTI_REGION_N  2
+struct TCGMultiRegionContext {
+    void *code_buf;
+    void *code_ptr;
+    void *code_gen_buffer;
+    size_t code_gen_buffer_size;
+    void *code_gen_ptr;
+    void *data_gen_ptr;
+    void *code_gen_highwater;
+};
+typedef struct TCGMultiRegionContext TCGMultiRegionContext;
+#endif
+
 struct TCGContext {
     uint8_t *pool_cur, *pool_end;
     TCGPool *pool_first, *pool_current, *pool_first_large;
@@ -631,6 +647,11 @@ struct TCGContext {
     size_t code_gen_buffer_size;
     void *code_gen_ptr;
     void *data_gen_ptr;
+
+#ifdef TCG_USE_MULTI_REGION
+    TCGMultiRegionContext mregion[TCG_MULTI_REGION_N];
+    int region_id;
+#endif
 
     /* Threshold to flush the translated code buffer.  */
     void *code_gen_highwater;
@@ -696,8 +717,25 @@ extern const void *tcg_code_gen_epilogue;
 extern uintptr_t tcg_splitwx_diff;
 extern TCGv_env cpu_env;
 
+#ifdef TCG_USE_MULTI_REGION
+static inline int in_code_gen_buffer_mr(const void *p)
+{
+    const TCGContext *s = &tcg_init_ctx;
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        if (s->mregion[idx].code_gen_buffer <= p &&
+            p <= s->mregion[idx].code_gen_highwater)
+            return idx;
+    }
+    return -1;
+}
+#endif
+
 static inline bool in_code_gen_buffer(const void *p)
 {
+#ifdef TCG_USE_MULTI_REGION
+    return in_code_gen_buffer_mr(p) >= 0;
+#else
     const TCGContext *s = &tcg_init_ctx;
     /*
      * Much like it is valid to have a pointer to the byte past the
@@ -705,6 +743,7 @@ static inline bool in_code_gen_buffer(const void *p)
      * a pointer to the byte past the end of the code gen buffer.
      */
     return (size_t)(p - s->code_gen_buffer) <= s->code_gen_buffer_size;
+#endif
 }
 
 #ifdef CONFIG_DEBUG_TCG

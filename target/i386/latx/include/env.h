@@ -108,6 +108,9 @@ typedef struct TRANSLATION_DATA {
     uint8 curr_ir1_skipped_eflags; /* these eflag calculation can be skipped */
                                    /* (because of flag pattern, etc) */
 
+    /* multi code cache region */
+    int region_id;
+
 #ifdef CONFIG_SOFTMMU
     int max_insns; /* max number of target instruction */
     void *code_highwater; /* to check buffer overflow */

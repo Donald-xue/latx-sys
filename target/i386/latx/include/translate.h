@@ -1051,10 +1051,6 @@ int8 get_etb_type(IR1_INST *pir1);
 
 IR1_INST *get_ir1_list(struct TranslationBlock *tb, ADDRX pc);
 
-extern ADDR context_switch_native_to_bt_ret_0;
-extern ADDR context_switch_native_to_bt;
-extern ADDR ss_match_fail_native;
-
 /* target_latx_host()
  * ---------------------------------------
  * |  tr_disasm()
@@ -1171,7 +1167,6 @@ void tr_generate_goto_tb(void);                          /* TODO */
 
 /* rotate fpu */
 /* native_rotate_fpu_by(step, return_address) */
-extern ADDR native_rotate_fpu_by;
 void rotate_fpu_to_top(int top);
 void rotate_fpu_by(int step);
 void rotate_fpu_to_bias(int bias);
@@ -1432,10 +1427,6 @@ void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
 void latxs_tr_gen_eob(void);
 void latxs_tr_gen_sys_eob(IR1_INST *pir1);
 void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1);
-
-extern ADDR native_jmp_glue_0;
-extern ADDR native_jmp_glue_1;
-extern ADDR native_jmp_glue_2;
 
 /* exception check */
 int latxs_tr_gen_excp_check(IR1_INST *pir1);
@@ -2217,8 +2208,6 @@ bool latxs_translate_add_byhand64(IR1_INST *pir1);
 #endif
 
 /* optimization */
-extern ADDR latxs_sc_scs_prologue;
-extern ADDR latxs_sc_scs_epilogue;
 int scs_enabled(void);
 int gen_latxs_scs_prologue_cfg(void *, helper_cfg_t);
 int gen_latxs_scs_epilogue_cfg(void *, helper_cfg_t);
@@ -2227,25 +2216,12 @@ void latxs_tr_gen_static_save_registers_to_env(
 void latxs_tr_gen_static_load_registers_from_env(
         uint32_t, uint8_t, uint32_t, uint8_t);
 
-extern ADDR latxs_sc_fcs_F_0;
-extern ADDR latxs_sc_fcs_F_1;
-extern ADDR latxs_sc_fcs_S_0;
-extern ADDR latxs_sc_fcs_S_1;
-extern ADDR latxs_sc_fcs_FS_0;
-extern ADDR latxs_sc_fcs_FS_1;
-extern ADDR latxs_sc_fcs_check_load_F;
-extern ADDR latxs_sc_fcs_check_load_S;
-extern ADDR latxs_sc_fcs_check_load_FS;
-extern ADDR latxs_sc_fcs_load_F;
-extern ADDR latxs_sc_fcs_load_S;
-extern ADDR latxs_sc_fcs_load_FS;
 int gen_latxs_sc_fcs_jmp_glue(void *, int ctx, int n);
 int gen_latxs_sc_fcs_jmp_glue_return(void *, int ctx, int n);
 int gen_latxs_sc_fcs_check_load(void *, int ctx);
 int gen_latxs_sc_fcs_load(void *, int ctx);
 int latxs_fastcs_set_jmp_target(void *tb, int n, void *nextb);
 
-extern ADDR latxs_sc_intb_njc;
 int intb_njc_enabled(void);
 int gen_latxs_intb_njc_lookup(void *code_ptr);
 
@@ -2284,5 +2260,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb);
 #define FASTCS_CTX_SIMD 2
 
 #endif
+
+#include "latx-static-codes.h"
 
 #endif

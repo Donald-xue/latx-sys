@@ -71,10 +71,12 @@
 #include "hamt.h"
 #include "latxs-cc-pro.h"
 #include "latx-counter-sys.h"
+#include "latx-multi-region-sys.h"
 #endif
 #endif
 
 #include "tcg/tcg-ng.h"
+#include "tcg/tcg-multi-region.h"
 
 /* #define DEBUG_TB_INVALIDATE */
 /* #define DEBUG_TB_FLUSH */
@@ -1537,6 +1539,10 @@ static bool alloc_code_gen_buffer(size_t size, int splitwx, Error **errp)
 static bool alloc_code_gen_buffer_anon(size_t size, int prot,
                                        int flags, Error **errp)
 {
+#ifdef NG_TCG_DEBUG_CC
+    printf("[TCG] %s size=0x%lx prot=0x%x flags=0x%x\n",
+            __func__, size, prot, flags);
+#endif
     void *buf;
 
     buf = mmap(NULL, size, prot, flags, -1, 0);
@@ -1585,6 +1591,12 @@ static bool alloc_code_gen_buffer_anon(size_t size, int prot,
     qemu_madvise(buf, size, QEMU_MADV_HUGEPAGE);
 
     tcg_ctx->code_gen_buffer = buf;
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] buf=%p size=0x%lx\n",
+            __func__,
+            tcg_ctx->code_gen_buffer,
+            tcg_ctx->code_gen_buffer_size);
+#endif
     return true;
 }
 
@@ -1799,9 +1811,45 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
     page_init();
     tb_htable_init();
 
+#ifdef TCG_USE_MULTI_REGION
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    latx_multi_region_init(TCG_MULTI_REGION_N);
+#endif
+#endif /* TCG_USE_MULTI_REGION */
+
     ok = alloc_code_gen_buffer(size_code_gen_buffer(tb_size),
                                splitwx, &error_fatal);
     assert(ok);
+#ifdef TCG_USE_MULTI_REGION
+    {
+        tcg_ctx->region_id = 0;
+        tcg_multi_region_save(tcg_ctx, 0);
+#ifdef NG_TCG_DEBUG_CC
+        printf("%-20s [TCG][%p] mregion[%d] buf=%p size=0x%lx\n",
+                __func__, tcg_ctx, 0,
+                tcg_ctx->mregion[0].code_gen_buffer,
+                tcg_ctx->mregion[0].code_gen_buffer_size);
+#endif
+        int idx = 1;
+        for (; idx < TCG_MULTI_REGION_N; ++idx) {
+            tcg_multi_region_switch(tcg_ctx, idx);
+
+            ok = alloc_code_gen_buffer(size_code_gen_buffer(tb_size),
+                                       splitwx, &error_fatal);
+            assert(ok);
+
+            tcg_multi_region_save(tcg_ctx, idx);
+#ifdef NG_TCG_DEBUG_CC
+            printf("%-20s [TCG][%p] mregion[%d] buf=%p size=0x%lx\n",
+                    __func__, tcg_ctx, idx,
+                    tcg_ctx->mregion[idx].code_gen_buffer,
+                    tcg_ctx->mregion[idx].code_gen_buffer_size);
+#endif
+        }
+
+        tcg_multi_region_switch(tcg_ctx, 0);
+    }
+#endif /* TCG_USE_MULTI_REGION */
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     if (hamt_enable()) {
@@ -1812,7 +1860,18 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
 #if defined(CONFIG_SOFTMMU)
     /* There's no guest base to take into account, so go ahead and
        initialize the prologue now.  */
+#ifdef  TCG_USE_MULTI_REGION
+    {
+        int idx = TCG_MULTI_REGION_N - 1;
+        for (; idx >= 0; --idx) {
+            tcg_multi_region_switch(tcg_ctx, idx);
+            tcg_prologue_init(tcg_ctx);
+            tcg_multi_region_save(tcg_ctx, idx);
+        }
+    }
+#else /* no TCG_USE_MULTI_REGION */
     tcg_prologue_init(tcg_ctx);
+#endif /* TCG_USE_MULTI_REGION */
 #endif
 }
 
@@ -2391,6 +2450,13 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     int64_t ti;
 #endif
 
+#ifdef  TCG_USE_MULTI_REGION
+#if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
+    int rid = latx_multi_region_get_id(cpu);
+    tcg_multi_region_switch(tcg_ctx, rid);
+#endif
+#endif /* TCG_USE_MULTI_REGION */
+
     assert_memory_lock();
     qemu_thread_jit_write();
 
@@ -2653,6 +2719,11 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     gen_code_size = target_latxs_host(cpu, tb,
             max_insns,
             tcg_ctx->code_gen_highwater,
+#ifdef  TCG_USE_MULTI_REGION
+            tcg_ctx->region_id,
+#else
+            0,
+#endif /* TCG_USE_MULTI_REGION */
             &search_size);
     if (unlikely(gen_code_size < 0)) {
         switch (gen_code_size) {

@@ -1798,7 +1798,11 @@ static void tcg_target_qemu_prologue(TCGContext *s)
 
     int inst_nr = 0;
 #ifdef CONFIG_SOFTMMU
-    inst_nr = target_latxs_static_codes(s->code_ptr);
+#ifdef  TCG_USE_MULTI_REGION
+    inst_nr = target_latxs_static_codes(s->code_ptr, s->region_id);
+#else
+    inst_nr = target_latxs_static_codes(s->code_ptr, 0);
+#endif /* TCG_USE_MULTI_REGION */
     s->code_ptr += inst_nr;
     return;
 #endif

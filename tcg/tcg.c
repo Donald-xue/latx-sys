@@ -65,6 +65,7 @@
 #include "exec/log.h"
 
 #include "tcg/tcg-ng.h"
+#include "tcg/tcg-multi-region.h"
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-perfmap.h"
@@ -202,6 +203,10 @@ struct tcg_region_state {
     size_t agg_size_full; /* aggregate size of full regions */
 };
 
+#ifdef TCG_USE_MULTI_REGION
+static struct tcg_region_state region[TCG_MULTI_REGION_N];
+static void *region_trees[TCG_MULTI_REGION_N];
+#else /* no TCG_USE_MULTI_REGION */
 static struct tcg_region_state region;
 /*
  * This is an array of struct tcg_region_tree's, with padding.
@@ -209,6 +214,7 @@ static struct tcg_region_state region;
  * struct is found every tree_size bytes.
  */
 static void *region_trees;
+#endif /* TCG_USE_MULTI_REGION */
 static size_t tree_size;
 static TCGRegSet tcg_target_available_regs[TCG_TYPE_COUNT];
 static TCGRegSet tcg_target_call_clobber_regs;
@@ -517,6 +523,27 @@ static void tcg_region_trees_init(void)
     size_t i;
 
     tree_size = ROUND_UP(sizeof(struct tcg_region_tree), qemu_dcache_linesize);
+
+#ifdef TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        region_trees[idx] = qemu_memalign(qemu_dcache_linesize,
+                region[idx].n * tree_size);
+        for (i = 0; i < region[idx].n; i++) {
+            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+
+            qemu_mutex_init(&rt->lock);
+            rt->tree = g_tree_new(tb_tc_cmp);
+#ifdef NG_TCG_DEBUG_CC
+            printf("%-20s [TCG][%p] region[%d] tree[%d] tree=%p\n",
+                    __func__, tcg_ctx,
+                    idx, (int)i, rt->tree);
+#endif
+        }
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
+
     region_trees = qemu_memalign(qemu_dcache_linesize, region.n * tree_size);
     for (i = 0; i < region.n; i++) {
         struct tcg_region_tree *rt = region_trees + i * tree_size;
@@ -528,11 +555,34 @@ static void tcg_region_trees_init(void)
                 __func__, tcg_ctx, (int)i, rt->tree);
 #endif
     }
+
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 static struct tcg_region_tree *tc_ptr_to_region_tree(const void *p)
 {
     size_t region_idx;
+
+#ifdef TCG_USE_MULTI_REGION
+    int rid = in_code_gen_buffer_mr(p);
+    if (rid >= 0) {
+        if (p < region[rid].start_aligned) {
+            region_idx = 0;
+        } else {
+            ptrdiff_t offset = p - region[rid].start_aligned;
+
+            if (offset > region[rid].stride * (region[rid].n - 1)) {
+                region_idx = region[rid].n - 1;
+            } else {
+                region_idx = offset / region[rid].stride;
+            }
+        }
+        return region_trees[rid] + region_idx * tree_size;
+    }
+
+    return NULL;
+
+#else /* no TCG_USE_MULTI_REGION */
 
     /*
      * Like tcg_splitwx_to_rw, with no assert.  The pc may come from
@@ -557,6 +607,7 @@ static struct tcg_region_tree *tc_ptr_to_region_tree(const void *p)
         }
     }
     return region_trees + region_idx * tree_size;
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 void tcg_tb_insert(TranslationBlock *tb)
@@ -604,22 +655,46 @@ static void tcg_region_tree_lock_all(void)
 {
     size_t i;
 
+#ifdef TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        for (i = 0; i < region[idx].n; i++) {
+            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+            qemu_mutex_lock(&rt->lock);
+        }
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
+
     for (i = 0; i < region.n; i++) {
         struct tcg_region_tree *rt = region_trees + i * tree_size;
 
         qemu_mutex_lock(&rt->lock);
     }
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 static void tcg_region_tree_unlock_all(void)
 {
     size_t i;
 
+#ifdef  TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        for (i = 0; i < region[idx].n; i++) {
+            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+            qemu_mutex_unlock(&rt->lock);
+        }
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
+
     for (i = 0; i < region.n; i++) {
         struct tcg_region_tree *rt = region_trees + i * tree_size;
 
         qemu_mutex_unlock(&rt->lock);
     }
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 void tcg_tb_foreach(GTraverseFunc func, gpointer user_data)
@@ -627,11 +702,23 @@ void tcg_tb_foreach(GTraverseFunc func, gpointer user_data)
     size_t i;
 
     tcg_region_tree_lock_all();
+#ifdef  TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        for (i = 0; i < region[idx].n; i++) {
+            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+            g_tree_foreach(rt->tree, func, user_data);
+        }
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
+
     for (i = 0; i < region.n; i++) {
         struct tcg_region_tree *rt = region_trees + i * tree_size;
 
         g_tree_foreach(rt->tree, func, user_data);
     }
+#endif /* TCG_USE_MULTI_REGION */
     tcg_region_tree_unlock_all();
 }
 
@@ -641,11 +728,23 @@ size_t tcg_nb_tbs(void)
     size_t i;
 
     tcg_region_tree_lock_all();
+#ifdef  TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        for (i = 0; i < region[idx].n; i++) {
+            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+            nb_tbs += g_tree_nnodes(rt->tree);
+        }
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
+
     for (i = 0; i < region.n; i++) {
         struct tcg_region_tree *rt = region_trees + i * tree_size;
 
         nb_tbs += g_tree_nnodes(rt->tree);
     }
+#endif /* TCG_USE_MULTI_REGION */
     tcg_region_tree_unlock_all();
     return nb_tbs;
 }
@@ -663,6 +762,19 @@ static void tcg_region_tree_reset_all(void)
     size_t i;
 
     tcg_region_tree_lock_all();
+#ifdef  TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        for (i = 0; i < region[idx].n; i++) {
+            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+            g_tree_foreach(rt->tree, tcg_region_tree_traverse, NULL);
+            g_tree_ref(rt->tree);
+            g_tree_destroy(rt->tree);
+        }
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
+
     for (i = 0; i < region.n; i++) {
         struct tcg_region_tree *rt = region_trees + i * tree_size;
 
@@ -671,8 +783,31 @@ static void tcg_region_tree_reset_all(void)
         g_tree_ref(rt->tree);
         g_tree_destroy(rt->tree);
     }
+#endif /* TCG_USE_MULTI_REGION */
     tcg_region_tree_unlock_all();
 }
+
+#ifdef TCG_USE_MULTI_REGION
+static void tcg_region_bounds_mr(size_t curr_region,
+        void **pstart, void **pend, int rid)
+{
+    void *start, *end;
+
+    start = region[rid].start_aligned + curr_region * region[rid].stride;
+    end = start + region[rid].size;
+
+    if (curr_region == 0) {
+        start = region[rid].start;
+    }
+    if (curr_region == region[rid].n - 1) {
+        end = region[rid].end;
+    }
+
+    *pstart = start;
+    *pend = end;
+}
+
+#else /* no TCG_USE_MULTI_REGION */
 
 static void tcg_region_bounds(size_t curr_region, void **pstart, void **pend)
 {
@@ -691,33 +826,60 @@ static void tcg_region_bounds(size_t curr_region, void **pstart, void **pend)
     *pstart = start;
     *pend = end;
 }
+#endif
 
 static void tcg_region_assign(TCGContext *s, size_t curr_region)
 {
     void *start, *end;
 
+#ifdef TCG_USE_MULTI_REGION
+    int rid = s->region_id;
+    tcg_region_bounds_mr(curr_region, &start, &end, rid);
+#else /* no TCG_USE_MULTI_REGION */
     tcg_region_bounds(curr_region, &start, &end);
+#endif /* TCG_USE_MULTI_REGION */
 
 #ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG][%p] region.curr=%d "\
+    printf("%-20s [TCG][%p] region[%d] curr=%d "\
             "CGbuffer=%p CGptr=%p CGsize=0x%lx CGhw=%p\n",
-            __func__, s, (int)curr_region,
+            __func__, s, rid, (int)curr_region,
             start, start, end-start, end-TCG_HIGHWATER);
 #endif
     s->code_gen_buffer = start;
     s->code_gen_ptr = start;
     s->code_gen_buffer_size = end - start;
     s->code_gen_highwater = end - TCG_HIGHWATER;
+
+#ifdef TCG_USE_MULTI_REGION
+    tcg_multi_region_save(s, rid);
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 static bool tcg_region_alloc__locked(TCGContext *s)
 {
+#ifdef TCG_USE_MULTI_REGION
+    int rid = s->region_id;
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] %p region[%d] curr=%d n=%d\n",
+            __func__, s, rid,
+            (int)region[rid].current, (int)region[rid].n);
+#endif
+    if (region[rid].current == region[rid].n) {
+        return true;
+    }
+    tcg_region_assign(s, region[rid].current);
+    region[rid].current++;
+    return false;
+
+#else /* no TCG_USE_MULTI_REGION */
+
     if (region.current == region.n) {
         return true;
     }
     tcg_region_assign(s, region.current);
     region.current++;
     return false;
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 /*
@@ -730,6 +892,26 @@ static bool tcg_region_alloc(TCGContext *s)
     /* read the region size now; alloc__locked will overwrite it on success */
     size_t size_full = s->code_gen_buffer_size;
 
+#ifdef TCG_USE_MULTI_REGION
+    int rid = s->region_id;
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] %p region[%d]\n",
+            __func__, s, rid);
+#endif
+    qemu_mutex_lock(&region[rid].lock);
+    err = tcg_region_alloc__locked(s);
+    if (!err) {
+        region[rid].agg_size_full += size_full - TCG_HIGHWATER;
+    }
+    qemu_mutex_unlock(&region[rid].lock);
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] %p region[%d] err=%d\n",
+            __func__, s, rid, err);
+#endif
+    return err;
+
+#else /* no TCG_USE_MULTI_REGION */
+
     qemu_mutex_lock(&region.lock);
     err = tcg_region_alloc__locked(s);
     if (!err) {
@@ -737,6 +919,7 @@ static bool tcg_region_alloc(TCGContext *s)
     }
     qemu_mutex_unlock(&region.lock);
     return err;
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 /*
@@ -745,6 +928,9 @@ static bool tcg_region_alloc(TCGContext *s)
  */
 static inline bool tcg_region_initial_alloc__locked(TCGContext *s)
 {
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] %p\n", __func__, s);
+#endif
     return tcg_region_alloc__locked(s);
 }
 
@@ -753,6 +939,27 @@ void tcg_region_reset_all(void)
 {
     unsigned int n_ctxs = qatomic_read(&n_tcg_ctxs);
     unsigned int i;
+
+#ifdef TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        qemu_mutex_lock(&region[idx].lock);
+        region[idx].current = 0;
+        region[idx].agg_size_full = 0;
+
+        /* reset all tcg conext to region[0] */
+        for (i = 0; i < n_ctxs; i++) {
+            TCGContext *s = qatomic_read(&tcg_ctxs[i]);
+            s->region_id = idx;
+            tcg_multi_region_reset(s, idx);
+            bool err = tcg_region_initial_alloc__locked(s);
+            tcg_multi_region_save(s, idx);
+            g_assert(!err);
+        }
+        qemu_mutex_unlock(&region[idx].lock);
+    }
+
+#else /* no TCG_USE_MULTI_REGION */
 
     qemu_mutex_lock(&region.lock);
     region.current = 0;
@@ -765,6 +972,7 @@ void tcg_region_reset_all(void)
         g_assert(!err);
     }
     qemu_mutex_unlock(&region.lock);
+#endif /* TCG_USE_MULTI_REGION */
 
     tcg_region_tree_reset_all();
 }
@@ -839,8 +1047,67 @@ static size_t tcg_n_regions(void)
  * in practice. Multi-threaded guests share most if not all of their translated
  * code, which makes parallel code generation less appealing than in softmmu.
  */
+#ifdef TCG_USE_MULTI_REGION
+static void tcg_region_init_mr(int rid)
+{
+    void *buf = tcg_init_ctx.mregion[rid].code_gen_buffer;
+    void *aligned;
+    size_t size = tcg_init_ctx.mregion[rid].code_gen_buffer_size;
+    size_t page_size = qemu_real_host_page_size;
+    size_t region_size;
+    size_t n_regions;
+    size_t i;
+
+    n_regions = tcg_n_regions();
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] n_regions=%d\n",
+            __func__, (int)n_regions);
+#endif
+
+    aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
+    g_assert(aligned < tcg_init_ctx.mregion[rid].code_gen_buffer + size);
+
+    region_size = (size - (aligned - buf)) / n_regions;
+    region_size = QEMU_ALIGN_DOWN(region_size, page_size);
+    g_assert(region_size >= 2 * page_size);
+
+    qemu_mutex_init(&region[rid].lock);
+    region[rid].n = n_regions;
+    region[rid].size = region_size - page_size;
+    region[rid].stride = region_size;
+    region[rid].start = buf;
+    region[rid].start_aligned = aligned;
+    region[rid].end = QEMU_ALIGN_PTR_DOWN(buf + size, page_size);
+    region[rid].end -= page_size;
+
+    for (i = 0; i < region[rid].n; i++) {
+        void *start, *end;
+        tcg_region_bounds_mr(i, &start, &end, rid);
+        (void)qemu_mprotect_none(end, page_size);
+    }
+
+    tcg_region_trees_init();
+
+#ifdef CONFIG_USER_ONLY
+    {
+        tcg_ctx->region_id = 0;
+        bool err = tcg_region_initial_alloc__locked(tcg_ctx);
+        g_assert(!err);
+    }
+#endif
+}
+#endif /* TCG_USE_MULTI_REGION */
+
 void tcg_region_init(void)
 {
+#ifdef TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        tcg_region_init_mr(idx);
+    }
+    return;
+#else /* no TCG_USE_MULTI_REGION */
+
     void *buf = tcg_init_ctx.code_gen_buffer;
     void *aligned;
     size_t size = tcg_init_ctx.code_gen_buffer_size;
@@ -909,6 +1176,8 @@ void tcg_region_init(void)
         g_assert(!err);
     }
 #endif
+
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 #ifdef CONFIG_DEBUG_TCG
@@ -997,10 +1266,32 @@ void tcg_register_thread(void)
     }
 
     tcg_ctx = s;
+#ifdef TCG_USE_MULTI_REGION
+    tcg_ctx->region_id = 0;
+    int rid = tcg_ctx->region_id;
+    qemu_mutex_lock(&region[rid].lock);
+    err = tcg_region_initial_alloc__locked(tcg_ctx);
+    g_assert(!err);
+    qemu_mutex_unlock(&region[rid].lock);
+
+#else /* no TCG_USE_MULTI_REGION */
+
     qemu_mutex_lock(&region.lock);
     err = tcg_region_initial_alloc__locked(tcg_ctx);
     g_assert(!err);
     qemu_mutex_unlock(&region.lock);
+#endif /* TCG_USE_MULTI_REGION */
+
+#if defined(TCG_USE_MULTI_REGION) && defined(NG_TCG_DEBUG_CC)
+    printf("%-20s finish\n", __func__);
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        printf("TCGCTX %p Region %d buf %p hw %p\n",
+                tcg_ctx, idx,
+                tcg_ctx->mregion[idx].code_gen_buffer,
+                tcg_ctx->mregion[idx].code_gen_highwater);
+    }
+#endif /* TCG_USE_MULTI_REGION */
 }
 #endif /* !CONFIG_USER_ONLY */
 
@@ -1017,6 +1308,27 @@ size_t tcg_code_size(void)
     unsigned int i;
     size_t total;
 
+#ifdef TCG_USE_MULTI_REGION
+    int idx = 0;
+    for (; idx < TCG_MULTI_REGION_N; ++idx) {
+        qemu_mutex_lock(&region[idx].lock);
+        total = region[idx].agg_size_full;
+        for (i = 0; i < n_ctxs; i++) {
+            TCGContext *s = qatomic_read(&tcg_ctxs[i]);
+            size_t size;
+
+            tcg_multi_region_switch(s, idx);
+
+            size = qatomic_read(&s->code_gen_ptr) - s->code_gen_buffer;
+            g_assert(size <= s->code_gen_buffer_size);
+            total += size;
+        }
+        qemu_mutex_unlock(&region[idx].lock);
+    }
+    return total;
+
+#else /* no TCG_USE_MULTI_REGION */
+
     qemu_mutex_lock(&region.lock);
     total = region.agg_size_full;
     for (i = 0; i < n_ctxs; i++) {
@@ -1029,6 +1341,7 @@ size_t tcg_code_size(void)
     }
     qemu_mutex_unlock(&region.lock);
     return total;
+#endif /* TCG_USE_MULTI_REGION */
 }
 
 /*
@@ -1040,10 +1353,18 @@ size_t tcg_code_capacity(void)
 {
     size_t guard_size, capacity;
 
+#ifdef TCG_USE_MULTI_REGION
+    guard_size = region[0].stride - region[0].size;
+    capacity = region[0].end + guard_size - region[0].start;
+    capacity -= region[0].n * (guard_size + TCG_HIGHWATER);
+
+#else /* no TCG_USE_MULTI_REGION */
+
     /* no need for synchronization; these variables are set at init time */
     guard_size = region.stride - region.size;
     capacity = region.end + guard_size - region.start;
     capacity -= region.n * (guard_size + TCG_HIGHWATER);
+#endif /* TCG_USE_MULTI_REGION */
     return capacity;
 }
 
@@ -1248,6 +1569,10 @@ void tcg_prologue_init(TCGContext *s)
     size_t prologue_size, total_size;
     void *buf0, *buf1;
 
+#ifdef TCG_USE_MULTI_REGION
+    int rid = s->region_id;
+#endif /* TCG_USE_MULTI_REGION */
+
     /* Put the prologue at the beginning of code_gen_buffer.  */
     buf0 = s->code_gen_buffer;
     total_size = s->code_gen_buffer_size;
@@ -1259,8 +1584,13 @@ void tcg_prologue_init(TCGContext *s)
      * The region trees are not yet configured, but tcg_splitwx_to_rx
      * needs the bounds for an assert.
      */
+#ifdef TCG_USE_MULTI_REGION
+    region[rid].start = buf0;
+    region[rid].end = buf0 + total_size;
+#else /* no TCG_USE_MULTI_REGION */
     region.start = buf0;
     region.end = buf0 + total_size;
+#endif /* TCG_USE_MULTI_REGION */
 
 #ifndef CONFIG_TCG_INTERPRETER
 #ifndef CONFIG_LATX
@@ -1304,7 +1634,13 @@ void tcg_prologue_init(TCGContext *s)
     s->code_gen_buffer_size = total_size;
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-    latx_perfmap_insert(s->code_gen_ptr, total_size, "latxs_code_cache");
+#ifdef TCG_USE_MULTI_REGION
+    latx_perfmap_insert(s->code_gen_ptr, total_size,
+            s->region_id ? "latxs_code_cache_R1" : "latxs_code_cache_R0");
+#else /* no TCG_USE_MULTI_REGION */
+    latx_perfmap_insert(s->code_gen_ptr, total_size,
+            "latxs_code_cache");
+#endif /* TCG_USE_MULTI_REGION */
     latx_perfmap_flush();
 #endif
 
@@ -5183,3 +5519,57 @@ void tcg_expand_vec_op(TCGOpcode o, TCGType t, unsigned e, TCGArg a0, ...)
     g_assert_not_reached();
 }
 #endif
+
+
+
+#ifdef TCG_USE_MULTI_REGION
+
+#define TCG_MREGION_SWITCH(s, id, field) do {   \
+    s->field = s->mregion[id].field;            \
+} while (0)
+#define TCG_MREGION_SAVE(s, id, field) do {     \
+    s->mregion[id].field = s->field;            \
+} while (0)
+#define TCG_MREGION_RESET(s, id, field) do {    \
+    s->mregion[id].field = 0;                   \
+} while (0)
+
+void tcg_multi_region_reset(TCGContext *s, int rid)
+{
+    TCG_MREGION_RESET(s, rid, code_buf);
+    TCG_MREGION_RESET(s, rid, code_ptr);
+    TCG_MREGION_RESET(s, rid, code_gen_buffer);
+    TCG_MREGION_RESET(s, rid, code_gen_buffer_size);
+    TCG_MREGION_RESET(s, rid, code_gen_ptr);
+    TCG_MREGION_RESET(s, rid, data_gen_ptr);
+    TCG_MREGION_RESET(s, rid, code_gen_highwater);
+}
+
+void tcg_multi_region_switch(TCGContext *s, int rid)
+{
+    if (s->region_id == rid) return;
+
+    tcg_multi_region_save(s, s->region_id);
+    TCG_MREGION_SWITCH(s, rid, code_buf);
+    TCG_MREGION_SWITCH(s, rid, code_ptr);
+    TCG_MREGION_SWITCH(s, rid, code_gen_buffer);
+    TCG_MREGION_SWITCH(s, rid, code_gen_buffer_size);
+    TCG_MREGION_SWITCH(s, rid, code_gen_ptr);
+    TCG_MREGION_SWITCH(s, rid, data_gen_ptr);
+    TCG_MREGION_SWITCH(s, rid, code_gen_highwater);
+    s->region_id = rid;
+}
+
+void tcg_multi_region_save(TCGContext *s, int rid)
+{
+    assert(rid == s->region_id);
+    TCG_MREGION_SAVE(s, rid, code_buf);
+    TCG_MREGION_SAVE(s, rid, code_ptr);
+    TCG_MREGION_SAVE(s, rid, code_gen_buffer);
+    TCG_MREGION_SAVE(s, rid, code_gen_buffer_size);
+    TCG_MREGION_SAVE(s, rid, code_gen_ptr);
+    TCG_MREGION_SAVE(s, rid, data_gen_ptr);
+    TCG_MREGION_SAVE(s, rid, code_gen_highwater);
+}
+
+#endif /* TCG_USE_MULTI_REGION */
