@@ -23,6 +23,7 @@
 #include "latx-sys-inst-ptn.h"
 #include "latx-sigint-sys.h"
 #include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {
@@ -382,6 +383,7 @@ void latxs_before_exec_tb(CPUState *cpu, TranslationBlock *tb)
         env->latxs_int_tb = tb;
     }
 
+    latx_multi_region_prepare_exec(tb->region_id);
     latxs_tracecc_before_exec_tb(env, tb);
     latxs_tb_trace(env, tb);
     latxs_break_point(env, tb);

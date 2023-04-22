@@ -12,6 +12,9 @@
 #include "latxs-fastcs-cfg.h"
 #include "latx-np-sys.h"
 
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
+
 /*
  * option_fastcs
  * = 0 : disabled
@@ -73,7 +76,17 @@ void latxs_fastcs_env_init(CPUX86State *env)
 
     assert(lsenv->cpu_state == env);
 
+    /* indir table will be set before exec tb */
+
+    env->fastcs_ptr = &lsenv->fastcs_data;
+    lsenv->fastcs_data.env = env;
+}
+
+void latxs_fastcs_set_indir_table(int rid)
+{
     /*
+     * used in intb_lookup
+     *
      *    00 01 10 11
      * 00 -- -F S- SF
      * 01 -- -- S- S-
@@ -81,24 +94,21 @@ void latxs_fastcs_env_init(CPUX86State *env)
      * 11 -- -- -- --
      */
     lsenv->fastcs_data.indir_table[0][0] = NULL;
-    lsenv->fastcs_data.indir_table[0][1] = (void *)latxs_sc_fcs_check_load_F;
-    lsenv->fastcs_data.indir_table[0][2] = (void *)latxs_sc_fcs_check_load_S;
-    lsenv->fastcs_data.indir_table[0][3] = (void *)latxs_sc_fcs_check_load_FS;
+    lsenv->fastcs_data.indir_table[0][1] = (void *)GET_SC_TABLE(rid, fcs_check_load_F);
+    lsenv->fastcs_data.indir_table[0][2] = (void *)GET_SC_TABLE(rid, fcs_check_load_S);
+    lsenv->fastcs_data.indir_table[0][3] = (void *)GET_SC_TABLE(rid, fcs_check_load_FS);
     lsenv->fastcs_data.indir_table[1][0] = NULL;
     lsenv->fastcs_data.indir_table[1][1] = NULL;
-    lsenv->fastcs_data.indir_table[1][2] = (void *)latxs_sc_fcs_check_load_S;
-    lsenv->fastcs_data.indir_table[1][3] = (void *)latxs_sc_fcs_check_load_S;
+    lsenv->fastcs_data.indir_table[1][2] = (void *)GET_SC_TABLE(rid, fcs_check_load_S);
+    lsenv->fastcs_data.indir_table[1][3] = (void *)GET_SC_TABLE(rid, fcs_check_load_S);
     lsenv->fastcs_data.indir_table[2][0] = NULL;
-    lsenv->fastcs_data.indir_table[2][1] = (void *)latxs_sc_fcs_check_load_F;
+    lsenv->fastcs_data.indir_table[2][1] = (void *)GET_SC_TABLE(rid, fcs_check_load_F);
     lsenv->fastcs_data.indir_table[2][2] = NULL;
-    lsenv->fastcs_data.indir_table[2][3] = (void *)latxs_sc_fcs_check_load_F;
+    lsenv->fastcs_data.indir_table[2][3] = (void *)GET_SC_TABLE(rid, fcs_check_load_F);
     lsenv->fastcs_data.indir_table[3][0] = NULL;
     lsenv->fastcs_data.indir_table[3][1] = NULL;
     lsenv->fastcs_data.indir_table[3][2] = NULL;
     lsenv->fastcs_data.indir_table[3][3] = NULL;
-
-    env->fastcs_ptr = &lsenv->fastcs_data;
-    lsenv->fastcs_data.env = env;
 }
 
 #ifdef LATXS_NP_ENABLE
@@ -364,6 +374,12 @@ int latxs_fastcs_set_jmp_target(void *_tb,
     TranslationBlock *tb    = _tb;
     TranslationBlock *nextb = _nextb;
 
+    int rid = tb->region_id;
+    lsassert(rid == nextb->region_id);
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
     if (latxs_fastcs_is_no_link()) {
         if (tb->fastcs_ctx != nextb->fastcs_ctx) {
             /* do not link */
@@ -418,22 +434,22 @@ int latxs_fastcs_set_jmp_target(void *_tb,
     ADDR fastcs_jmp_glue = 0;
     switch ((link_mode << 4) | n) {
     case 0x10:
-        fastcs_jmp_glue = latxs_sc_fcs_F_0;
+        fastcs_jmp_glue = GET_SC_TABLE(rid, fcs_F_0);
         break;
     case 0x11:
-        fastcs_jmp_glue = latxs_sc_fcs_F_1;
+        fastcs_jmp_glue = GET_SC_TABLE(rid, fcs_F_1);
         break;
     case 0x20:
-        fastcs_jmp_glue = latxs_sc_fcs_S_0;
+        fastcs_jmp_glue = GET_SC_TABLE(rid, fcs_S_0);
         break;
     case 0x21:
-        fastcs_jmp_glue = latxs_sc_fcs_S_1;
+        fastcs_jmp_glue = GET_SC_TABLE(rid, fcs_S_1);
         break;
     case 0x30:
-        fastcs_jmp_glue = latxs_sc_fcs_FS_0;
+        fastcs_jmp_glue = GET_SC_TABLE(rid, fcs_FS_0);
         break;
     case 0x31:
-        fastcs_jmp_glue = latxs_sc_fcs_FS_1;
+        fastcs_jmp_glue = GET_SC_TABLE(rid, fcs_FS_1);
         break;
     default:
         break;
@@ -710,6 +726,12 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
         return;
     }
 
+    int rid = tb->region_id;
+    lsassert(rid == lsenv->tr_data->region_id);
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
     ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = lsenv->tr_data->ir2_asm_nr << 2;
     int64_t ins_offset = 0;
@@ -738,7 +760,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label);
             /* load FPU */
             offset = lsenv->tr_data->ir2_asm_nr << 2;
-            ins_offset = (latxs_sc_fcs_load_F - code_buf - offset) >> 2;
+            ins_offset = (GET_SC_TABLE(rid, fcs_load_F) - code_buf - offset) >> 2;
             latxs_append_ir2_jmp_far(ins_offset, 1);
             /* update context */
             latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, &tmp1, 0x1);
@@ -751,7 +773,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label);
             /* load SIMD */
             offset = lsenv->tr_data->ir2_asm_nr << 2;
-            ins_offset = (latxs_sc_fcs_load_S - code_buf - offset) >> 2;
+            ins_offset = (GET_SC_TABLE(rid, fcs_load_S) - code_buf - offset) >> 2;
             latxs_append_ir2_jmp_far(ins_offset, 1);
             /* update context */
             latxs_append_ir2_opnd2i(LISA_ORI, &tmp1, &tmp1, 0x2);
@@ -767,7 +789,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x1);
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label1);
             offset = lsenv->tr_data->ir2_asm_nr << 2;
-            ins_offset = (latxs_sc_fcs_load_F - code_buf - offset) >> 2;
+            ins_offset = (GET_SC_TABLE(rid, fcs_load_F) - code_buf - offset) >> 2;
             latxs_append_ir2_jmp_far(ins_offset, 1);
             latxs_append_ir2_opnd1(LISA_LABEL, &label1);
             /* check SIMD : branch if not 1 */
@@ -775,7 +797,7 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
             latxs_append_ir2_opnd2i(LISA_ANDI, &tmp2, &tmp1, 0x2);
             latxs_append_ir2_opnd3(LISA_BNE, &tmp2, zero, &label2);
             offset = lsenv->tr_data->ir2_asm_nr << 2;
-            ins_offset = (latxs_sc_fcs_load_S - code_buf - offset) >> 2;
+            ins_offset = (GET_SC_TABLE(rid, fcs_load_S) - code_buf - offset) >> 2;
             latxs_append_ir2_opnd1(LISA_LABEL, &label2);
             latxs_append_ir2_jmp_far(ins_offset, 1);
             /* update context */
@@ -794,15 +816,15 @@ void latxs_fastcs_tb_start(TranslationBlock *tb)
     } else {
         switch (tb->fastcs_ctx) {
         case 0x1:
-            ins_offset = (latxs_sc_fcs_check_load_F -
+            ins_offset = (GET_SC_TABLE(rid, fcs_check_load_F) -
                     code_buf - offset) >> 2;
             break;
         case 0x2:
-            ins_offset = (latxs_sc_fcs_check_load_S -
+            ins_offset = (GET_SC_TABLE(rid, fcs_check_load_S) -
                     code_buf - offset) >> 2;
             break;
         case 0x3:
-            ins_offset = (latxs_sc_fcs_check_load_FS -
+            ins_offset = (GET_SC_TABLE(rid, fcs_check_load_FS) -
                     code_buf - offset) >> 2;
             break;
         default:

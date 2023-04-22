@@ -1,52 +1,71 @@
 #ifndef _LATX_STATIC_CODES_H_
 #define _LATX_STATIC_CODES_H_
 
-#ifdef CONFIG_SOFTMMU
-/* latxs_sc_bpc in latx-bpc-sys.h */
+#include "latx-bpc-sys.h"
+#include "latx-np-sys.h"
+#include "latx-intb-sys.h"
 
-extern ADDR latxs_sc_intb_njc;
+typedef struct latx_sc_table_t {
 
-extern ADDR latxs_sc_fcs_jmp_glue_fpu_0;
-extern ADDR latxs_sc_fcs_jmp_glue_fpu_1;
-extern ADDR latxs_sc_fcs_jmp_glue_xmm_0;
-extern ADDR latxs_sc_fcs_jmp_glue_xmm_1;
-
-/* latxs_native_printer in latx-np-sys.h */
-
-extern ADDR latxs_sc_scs_prologue;
-extern ADDR latxs_sc_scs_epilogue;
-
-extern ADDR latxs_sc_fcs_F_0;
-extern ADDR latxs_sc_fcs_F_1;
-extern ADDR latxs_sc_fcs_S_0;
-extern ADDR latxs_sc_fcs_S_1;
-extern ADDR latxs_sc_fcs_FS_0;
-extern ADDR latxs_sc_fcs_FS_1;
-extern ADDR latxs_sc_fcs_check_load_F;
-extern ADDR latxs_sc_fcs_check_load_S;
-extern ADDR latxs_sc_fcs_check_load_FS;
-extern ADDR latxs_sc_fcs_load_F;
-extern ADDR latxs_sc_fcs_load_S;
-extern ADDR latxs_sc_fcs_load_FS;
-
-/* latxs_sc_intb_lookup in latx-intb-sys.h */
+#ifdef LATX_BPC_ENABLE
+    uint64_t bpc;
 #endif
 
-extern ADDR context_switch_bt_to_native;
-extern ADDR context_switch_native_to_bt_ret_0;
-extern ADDR context_switch_native_to_bt;
-extern ADDR ss_match_fail_native;
+#ifdef LATXS_INTB_LINK_ENABLE
+    uint64_t intb_lookup;
+#endif
+    uint64_t intb_njc;
 
-extern ADDR native_rotate_fpu_by;
-extern ADDR native_jmp_glue_0;
-extern ADDR native_jmp_glue_1;
-extern ADDR native_jmp_glue_2;
+#ifdef LATXS_NP_ENABLE
+    uint64_t nprint;
+#endif
 
-extern ADDR fpu_enable_top;
-extern ADDR fpu_disable_top;
-extern ADDR fpu_get_top;
-extern ADDR fpu_set_top;
-extern ADDR fpu_inc_top;
-extern ADDR fpu_dec_top;
+    uint64_t scs_prologue;
+    uint64_t scs_epilogue;
+
+    uint64_t fcs_jmp_glue_fpu_0;
+    uint64_t fcs_jmp_glue_fpu_1;
+    uint64_t fcs_jmp_glue_xmm_0;
+    uint64_t fcs_jmp_glue_xmm_1;
+    uint64_t fcs_F_0;
+    uint64_t fcs_F_1;
+    uint64_t fcs_S_0;
+    uint64_t fcs_S_1;
+    uint64_t fcs_FS_0;
+    uint64_t fcs_FS_1;
+    uint64_t fcs_check_load_F;
+    uint64_t fcs_check_load_S;
+    uint64_t fcs_check_load_FS;
+    uint64_t fcs_load_F;
+    uint64_t fcs_load_S;
+    uint64_t fcs_load_FS;
+
+    uint64_t cs_bt_to_native;
+    uint64_t cs_native_to_bt_ret_0;
+    uint64_t cs_native_to_bt;
+
+    uint64_t jmp_glue_0;
+    uint64_t jmp_glue_1;
+    uint64_t jmp_glue_2;
+
+    uint64_t fpu_rotate;
+    uint64_t fpu_enable_top;
+    uint64_t fpu_disable_top;
+    uint64_t fpu_get_top;
+    uint64_t fpu_set_top;
+    uint64_t fpu_inc_top;
+    uint64_t fpu_dec_top;
+
+} latx_sc_table_t;
+
+extern latx_sc_table_t *latx_sc_table;
+
+#define SET_SC_TABLE(rid, name, value) do {     \
+    latx_sc_table[rid].name = (value);          \
+} while (0)
+
+#define GET_SC_TABLE(rid, name) (latx_sc_table[rid].name)
+
+
 
 #endif

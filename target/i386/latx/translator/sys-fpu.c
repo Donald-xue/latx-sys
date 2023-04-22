@@ -1,5 +1,6 @@
 #include "common.h"
 #include "lsenv.h"
+#include "latx-config.h"
 #include "reg-alloc.h"
 #include "translate.h"
 #include "latx-options.h"

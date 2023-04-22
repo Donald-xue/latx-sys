@@ -13,6 +13,10 @@
 #include "latx-tracecc-sys.h"
 #include "latx-sys-inst-ptn.h"
 
+#ifdef CONFIG_SOFTMMU
+#include "latx-static-codes.h"
+#endif
+
 extern void *helper_tb_lookup_ptr(CPUArchState *);
 static int ss_generate_match_fail_native_code(void* code_buf);
 
@@ -3219,10 +3223,18 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
     } else {
         lsassert(next_tb != NULL);
         tb->next_tb[n] = next_tb;
+#ifdef CONFIG_SOFTMMU
+        int rid = tb->region_id;
+        if (n == 0)
+            tb_set_jmp_target(tb, 0, GET_SC_TABLE(rid, jmp_glue_0));
+        else
+            tb_set_jmp_target(tb, 1, GET_SC_TABLE(rid, jmp_glue_1));
+#else
         if (n == 0)
             tb_set_jmp_target(tb, 0, native_jmp_glue_0);
         else
             tb_set_jmp_target(tb, 1, native_jmp_glue_1);
+#endif
     }
 }
 

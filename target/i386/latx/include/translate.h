@@ -1195,6 +1195,26 @@ static inline ADDR cpu_get_guest_base(void)
 #define IS_XMM_HI       (1 << 2)
 #define IS_DEST_MMX     (1 << 3)
 
+
+
+extern ADDR context_switch_native_to_bt_ret_0;
+extern ADDR context_switch_native_to_bt;
+extern ADDR ss_match_fail_native;
+
+extern ADDR native_rotate_fpu_by;
+extern ADDR native_jmp_glue_0;
+extern ADDR native_jmp_glue_1;
+extern ADDR native_jmp_glue_2;
+
+extern ADDR fpu_enable_top;
+extern ADDR fpu_disable_top;
+extern ADDR fpu_get_top;
+extern ADDR fpu_set_top;
+extern ADDR fpu_inc_top;
+extern ADDR fpu_dec_top;
+
+
+
 #ifdef CONFIG_SOFTMMU
 
 #include "env.h"
@@ -2260,7 +2280,5 @@ void latxs_fastcs_tb_start(TranslationBlock *tb);
 #define FASTCS_CTX_SIMD 2
 
 #endif
-
-#include "latx-static-codes.h"
 
 #endif

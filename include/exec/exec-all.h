@@ -548,6 +548,9 @@ struct TranslationBlock {
     uintptr_t jmp_list_head;
     uintptr_t jmp_list_next[2];
     uintptr_t jmp_dest[2];
+
+    int region_id;
+
 #ifdef CONFIG_LATX
     struct IR1_INST *_ir1_instructions;
     int8 _top_in;

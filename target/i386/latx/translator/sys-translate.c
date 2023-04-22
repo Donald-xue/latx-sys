@@ -9,6 +9,9 @@
 #include "latx-tracecc-sys.h"
 #include "latx-np-sys.h"
 
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
+
 /* Main Translation Process */
 
 void latxs_tr_init(TranslationBlock *tb)
@@ -528,6 +531,12 @@ void latxs_tr_gen_tb_end(void)
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
 
+    int rid = td->region_id;
+    lsassert(rid == tb->region_id);
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
     latxs_append_ir2_opnd1(LISA_LABEL, &td->exitreq_label);
 
     /* native printer for TB's execution */
@@ -570,7 +579,7 @@ void latxs_tr_gen_tb_end(void)
     ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = td->ir2_asm_nr << 2;
     int64_t ins_offset =
-        (context_switch_native_to_bt - code_buf - offset) >> 2;
+        (GET_SC_TABLE(rid, cs_native_to_bt) - code_buf - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 0);
 }
 

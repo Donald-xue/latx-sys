@@ -76,6 +76,7 @@ void __latxs_tb_trace(CPUX86State *env, TranslationBlock *tb)
     uint32_t eflags = cpu_compute_eflags(env);
 
     fprintf(stderr, "[tracesp] ");
+    fprintf(stderr, "CCR%d ", tb->region_id);
     fprintf(stderr, "PC=0x"TARGET_FMT_lx" / ", tb->pc);
     fprintf(stderr, "CS=0x"TARGET_FMT_lx" / ", tb->cs_base);
     fprintf(stderr, "EF=0x%x / ", eflags);

@@ -5,7 +5,7 @@
 #include "qemu/osdep.h"
 #include "exec/exec-all.h"
 
-#include "latx-static-codes.h"
+extern ADDR context_switch_bt_to_native;
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb);
 int target_latx_prologue(void *code_buf_addr);

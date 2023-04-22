@@ -6,6 +6,10 @@
 #include "translate.h"
 #include "latx-intb-sys.h"
 #include "latx-string-sys.h"
+
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
+
 #include <string.h>
 
 static int latxs_is_system_eob(IR1_INST *ir1)
@@ -464,11 +468,16 @@ void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
     /* jump to context_switch_native_to_bt */
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
+    int rid = td->region_id;
+    lsassert(rid == tb->region_id);
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     ADDR code_buf = (ADDR)tb->tc.ptr;
     int offset = td->ir2_asm_nr << 2;
 
-    int64_t ins_offset = (context_switch_native_to_bt - code_buf - offset) >> 2;
+    int64_t ins_offset = (GET_SC_TABLE(rid, cs_native_to_bt) - code_buf - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 0);
 }
 
@@ -559,6 +568,10 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
+    int rid = td->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     /*
      * EOB worker will be generated before
@@ -740,7 +753,7 @@ indirect_jmp:
                 latxs_append_ir2_opnd1(LISA_LABEL, &sigint_label);
 
                 int64_t ins_offset =
-                    (latxs_sc_intb_lookup - code_buf - offset) >> 2;
+                    (GET_SC_TABLE(rid, intb_lookup) - code_buf - offset) >> 2;
                 latxs_append_ir2_jmp_far(ins_offset, 0);
 
                 /* will be resolved in label_dispose() */
@@ -757,7 +770,7 @@ indirect_jmp:
                 ADDR code_buf = (ADDR)tb->tc.ptr;
                 int offset = td->ir2_asm_nr << 2;
                 int64_t ins_offset =
-                    (latxs_sc_intb_lookup - code_buf - offset) >> 2;
+                    (GET_SC_TABLE(rid, intb_lookup) - code_buf - offset) >> 2;
                 latxs_append_ir2_jmp_far(ins_offset, 0);
 #endif
             } else {

@@ -8,6 +8,7 @@
 #include <string.h>
 #include "latxs-fastcs-cfg.h"
 #include "latx-np-sys.h"
+#include "latx-static-codes.h"
 
 helper_cfg_t all_helper_cfg = {.sv_allgpr = 1, .sv_eflags = 1, .cvt_fp80 = 1};
 helper_cfg_t zero_helper_cfg = {.sv_allgpr = 0, .sv_eflags = 0, .cvt_fp80 = 0};
@@ -125,7 +126,8 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
         ADDR code_buf = (ADDR)tb->tc.ptr;
         int offset = td->ir2_asm_nr << 2;
 
-        int64_t ins_offset = (latxs_sc_scs_prologue - code_buf - offset) >> 2;
+        int rid = lsenv->tr_data->region_id;
+        int64_t ins_offset = (GET_SC_TABLE(rid, scs_prologue) - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
         if (!option_lsfpu && !option_soft_fpu) {
             if (latxs_fastcs_enabled()) {
@@ -236,6 +238,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
      *      another way in tr_softmmu.c
      */
     TRANSLATION_DATA *td = lsenv->tr_data;
+    int rid = td->region_id;
     int fix_em = option_by_hand && !(td->in_gen_slow_path);
 
     /* Use static helper epilogue for default */
@@ -243,7 +246,7 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
         TranslationBlock *tb = td->curr_tb;
         ADDR code_buf = (ADDR)tb->tc.ptr;
         int offset = td->ir2_asm_nr << 2;
-        int64_t ins_offset = (latxs_sc_scs_epilogue - code_buf - offset) >> 2;
+        int64_t ins_offset = (GET_SC_TABLE(rid, scs_epilogue) - code_buf - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
         if (fix_em) {
             latxs_td_set_reg_extmb_after_cs(0xFF);

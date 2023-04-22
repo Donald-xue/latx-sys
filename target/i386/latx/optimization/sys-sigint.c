@@ -1,4 +1,5 @@
 #include "lsenv.h"
+#include "latx-config.h"
 #include "common.h"
 #include "reg-alloc.h"
 #include "flag-lbt.h"
@@ -10,6 +11,9 @@
 #include "latx-sigint-sys.h"
 #include "latx-sigint-fn-sys.h"
 #include "latx-intb-sys.h"
+
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
 
 #include <signal.h>
 #include <ucontext.h>
@@ -226,7 +230,7 @@ static void __latxs_tb_relink(TranslationBlock *utb)
 
 #ifdef LATXS_INTB_LINK_ENABLE
     if (utb->is_indir_tb) {
-        tb_set_jmp_target(utb, 0, latxs_sc_intb_lookup);
+        tb_set_jmp_target(utb, 0, GET_SC_TABLE(utb->region_id, intb_lookup));
         return;
     }
 #endif
@@ -603,6 +607,10 @@ void latxs_sigint_prepare_check_intb_lookup(
     int lid = 0;
 
     TRANSLATION_DATA *td = lsenv->tr_data;
+    int rid = td->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     IR2_INST *pir2 = NULL;
 
@@ -649,9 +657,9 @@ void latxs_sigint_prepare_check_intb_lookup(
         code_nr += 1;
     }
 
-    intb_lookup_sigint_check_st = latxs_sc_intb_lookup +
+    intb_lookup_sigint_check_st = GET_SC_TABLE(rid, intb_lookup) +
         (sigint_check_intb_lookup_st << 2);
-    intb_lookup_sigint_check_ed = latxs_sc_intb_lookup +
+    intb_lookup_sigint_check_ed = GET_SC_TABLE(rid, intb_lookup) +
         (sigint_check_intb_lookup_ed << 2);
 
     fprintf(stderr, "[SIGINT] intb lookup check start %d at %llx\n",

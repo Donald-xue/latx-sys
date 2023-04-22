@@ -2454,6 +2454,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     int rid = latx_multi_region_get_id(cpu);
     tcg_multi_region_switch(tcg_ctx, rid);
+    assert(tcg_ctx->region_id == rid);
 #endif
 #endif /* TCG_USE_MULTI_REGION */
 
@@ -2506,6 +2507,11 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->trace_vcpu_dstate = *cpu->trace_dstate;
     tb->slow_path_icount = 0;
     tcg_ctx->tb_cflags = cflags;
+#ifdef  TCG_USE_MULTI_REGION
+    tb->region_id = tcg_ctx->region_id;
+#else
+    tb->region_id = 0;
+#endif /* TCG_USE_MULTI_REGION */
 
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
     tcgsigint_tb_gen_start(cpu, tb);

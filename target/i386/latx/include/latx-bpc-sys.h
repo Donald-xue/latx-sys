@@ -5,8 +5,6 @@
 
 #ifdef LATX_BPC_ENABLE
 
-extern ADDR latxs_sc_bpc;
-
 int gen_latxs_sc_bpc(void *code_ptr);
 
 #define latxs_break_point(env, tb) do { \

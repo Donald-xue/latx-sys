@@ -7,6 +7,9 @@
 #include <string.h>
 #include "latx-np-sys.h"
 
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
+
 #ifdef LATXS_NP_ENABLE
 
 int latxs_np_enabled(void)
@@ -132,6 +135,11 @@ void __latxs_np_tr_cs_prologue(void)
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
 
+    int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
     if (latxs_np_cs_enabled()) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
         IR2_OPND ptr = latxs_ra_alloc_itemp();
@@ -151,8 +159,8 @@ void __latxs_np_tr_cs_prologue(void)
         latxs_ra_free_temp(&tmp);
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
-        ADDR here = context_switch_bt_to_native + offset;
-        int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
+        ADDR here = GET_SC_TABLE(rid, cs_bt_to_native) + offset;
+        int64_t ins_offset = ((int64_t)(GET_SC_TABLE(rid, nprint) - here)) >> 2;
         fprintf(stderr, "prologue %ld\n", ins_offset);
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
 
@@ -169,6 +177,11 @@ void __latxs_np_tr_cs_epilogue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
+
+    int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     if (latxs_np_cs_enabled()) {
         IR2_OPND tmp = latxs_ra_alloc_itemp();
@@ -189,8 +202,8 @@ void __latxs_np_tr_cs_epilogue(void)
         latxs_ra_free_temp(&tmp);
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
-        ADDR here = context_switch_native_to_bt_ret_0 + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        ADDR here = GET_SC_TABLE(rid, cs_native_to_bt_ret_0) + offset;
+        int64_t ins_offset = (int64_t)(GET_SC_TABLE(rid, nprint) - here) >> 2;
         fprintf(stderr, "epilogue %ld\n", ins_offset);
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
 
@@ -210,6 +223,11 @@ void __latxs_np_tr_scs_prologue(void)
     IR2_OPND *stmp1 = &latxs_stmp1_ir2_opnd;
     IR2_OPND *stmp2 = &latxs_stmp2_ir2_opnd;
 
+    int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
     if (latxs_np_cs_enabled()) {
         latxs_append_ir2_opnd2i(LISA_LD_D, stmp2,
                 env, offsetof(CPUX86State, np_data_ptr));
@@ -224,8 +242,8 @@ void __latxs_np_tr_scs_prologue(void)
                 offsetof(lsenv_fastcs_t, cs_type));
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
-        ADDR here = latxs_sc_scs_prologue + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        ADDR here = GET_SC_TABLE(rid, scs_prologue) + offset;
+        int64_t ins_offset = (int64_t)(GET_SC_TABLE(rid, nprint) - here) >> 2;
         fprintf(stderr, "static prologue %ld\n", ins_offset);
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
 
@@ -257,8 +275,8 @@ void __latxs_np_tr_scs_epilogue(void)
                 offsetof(lsenv_fastcs_t, cs_type));
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
-        ADDR here = latxs_sc_scs_epilogue + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        ADDR here = GET_SC_TABLE(rid, scs_epilogue) + offset;
+        int64_t ins_offset = (int64_t)(GET_SC_TABLE(rid, nprint) - here) >> 2;
         fprintf(stderr, "static epilogue %ld\n", ins_offset);
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
 
@@ -273,6 +291,11 @@ void __latxs_np_tr_hcs_prologue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
+
+    int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     if (latxs_np_cs_enabled()) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
@@ -296,7 +319,7 @@ void __latxs_np_tr_hcs_prologue(void)
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
-        int64_t ins_offset = ((int64_t)(latxs_native_printer - here)) >> 2;
+        int64_t ins_offset = ((int64_t)(GET_SC_TABLE(rid, nprint) - here)) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
 
         latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
@@ -312,6 +335,11 @@ void __latxs_np_tr_hcs_epilogue(void)
 {
     IR2_OPND *zero = &latxs_zero_ir2_opnd;
     IR2_OPND *env = &latxs_env_ir2_opnd;
+
+    int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     if (latxs_np_cs_enabled()) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
@@ -335,7 +363,7 @@ void __latxs_np_tr_hcs_epilogue(void)
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        int64_t ins_offset = (int64_t)(GET_SC_TABLE(rid, nprint) - here) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
 
         latxs_append_ir2_opnd2i(LISA_LD_D, &ptr,
@@ -353,6 +381,12 @@ void __latxs_np_tr_tb_start(void)
     if (latxs_np_tb_enabled()) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
 
+        int rid = lsenv->tr_data->region_id;
+        lsassert(tb->region_id == rid);
+#ifndef LATX_USE_MULTI_REGION
+        lsassert(rid == 0);
+#endif
+
         IR2_OPND *zero = &latxs_zero_ir2_opnd;
         IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
         IR2_OPND *arg2 = &latxs_arg2_ir2_opnd;
@@ -369,7 +403,7 @@ void __latxs_np_tr_tb_start(void)
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        int64_t ins_offset = (int64_t)(GET_SC_TABLE(rid, nprint) - here) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
     }
 }
@@ -378,6 +412,12 @@ void __latxs_np_tr_tb_end(void)
 {
     if (latxs_np_tb_enabled()) {
         TranslationBlock *tb = lsenv->tr_data->curr_tb;
+
+        int rid = lsenv->tr_data->region_id;
+        lsassert(tb->region_id == rid);
+#ifndef LATX_USE_MULTI_REGION
+        lsassert(rid == 0);
+#endif
 
         IR2_OPND *zero = &latxs_zero_ir2_opnd;
         IR2_OPND *arg1 = &latxs_arg1_ir2_opnd;
@@ -395,7 +435,7 @@ void __latxs_np_tr_tb_end(void)
 
         int offset = lsenv->tr_data->ir2_asm_nr << 2;
         ADDR here = (ADDR)(tb->tc.ptr) + offset;
-        int64_t ins_offset = (int64_t)(latxs_native_printer - here) >> 2;
+        int64_t ins_offset = (int64_t)(GET_SC_TABLE(rid, nprint) - here) >> 2;
         latxs_append_ir2_opnda(LISA_BL, ins_offset);
     }
 }

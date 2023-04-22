@@ -1,6 +1,7 @@
 #include "common.h"
 #include "cpu.h"
 #include "lsenv.h"
+#include "latx-config.h"
 #include "reg-alloc.h"
 #include "latx-options.h"
 #include "translate.h"
@@ -11,64 +12,18 @@
 #include "latx-np-sys.h"
 #include "latx-sigint-sys.h"
 #include "latx-intb-sys.h"
+
 #include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
 
-#ifdef LATX_BPC_ENABLE
-/* BPC: Break Point Codes */
-ADDR latxs_sc_bpc;
-#endif
+latx_sc_table_t *latx_sc_table;
+static latx_sc_table_t __latx_sc_table[LATX_REGION_N];
+static void __attribute__((__constructor__)) latxs_sc_init(void)
+{
+    latx_sc_table = __latx_sc_table;
+}
 
-/* NJC: Native Jmp Cache lookup */
-ADDR latxs_sc_intb_njc;
 
-/* FCS: Fast Context Switch */
-ADDR latxs_sc_fcs_jmp_glue_fpu_0;
-ADDR latxs_sc_fcs_jmp_glue_fpu_1;
-ADDR latxs_sc_fcs_jmp_glue_xmm_0;
-ADDR latxs_sc_fcs_jmp_glue_xmm_1;
-
-#ifdef LATXS_NP_ENABLE
-/* NP: call printer from native codes */
-ADDR latxs_native_printer;
-#endif
-
-/* SCS: Static Context Switch */
-ADDR latxs_sc_scs_prologue;
-ADDR latxs_sc_scs_epilogue;
-
-/* FastCS: Fast Context Switch */
-ADDR latxs_sc_fcs_F_0;
-ADDR latxs_sc_fcs_F_1;
-ADDR latxs_sc_fcs_S_0;
-ADDR latxs_sc_fcs_S_1;
-ADDR latxs_sc_fcs_FS_0;
-ADDR latxs_sc_fcs_FS_1;
-ADDR latxs_sc_fcs_check_load_F;
-ADDR latxs_sc_fcs_check_load_S;
-ADDR latxs_sc_fcs_check_load_FS;
-ADDR latxs_sc_fcs_load_F;
-ADDR latxs_sc_fcs_load_S;
-ADDR latxs_sc_fcs_load_FS;
-
-/*
- * For other static codes, we use the same entry with LATX-user.
- *
- * Defined in translator/translate.c
- *
- * ADDR context_switch_bt_to_native;
- * ADDR context_switch_native_to_bt_ret_0;
- * ADDR context_switch_native_to_bt;
- *
- * ADDR native_rotate_fpu_by;
- *
- * ADDR native_jmp_glue_0;
- * ADDR native_jmp_glue_1;
- * ADDR native_jmp_glue_2; // abandoned in latx-sys
- */
-
-#ifdef LATXS_INTB_LINK_ENABLE
-ADDR latxs_sc_intb_lookup;
-#endif
 
 #define LATXS_DUMP_STATIC_CODES_INFO(str, ...) do {    \
     if (option_dump) {                                  \
@@ -241,8 +196,12 @@ static int gen_latxs_sc_prologue(void *code_ptr)
          * branch destiantion = 0x14 - 0x14 = 0x00
          */
 
-        int64_t ins_offset = (context_switch_native_to_bt -
-                               context_switch_bt_to_native - inst_size) >>
+        int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+        lsassert(rid == 0);
+#endif
+        int64_t ins_offset = (GET_SC_TABLE(rid, cs_native_to_bt) -
+                              GET_SC_TABLE(rid, cs_bt_to_native) - inst_size) >>
                               2;
         latxs_append_ir2_jmp_far(ins_offset, 1);
         latxs_append_ir2_opnd0_(lisa_nop);
@@ -269,7 +228,7 @@ static int gen_latxs_sc_epilogue(void *code_ptr)
 
     /*
      * by default set v0 to zero.
-     * context_switch_native_to_bt_ret_0 points here
+     * sc_table.cs_native_to_bt_ret_0 points here
      */
     latxs_append_ir2_opnd3(LISA_OR, ret0, zero, zero);
 
@@ -499,6 +458,11 @@ static int gen_latxs_sc_fpu_rotate(void *code_base)
     int code_nr_all = 0;
     void *code_ptr = code_base;
 
+    int rid = lsenv->tr_data->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
     /*
      * rotate -7 ~ 7
      *
@@ -512,7 +476,7 @@ static int gen_latxs_sc_fpu_rotate(void *code_base)
     code_nr_all += code_nr;
     code_ptr = code_base + (code_nr_all << 2);
 
-    native_rotate_fpu_by = (ADDR)code_ptr;
+    SET_SC_TABLE(rid, fpu_rotate, (ADDR)code_ptr);
     code_nr = __gen_fpu_rotate_dispatch(code_ptr, rotate_step_array);
     code_nr_all += code_nr;
     code_ptr = code_base + (code_nr_all << 2);
@@ -528,6 +492,10 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
     latxs_tr_init(NULL);
 
     TRANSLATION_DATA *td = lsenv->tr_data;
+    int rid = td->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     int start = (td->ir2_asm_nr << 2);
     int offset = 0;
@@ -571,7 +539,7 @@ static int __gen_latxs_jmp_glue(void *code_ptr, int n)
         offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
 
         int64_t ins_offset =
-            (native_rotate_fpu_by - (ADDR)code_ptr - offset) >> 2;
+            (GET_SC_TABLE(rid, fpu_rotate) - (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 0);
     }
 
@@ -588,21 +556,23 @@ static int gen_latxs_jmp_glue_all(void *code_base)
     int code_nr_all = 0;
     void *code_ptr = code_base;
 
-    native_jmp_glue_0 = (ADDR)code_ptr;
+    int region_id = lsenv->tr_data->region_id;
+
+    SET_SC_TABLE(region_id, jmp_glue_0, (ADDR)code_ptr);
     code_nr = __gen_latxs_jmp_glue(code_ptr, 0);
     code_nr_all += code_nr;
     code_ptr += code_nr << 2;
     LATXS_DUMP_STATIC_CODES_INFO(
             "latxs TBLink : native jmp glue 0 at %p\n",
-            (void *)native_jmp_glue_0);
+            (void *)GET_SC_TABLE(region_id, jmp_glue_0));
 
-    native_jmp_glue_1 = (ADDR)code_ptr;
+    SET_SC_TABLE(region_id, jmp_glue_1, (ADDR)code_ptr);
     code_nr = __gen_latxs_jmp_glue(code_ptr, 1);
     code_nr_all += code_nr;
     code_ptr += code_nr << 2;
     LATXS_DUMP_STATIC_CODES_INFO(
             "latxs TBLink : native jmp glue 1 at %p\n",
-            (void *)native_jmp_glue_1);
+            (void *)GET_SC_TABLE(region_id, jmp_glue_1));
 
     return code_nr_all;
 }
@@ -616,6 +586,9 @@ int target_latxs_static_codes(void *code_base, int region_id)
     latxs_set_lsenv_tmp();
 #ifdef LATX_USE_MULTI_REGION
     lsenv->tr_data->region_id = region_id;
+#else
+    lsassert(region_id == 0);
+    lsenv->tr_data->region_id = 0;
 #endif
 
 #define LATXS_GEN_STATIC_CODES(name, genfn, ...) do {   \
@@ -629,22 +602,22 @@ int target_latxs_static_codes(void *code_base, int region_id)
 #ifdef LATXS_NP_ENABLE
     /* print something in native codes */
     if (latxs_np_enabled()) {
-        latxs_native_printer = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, nprint, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_native_printer",
                 gen_latxs_native_printer, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs do something %p\n",
-                (void *)latxs_native_printer);
+                (void *)GET_SC_TABLE(region_id, nprint));
     }
 #endif
 
     /* epilogue */
-    context_switch_native_to_bt_ret_0 = (ADDR)code_ptr;
-    context_switch_native_to_bt = (ADDR)code_ptr + 4;
+    SET_SC_TABLE(region_id, cs_native_to_bt_ret_0, (ADDR)code_ptr);
+    SET_SC_TABLE(region_id, cs_native_to_bt, (ADDR)code_ptr + 4);
     LATXS_GEN_STATIC_CODES("latxs_epilogue",
             gen_latxs_sc_epilogue, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO("latxs epilogue: %p\n",
-            (void *)context_switch_native_to_bt);
+            (void *)GET_SC_TABLE(region_id, cs_native_to_bt));
 
     /* prologue */
     /*
@@ -654,44 +627,44 @@ int target_latxs_static_codes(void *code_base, int region_id)
      * back to BT context. So we need to know the address of
      * context switch native to bt here.
      */
-    context_switch_bt_to_native = (ADDR)code_ptr;
+    SET_SC_TABLE(region_id, cs_bt_to_native, (ADDR)code_ptr);
     LATXS_GEN_STATIC_CODES("latxs_prologue",
             gen_latxs_sc_prologue, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO("latxs prologue: %p\n",
-            (void *)context_switch_bt_to_native);
+            (void *)GET_SC_TABLE(region_id, cs_bt_to_native));
 
     if (!option_soft_fpu) {
         /* fpu rorate */
         LATXS_GEN_STATIC_CODES("latxs_rotate_fpu",
                 gen_latxs_sc_fpu_rotate, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO("latxs fpu rotate: %p\n",
-                (void *)native_rotate_fpu_by);
+                (void *)GET_SC_TABLE(region_id, fpu_rotate));
     }
 
 #ifdef LATX_BPC_ENABLE
     /* BPC: Break Point Code */
-    latxs_sc_bpc = (ADDR)code_ptr;
+    SET_SC_TABLE(region_id, bpc, (ADDR)code_ptr);
     LATXS_GEN_STATIC_CODES("latxs_break_point_code",
             gen_latxs_sc_bpc, code_ptr);
     LATXS_DUMP_STATIC_CODES_INFO(
             "latxs BPC: break point code %p\n",
-            (void *)latxs_sc_bpc);
+            (void *)GET_SC_TABLE(region_id, bpc));
 #endif
 
     if (scs_enabled()) {
-        latxs_sc_scs_prologue = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, scs_prologue, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_static_prologue",
                 gen_latxs_scs_prologue_cfg, code_ptr, default_helper_cfg);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs SCS: static CS prologue %p\n",
-                (void *)latxs_sc_scs_prologue);
+                (void *)GET_SC_TABLE(region_id, scs_prologue));
 
-        latxs_sc_scs_epilogue = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, scs_epilogue, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_static_epilogue",
                 gen_latxs_scs_epilogue_cfg, code_ptr, default_helper_cfg);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs SCS: static CS epilogue %p\n",
-                (void *)latxs_sc_scs_epilogue);
+                (void *)GET_SC_TABLE(region_id, scs_epilogue));
     }
 
     if (latxs_fastcs_enabled())
@@ -699,130 +672,130 @@ int target_latxs_static_codes(void *code_base, int region_id)
 
         if (latxs_fastcs_is_jmp_glue() &&
             !latxs_fastcs_is_jmp_glue_direct()) {
-        latxs_sc_fcs_F_0 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_F_0, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_fpu0",
                 gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 0: %p\n",
-                (void *)latxs_sc_fcs_F_0);
+                (void *)GET_SC_TABLE(region_id, fcs_F_0));
 
-        latxs_sc_fcs_F_1 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_F_1, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_fpu1",
                 gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x1, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU 1: %p\n",
-                (void *)latxs_sc_fcs_F_1);
+                (void *)GET_SC_TABLE(region_id, fcs_F_1));
 
-        latxs_sc_fcs_S_0 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_S_0, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_simd0",
                 gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS SIMD 0: %p\n",
-                (void *)latxs_sc_fcs_S_0);
+                (void *)GET_SC_TABLE(region_id, fcs_S_0));
 
-        latxs_sc_fcs_S_1 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_S_1, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_simd1",
                 gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x2, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS SIMD 1: %p\n",
-                (void *)latxs_sc_fcs_S_1);
+                (void *)GET_SC_TABLE(region_id, fcs_S_1));
 
-        latxs_sc_fcs_FS_0 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_FS_0, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_both0",
                 gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 0: %p\n",
-                (void *)latxs_sc_fcs_FS_0);
+                (void *)GET_SC_TABLE(region_id, fcs_FS_0));
 
-        latxs_sc_fcs_FS_1 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_FS_1, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_both1",
                 gen_latxs_sc_fcs_jmp_glue, code_ptr, 0x3, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS FPU/SIMD 1: %p\n",
-                (void *)latxs_sc_fcs_FS_1);
+                (void *)GET_SC_TABLE(region_id, fcs_FS_1));
         }
 
         if (latxs_fastcs_is_jmp_glue_direct()) {
-        latxs_sc_fcs_F_0 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_F_0, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_fpu0_ret",
                 gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x1, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU 0: %p\n",
-                (void *)latxs_sc_fcs_F_0);
+                (void *)GET_SC_TABLE(region_id, fcs_F_0));
 
-        latxs_sc_fcs_F_1 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_F_1, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_fpu1_ret",
                 gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x1, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU 1: %p\n",
-                (void *)latxs_sc_fcs_F_1);
+                (void *)GET_SC_TABLE(region_id, fcs_F_1));
 
-        latxs_sc_fcs_S_0 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_S_0, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_simd0_ret",
                 gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x2, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret SIMD 0: %p\n",
-                (void *)latxs_sc_fcs_S_0);
+                (void *)GET_SC_TABLE(region_id, fcs_S_0));
 
-        latxs_sc_fcs_S_1 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_S_1, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_simd1_ret",
                 gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x2, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret SIMD 1: %p\n",
-                (void *)latxs_sc_fcs_S_1);
+                (void *)GET_SC_TABLE(region_id, fcs_S_1));
 
-        latxs_sc_fcs_FS_0 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_FS_0, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_both0_ret",
                 gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x3, 0);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU/SIMD 0: %p\n",
-                (void *)latxs_sc_fcs_FS_0);
+                (void *)GET_SC_TABLE(region_id, fcs_FS_0));
 
-        latxs_sc_fcs_FS_1 = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_FS_1, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_both1_ret",
                 gen_latxs_sc_fcs_jmp_glue_return, code_ptr, 0x3, 1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS Ret FPU/SIMD 1: %p\n",
-                (void *)latxs_sc_fcs_FS_1);
+                (void *)GET_SC_TABLE(region_id, fcs_FS_1));
         }
 
 
         if (latxs_fastcs_is_jmp_glue() ||
             latxs_fastcs_is_ld_branch()) {
-        latxs_sc_fcs_check_load_F = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_check_load_F, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_fpu_check",
                 gen_latxs_sc_fcs_check_load, code_ptr, 0x1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU: %p\n",
-                (void *)latxs_sc_fcs_check_load_F);
+                (void *)GET_SC_TABLE(region_id, fcs_check_load_F));
 
-        latxs_sc_fcs_check_load_S = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_check_load_S, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_simd_check",
                 gen_latxs_sc_fcs_check_load, code_ptr, 0x2);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load SIMD: %p\n",
-                (void *)latxs_sc_fcs_check_load_S);
+                (void *)GET_SC_TABLE(region_id, fcs_check_load_S));
 
-        latxs_sc_fcs_check_load_FS = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_check_load_FS, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_both_check",
                 gen_latxs_sc_fcs_check_load, code_ptr, 0x3);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS check load FPU/SIMD: %p\n",
-                (void *)latxs_sc_fcs_check_load_FS);
+                (void *)GET_SC_TABLE(region_id, fcs_check_load_FS));
 
-        latxs_sc_fcs_load_F = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_load_F, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_fpu_load",
                 gen_latxs_sc_fcs_load, code_ptr, 0x1);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load FPU: %p\n",
-                (void *)latxs_sc_fcs_load_F);
+                (void *)GET_SC_TABLE(region_id, fcs_load_F));
 
-        latxs_sc_fcs_load_S = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_load_S, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_simd_load",
                 gen_latxs_sc_fcs_load, code_ptr, 0x2);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load SIMD: %p\n",
-                (void *)latxs_sc_fcs_load_S);
+                (void *)GET_SC_TABLE(region_id, fcs_load_S));
 
-        latxs_sc_fcs_load_FS = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, fcs_load_FS, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_fcs_both_load",
                 gen_latxs_sc_fcs_load, code_ptr, 0x3);
         LATXS_DUMP_STATIC_CODES_INFO("latxs FastCS load FPU/SIMD: %p\n",
-                (void *)latxs_sc_fcs_load_FS);
+                (void *)GET_SC_TABLE(region_id, fcs_load_FS));
         }
     }
 
     /* Native Jmp Cache Lookup */
     if (intb_njc_enabled()) {
-        latxs_sc_intb_njc = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, intb_njc, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_intb_njc",
                 gen_latxs_intb_njc_lookup, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs NJC : native jmp cache lookup %p\n",
-                (void *)latxs_sc_intb_njc);
+                (void *)GET_SC_TABLE(region_id, intb_njc));
     }
 
     /* jmp glue for tb-link */
@@ -834,12 +807,12 @@ int target_latxs_static_codes(void *code_base, int region_id)
     /* indirect branch lookup */
 #ifdef LATXS_INTB_LINK_ENABLE
     if (intb_link_enable()) {
-        latxs_sc_intb_lookup = (ADDR)code_ptr;
+        SET_SC_TABLE(region_id, intb_lookup, (ADDR)code_ptr);
         LATXS_GEN_STATIC_CODES("latxs_intb_lookup",
                 gen_latxs_intb_lookup, code_ptr);
         LATXS_DUMP_STATIC_CODES_INFO(
                 "latxs indirect TB link at %p\n",
-                (void *)latxs_sc_intb_lookup);
+                (void *)GET_SC_TABLE(region_id, intb_lookup));
     }
 #endif
 

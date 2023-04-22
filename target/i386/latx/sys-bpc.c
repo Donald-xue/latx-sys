@@ -6,6 +6,9 @@
 #include "latx-options.h"
 #include "latx-bpc-sys.h"
 
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
+
 #ifdef LATX_BPC_ENABLE
 
 int gen_latxs_sc_bpc(void *code_ptr)
@@ -31,6 +34,13 @@ void __latxs_break_point(CPUX86State *env, TranslationBlock *tb)
     if (!option_break_point) {
         return;
     }
+
+    int rid = lsenv->tr_data->region_id;
+#ifdef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
+
+    uint64_t latxs_sc_bpc = GET_SC_TABLE(rid, bpc);
 
     if (option_break_point &&
             latxs_sc_bpc &&

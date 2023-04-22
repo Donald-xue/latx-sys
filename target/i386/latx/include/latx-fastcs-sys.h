@@ -25,4 +25,6 @@ void tb_target_reset_fastcs_jmp_glue(uintptr_t tc_ptr,
 void tb_target_set_jmp_target_fastcs(uintptr_t tc_ptr,
         uintptr_t jmp_rx, uintptr_t jmp_rw, uintptr_t addr, int link);
 
+void latxs_fastcs_set_indir_table(int rid);
+
 #endif

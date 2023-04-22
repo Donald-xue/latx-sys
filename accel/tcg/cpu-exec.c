@@ -48,6 +48,7 @@
 #include "latx-counter-sys.h"
 #include "latxs-cc-pro.h"
 #include "latx-options.h"
+#include "latx-static-codes.h"
 #define USE_LATX_SYS_TB_FUNCTIONS
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
@@ -220,6 +221,8 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
     latx_after_exec_rotate_fpu(env, itb);
 #else
     latxs_before_exec_tb(cpu, itb);
+    uint64_t context_switch_bt_to_native =
+        GET_SC_TABLE(itb->region_id, cs_bt_to_native);
     ret = tcg_qemu_tb_exec(env, tb_ptr);
     latxs_after_exec_tb(cpu, itb);
 #endif

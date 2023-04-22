@@ -12,6 +12,9 @@
 #include "latx-intb-sys.h"
 #include "latx-sigint-sys.h"
 
+#include "latx-multi-region-sys.h"
+#include "latx-static-codes.h"
+
 #ifdef LATXS_INTB_LINK_ENABLE
 
 #ifdef LATXS_INTB_LINK_OPTION_CHECK
@@ -51,6 +54,10 @@ int gen_latxs_intb_lookup(void *code_ptr)
     latxs_tr_init(NULL);
 
     TRANSLATION_DATA *td = lsenv->tr_data;
+    int rid = td->region_id;
+#ifndef LATX_USE_MULTI_REGION
+    lsassert(rid == 0);
+#endif
 
     int start = (td->ir2_asm_nr << 2);
     int offset = 0;
@@ -106,7 +113,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
     IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
     if (intb_njc_enabled()) {
         /* 1.1 */
-        latxs_load_addr_to_ir2(&tmp, latxs_sc_intb_njc);
+        latxs_load_addr_to_ir2(&tmp, GET_SC_TABLE(rid, intb_njc));
         latxs_append_ir2_opnd1_(lisa_call, &tmp);
         latxs_append_ir2_opnd3(LISA_BEQ, ret0, zero,
                                          &njc_miss);
@@ -167,14 +174,14 @@ int gen_latxs_intb_lookup(void *code_ptr)
 
     /* 2.1 call helper lookup tb    => 3. if find TB */
     offset = (td->ir2_asm_nr << 2) - start;
-    ins_offset = (latxs_sc_scs_prologue - (ADDR)code_ptr - offset) >> 2;
+    ins_offset = (GET_SC_TABLE(rid, scs_prologue) - (ADDR)code_ptr - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 1);
 
     latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
     latxs_tr_gen_call_to_helper((ADDR)helper_lookup_tb);
 
     offset = (td->ir2_asm_nr << 2) - start;
-    ins_offset = (latxs_sc_scs_epilogue - (ADDR)code_ptr - offset) >> 2;
+    ins_offset = (GET_SC_TABLE(rid, scs_epilogue) - (ADDR)code_ptr - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 1);
 
     latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
@@ -188,7 +195,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
 
     /* 2.2 if TB is NULL, jump to epilogue */
     offset = (td->ir2_asm_nr << 2) - start;
-    ins_offset = (context_switch_native_to_bt_ret_0 -
+    ins_offset = (GET_SC_TABLE(rid, cs_native_to_bt_ret_0) -
             (ADDR)code_ptr - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 0);
 
@@ -268,7 +275,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
 
                 int offset = (td->ir2_asm_nr << 2) - start;
                 int64_t ins_offset =
-                    (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+                    (GET_SC_TABLE(rid, cs_native_to_bt_ret_0) - (ADDR)code_ptr - offset) >>
                     2;
                 latxs_append_ir2_opnd2i(LISA_BLT, &tmp0, zero, ins_offset);
             }
@@ -295,7 +302,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
         offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
 
         int64_t ins_offset =
-            (native_rotate_fpu_by - (ADDR)code_ptr - offset) >> 2;
+            (GET_SC_TABLE(rid, fpu_rotate) - (ADDR)code_ptr - offset) >> 2;
         latxs_append_ir2_jmp_far(ins_offset, 0);
     }
 
@@ -341,7 +348,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
 
             offset = (td->ir2_asm_nr << 2) - start;
             int64_t ins_offset =
-                (context_switch_native_to_bt_ret_0 - (ADDR)code_ptr - offset) >>
+                (GET_SC_TABLE(rid, cs_native_to_bt_ret_0) - (ADDR)code_ptr - offset) >>
                 2;
             latxs_append_ir2_jmp_far(ins_offset, 0);
 

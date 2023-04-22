@@ -10,7 +10,6 @@
 
 #ifdef LATXS_INTB_LINK_ENABLE
 
-extern ADDR latxs_sc_intb_lookup;
 int gen_latxs_intb_lookup(void *code_ptr);
 
 #ifdef LATXS_INTB_LINK_OPTION_CHECK
