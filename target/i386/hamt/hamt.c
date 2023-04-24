@@ -1104,8 +1104,9 @@ void hamt_protect_code(uint64_t guest_pc, int is_page2)
     csr_tlbehi = guest_pc & ~0x1fffULL;
     n = (guest_pc >> 12) & 0x1;
     if (is_page2) {
-        csr_tlbehi += 0x1000ULL;
-        n = !n;
+        guest_pc += 0x1000ULL;
+        csr_tlbehi = guest_pc & ~0x1fffULL;
+        n = (guest_pc >> 12) & 0x1;
     }
 
     write_csr_tlbehi(csr_tlbehi);
