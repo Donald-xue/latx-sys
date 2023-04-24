@@ -168,9 +168,9 @@ bool latxs_translate_fxsave(IR1_INST *pir1)
 
     /* 2. save complete context */
     helper_cfg_t hp_cfg;
-    hp_cfg.sv_allgpr = 1;
-    hp_cfg.sv_eflags = 1;
-    hp_cfg.cvt_fp80  = 1;
+    hp_cfg.cfg.sv_allgpr = 1;
+    hp_cfg.cfg.sv_eflags = 1;
+    hp_cfg.cfg.cvt_fp80  = 1;
     latxs_tr_gen_call_to_helper_prologue_cfg(hp_cfg);
     /*
      * 3. call helper_fxsave
@@ -221,9 +221,9 @@ bool latxs_translate_fxrstor(IR1_INST *pir1)
 
     /* 2. save complete context */
     helper_cfg_t hp_cfg;
-    hp_cfg.sv_allgpr = 1;
-    hp_cfg.sv_eflags = 1;
-    hp_cfg.cvt_fp80  = 1;
+    hp_cfg.cfg.sv_allgpr = 1;
+    hp_cfg.cfg.sv_eflags = 1;
+    hp_cfg.cfg.cvt_fp80  = 1;
     latxs_tr_gen_call_to_helper_prologue_cfg(hp_cfg);
     /*
      * 3. call helper_fxrstor

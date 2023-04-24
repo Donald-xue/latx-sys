@@ -68,7 +68,7 @@ int gen_latxs_scs_prologue_cfg(
 #endif
 
     /* FPU TOP will be stored outside */
-    if ((cfg.sv_allgpr)) {
+    if ((cfg.cfg.sv_allgpr)) {
         if (latxs_fastcs_enabled()) {
             latxs_fastcs_static_save_registers(0xffffffff, 0xff,
                                                0xffffffff, 0x2);
@@ -85,11 +85,11 @@ int gen_latxs_scs_prologue_cfg(
                 0x2);
     }
 
-    if (cfg.sv_eflags) {
+    if (cfg.cfg.sv_eflags) {
         latxs_tr_gen_static_save_eflags();
     }
 
-    if (cfg.cvt_fp80) {
+    if (cfg.cfg.cvt_fp80) {
         lsassertm(0, "cvtfp not supported in staticcs.\n");
     }
 
@@ -151,16 +151,16 @@ int gen_latxs_scs_epilogue_cfg(
     /* print context switch type */
     latxs_np_tr_scs_epilogue();
 
-    if (cfg.cvt_fp80) {
+    if (cfg.cfg.cvt_fp80) {
         lsassertm(0, "cvtfp not supported in staticcs.\n");
     }
 
-    if (cfg.sv_eflags) {
+    if (cfg.cfg.sv_eflags) {
         latxs_tr_gen_static_load_eflags(0);
     }
 
     /* FPU TOP will be loaded outside */
-    if (cfg.sv_allgpr) {
+    if (cfg.cfg.sv_allgpr) {
         if (latxs_fastcs_enabled()) {
             latxs_fastcs_static_load_registers(0xffffffff, 0xff,
                                                0xffffffff, 0x2);

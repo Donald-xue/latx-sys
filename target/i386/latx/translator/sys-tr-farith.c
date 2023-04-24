@@ -688,11 +688,11 @@ bool latxs_translate_fsin(IR1_INST *pir1)
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp1, &st0_opnd);
 
-    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(fplib_helper_cfg);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam0, &ftemp1);
     latxs_tr_gen_call_to_helper((ADDR)sin);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fvalue, &fparam0);
-    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(fplib_helper_cfg);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &st0_opnd, &fvalue);
 
@@ -730,11 +730,11 @@ bool latxs_translate_fcos(IR1_INST *pir1)
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp1, &st0_opnd);
 
-    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(fplib_helper_cfg);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam0, &ftemp1);
     latxs_tr_gen_call_to_helper((ADDR)cos);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fvalue, &fparam0);
-    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(fplib_helper_cfg);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &st0_opnd, &fvalue);
 
@@ -777,12 +777,12 @@ bool latxs_translate_fpatan(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp1, &st0_opnd);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &ftemp2, &st1_opnd);
 
-    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(fplib_helper_cfg);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam0, &ftemp2); /* st1 */
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam1, &ftemp1); /* st0 */
     latxs_tr_gen_call_to_helper((ADDR)atan2);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fvalue, &fparam0);
-    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(fplib_helper_cfg);
 
     latxs_tr_fpu_pop();
     IR2_OPND new_st0_opnd = latxs_ra_alloc_st(0);
@@ -1008,12 +1008,12 @@ bool latxs_translate_f2xm1(IR1_INST *pir1)
     latxs_append_ir2_opnd2(LISA_FFINT_D_L, &ftemp2, &ftemp2);
     latxs_ra_free_temp(&itemp);
 
-    latxs_tr_gen_call_to_helper_prologue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_prologue_cfg(fplib_helper_cfg);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam0, &ftemp2);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fparam1, &ftemp1);
     latxs_tr_gen_call_to_helper((ADDR)pow);
     latxs_append_ir2_opnd2(LISA_FMOV_D, &fvalue, &fparam0);
-    latxs_tr_gen_call_to_helper_epilogue_cfg(default_helper_cfg);
+    latxs_tr_gen_call_to_helper_epilogue_cfg(fplib_helper_cfg);
 
     latxs_append_ir2_opnd2(LISA_FMOV_D, &st0_opnd, &fvalue);
 

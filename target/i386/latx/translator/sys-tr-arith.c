@@ -853,7 +853,7 @@ static bool latxs_do_translate_bcd(IR1_INST *pir1, int val)
 {
     /* 1. only need to save eflags */
     helper_cfg_t cfg = default_helper_cfg;
-    cfg.sv_eflags = 1;
+    cfg.cfg.sv_eflags = 1;
 
     /*
      * 2. call helper and sync the eflags

@@ -10,11 +10,16 @@
 #include "latx-np-sys.h"
 #include "latx-static-codes.h"
 
-helper_cfg_t all_helper_cfg = {.sv_allgpr = 1, .sv_eflags = 1, .cvt_fp80 = 1};
-helper_cfg_t zero_helper_cfg = {.sv_allgpr = 0, .sv_eflags = 0, .cvt_fp80 = 0};
-helper_cfg_t default_helper_cfg = {.sv_allgpr = 1,
-                                   .sv_eflags = 1,
-                                   .cvt_fp80 = 0};
+helper_cfg_t all_helper_cfg = {
+    .cfg.sv_allgpr = 1, .cfg.sv_eflags = 1, .cfg.cvt_fp80 = 1 };
+helper_cfg_t zero_helper_cfg = {
+    .cfg.sv_allgpr = 0, .cfg.sv_eflags = 0, .cfg.cvt_fp80 = 0 };
+helper_cfg_t default_helper_cfg = {
+    .cfg.sv_allgpr = 1, .cfg.sv_eflags = 1, .cfg.cvt_fp80 = 0};
+helper_cfg_t fplib_helper_cfg = {
+    .cfg.sv_allgpr = 0,
+    .cfg.sv_gpr = 0, .cfg.sv_fpr = 1, .cfg.sv_simd = 1,
+    .cfg.sv_eflags = 1, .cfg.cvt_fp80 = 0};
 
 /*
  * return 1: cfg1 == cfg2
@@ -22,8 +27,7 @@ helper_cfg_t default_helper_cfg = {.sv_allgpr = 1,
  */
 int cmp_helper_cfg(helper_cfg_t cfg1, helper_cfg_t cfg2)
 {
-    return cfg1.sv_allgpr == cfg2.sv_allgpr &&
-           cfg1.sv_eflags == cfg2.sv_eflags && cfg1.cvt_fp80 == cfg2.cvt_fp80;
+    return cfg1.data == cfg2.data;
 }
 
 IR2_INST *latxs_tr_gen_call_to_helper(ADDR func_addr)
@@ -181,8 +185,8 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 #endif
 #endif
 
-    if (likely(cfg.sv_allgpr)) {
-        int save_top = !option_soft_fpu;
+    int save_top = !option_soft_fpu;
+    if (likely(cfg.cfg.sv_allgpr)) {
         if (latxs_fastcs_enabled()) {
             latxs_fastcs_save_registers(0xffffffff, 0xff, save_top,
                                         0xffffffff, 0x2);
@@ -191,7 +195,16 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
                                            0xffffffff, 0x2);
         }
     } else {
-        lsassert(0);
+        lsassert(!latxs_fastcs_enabled());
+        if (cfg.cfg.sv_gpr) {
+            latxs_tr_save_gprs_to_env(0xffffffff);
+        }
+        if (cfg.cfg.sv_fpr) {
+            latxs_tr_save_fprs_to_env(0xff, save_top);
+        }
+        if (cfg.cfg.sv_simd) {
+            latxs_tr_save_xmms_to_env(0xffffffff);
+        }
     }
 
 #if defined(LATX_SYS_FCSR)
@@ -218,11 +231,11 @@ void latxs_tr_gen_call_to_helper_prologue_cfg(helper_cfg_t cfg)
 #endif
 #endif
 
-    if (likely(cfg.sv_eflags)) {
+    if (likely(cfg.cfg.sv_eflags)) {
         latxs_tr_save_eflags();
     }
 
-    if ((!option_soft_fpu) && unlikely(cfg.cvt_fp80)) {
+    if ((!option_soft_fpu) && unlikely(cfg.cfg.cvt_fp80)) {
         latxs_tr_save_temp_register();
         latxs_tr_cvt_fp64_to_80();
         latxs_tr_restore_temp_register();
@@ -257,16 +270,16 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
     /* native printer */
     latxs_np_tr_hcs_epilogue();
 
-    if ((!option_soft_fpu) && unlikely(cfg.cvt_fp80)) {
+    if ((!option_soft_fpu) && unlikely(cfg.cfg.cvt_fp80)) {
         latxs_tr_cvt_fp80_to_64();
     }
 
-    if (likely(cfg.sv_eflags)) {
+    if (likely(cfg.cfg.sv_eflags)) {
         latxs_tr_load_eflags();
     }
 
-    if (likely(cfg.sv_allgpr)) {
-        int load_top = !option_soft_fpu;
+    int load_top = !option_soft_fpu;
+    if (likely(cfg.cfg.sv_allgpr)) {
         if (latxs_fastcs_enabled()) {
             latxs_fastcs_load_registers(0xffffffff, 0xff, load_top,
                                         0xffffffff, 0x2);
@@ -278,7 +291,16 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
             latxs_td_set_reg_extmb_after_cs(0xFF);
         }
     } else {
-        lsassert(0);
+        lsassert(!latxs_fastcs_enabled());
+        if (cfg.cfg.sv_simd) {
+            latxs_tr_load_xmms_from_env(0xffffffff);
+        }
+        if (cfg.cfg.sv_fpr) {
+            latxs_tr_load_fprs_from_env(0xff, load_top);
+        }
+        if (cfg.cfg.sv_gpr) {
+            latxs_tr_load_gprs_from_env(0xffffffff);
+        }
     }
 
 #if defined(LATX_SYS_FCSR)

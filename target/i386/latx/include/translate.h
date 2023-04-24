@@ -1274,14 +1274,23 @@ void latxs_tr_cvt_fp64_to_80(void);
 void latxs_tr_cvt_fp80_to_64(void);
 
 typedef struct helper_cfg_t {
-    int sv_allgpr;
-    int sv_eflags;
-    int cvt_fp80;
+    union {
+        struct {
+            int sv_allgpr:1;
+            int sv_gpr:1;
+            int sv_fpr:1;
+            int sv_simd:1;
+            int sv_eflags:1;
+            int cvt_fp80:1;
+        } cfg;
+        int data;
+    };
 } helper_cfg_t;
 
 extern helper_cfg_t all_helper_cfg;
 extern helper_cfg_t zero_helper_cfg;
 extern helper_cfg_t default_helper_cfg;
+extern helper_cfg_t fplib_helper_cfg;
 int cmp_helper_cfg(helper_cfg_t cfg1, helper_cfg_t cfg2);
 
 IR2_INST *latxs_tr_gen_call_to_helper(ADDR);
