@@ -13,6 +13,10 @@
 #include "profile.h"
 #include "trace.h"
 #include "translate.h"
+
+#include "latx-hamt.h"
+#include "info.h"
+
 #include "latx-config.h"
 #include "latx-tracecc-sys.h"
 #include "latx-counter-sys.h"
@@ -590,6 +594,21 @@ void latxs_fix_after_excp_or_int(void)
 int latxs_get_top_bias_from_env(CPUX86State *env)
 {
     return (int)env->vregs[3];
+}
+
+void latxs_hamt_dump_context(void)
+{
+    CPUX86State *env = lsenv->cpu_state;
+
+    pr_info(" ------- LATX-SYS");
+    pr_info("         ENV 0x%lx", env);
+    pr_info("         CPL 0x%lx", env->hflags & 0x3);
+#ifdef TCG_USE_MULTI_REGION
+    pr_info("Region 0 st  0x%lx", tcg_ctx->mregion[0].code_gen_buffer);
+    pr_info("Region 1 st  0x%lx", tcg_ctx->mregion[1].code_gen_buffer);
+#else
+    pr_info("Region   st  0x%lx", tcg_ctx->code_gen_buffer);
+#endif
 }
 
 #endif

@@ -21,6 +21,8 @@
 #include "hamt.h"
 #include "hamt_misc.h"
 
+#include "latx-hamt.h"
+
 // https://stackoverflow.com/questions/22449342/clone-vm-undeclared-first-use-in-this-function
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -416,9 +418,33 @@ void host_loop(struct kvm_cpu *vcpu)
 
         if (vcpu->kvm_run->exit_reason != KVM_EXIT_HYPERCALL) {
             err = ioctl(vcpu->vcpu_fd, KVM_GET_REGS, &regs);
-            pr_info("         PC  %p", (void *)regs.pc);
-            pr_info("         R13 0x%lx", regs.gpr[13]);
 
+            latxs_hamt_dump_context();
+
+            pr_info(" ------- HAMT KVM GPRs");
+            pr_info("         PC  %p", (void *)regs.pc);
+
+            pr_info("         T0  0x%lx", regs.gpr[12]);
+            pr_info("         T1  0x%lx", regs.gpr[13]);
+            pr_info("         T2  0x%lx", regs.gpr[14]);
+            pr_info("         T3  0x%lx", regs.gpr[15]);
+            pr_info("         T4  0x%lx", regs.gpr[16]);
+            pr_info("         T5  0x%lx", regs.gpr[17]);
+            pr_info("         T6  0x%lx", regs.gpr[18]);
+            pr_info("         T7  0x%lx", regs.gpr[19]);
+
+            pr_info("     ENV S0  0x%lx", regs.gpr[23]);
+
+            pr_info("     EAX S1  0x%lx", regs.gpr[24]);
+            pr_info("     ECX S2  0x%lx", regs.gpr[25]);
+            pr_info("     EDX S3  0x%lx", regs.gpr[26]);
+            pr_info("     EBX S4  0x%lx", regs.gpr[27]);
+            pr_info("     ESP S5  0x%lx", regs.gpr[28]);
+            pr_info("     EBP S6  0x%lx", regs.gpr[29]);
+            pr_info("     ESI S7  0x%lx", regs.gpr[30]);
+            pr_info("     EDI S8  0x%lx", regs.gpr[31]);
+
+            pr_info(" ------- HAMT KVM CSRs");
             struct kvm_one_reg csr;
             uint64_t csr_value = 0;
             csr.addr = (uint64_t) & (csr_value);
