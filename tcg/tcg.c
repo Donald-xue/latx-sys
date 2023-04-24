@@ -1267,12 +1267,19 @@ void tcg_register_thread(void)
 
     tcg_ctx = s;
 #ifdef TCG_USE_MULTI_REGION
-    tcg_ctx->region_id = 0;
-    int rid = tcg_ctx->region_id;
-    qemu_mutex_lock(&region[rid].lock);
-    err = tcg_region_initial_alloc__locked(tcg_ctx);
-    g_assert(!err);
-    qemu_mutex_unlock(&region[rid].lock);
+    int rid = 0;
+    for (; rid < TCG_MULTI_REGION_N; ++rid) {
+        tcg_ctx->region_id = rid;
+        qemu_mutex_lock(&region[rid].lock);
+
+        tcg_multi_region_reset(tcg_ctx, rid);
+        err = tcg_region_initial_alloc__locked(tcg_ctx);
+        g_assert(!err);
+        tcg_multi_region_save(tcg_ctx, rid);
+
+        qemu_mutex_unlock(&region[rid].lock);
+    }
+    tcg_multi_region_switch(tcg_ctx, 0);
 
 #else /* no TCG_USE_MULTI_REGION */
 
