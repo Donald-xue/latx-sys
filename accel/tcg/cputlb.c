@@ -186,8 +186,9 @@ static void tb_flush_jmp_cache(CPUState *cpu, target_ulong addr)
  * high), since otherwise we are likely to have a significant amount of
  * conflict misses.
  */
-static void tlb_mmu_resize_locked(CPUTLBDesc *desc, CPUTLBDescFast *fast,
-                                  int64_t now)
+static void tlb_mmu_resize_locked(CPUArchState *env,
+        CPUTLBDesc *desc, CPUTLBDescFast *fast,
+        int64_t now)
 {
     size_t old_size = tlb_n_entries(fast);
     size_t rate;
@@ -233,6 +234,15 @@ static void tlb_mmu_resize_locked(CPUTLBDesc *desc, CPUTLBDescFast *fast,
     g_free(fast->table);
     g_free(desc->iotlb);
 
+#ifdef CONFIG_LATX
+    latxs_counter_stlb_resize(env_cpu(env));
+    if (new_size > old_size)  {
+        latxs_counter_stlb_resize_inc(env_cpu(env));
+    } else {
+        latxs_counter_stlb_resize_dec(env_cpu(env));
+    }
+#endif
+
     tlb_window_reset(desc, now, 0);
     /* desc->n_used_entries is cleared by the caller */
     fast->mask = (new_size - 1) << CPU_TLB_ENTRY_BITS;
@@ -277,7 +287,7 @@ static void tlb_flush_one_mmuidx_locked(CPUArchState *env, int mmu_idx,
     CPUTLBDesc *desc = &env_tlb(env)->d[mmu_idx];
     CPUTLBDescFast *fast = &env_tlb(env)->f[mmu_idx];
 
-    tlb_mmu_resize_locked(desc, fast, now);
+    tlb_mmu_resize_locked(env, desc, fast, now);
     tlb_mmu_flush_locked(desc, fast);
 }
 
@@ -404,12 +414,21 @@ static void tlb_flush_by_mmuidx_async_work(CPUState *cpu, run_on_cpu_data data)
     cpu_tb_jmp_cache_clear(cpu);
 
     if (to_clean == ALL_MMUIDX_BITS) {
+#ifdef CONFIG_LATX
+        latxs_counter_stlb_flush_full(cpu);
+#endif
         qatomic_set(&env_tlb(env)->c.full_flush_count,
                    env_tlb(env)->c.full_flush_count + 1);
     } else {
+#ifdef CONFIG_LATX
+        latxs_counter_stlb_flush_part(cpu);
+#endif
         qatomic_set(&env_tlb(env)->c.part_flush_count,
                    env_tlb(env)->c.part_flush_count + ctpop16(to_clean));
         if (to_clean != asked) {
+#ifdef CONFIG_LATX
+        latxs_counter_stlb_flush_elide(cpu);
+#endif
             qatomic_set(&env_tlb(env)->c.elide_flush_count,
                        env_tlb(env)->c.elide_flush_count +
                        ctpop16(asked & ~to_clean));
@@ -650,6 +669,7 @@ void tlb_flush_page_by_mmuidx(CPUState *cpu, target_ulong addr, uint16_t idxmap)
     addr &= TARGET_PAGE_MASK;
 
 #ifdef CONFIG_LATX
+    latxs_counter_stlb_flush_page(cpu);
     if (hamt_enable() && hamt_started()) {
         from_by_mmuidx++;
         hamt_flush_all();

@@ -90,6 +90,39 @@
       __latxs_counter_helper_load_stlbfill_cpl3(cpu);           \
 } while (0)
 
+#define latxs_counter_exe_write_cr0(cpu) do {   \
+      __latxs_counter_exe_write_cr0(cpu);       \
+} while (0)
+#define latxs_counter_exe_write_cr3(cpu) do {   \
+      __latxs_counter_exe_write_cr3(cpu);       \
+} while (0)
+
+#define latxs_counter_exe_invlpg(cpu) do {  \
+      __latxs_counter_exe_invlpg(cpu);      \
+} while (0)
+
+#define latxs_counter_stlb_flush_full(cpu) do { \
+      __latxs_counter_stlb_flush_full(cpu);     \
+} while (0)
+#define latxs_counter_stlb_flush_part(cpu) do { \
+      __latxs_counter_stlb_flush_part(cpu);     \
+} while (0)
+#define latxs_counter_stlb_flush_elide(cpu) do {    \
+      __latxs_counter_stlb_flush_elide(cpu);        \
+} while (0)
+#define latxs_counter_stlb_flush_page(cpu) do { \
+      __latxs_counter_stlb_flush_page(cpu);     \
+} while (0)
+#define latxs_counter_stlb_resize(cpu) do { \
+      __latxs_counter_stlb_resize(cpu);     \
+} while (0)
+#define latxs_counter_stlb_resize_inc(cpu) do { \
+      __latxs_counter_stlb_resize_inc(cpu);     \
+} while (0)
+#define latxs_counter_stlb_resize_dec(cpu) do { \
+      __latxs_counter_stlb_resize_dec(cpu);     \
+} while (0)
+
 #define latxs_counter_wake(cpu) do {    \
       __latxs_counter_wake(cpu);        \
 } while (0)
@@ -124,6 +157,19 @@ void __latxs_counter_helper_store_stlbfill_cpl3(void *cpu);
 void __latxs_counter_helper_load_cpl3(void *cpu);
 void __latxs_counter_helper_load_stlbfill_cpl3(void *cpu);
 
+void __latxs_counter_exe_write_cr0(void *cpu);
+void __latxs_counter_exe_write_cr3(void *cpu);
+
+void __latxs_counter_exe_invlpg(void *cpu);
+
+void __latxs_counter_stlb_flush_full(void *cpu);
+void __latxs_counter_stlb_flush_part(void *cpu);
+void __latxs_counter_stlb_flush_elide(void *cpu);
+void __latxs_counter_stlb_flush_page(void *cpu);
+void __latxs_counter_stlb_resize(void *cpu);
+void __latxs_counter_stlb_resize_inc(void *cpu);
+void __latxs_counter_stlb_resize_dec(void *cpu);
+
 void __latxs_counter_wake(void *cpu);
 
 #else /* disable bg thread counter */
@@ -157,6 +203,18 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_excp_pf_cpl3(env, cpu)
 
 #define latxs_counter_interrupt(cpu)
+
+#define latxs_counter_exe_write_cr0(cpu)
+#define latxs_counter_exe_write_cr3(cpu)
+#define latxs_counter_exe_invlpg(cpu)
+
+#define latxs_counter_stlb_flush_full(cpu)
+#define latxs_counter_stlb_flush_part(cpu)
+#define latxs_counter_stlb_flush_elide(cpu)
+#define latxs_counter_stlb_flush_page(cpu)
+#define latxs_counter_stlb_resize(cpu)
+#define latxs_counter_stlb_resize_inc(cpu)
+#define latxs_counter_stlb_resize_dec(cpu)
 
 #define latxs_counter_wake(cpu)
 

@@ -27,6 +27,7 @@
 #include "helper-tcg.h"
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "hamt.h"
+#include "latx-counter-sys.h"
 #endif
 /*
  * NOTE: the translator must set DisasContext.cc_op to CC_OP_EFLAGS
@@ -163,9 +164,15 @@ void helper_write_crN(CPUX86State *env, int reg, target_ulong t0)
     cpu_svm_check_intercept_param(env, SVM_EXIT_WRITE_CR0 + reg, 0, GETPC());
     switch (reg) {
     case 0:
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        latxs_counter_exe_write_cr0(env_cpu(env));
+#endif
         cpu_x86_update_cr0(env, t0);
         break;
     case 3:
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        latxs_counter_exe_write_cr3(env_cpu(env));
+#endif
         cpu_x86_update_cr3(env, t0);
         break;
     case 4:
@@ -206,6 +213,7 @@ void helper_invlpg(CPUX86State *env, target_ulong addr)
     tlb_flush_page(CPU(cpu), addr);
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_counter_exe_invlpg(env_cpu(env));
     if (hamt_enable() && hamt_started()) {
         hamt_invlpg_helper(addr);
     }

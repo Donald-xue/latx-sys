@@ -46,6 +46,19 @@ typedef struct {
     uint64_t helper_store_stlbfill_cpl3_nr;
     uint64_t helper_load_cpl3_nr;
     uint64_t helper_load_stlbfill_cpl3_nr;
+
+    uint64_t exe_write_cr0_nr;
+    uint64_t exe_write_cr3_nr;
+    uint64_t exe_invlpg_nr;
+
+    uint64_t stlb_flush_full_nr;
+    uint64_t stlb_flush_part_nr;
+    uint64_t stlb_flush_elide_nr;
+    uint64_t stlb_flush_page_nr;
+
+    uint64_t stlb_resize_nr;
+    uint64_t stlb_resize_inc_nr;
+    uint64_t stlb_resize_dec_nr;
 } latxs_counter_t;
 
 latxs_counter_t *latxs_counter_data;
@@ -119,6 +132,18 @@ IMP_COUNTER_FUNC(helper_store_stlbfill_cpl3)
 IMP_COUNTER_FUNC(helper_load_cpl3)
 IMP_COUNTER_FUNC(helper_load_stlbfill_cpl3)
 
+IMP_COUNTER_FUNC(exe_write_cr0)
+IMP_COUNTER_FUNC(exe_write_cr3)
+IMP_COUNTER_FUNC(exe_invlpg)
+
+IMP_COUNTER_FUNC(stlb_flush_full)
+IMP_COUNTER_FUNC(stlb_flush_part)
+IMP_COUNTER_FUNC(stlb_flush_elide)
+IMP_COUNTER_FUNC(stlb_flush_page)
+IMP_COUNTER_FUNC(stlb_resize)
+IMP_COUNTER_FUNC(stlb_resize_inc)
+IMP_COUNTER_FUNC(stlb_resize_dec)
+
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
@@ -132,7 +157,12 @@ static void __latxs_counter_bg_log(int n, int sec)
             "JCF %d %d %d %d "\
             "E_PF %d %d " \
             "INT %d " \
-            "INV %d\n",
+            "INV %d %d " \
+            "wCR %d %d " \
+            "sTLB %d %d %d %d " \
+            "sTLBRS %d %d %d" \
+            "\n"
+            ,
             sec, n,
             BG_LOG_DIFF(n, tb_tr                 ),
             BG_LOG_DIFF(n, tb_lookup             ),
@@ -162,7 +192,20 @@ static void __latxs_counter_bg_log(int n, int sec)
 
             BG_LOG_DIFF(n, interrupt             ),
 
-            BG_LOG_DIFF(n, tb_inv                )
+            BG_LOG_DIFF(n, tb_inv                ),
+            BG_LOG_DIFF(n, exe_invlpg            ),
+
+            BG_LOG_DIFF(n, exe_write_cr0         ),
+            BG_LOG_DIFF(n, exe_write_cr3         ),
+
+            BG_LOG_DIFF(n, stlb_flush_full       ),
+            BG_LOG_DIFF(n, stlb_flush_part       ),
+            BG_LOG_DIFF(n, stlb_flush_elide      ),
+            BG_LOG_DIFF(n, stlb_flush_page       ),
+
+            BG_LOG_DIFF(n, stlb_resize           ),
+            BG_LOG_DIFF(n, stlb_resize_inc       ),
+            BG_LOG_DIFF(n, stlb_resize_dec       )
             );
 }
 
