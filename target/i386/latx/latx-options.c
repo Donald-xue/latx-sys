@@ -2,6 +2,8 @@
 #include "qemu/osdep.h"
 #include "latx-options.h"
 
+#include "tcg/tcg-bg-tlb-init.h"
+
 int option_by_hand;
 #ifdef CONFIG_LATX_FLAG_PATTERN
 int option_flag_pattern = 0;
@@ -333,6 +335,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "delay on HAMT exception handler",
         }, {
+            .name = "tlbsize",
+            .type = QEMU_OPT_NUMBER,
+            .help = "SoftTLB size",
+        }, {
             .name = "ccpro",
             .type = QEMU_OPT_NUMBER,
             .help = "code cache pro",
@@ -519,6 +525,11 @@ static void parse_options_traceir1_data(unsigned long long t)
 static void parse_options_hamt(unsigned long long t)
 {
     option_hamt = t;
+}
+
+static void parse_options_tlb_size(unsigned long long t)
+{
+    tcg_bg_tlb_init_size(t);
 }
 
 static void parse_options_hamt_delay(unsigned long long t)
@@ -710,6 +721,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "hamt");
     if (opt) {
         parse_options_hamt(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "tlbsize");
+    if (opt) {
+        parse_options_tlb_size(opt->value.uint);
     }
 
     opt = qemu_opt_find(opts, "hamtdelay");

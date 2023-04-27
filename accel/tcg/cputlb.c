@@ -50,6 +50,7 @@
 /* #define HAMT_SOFTMMU_PROFILE */
 #include "latx-counter-sys.h"
 #endif
+#include "tcg/tcg-bg-tlb.h"
 
 #ifdef DEBUG_TLB
 # define DEBUG_TLB_GATE 1
@@ -102,12 +103,14 @@ static inline size_t sizeof_tlb(CPUTLBDescFast *fast)
     return fast->mask + (1 << CPU_TLB_ENTRY_BITS);
 }
 
+#ifndef BG_TLB_ENABLE
 static void tlb_window_reset(CPUTLBDesc *desc, int64_t ns,
                              size_t max_entries)
 {
     desc->window_begin_ns = ns;
     desc->window_max_entries = max_entries;
 }
+#endif
 
 static void tb_jmp_cache_clear_page(CPUState *cpu, target_ulong page_addr)
 {
@@ -186,6 +189,7 @@ static void tb_flush_jmp_cache(CPUState *cpu, target_ulong addr)
  * high), since otherwise we are likely to have a significant amount of
  * conflict misses.
  */
+#ifndef BG_TLB_ENABLE
 static void tlb_mmu_resize_locked(CPUArchState *env,
         CPUTLBDesc *desc, CPUTLBDescFast *fast,
         int64_t now)
@@ -270,15 +274,20 @@ static void tlb_mmu_resize_locked(CPUArchState *env,
         desc->iotlb = g_try_new(CPUIOTLBEntry, new_size);
     }
 }
+#endif
 
 static void tlb_mmu_flush_locked(CPUTLBDesc *desc, CPUTLBDescFast *fast)
 {
+#ifdef BG_TLB_ENABLE
+    tcg_bg_tlb_flush(desc, fast);
+#else
     desc->n_used_entries = 0;
     desc->large_page_addr = -1;
     desc->large_page_mask = -1;
     desc->vindex = 0;
     memset(fast->table, -1, sizeof_tlb(fast));
     memset(desc->vtable, -1, sizeof(desc->vtable));
+#endif
 }
 
 static void tlb_flush_one_mmuidx_locked(CPUArchState *env, int mmu_idx,
@@ -287,12 +296,17 @@ static void tlb_flush_one_mmuidx_locked(CPUArchState *env, int mmu_idx,
     CPUTLBDesc *desc = &env_tlb(env)->d[mmu_idx];
     CPUTLBDescFast *fast = &env_tlb(env)->f[mmu_idx];
 
+#ifndef BG_TLB_ENABLE
     tlb_mmu_resize_locked(env, desc, fast, now);
+#endif
     tlb_mmu_flush_locked(desc, fast);
 }
 
 static void tlb_mmu_init(CPUTLBDesc *desc, CPUTLBDescFast *fast, int64_t now)
 {
+#ifdef BG_TLB_ENABLE
+    tcg_bg_tlb_init(desc, fast);
+#else
     size_t n_entries = 1 << CPU_TLB_DYN_DEFAULT_BITS;
 
     tlb_window_reset(desc, now, 0);
@@ -301,6 +315,7 @@ static void tlb_mmu_init(CPUTLBDesc *desc, CPUTLBDescFast *fast, int64_t now)
     fast->table = g_new(CPUTLBEntry, n_entries);
     desc->iotlb = g_new(CPUIOTLBEntry, n_entries);
     tlb_mmu_flush_locked(desc, fast);
+#endif
 }
 
 static inline void tlb_n_used_entries_inc(CPUArchState *env, uintptr_t mmu_idx)

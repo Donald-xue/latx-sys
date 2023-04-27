@@ -17,6 +17,7 @@ specific_ss.add(when: ['CONFIG_SOFTMMU', 'CONFIG_TCG'], if_true: files(
   'cputlb.c',
   'tcg-bg-thread.c',
   'tcg-bg-jc.c',
+  'tcg-bg-tlb.c',
   'tcg-accel-ops.c',
   'tcg-accel-ops-mttcg.c',
   'tcg-accel-ops-icount.c',

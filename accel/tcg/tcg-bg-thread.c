@@ -13,6 +13,7 @@
 
 #include "tcg/tcg-bg-log.h"
 #include "tcg/tcg-bg-jc.h"
+#include "tcg/tcg-bg-tlb.h"
 #include "latx-counter-sys.h"
 
 /* ================== BG thread Work list ======================= */
@@ -170,28 +171,53 @@ void tcg_bg_init_mt(CPUState *cpu)
 static void __attribute__((__constructor__)) tcg_bg_init_static(void)
 {
     tcg_bg_jc_init_static();
+    tcg_bg_tlb_init_static();
 
     tcg_bg_thread_goon  = 1;
     tcg_bg_thread_todo = 0; /* no work to do yet */
 }
 
-/* ================== BG thread TB Jmp Cache ======================= */
+/* ================== BG thread Wake ======================= */
 
-void tcg_bg_jc_wake(void *func, int id)
+static void __tcg_bg_insert_worker(struct tcg_bg_work_item *wi)
 {
-    /* build worker for bg thread */
-    struct tcg_bg_work_item *wi = tcg_bg_worker_build_int(func, id);
-
-    /* insert worker into bg work list */
     qemu_mutex_lock(tcg_bg_work_mutex);
     QSIMPLEQ_INSERT_TAIL(&tcg_bg_work_list, wi, node);
     qemu_mutex_unlock(tcg_bg_work_mutex);
+}
 
-    /* signal bg thread */
+static void __tcg_bg_wake_up(void)
+{
     qemu_mutex_lock(tcg_bg_thread_mutex);
     tcg_bg_thread_todo = 1;
     qemu_cond_signal(tcg_bg_thread_cond);
     qemu_mutex_unlock(tcg_bg_thread_mutex);
+}
+
+static void tcg_bg_wake_int(void *func, int data)
+{
+    /* build worker for bg thread */
+    struct tcg_bg_work_item *wi = tcg_bg_worker_build_int(func, data);
+
+    /* insert worker into bg work list */
+    __tcg_bg_insert_worker(wi);
+
+    /* signal bg thread */
+    __tcg_bg_wake_up();
+}
+
+/* ================== BG thread TB Jmp Cache ======================= */
+
+void tcg_bg_jc_wake(void *func, int jc_id)
+{
+    tcg_bg_wake_int(func, jc_id);
+}
+
+/* ================== BG thread CPU TLB ======================= */
+
+void tcg_bg_tlb_wake(void *func, int tlb_id)
+{
+    tcg_bg_wake_int(func, tlb_id);
 }
 
 /* ================ BG thread log file ========================== */
@@ -254,17 +280,5 @@ void tcg_bg_counter_wake(void *func, int sec)
         return;
     }
 
-    /* build worker for bg thread */
-    struct tcg_bg_work_item *wi = tcg_bg_worker_build_int(func, sec);
-
-    /* insert worker into bg work list */
-    qemu_mutex_lock(tcg_bg_work_mutex);
-    QSIMPLEQ_INSERT_TAIL(&tcg_bg_work_list, wi, node);
-    qemu_mutex_unlock(tcg_bg_work_mutex);
-
-    /* signal bg thread */
-    qemu_mutex_lock(tcg_bg_thread_mutex);
-    tcg_bg_thread_todo = 1;
-    qemu_cond_signal(tcg_bg_thread_cond);
-    qemu_mutex_unlock(tcg_bg_thread_mutex);
+    tcg_bg_wake_int(func, sec);
 }
