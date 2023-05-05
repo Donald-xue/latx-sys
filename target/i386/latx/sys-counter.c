@@ -59,6 +59,11 @@ typedef struct {
     uint64_t stlb_resize_nr;
     uint64_t stlb_resize_inc_nr;
     uint64_t stlb_resize_dec_nr;
+
+    uint64_t hamt_fast_ld_nr;
+    uint64_t hamt_fast_ld_ok_nr;
+    uint64_t hamt_fast_st_nr;
+    uint64_t hamt_fast_st_ok_nr;
 } latxs_counter_t;
 
 latxs_counter_t *latxs_counter_data;
@@ -144,6 +149,11 @@ IMP_COUNTER_FUNC(stlb_resize)
 IMP_COUNTER_FUNC(stlb_resize_inc)
 IMP_COUNTER_FUNC(stlb_resize_dec)
 
+IMP_COUNTER_FUNC(hamt_fast_ld)
+IMP_COUNTER_FUNC(hamt_fast_ld_ok)
+IMP_COUNTER_FUNC(hamt_fast_st)
+IMP_COUNTER_FUNC(hamt_fast_st_ok)
+
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
@@ -160,7 +170,8 @@ static void __latxs_counter_bg_log(int n, int sec)
             "INV %d %d " \
             "wCR %d %d " \
             "sTLB %d %d %d %d " \
-            "sTLBRS %d %d %d" \
+            "sTLBRS %d %d %d " \
+            "hamtF %d %d %d %d" \
             "\n"
             ,
             sec, n,
@@ -205,7 +216,12 @@ static void __latxs_counter_bg_log(int n, int sec)
 
             BG_LOG_DIFF(n, stlb_resize           ),
             BG_LOG_DIFF(n, stlb_resize_inc       ),
-            BG_LOG_DIFF(n, stlb_resize_dec       )
+            BG_LOG_DIFF(n, stlb_resize_dec       ),
+
+            BG_LOG_DIFF(n, hamt_fast_ld          ),
+            BG_LOG_DIFF(n, hamt_fast_ld_ok       ),
+            BG_LOG_DIFF(n, hamt_fast_st          ),
+            BG_LOG_DIFF(n, hamt_fast_st_ok       )
             );
 }
 

@@ -40,6 +40,8 @@
 #include "latx-options.h"
 #include "latx-sigint-fn-sys.h"
 
+#include "latx-counter-sys.h"
+
 #include "latx-perfmap.h"
 
 #define HAMT_TYPE_BASE          1
@@ -2585,15 +2587,6 @@ static void local_flush_icache_range(void)
     asm volatile ("\tibar 0\n"::);
 }
 
-/* #define CONFIG_LATX_HAMT_FAST_COUNTER */
-#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
-int hamt_fast_load_nr = 0;
-int hamt_fast_load_ok_nr = 0;
-int hamt_fast_store_nr = 0;
-int hamt_fast_store_ok_nr = 0;
-int hamt_fast_badv0_nr = 0;
-int hamt_fast_not_ldst_nr = 0;
-#endif
 /*
  * DATA_STORAGE:
  * 0-31: native context
@@ -2615,9 +2608,6 @@ static int hamt_fast_exception_handler(void)
     void *env = (void *)(data[23]); /* $s0 */
 
     if (!badv) {
-#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
-        hamt_fast_badv0_nr += 1;
-#endif
         return 0;
     }
 
@@ -2644,19 +2634,14 @@ static int hamt_fast_exception_handler(void)
     }
 
     if (!is_load && !is_store) {
-#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
-        hamt_fast_not_ldst_nr += 1;
-#endif
         return 0;
     }
 
-#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
     if (is_store) {
-        hamt_fast_store_nr += 1;
+        latxs_counter_hamt_fast_st(env_cpu(env));
     } else {
-        hamt_fast_load_nr += 1;
+        latxs_counter_hamt_fast_ld(env_cpu(env));
     }
-#endif
 
     int res = 0;
     if (is_store) {
@@ -2665,15 +2650,13 @@ static int hamt_fast_exception_handler(void)
         res = hamt_fast_load(env, badv);
     }
 
-#ifdef CONFIG_LATX_HAMT_FAST_COUNTER 
     if (res) {
         if (is_store) {
-            hamt_fast_store_ok_nr += 1;
+            latxs_counter_hamt_fast_st_ok(env_cpu(env));
         } else {
-            hamt_fast_load_ok_nr += 1;
+            latxs_counter_hamt_fast_ld_ok(env_cpu(env));
         }
     }
-#endif
 
     return res;
 }
