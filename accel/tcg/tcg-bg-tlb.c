@@ -126,13 +126,19 @@ void tcg_bg_tlb_flush(CPUTLBDesc *desc, CPUTLBDescFast *fast)
 
     if (free_id >= 0) {
         int old_id = desc->bg_tlb_id;
+        tcg_bg_tlb_size_n[old_id] = tcg_bg_tlb_initial_size_n;
 
         desc->bg_tlb_id = free_id;
         fast->table = tcg_bg_tlb[free_id];
 
+        fast->mask = (tcg_bg_tlb_initial_size - 1) << CPU_TLB_ENTRY_BITS;
+        tcg_bg_tlb_size_n[free_id] = tcg_bg_tlb_initial_size_n;
+
         tcg_bg_tlb_wake(tcg_bg_worker_tlb_flush, old_id);
     } else {
-        int s = tcg_bg_tlb_size_n[desc->bg_tlb_id];
+        int s = 10;
+        tcg_bg_tlb_size_n[desc->bg_tlb_id] = 10;
+        fast->mask = ((1 << 10) - 1) << CPU_TLB_ENTRY_BITS;
         memset(fast->table, -1, sizeof(CPUTLBEntry) * (1 << s));
     }
 
