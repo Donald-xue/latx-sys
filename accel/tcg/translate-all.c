@@ -69,6 +69,7 @@
 #include "latx-tracecc-sys.h"
 #include "latx-fastcs-sys.h"
 #include "hamt.h"
+#include "hamt-tlb.h"
 #include "latxs-cc-pro.h"
 #include "latx-counter-sys.h"
 #include "latx-multi-region-sys.h"

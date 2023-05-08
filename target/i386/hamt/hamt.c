@@ -31,6 +31,7 @@
 #include "hamt_misc.h"
 #include "internal.h"
 #include "info.h"
+#include "hamt-tlb.h"
 
 #include "monitor/monitor.h"
 #include "monitor/hmp-target.h"
@@ -212,52 +213,6 @@ void hmp_hamt(Monitor *mon, const QDict *qdict)
     monitor_printf(mon, "highest x86 tlb: %d\n", highest_x86_tlb);
 }
 
-static inline void tlb_read(void)
-{
-    __asm__ __volatile__("tlbrd");
-}
-
-static inline void tlb_probe(void)
-{
-    __asm__ __volatile__("tlbsrch");
-}
-
-static bool valid_index(int32_t index)
-{
-    return index >= 0;
-}
-
-static inline void tlb_write_indexed(void)
-{
-    __asm__ __volatile__("tlbwr");
-}
-
-static inline void tlb_write_random(void)
-{
-    __asm__ __volatile__("tlbfill");
-}
-
-static inline void enable_pg(void)
-{
-    __asm__ __volatile__(
-            "ori $t0, $zero, %0\n\t"
-            "csrwr $t0, %1\n\t"
-            :
-            : "i"(CSR_CRMD_PG), "i"(LOONGARCH_CSR_CRMD)
-            : "$t0"
-            );
-}
-
-static inline void disable_pg(void)
-{
-    __asm__ __volatile__(
-            "ori $t0, $zero, %0\n\t"
-            "csrwr $t0, %1\n\t"
-            :
-            : "i"(CSR_CRMD_DA), "i"(LOONGARCH_CSR_CRMD)
-            : "$t0"
-            );
-}
 
 void hamt_alloc_target_addr_space(void)
 {
@@ -324,53 +279,6 @@ static uint16_t find_first_unused_asid_value(void)
     return (uint16_t)first;
 }
 
-/*
- * invtlb op info addr
- * (0x1 << 26) | (0x24 << 20) | (0x13 << 15) |
- * (addr << 10) | (info << 5) | op
- */
-#define STLBSETS 256
-static inline void local_flush_tlb_all(void)
-{
-    ++flush_tlb_all_count;
-
-#if 1
-    disable_pg();
-    /* invtlb 0x3 : flush guest all TLB that G=0 */
-    __asm__ __volatile__(
-        ".word ((0x6498000) | (0 << 10) | (0 << 5) | 0x3)\n\t"
-        );
-    enable_pg();
-#endif
-#if 0
-    int i = 0;
-    int32_t csr_tlbidx;
-
-    disable_pg();
-
-    /* flush mtlb */
-    csr_tlbidx = read_csr_tlbidx();
-    csr_tlbidx &= 0xffff0000;
-    csr_tlbidx += 0x800;
-    write_csr_tlbidx(csr_tlbidx);
-    __asm__ __volatile__("tlbflush");
-
-#if 0
-    /* flush stlb */
-    for (i = 0; i < STLBSETS; ++i) {
-        csr_tlbidx = read_csr_tlbidx();
-        csr_tlbidx &= 0xffff0000;
-        csr_tlbidx += i;
-        write_csr_tlbidx(csr_tlbidx);
-        __asm__ __volatile__("tlbflush");
-    } 
-#endif
-
-    enable_pg();
-#endif
-
-}
-
 static inline void local_flush_tlb_asid(uint16_t asid)
 {
     uint32_t op = INVTLB_GFALSE_AND_ASID;
@@ -397,7 +305,7 @@ static uint16_t allocate_new_asid_value(void)
          * 5. set allocated bit to 1
          */
 
-        local_flush_tlb_all();
+        hamt_flush_tlb_all();
         new_round_asid++;
         asid_version++;
         memset(asid_map, 0, sizeof(uint64_t) * 16);
@@ -459,7 +367,7 @@ void hamt_set_context(uint64_t new_cr3)
 
     if (hamt_base()) {
         if (hamt_enable() && hamt_started()) {
-            hamt_flush_all();
+            hamt_flush_tlb_all();
             return;
         } else {
             die("hamt flush all when not in hamt");
@@ -865,280 +773,6 @@ static uint64_t hamt_get_st_val_softmmu(CPUX86State *env,
 
     die("can not reach here in hamt_get_st_val_softmmu");
     return 0;
-}
-
-static inline void set_attr(int r, int w, int x, uint64_t *addr)
-{
-    if (r) clear_bit(61, addr);
-    else set_bit(61, addr);
-
-    if (x) clear_bit(62, addr);
-    else set_bit(62, addr);
-
-    if (w) set_bit(1, addr);
-    else clear_bit(1, addr);
-}
-
-static void hamt_set_tlbr(uint64_t vaddr, uint64_t paddr,
-        int prot, bool mode)
-{
-    uint64_t csr_tlbr_ehi = 0;
-    uint64_t csr_tlbr_elo0 = 0;
-    uint64_t csr_tlbr_elo1 = 0;
-
-    int32_t csr_tlbidx = 0;
-    uint32_t csr_asid = asid_value;
-
-    int w = prot & PAGE_WRITE ? 1 : 0;
-    int r = prot & PAGE_READ  ? 1 : 0;
-    int x = prot & PAGE_EXEC  ? 1 : 0;
-
-    assert(!hamt_interpreter());
-
-    csr_tlbr_ehi = vaddr & ~0x1fffULL;
-    write_csr_tlbr_ehi(csr_tlbr_ehi);
-    write_csr_asid(csr_asid);
-    tlb_probe(); /* tlbsrch */
-    csr_tlbidx = read_csr_tlbidx();
-    if (valid_index(csr_tlbidx)) {
-        tlb_read(); /* tlbrd: always update TLBELO0/1 */
-        csr_tlbr_elo0 = read_csr_tlbelo0();
-        csr_tlbr_elo1 = read_csr_tlbelo1();
-    }
-
-    //FIX
-    if (csr_tlbidx == 0xc00083f) {
-        local_flush_tlb_all();
-        write_2111++;
-        csr_tlbidx |= 0x80000000;
-    }
-
-    if (vaddr & 0x1000) {
-        if (mode) {
-            csr_tlbr_elo1 = ((paddr >> 12 << 12) | TLBRELO0_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
-            set_attr(r, w, x, &csr_tlbr_elo1);
-        }
-        else csr_tlbr_elo1 = 0; 
-    } else {
-        if (mode) {
-            csr_tlbr_elo0 = ((paddr >> 12 << 12) | TLBRELO0_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
-            set_attr(r, w, x, &csr_tlbr_elo0);
-        }
-        else csr_tlbr_elo0 = 0; 
-    }
-
-    csr_tlbidx &= 0xc0ffffff;
-    csr_tlbidx |= PS_4K << PS_SHIFT;
-
-    csr_tlbr_ehi &= ~0x1f;
-    csr_tlbr_ehi |= PS_4K ;
-
-    write_csr_asid(csr_asid);
-    write_csr_tlbr_ehi(csr_tlbr_ehi);
-    write_csr_tlbr_elo0(csr_tlbr_elo0);
-    write_csr_tlbr_elo1(csr_tlbr_elo1);
-    write_csr_tlbidx(csr_tlbidx);
-
-    /* tlbwr : tlbfill */
-    valid_index(csr_tlbidx) ? tlb_write_indexed() : tlb_write_random();
-}
-
-/*
- * mode:
- *     true: hamt_set_tlb fills in valid pte entry
- *     false: hamt_set_tlb fills in invalid pte entry
- * trap_code:
- *     0: tlbsearch
- *     1: tlbwr
- *     2: tlbfill
- * TODO:
- *     tlbelo0 / tlbelo1 may not be right
- */
-static void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
-{
-    uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
-    int32_t csr_tlbidx;
-    uint32_t csr_asid = asid_value;
-
-    int w = prot & PAGE_WRITE ? 1 : 0;
-    int r = prot & PAGE_READ  ? 1 : 0;
-    int x = prot & PAGE_EXEC  ? 1 : 0;
-
-    assert(!hamt_interpreter());
-
-    disable_pg();
-
-    // to see whether there is already a valid adjacent tlb entry
-    csr_tlbehi = vaddr & ~0x1fffULL;
-    write_csr_tlbehi(csr_tlbehi);
-    write_csr_asid(csr_asid);
-    tlb_probe();
-    csr_tlbidx = read_csr_tlbidx();
-    if (csr_tlbidx >= 0) {
-        tlb_read();
-        csr_tlbelo0 = read_csr_tlbelo0();
-        csr_tlbelo1 = read_csr_tlbelo1();
-    }
-
-    //FIX
-    if (csr_tlbidx == 0xc00083f) {
-        local_flush_tlb_all();
-        write_2111++;
-        csr_tlbidx |= 0x80000000;
-    }
-
-    if (valid_index(csr_tlbidx)) {
-
-        if (vaddr & 0x1000) {
-
-            if (mode) {
-                csr_tlbelo1 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
-                set_attr(r, w, x, &csr_tlbelo1);
-            }
-            else csr_tlbelo1 = 0; 
-
-        } else {
-
-            if (mode) {
-                csr_tlbelo0 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
-                set_attr(r, w, x, &csr_tlbelo0);
-            }
-            else csr_tlbelo0 = 0;
-
-        }
-
-    } else {
-
-        if (vaddr & 0x1000) {
-
-            //csr_tlbelo0 = 0;
-
-            if (mode) {
-                csr_tlbelo1 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
-                set_attr(r, w, x, &csr_tlbelo1);
-            }
-            else csr_tlbelo1 = 0; 
-
-        } else {
-
-            if (mode) {
-                csr_tlbelo0 = ((paddr >> 12 << 12) | TLBELO_STANDARD_BITS) & (~((uint64_t)0xe000 << 48));
-                set_attr(r, w, x, &csr_tlbelo0);
-            }
-            else csr_tlbelo0 = 0;
-
-            //csr_tlbelo1 = 0;
-
-        }
-
-    }
-
-    // set page size 4K
-    csr_tlbidx &= 0xc0ffffff;
-    csr_tlbidx |= PS_4K << PS_SHIFT;
-    write_csr_asid(csr_asid);
-    write_csr_tlbehi(csr_tlbehi);
-    write_csr_tlbelo0(csr_tlbelo0);
-    write_csr_tlbelo1(csr_tlbelo1);
-    write_csr_tlbidx(csr_tlbidx);
-
-    valid_index(csr_tlbidx) ? tlb_write_indexed() : tlb_write_random();
-
-    enable_pg();
-}
-
-void hamt_unprotect_code(uint64_t guest_pc)
-{
-    if (!(hamt_enable() && hamt_started())) return;
-
-    uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
-    int32_t csr_tlbidx;
-    uint32_t csr_asid = asid_value;
-
-    disable_pg(); /* --------------------------------------------- */
-
-    csr_tlbehi = guest_pc & ~0x1fffULL;
-    int n = (guest_pc >> 12) & 0x1;
-
-    write_csr_tlbehi(csr_tlbehi);
-    write_csr_asid(csr_asid);
-    tlb_probe();
-    csr_tlbidx = read_csr_tlbidx();
-    if (csr_tlbidx >= 0) {
-        tlb_read();
-        csr_tlbelo0 = read_csr_tlbelo0();
-        csr_tlbelo1 = read_csr_tlbelo1();
-
-        if (!n) {
-            csr_tlbelo0 |= 0x2;
-        } else {
-            csr_tlbelo1 |= 0x2;
-        }
-
-        csr_tlbidx &= 0xc0ffffff;
-        csr_tlbidx |= PS_4K << PS_SHIFT;
-
-        write_csr_asid(csr_asid);
-        write_csr_tlbehi(csr_tlbehi);
-        write_csr_tlbelo0(csr_tlbelo0);
-        write_csr_tlbelo1(csr_tlbelo1);
-        write_csr_tlbidx(csr_tlbidx);
-
-        tlb_write_indexed();
-    }
-
-    enable_pg(); /* --------------------------------------------- */
-}
-
-void hamt_protect_code(uint64_t guest_pc, int is_page2)
-{
-    if (!(hamt_enable() && hamt_started())) {
-        return;
-    }
-
-    uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
-    int32_t csr_tlbidx;
-    uint32_t csr_asid = asid_value;
-    int n;
-
-    disable_pg(); /* --------------------------------------------- */
-
-    csr_tlbehi = guest_pc & ~0x1fffULL;
-    n = (guest_pc >> 12) & 0x1;
-    if (is_page2) {
-        guest_pc += 0x1000ULL;
-        csr_tlbehi = guest_pc & ~0x1fffULL;
-        n = (guest_pc >> 12) & 0x1;
-    }
-
-    write_csr_tlbehi(csr_tlbehi);
-    write_csr_asid(csr_asid);
-    tlb_probe();
-    csr_tlbidx = read_csr_tlbidx();
-    if (csr_tlbidx >= 0) {
-        tlb_read();
-        csr_tlbelo0 = read_csr_tlbelo0();
-        csr_tlbelo1 = read_csr_tlbelo1();
-
-        if (!n) {
-            csr_tlbelo0 &= ~0x2;
-        } else {
-            csr_tlbelo1 &= ~0x2;
-        }
-
-        csr_tlbidx &= 0xc0ffffff;
-        csr_tlbidx |= PS_4K << PS_SHIFT;
-
-        write_csr_asid(csr_asid);
-        write_csr_tlbehi(csr_tlbehi);
-        write_csr_tlbelo0(csr_tlbelo0);
-        write_csr_tlbelo1(csr_tlbelo1);
-        write_csr_tlbidx(csr_tlbidx);
-
-        tlb_write_indexed();
-    }
-
-    enable_pg(); /* --------------------------------------------- */
 }
 
 void hamt_invlpg_helper(uint32_t i386_addr)
@@ -2156,25 +1790,6 @@ static void count_guest_tlb(void)
 }
 #endif
 
-void __hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
-        int prot, int is_tlbr)
-{
-    bool mode = prot ? true : false;
-    if (is_tlbr) {
-        hamt_set_tlbr(vaddr, paddr, prot, mode);
-    } else {
-        hamt_set_tlb(vaddr, paddr, prot, mode);
-    }
-}
-
-void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
-        int prot, int is_tlbr)
-{
-    if (hamt_enable() && hamt_started()) {
-        __hamt_set_hardware_tlb(vaddr, paddr, prot, is_tlbr);
-    }
-}
-
 static
 void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
         CPUX86State *env, uint32_t *epc)
@@ -2921,7 +2536,7 @@ void hamt_flush_all(void)
         return;
     }
 
-    local_flush_tlb_all();
+    hamt_flush_tlb_all();
     other_source++;
 }
 

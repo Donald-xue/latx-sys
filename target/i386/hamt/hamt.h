@@ -40,13 +40,6 @@ extern uint64_t from_tlb_flush;
 extern uint64_t from_tlb_flush_page_locked;
 extern uint64_t from_by_mmuidx;
 
-void hamt_protect_code(uint64_t guest_pc, int is_page2);
-void hamt_unprotect_code(uint64_t guest_pc);
-void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
-        int prot, int istlbr);
-void __hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
-        int prot, int is_tlbr);
-
 int hamt_fast_load(void *env, uint64_t addr);
 int hamt_fast_store(void *env, uint64_t addr);
 

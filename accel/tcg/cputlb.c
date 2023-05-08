@@ -44,6 +44,7 @@
 
 #ifdef CONFIG_LATX
 #include "hamt.h"
+#include "hamt-tlb.h"
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
 /* #define DEBUG_TLB_LOG */
