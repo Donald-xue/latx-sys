@@ -238,6 +238,9 @@ static void tlb_mmu_resize_locked(CPUArchState *env,
     }
 
     g_free(fast->table);
+#if defined(CONFIG_LATX) && defined(HAMT_USE_STLB)
+    if (hamt_have_stlb()) g_free(fast->stlb);
+#endif
     g_free(desc->iotlb);
 
 #ifdef CONFIG_LATX
@@ -253,6 +256,11 @@ static void tlb_mmu_resize_locked(CPUArchState *env,
     /* desc->n_used_entries is cleared by the caller */
     fast->mask = (new_size - 1) << CPU_TLB_ENTRY_BITS;
     fast->table = g_try_new(CPUTLBEntry, new_size);
+#if defined(CONFIG_LATX) && defined(HAMT_USE_STLB)
+    if (hamt_have_stlb()) {
+        fast->stlb = g_try_new(hamt_stlb_entry, new_size);
+    }
+#endif
     desc->iotlb = g_try_new(CPUIOTLBEntry, new_size);
 
     /*
@@ -288,6 +296,11 @@ static void tlb_mmu_flush_locked(CPUTLBDesc *desc, CPUTLBDescFast *fast)
     desc->large_page_mask = -1;
     desc->vindex = 0;
     memset(fast->table, -1, sizeof_tlb(fast));
+#if defined(CONFIG_LATX) && defined(HAMT_USE_STLB)
+    if (hamt_have_stlb()) {
+        memset(fast->stlb, -1, tlb_n_entries(fast) * sizeof(hamt_stlb_entry));
+    }
+#endif
     memset(desc->vtable, -1, sizeof(desc->vtable));
 #endif
 }
@@ -315,6 +328,11 @@ static void tlb_mmu_init(CPUTLBDesc *desc, CPUTLBDescFast *fast, int64_t now)
     desc->n_used_entries = 0;
     fast->mask = (n_entries - 1) << CPU_TLB_ENTRY_BITS;
     fast->table = g_new(CPUTLBEntry, n_entries);
+#if defined(CONFIG_LATX) && defined(HAMT_USE_STLB)
+    if (hamt_have_stlb()) {
+        fast->stlb = g_new(hamt_stlb_entry, n_entries);
+    }
+#endif
     desc->iotlb = g_new(CPUIOTLBEntry, n_entries);
     tlb_mmu_flush_locked(desc, fast);
 #endif
