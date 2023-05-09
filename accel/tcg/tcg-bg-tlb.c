@@ -30,6 +30,8 @@
 #define TCG_BG_TLB_SIZE_MIN 6
 #define TCG_BG_TLB_SIZE_MAX 18
 
+#define TCG_BG_TLB_SIZE_INIT    10
+
 #define TCG_BG_TLB_SIZE_N   TCG_BG_TLB_SIZE_MAX
 #define TCG_BG_TLB_SIZE (1<<TCG_BG_TLB_SIZE_N)
 
@@ -197,8 +199,8 @@ void tcg_bg_tlb_init(CPUTLBDesc *desc, CPUTLBDescFast *fast)
 
 void tcg_bg_tlb_init_static(void)
 {
-    tcg_bg_tlb_initial_size = -1;
-    tcg_bg_tlb_initial_size_n = -1;
+    tcg_bg_tlb_initial_size = 1 << TCG_BG_TLB_SIZE_INIT;
+    tcg_bg_tlb_initial_size_n = TCG_BG_TLB_SIZE_INIT;
 
     int i = 0;
     for (; i < TCG_BG_TLB_MAX; ++i) {
@@ -207,7 +209,7 @@ void tcg_bg_tlb_init_static(void)
         memset(tcg_bg_hamt_stlb[i], -1, sizeof(hamt_stlb_entry) * TCG_BG_TLB_SIZE);
 #endif
         tcg_bg_tlb_free_ids[i] = i;
-        tcg_bg_tlb_size_n[i] = TCG_BG_TLB_SIZE_N;
+        tcg_bg_tlb_size_n[i] = TCG_BG_TLB_SIZE_INIT;
     }
     tcg_bg_tlb_free_ids[i - 1] = -1;
 
