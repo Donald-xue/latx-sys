@@ -219,4 +219,16 @@ void tcg_bg_tlb_init_static(void)
     qemu_mutex_init(tcg_bg_tlb_mutex);
 }
 
+#else /* no BG_TLB_ENABLE */
+
+void tcg_bg_tlb_init_static(void)
+{
+    printf("BG TLB disabled in tcg/tcg-bg-tlb.h\n");
+}
+
+void tcg_bg_tlb_init_size(int s)
+{
+    printf("BG TLB disabled in tcg/tcg-bg-tlb.h\n");
+}
+
 #endif
