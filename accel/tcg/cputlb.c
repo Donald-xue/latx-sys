@@ -606,7 +606,9 @@ static void tlb_flush_page_locked(CPUArchState *env, int midx,
         from_tlb_flush_page_locked++;
     }
 #ifdef HAMT_USE_STLB
-    hamt_stlb_flush_page(env, midx, page);
+    if (hamt_have_stlb()) {
+        hamt_stlb_flush_page(env, midx, page);
+    }
 #endif
 #endif
 

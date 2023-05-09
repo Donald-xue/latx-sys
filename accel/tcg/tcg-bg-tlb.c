@@ -16,6 +16,7 @@
 #include "tcg/tcg-bg-tlb.h"
 #include "latx-counter-sys.h"
 
+#include "hamt.h"
 #include "hamt-stlb.h"
 
 #define BG_TLB_DEBUG
@@ -118,7 +119,9 @@ static void tcg_bg_worker_tlb_flush(int tlb_id)
     int s = tcg_bg_tlb_size_n[tlb_id];
     memset(tcg_bg_tlb[tlb_id], -1, sizeof(CPUTLBEntry) * (1 << s));
 #ifdef HAMT_USE_STLB
-    memset(tcg_bg_hamt_stlb[tlb_id], -1, sizeof(hamt_stlb_entry) * (1 << s));
+    if (hamt_have_stlb()) {
+        memset(tcg_bg_hamt_stlb[tlb_id], -1, sizeof(hamt_stlb_entry) * (1 << s));
+    }
 #endif
 
     qemu_mutex_lock(tcg_bg_tlb_mutex);
@@ -141,7 +144,9 @@ void tcg_bg_tlb_flush(CPUTLBDesc *desc, CPUTLBDescFast *fast)
         desc->bg_tlb_id = free_id;
         fast->table = tcg_bg_tlb[free_id];
 #ifdef HAMT_USE_STLB
-        fast->stlb = tcg_bg_hamt_stlb[free_id];
+        if (hamt_have_stlb()) {
+            fast->stlb = tcg_bg_hamt_stlb[free_id];
+        }
 #endif
 
         fast->mask = (tcg_bg_tlb_initial_size - 1) << CPU_TLB_ENTRY_BITS;
@@ -154,7 +159,9 @@ void tcg_bg_tlb_flush(CPUTLBDesc *desc, CPUTLBDescFast *fast)
         fast->mask = ((1 << 10) - 1) << CPU_TLB_ENTRY_BITS;
         memset(fast->table, -1, sizeof(CPUTLBEntry) * (1 << s));
 #ifdef HAMT_USE_STLB
-        memset(fast->stlb, -1, sizeof(hamt_stlb_entry) * (1 << s));
+        if (hamt_have_stlb()) {
+            memset(fast->stlb, -1, sizeof(hamt_stlb_entry) * (1 << s));
+        }
 #endif
     }
 
@@ -182,7 +189,9 @@ void tcg_bg_tlb_init(CPUTLBDesc *desc, CPUTLBDescFast *fast)
     fast->mask = ((1 << s) - 1) << CPU_TLB_ENTRY_BITS;
     fast->table = tcg_bg_tlb[free_id];
 #ifdef HAMT_USE_STLB
-    fast->stlb = tcg_bg_hamt_stlb[free_id];
+    if (hamt_have_stlb()) {
+        fast->stlb = tcg_bg_hamt_stlb[free_id];
+    }
 #endif
     desc->iotlb = g_new(CPUIOTLBEntry, TCG_BG_TLB_SIZE);
 
@@ -206,7 +215,9 @@ void tcg_bg_tlb_init_static(void)
     for (; i < TCG_BG_TLB_MAX; ++i) {
         memset(tcg_bg_tlb[i], -1, sizeof(CPUTLBEntry) * TCG_BG_TLB_SIZE);
 #ifdef HAMT_USE_STLB
-        memset(tcg_bg_hamt_stlb[i], -1, sizeof(hamt_stlb_entry) * TCG_BG_TLB_SIZE);
+        if (hamt_have_stlb()) {
+            memset(tcg_bg_hamt_stlb[i], -1, sizeof(hamt_stlb_entry) * TCG_BG_TLB_SIZE);
+        }
 #endif
         tcg_bg_tlb_free_ids[i] = i;
         tcg_bg_tlb_size_n[i] = TCG_BG_TLB_SIZE_INIT;

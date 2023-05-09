@@ -362,7 +362,7 @@ void hamt_set_tlb(void *env,
     enable_pg();
 
 #ifdef HAMT_USE_STLB
-    if (mode) {
+    if (mode && hamt_have_stlb()) {
         /*
          * @mode = false is used to flush hardware tlb in helper_invlpg,
          * where hamt stlb is already flushed along with soft tlb flush.
