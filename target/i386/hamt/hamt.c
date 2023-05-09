@@ -52,6 +52,7 @@
 #define HAMT_TYPE_MASK          0xf
 
 #define HAMT_HAVE_TLBRFAST      0x10
+#define HAMT_HAVE_STLB          0x20
 
 int hamt_enable(void)
 {
@@ -86,6 +87,11 @@ int hamt_softmmu(void)
 int hamt_have_tlbr_fastpath(void)
 {
     return option_hamt & HAMT_HAVE_TLBRFAST;
+}
+
+int hamt_have_stlb(void)
+{
+    return option_hamt & HAMT_HAVE_STLB;
 }
 
 static int hamt_delay(void)
@@ -782,7 +788,7 @@ void hamt_invlpg_helper(uint32_t i386_addr)
     }
 
     uint64_t hamt_vaddr = i386_addr + mapping_base_address;
-    hamt_set_tlb(hamt_vaddr, 0x0, 0x0, false);
+    hamt_set_tlb((current_cpu->env_ptr), hamt_vaddr, 0x0, 0x0, false);
 }
 
 static uint32_t get_opc_from_epc(uint32_t *epc)
@@ -1159,7 +1165,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         } else {
 
             if (!hamt_interpreter()) {
-                hamt_set_tlb(addr + mapping_base_address, haddr, prot, true);
+                hamt_set_tlb(env, addr + mapping_base_address, haddr, prot, true);
             }
         }
 
@@ -1210,7 +1216,7 @@ static void hamt_store_helper(CPUArchState *env, target_ulong addr, uint64_t val
         store_into_mem(haddr, epc, 0,
                 0, -1, cpuid); /* not unalign access */
     } else {
-        hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+        hamt_set_tlb(env, addr+mapping_base_address, haddr, prot, true);
     }
 }
 
@@ -1404,7 +1410,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
             load_direct_into_reg(op, addr, haddr, epc, 0,
                     0, 0, cpuid); /* not unalign access */
         } else {
-            hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+            hamt_set_tlb(env, addr+mapping_base_address, haddr, prot, true);
         }
 
         return;
@@ -1449,7 +1455,7 @@ static void hamt_load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx o
         load_direct_into_reg(op, addr, haddr, epc, 0,
                 0, 0, cpuid); /* not unalign access */
     } else {
-        hamt_set_tlb(addr+mapping_base_address, haddr, prot, true);
+        hamt_set_tlb(env, addr+mapping_base_address, haddr, prot, true);
     }
 
     return;
@@ -2222,6 +2228,8 @@ static int hamt_fast_exception_handler(void)
     uint32_t opc = get_opc_from_epc(epc);
     void *env = (void *)(data[23]); /* $s0 */
 
+    latxs_counter_hamt_fast(env_cpu(env));
+
     if (!badv) {
         return 0;
     }
@@ -2265,7 +2273,15 @@ static int hamt_fast_exception_handler(void)
         res = hamt_fast_load(env, badv);
     }
 
-    if (res) {
+    if (res == 2) {
+        if (is_store) {
+            latxs_counter_hamt_fast_st_stlb_ok(env_cpu(env));
+        } else {
+            latxs_counter_hamt_fast_ld_stlb_ok(env_cpu(env));
+        }
+    }
+
+    if (res == 1) {
         if (is_store) {
             latxs_counter_hamt_fast_st_ok(env_cpu(env));
         } else {

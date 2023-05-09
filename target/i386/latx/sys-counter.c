@@ -60,10 +60,16 @@ typedef struct {
     uint64_t stlb_resize_inc_nr;
     uint64_t stlb_resize_dec_nr;
 
+    uint64_t hamt_fast_nr;
     uint64_t hamt_fast_ld_nr;
-    uint64_t hamt_fast_ld_ok_nr;
+    uint64_t hamt_fast_ld_ok_nr;       /* qemu software tlb */
+    uint64_t hamt_fast_ld_stlb_ok_nr;  /* hamt stlb */
     uint64_t hamt_fast_st_nr;
-    uint64_t hamt_fast_st_ok_nr;
+    uint64_t hamt_fast_st_ok_nr;       /* qemu software tlb */
+    uint64_t hamt_fast_st_stlb_ok_nr;  /* hamt stlb */
+
+    uint64_t hamt_ld_stlb_ok_nr; /* hamt stlb in  load_helper */
+    uint64_t hamt_st_stlb_ok_nr; /* hamt stlb in store_helper */
 } latxs_counter_t;
 
 latxs_counter_t *latxs_counter_data;
@@ -149,10 +155,16 @@ IMP_COUNTER_FUNC(stlb_resize)
 IMP_COUNTER_FUNC(stlb_resize_inc)
 IMP_COUNTER_FUNC(stlb_resize_dec)
 
+IMP_COUNTER_FUNC(hamt_fast)
 IMP_COUNTER_FUNC(hamt_fast_ld)
 IMP_COUNTER_FUNC(hamt_fast_ld_ok)
+IMP_COUNTER_FUNC(hamt_fast_ld_stlb_ok)
 IMP_COUNTER_FUNC(hamt_fast_st)
 IMP_COUNTER_FUNC(hamt_fast_st_ok)
+IMP_COUNTER_FUNC(hamt_fast_st_stlb_ok)
+
+IMP_COUNTER_FUNC(hamt_ld_stlb_ok)
+IMP_COUNTER_FUNC(hamt_st_stlb_ok)
 
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
@@ -171,7 +183,8 @@ static void __latxs_counter_bg_log(int n, int sec)
             "wCR %d %d " \
             "sTLB %d %d %d %d " \
             "sTLBRS %d %d %d " \
-            "hamtF %d %d %d %d" \
+            "hamtF %d %d %d %d %d %d %d " \
+            "hstlb %d %d" \
             "\n"
             ,
             sec, n,
@@ -218,10 +231,16 @@ static void __latxs_counter_bg_log(int n, int sec)
             BG_LOG_DIFF(n, stlb_resize_inc       ),
             BG_LOG_DIFF(n, stlb_resize_dec       ),
 
+            BG_LOG_DIFF(n, hamt_fast             ),
             BG_LOG_DIFF(n, hamt_fast_ld          ),
             BG_LOG_DIFF(n, hamt_fast_ld_ok       ),
             BG_LOG_DIFF(n, hamt_fast_st          ),
-            BG_LOG_DIFF(n, hamt_fast_st_ok       )
+            BG_LOG_DIFF(n, hamt_fast_st_ok       ),
+            BG_LOG_DIFF(n, hamt_fast_ld_stlb_ok  ),
+            BG_LOG_DIFF(n, hamt_fast_st_stlb_ok  ),
+
+            BG_LOG_DIFF(n, hamt_ld_stlb_ok  ),
+            BG_LOG_DIFF(n, hamt_st_stlb_ok  )
             );
 }
 

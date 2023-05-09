@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "info.h"
 #include "hamt-tlb.h"
+#include "hamt-stlb.h"
 
 #include "monitor/monitor.h"
 #include "monitor/hmp-target.h"
@@ -145,6 +146,48 @@ static inline void local_flush_tlb_all(void)
 
 }
 
+void hamt_set_tlb_simple(uint64_t ehi,
+        uint64_t elo0, uint64_t elo1,
+        int is_tlbr)
+{
+    if (is_tlbr) {
+        ehi &= ~0x1f;
+        ehi |= PS_4K ;
+        write_csr_asid(0);
+        write_csr_tlbr_ehi(ehi);
+        write_csr_tlbr_elo0(elo0);
+        write_csr_tlbr_elo1(elo1);
+        tlb_write_random();
+        return;
+    }
+
+    disable_pg();
+
+    write_csr_tlbehi(ehi);
+    tlb_probe();
+    int32_t tlbidx = read_csr_tlbidx();
+    if (tlbidx == 0xc00083f) {
+        local_flush_tlb_all();
+        tlbidx |= 0x80000000;
+    }
+
+    tlbidx &= 0xc0ffffff;
+    tlbidx |= PS_4K << PS_SHIFT;
+    write_csr_asid(0);
+    write_csr_tlbehi(ehi);
+    write_csr_tlbelo0(elo0);
+    write_csr_tlbelo1(elo1);
+    write_csr_tlbidx(tlbidx);
+
+    if (tlbindex_valid(tlbidx)) {
+        tlb_write_indexed();
+    } else {
+        tlb_write_random();
+    }
+
+    enable_pg();
+}
+
 void hamt_flush_tlb_all(void)
 {
     local_flush_tlb_all();
@@ -225,7 +268,8 @@ static void hamt_set_tlbr(uint64_t vaddr, uint64_t paddr,
  * TODO:
  *     tlbelo0 / tlbelo1 may not be right
  */
-void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
+void hamt_set_tlb(void *env,
+        uint64_t vaddr, uint64_t paddr, int prot, bool mode)
 {
     uint64_t csr_tlbehi, csr_tlbelo0 = 0, csr_tlbelo1 = 0;
     int32_t csr_tlbidx;
@@ -316,24 +360,37 @@ void hamt_set_tlb(uint64_t vaddr, uint64_t paddr, int prot, bool mode)
     tlbindex_valid(csr_tlbidx) ? tlb_write_indexed() : tlb_write_random();
 
     enable_pg();
+
+#ifdef HAMT_USE_STLB
+    if (mode) {
+        /*
+         * @mode = false is used to flush hardware tlb in helper_invlpg,
+         * where hamt stlb is already flushed along with soft tlb flush.
+         */
+        hamt_stlb_set_page(env, vaddr, paddr, prot,
+                csr_tlbehi, csr_tlbelo0, csr_tlbelo1);
+    }
+#endif
 }
 
-void __hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
+void __hamt_set_hardware_tlb(void *env,
+        uint32_t vaddr, uint64_t paddr,
         int prot, int is_tlbr)
 {
     bool mode = prot ? true : false;
     if (is_tlbr) {
         hamt_set_tlbr(vaddr, paddr, prot, mode);
     } else {
-        hamt_set_tlb(vaddr, paddr, prot, mode);
+        hamt_set_tlb(env, vaddr, paddr, prot, mode);
     }
 }
 
-void hamt_set_hardware_tlb(uint32_t vaddr, uint64_t paddr,
+void hamt_set_hardware_tlb(void *env,
+        uint32_t vaddr, uint64_t paddr,
         int prot, int is_tlbr)
 {
     if (hamt_enable() && hamt_started()) {
-        __hamt_set_hardware_tlb(vaddr, paddr, prot, is_tlbr);
+        __hamt_set_hardware_tlb(env, vaddr, paddr, prot, is_tlbr);
     }
 }
 

@@ -45,6 +45,7 @@
 #ifdef CONFIG_LATX
 #include "hamt.h"
 #include "hamt-tlb.h"
+#include "hamt-stlb.h"
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
 /* #define DEBUG_TLB_LOG */
@@ -586,6 +587,9 @@ static void tlb_flush_page_locked(CPUArchState *env, int midx,
         hamt_flush_all();
         from_tlb_flush_page_locked++;
     }
+#ifdef HAMT_USE_STLB
+    hamt_stlb_flush_page(env, midx, page);
+#endif
 #endif
 
     /* Check if we need to flush due to large pages.  */
@@ -2082,16 +2086,38 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
 
 #ifdef CONFIG_LATX
     if (hamt_enable() && !code_read) {
+#ifdef HAMT_USE_STLB
+        if (hamt_have_stlb()) {
+            CPUTLB *tlb = env_tlb(env);
+            uint64_t size_mask = tlb->f[mmu_idx].mask >> CPU_TLB_ENTRY_BITS;
+            int index = (addr >> 12) & size_mask;
+
+            hamt_stlb_entry *stlb = tlb->f[mmu_idx].stlb;
+            hamt_stlb_entry *ste  = &stlb[index];
+            uint64_t page = (uint32_t)addr & ~0x1fffULL;
+
+            if (ste->page == page &&
+                ste->elo[0] != 0 && ste->elo[1] != 0) {
+                hamt_stlb_apply(ste, /* is_tlbr = 0 */ 0);
+                latxs_counter_hamt_ld_stlb_ok(env_cpu(env));
+                goto hamt_stlb_done;
+            }
+        }
+#endif
         int prot = 0;
         target_ulong vaddr_page = addr & TARGET_PAGE_MASK;
         if (entry->addr_read == vaddr_page) prot |= PROT_READ;
         if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
         if (prot & PROT_READ) {
-            hamt_set_hardware_tlb(vaddr_page,
+            hamt_set_hardware_tlb(env,
+                    vaddr_page,
                     vaddr_page + entry->addend, prot,
                     /* is_tlbr = 0 */ 0);
         }
     }
+#ifdef HAMT_USE_STLB
+hamt_stlb_done:
+#endif
 #endif
 
     haddr = (void *)((uintptr_t)addr + entry->addend);
@@ -2662,12 +2688,31 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
 
 #ifdef CONFIG_LATX
     if (hamt_enable()) {
+#ifdef HAMT_USE_STLB
+        if (hamt_have_stlb()) {
+            CPUTLB *tlb = env_tlb(env);
+            uint64_t size_mask = tlb->f[mmu_idx].mask >> CPU_TLB_ENTRY_BITS;
+            int index = (addr >> 12) & size_mask;
+
+            hamt_stlb_entry *stlb = tlb->f[mmu_idx].stlb;
+            hamt_stlb_entry *ste  = &stlb[index];
+            uint64_t page = (uint32_t)addr & ~0x1fffULL;
+
+            if (ste->page == page &&
+                ste->elo[0] != 0 && ste->elo[1] != 0) {
+                hamt_stlb_apply(ste, /* is_tlbr = 0 */ 0);
+                latxs_counter_hamt_st_stlb_ok(env_cpu(env));
+                return;
+            }
+        }
+#endif
         int prot = 0;
         target_ulong vaddr_page = addr & TARGET_PAGE_MASK;
         if (entry->addr_read == vaddr_page) prot |= PROT_READ;
         if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
         if (prot & PROT_WRITE) {
-            hamt_set_hardware_tlb(vaddr_page,
+            hamt_set_hardware_tlb(env,
+                    vaddr_page,
                     vaddr_page + entry->addend, prot,
                     /* is_tlbr = 0 */ 0);
         }
@@ -2979,6 +3024,26 @@ int hamt_fast_load(void *_env, uint64_t addr)
 {
     CPUArchState *env = _env;
     int mmu_idx = cpu_mmu_index(env, false);
+
+#ifdef HAMT_USE_STLB
+    if (hamt_have_stlb()) {
+        CPUTLB *tlb = env_tlb(env);
+
+        uint64_t size_mask = tlb->f[mmu_idx].mask >> CPU_TLB_ENTRY_BITS;
+        int index = (addr >> 12) & size_mask;
+        int n = (addr >> 12) & 0x1;
+
+        hamt_stlb_entry *stlb = tlb->f[mmu_idx].stlb;
+        hamt_stlb_entry *ste  = &stlb[index];
+
+        uint64_t page = addr & ~0x1fffULL;
+        if (ste->page == page && ste->elo[n] != 0) {
+            hamt_stlb_apply(ste, 1);
+            return 2;
+        }
+    }
+#endif
+
     CPUTLBEntry *entry = tlb_entry(env, mmu_idx, addr);
     target_ulong tlb_addr = entry->addr_read;
 
@@ -2988,7 +3053,8 @@ int hamt_fast_load(void *_env, uint64_t addr)
         if (entry->addr_read == vaddr_page) prot |= PROT_READ;
         if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
         if (prot & PROT_READ) {
-            __hamt_set_hardware_tlb(vaddr_page,
+            __hamt_set_hardware_tlb(env,
+                    vaddr_page,
                     vaddr_page + entry->addend, prot,
                     /* is tlbr = 1 */ 1);
             return 1;
@@ -3002,6 +3068,26 @@ int hamt_fast_store(void *_env, uint64_t addr)
 {
     CPUArchState *env = _env;
     int mmu_idx = cpu_mmu_index(env, false);
+
+#ifdef HAMT_USE_STLB
+    if (hamt_have_stlb()) {
+        CPUTLB *tlb = env_tlb(env);
+
+        uint64_t size_mask = tlb->f[mmu_idx].mask >> CPU_TLB_ENTRY_BITS;
+        int index = (addr >> 12) & size_mask;
+        int n = (addr >> 12) & 0x1;
+
+        hamt_stlb_entry *stlb = tlb->f[mmu_idx].stlb;
+        hamt_stlb_entry *ste  = &stlb[index];
+
+        uint64_t page = addr & ~0x1fffULL;
+        if (ste->page == page && ste->elo[n] != 0) {
+            hamt_stlb_apply(ste, 1);
+            return 2;
+        }
+    }
+#endif
+
     CPUTLBEntry *entry = tlb_entry(env, mmu_idx, addr);
     target_ulong tlb_addr = entry->addr_write;
 
@@ -3011,7 +3097,8 @@ int hamt_fast_store(void *_env, uint64_t addr)
         if (entry->addr_read == vaddr_page) prot |= PROT_READ;
         if (entry->addr_write == vaddr_page) prot |= PROT_WRITE;
         if (prot & PROT_WRITE) {
-            __hamt_set_hardware_tlb(vaddr_page,
+            __hamt_set_hardware_tlb(env,
+                    vaddr_page,
                     vaddr_page + entry->addend, prot,
                     /* is tlbr = 1 */ 1);
             return 1;

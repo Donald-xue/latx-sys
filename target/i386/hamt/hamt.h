@@ -18,6 +18,7 @@ int hamt_pg_asid(void);
 int hamt_softmmu(void);
 
 int hamt_have_tlbr_fastpath(void);
+int hamt_have_stlb(void);
 
 extern pthread_key_t in_hamt;
 bool hamt_started(void);
