@@ -126,6 +126,12 @@
 #define latxs_counter_hamt_fast(cpu) do {    \
       __latxs_counter_hamt_fast(cpu);        \
 } while (0)
+#define latxs_counter_hamt_fast_badv0(cpu) do {    \
+      __latxs_counter_hamt_fast_badv0(cpu);        \
+} while (0)
+#define latxs_counter_hamt_fast_undef(cpu) do {    \
+      __latxs_counter_hamt_fast_undef(cpu);        \
+} while (0)
 #define latxs_counter_hamt_fast_ld(cpu) do {    \
       __latxs_counter_hamt_fast_ld(cpu);        \
 } while (0)
@@ -201,10 +207,13 @@ void __latxs_counter_stlb_resize_inc(void *cpu);
 void __latxs_counter_stlb_resize_dec(void *cpu);
 
 void __latxs_counter_hamt_fast(void *cpu);
+void __latxs_counter_hamt_fast_badv0(void *cpu);
+void __latxs_counter_hamt_fast_undef(void *cpu);
 void __latxs_counter_hamt_fast_ld(void *cpu);
+void __latxs_counter_hamt_fast_st(void *cpu);
+
 void __latxs_counter_hamt_fast_ld_ok(void *cpu);
 void __latxs_counter_hamt_fast_ld_stlb_ok(void *cpu);
-void __latxs_counter_hamt_fast_st(void *cpu);
 void __latxs_counter_hamt_fast_st_ok(void *cpu);
 void __latxs_counter_hamt_fast_st_stlb_ok(void *cpu);
 
@@ -258,10 +267,13 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_stlb_resize_dec(cpu)
 
 #define latxs_counter_hamt_fast(cpu)
+#define latxs_counter_hamt_fast_badv0(cpu)
+#define latxs_counter_hamt_fast_undef(cpu)
 #define latxs_counter_hamt_fast_ld(cpu)
+#define latxs_counter_hamt_fast_st(cpu)
+
 #define latxs_counter_hamt_fast_ld_ok(cpu)
 #define latxs_counter_hamt_fast_ld_stlb_ok(cpu)
-#define latxs_counter_hamt_fast_st(cpu)
 #define latxs_counter_hamt_fast_st_ok(cpu)
 #define latxs_counter_hamt_fast_st_stlb_ok(cpu)
 

@@ -2231,6 +2231,7 @@ static int hamt_fast_exception_handler(void)
     latxs_counter_hamt_fast(env_cpu(env));
 
     if (!badv) {
+        latxs_counter_hamt_fast_badv0(env_cpu(env));
         return 0;
     }
 
@@ -2263,6 +2264,7 @@ static int hamt_fast_exception_handler(void)
     }
 
     if (!is_load && !is_store) {
+        latxs_counter_hamt_fast_undef(env_cpu(env));
         return 0;
     }
 
