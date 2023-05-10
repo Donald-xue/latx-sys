@@ -2241,6 +2241,9 @@ static int hamt_fast_exception_handler(void)
     case OPC_ST_H:
     case OPC_ST_W:
     case OPC_ST_D:
+    case OPC_FST_S: /* ffldst */
+    case OPC_FST_D: /* ffldst */
+    case OPC_VST:   /* ffldst */
         is_store = 1;
         break;
     case OPC_LD_B:
@@ -2250,6 +2253,9 @@ static int hamt_fast_exception_handler(void)
     case OPC_LD_W:
     case OPC_LD_WU:
     case OPC_LD_D:
+    case OPC_FLD_S: /* ffldst */
+    case OPC_FLD_D: /* ffldst */
+    case OPC_VLD:   /* ffldst */
         is_load = 1;
         break;
     default:
