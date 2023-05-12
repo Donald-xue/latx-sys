@@ -150,7 +150,19 @@
 #define latxs_counter_hamt_fast_st_stlb_ok(cpu) do {    \
       __latxs_counter_hamt_fast_st_stlb_ok(cpu);        \
 } while (0)
+#define latxs_counter_hamt_fast_ld_spt_ok(cpu) do {    \
+      __latxs_counter_hamt_fast_ld_spt_ok(cpu);        \
+} while (0)
+#define latxs_counter_hamt_fast_st_spt_ok(cpu) do {    \
+      __latxs_counter_hamt_fast_st_spt_ok(cpu);        \
+} while (0)
 
+#define latxs_counter_hamt_ld_spt_ok(cpu) do {    \
+      __latxs_counter_hamt_ld_spt_ok(cpu);        \
+} while (0)
+#define latxs_counter_hamt_st_spt_ok(cpu) do {    \
+      __latxs_counter_hamt_st_spt_ok(cpu);        \
+} while (0)
 #define latxs_counter_hamt_ld_stlb_ok(cpu) do {    \
       __latxs_counter_hamt_ld_stlb_ok(cpu);        \
 } while (0)
@@ -213,11 +225,15 @@ void __latxs_counter_hamt_fast_ld(void *cpu);
 void __latxs_counter_hamt_fast_st(void *cpu);
 
 void __latxs_counter_hamt_fast_ld_ok(void *cpu);
+void __latxs_counter_hamt_fast_ld_spt_ok(void *cpu);
 void __latxs_counter_hamt_fast_ld_stlb_ok(void *cpu);
 void __latxs_counter_hamt_fast_st_ok(void *cpu);
+void __latxs_counter_hamt_fast_st_spt_ok(void *cpu);
 void __latxs_counter_hamt_fast_st_stlb_ok(void *cpu);
 
+void __latxs_counter_hamt_ld_spt_ok(void *cpu);
 void __latxs_counter_hamt_ld_stlb_ok(void *cpu);
+void __latxs_counter_hamt_st_spt_ok(void *cpu);
 void __latxs_counter_hamt_st_stlb_ok(void *cpu);
 
 void __latxs_counter_wake(void *cpu);
@@ -273,11 +289,15 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_hamt_fast_st(cpu)
 
 #define latxs_counter_hamt_fast_ld_ok(cpu)
+#define latxs_counter_hamt_fast_ld_spt_ok(cpu)
 #define latxs_counter_hamt_fast_ld_stlb_ok(cpu)
 #define latxs_counter_hamt_fast_st_ok(cpu)
+#define latxs_counter_hamt_fast_st_spt_ok(cpu)
 #define latxs_counter_hamt_fast_st_stlb_ok(cpu)
 
+#define latxs_counter_hamt_ld_spt_ok(cpu)
 #define latxs_counter_hamt_ld_stlb_ok(cpu)
+#define latxs_counter_hamt_st_spt_ok(cpu)
 #define latxs_counter_hamt_st_stlb_ok(cpu)
 
 #define latxs_counter_wake(cpu)

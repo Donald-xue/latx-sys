@@ -46,6 +46,7 @@
 #include "hamt.h"
 #include "hamt-tlb.h"
 #include "hamt-stlb.h"
+#include "hamt-spt.h"
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
 /* #define DEBUG_TLB_LOG */
@@ -241,6 +242,11 @@ static void tlb_mmu_resize_locked(CPUArchState *env,
 #if defined(CONFIG_LATX) && defined(HAMT_USE_STLB)
     if (hamt_have_stlb()) g_free(fast->stlb);
 #endif
+#if defined(CONFIG_LATX) && defined(HAMT_USE_SPT)
+    if (hamt_have_spt()) {
+        hamt_spt_free2(fast->spt);
+    }
+#endif
     g_free(desc->iotlb);
 
 #ifdef CONFIG_LATX
@@ -301,6 +307,11 @@ static void tlb_mmu_flush_locked(CPUTLBDesc *desc, CPUTLBDescFast *fast)
         memset(fast->stlb, -1, tlb_n_entries(fast) * sizeof(hamt_stlb_entry));
     }
 #endif
+#if defined(CONFIG_LATX) && defined(HAMT_USE_SPT)
+    if (hamt_have_spt()) {
+        hamt_spt_free2(fast->spt);
+    }
+#endif
     memset(desc->vtable, -1, sizeof(desc->vtable));
 #endif
 }
@@ -331,6 +342,11 @@ static void tlb_mmu_init(CPUTLBDesc *desc, CPUTLBDescFast *fast, int64_t now)
 #if defined(CONFIG_LATX) && defined(HAMT_USE_STLB)
     if (hamt_have_stlb()) {
         fast->stlb = g_new(hamt_stlb_entry, n_entries);
+    }
+#endif
+#if defined(CONFIG_LATX) && defined(HAMT_USE_SPT)
+    if (hamt_have_spt()) {
+        fast->spt = g_new(hamt_spt1, 1);
     }
 #endif
     desc->iotlb = g_new(CPUIOTLBEntry, n_entries);
@@ -605,6 +621,11 @@ static void tlb_flush_page_locked(CPUArchState *env, int midx,
         hamt_flush_all();
         from_tlb_flush_page_locked++;
     }
+#ifdef HAMT_USE_SPT
+    if (hamt_have_spt()) {
+        hamt_spt_flush_page(env, midx, page);
+    }
+#endif
 #ifdef HAMT_USE_STLB
     if (hamt_have_stlb()) {
         hamt_stlb_flush_page(env, midx, page);
@@ -2106,6 +2127,14 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
 
 #ifdef CONFIG_LATX
     if (hamt_enable() && !code_read) {
+#ifdef HAMT_USE_SPT
+        if (hamt_have_spt()) {
+            if (hamt_spt_try_apply(env, addr, 2)) {
+                latxs_counter_hamt_ld_spt_ok(env_cpu(env));
+                goto hamt_done;
+            }
+        }
+#endif
 #ifdef HAMT_USE_STLB
         if (hamt_have_stlb()) {
             CPUTLB *tlb = env_tlb(env);
@@ -2120,7 +2149,7 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
                 ste->elo[0] != 0 && ste->elo[1] != 0) {
                 hamt_stlb_apply(ste, /* is_tlbr = 0 */ 0);
                 latxs_counter_hamt_ld_stlb_ok(env_cpu(env));
-                goto hamt_stlb_done;
+                goto hamt_done;
             }
         }
 #endif
@@ -2135,8 +2164,8 @@ load_helper(CPUArchState *env, target_ulong addr, TCGMemOpIdx oi,
                     /* is_tlbr = 0 */ 0);
         }
     }
-#ifdef HAMT_USE_STLB
-hamt_stlb_done:
+#if defined(HAMT_USE_STLB) || defined(HAMT_USE_SPT)
+hamt_done:
 #endif
 #endif
 
@@ -2708,6 +2737,14 @@ store_helper(CPUArchState *env, target_ulong addr, uint64_t val,
 
 #ifdef CONFIG_LATX
     if (hamt_enable()) {
+#ifdef HAMT_USE_SPT
+        if (hamt_have_spt()) {
+            if (hamt_spt_try_apply(env, addr, 2)) {
+                latxs_counter_hamt_st_spt_ok(env_cpu(env));
+                return;
+            }
+        }
+#endif
 #ifdef HAMT_USE_STLB
         if (hamt_have_stlb()) {
             CPUTLB *tlb = env_tlb(env);
@@ -3045,6 +3082,12 @@ int hamt_fast_load(void *_env, uint64_t addr)
     CPUArchState *env = _env;
     int mmu_idx = cpu_mmu_index(env, false);
 
+#ifdef HAMT_USE_SPT
+    if (hamt_have_spt()) {
+        if (hamt_spt_try_apply(env, addr, 1)) return 3;
+    }
+#endif
+
 #ifdef HAMT_USE_STLB
     if (hamt_have_stlb()) {
         CPUTLB *tlb = env_tlb(env);
@@ -3088,6 +3131,12 @@ int hamt_fast_store(void *_env, uint64_t addr)
 {
     CPUArchState *env = _env;
     int mmu_idx = cpu_mmu_index(env, false);
+
+#ifdef HAMT_USE_SPT
+    if (hamt_have_spt()) {
+        if (hamt_spt_try_apply(env, addr, 1)) return 3;
+    }
+#endif
 
 #ifdef HAMT_USE_STLB
     if (hamt_have_stlb()) {

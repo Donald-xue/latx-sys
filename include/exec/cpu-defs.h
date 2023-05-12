@@ -183,6 +183,7 @@ typedef struct CPUTLBDesc {
  * The structure is aligned to aid loading the pair with one insn.
  */
 typedef struct CPUTLBDescFast {
+    void *spt;
     void *stlb;
     /* Contains (n_entries - 1) << CPU_TLB_ENTRY_BITS */
     uintptr_t mask;

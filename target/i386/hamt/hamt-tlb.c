@@ -30,6 +30,7 @@
 #include "info.h"
 #include "hamt-tlb.h"
 #include "hamt-stlb.h"
+#include "hamt-spt.h"
 
 #include "monitor/monitor.h"
 #include "monitor/hmp-target.h"
@@ -107,6 +108,13 @@ static inline void set_attr(int r, int w, int x, uint64_t *addr)
  * (addr << 10) | (info << 5) | op
  */
 #define STLBSETS 256
+static inline void __local_flush_tlb_all(void)
+{
+    /* invtlb 0x3 : flush guest all TLB that G=0 */
+    __asm__ __volatile__(
+        ".word ((0x6498000) | (0 << 10) | (0 << 5) | 0x3)\n\t"
+        );
+}
 static inline void local_flush_tlb_all(void)
 {
 #if 1
@@ -167,7 +175,7 @@ void hamt_set_tlb_simple(uint64_t ehi,
     tlb_probe();
     int32_t tlbidx = read_csr_tlbidx();
     if (tlbidx == 0xc00083f) {
-        local_flush_tlb_all();
+        __local_flush_tlb_all();
         tlbidx |= 0x80000000;
     }
 
@@ -298,7 +306,7 @@ void hamt_set_tlb(void *env,
 
     //FIX
     if (csr_tlbidx == 0xc00083f) {
-        local_flush_tlb_all();
+        __local_flush_tlb_all();
         csr_tlbidx |= 0x80000000;
     }
 
@@ -360,6 +368,13 @@ void hamt_set_tlb(void *env,
     tlbindex_valid(csr_tlbidx) ? tlb_write_indexed() : tlb_write_random();
 
     enable_pg();
+
+#ifdef HAMT_USE_SPT
+    if (mode && hamt_have_spt()) {
+        hamt_spt_set_page(env, vaddr, paddr, prot,
+                csr_tlbehi, csr_tlbelo0, csr_tlbelo1);
+    }
+#endif
 
 #ifdef HAMT_USE_STLB
     if (mode && hamt_have_stlb()) {

@@ -6,4 +6,5 @@ i386_softmmu_ss.add(files(
   'hamt.c',
   'hamt-tlb.c',
   'hamt-stlb.c',
+  'hamt-spt.c',
 ))

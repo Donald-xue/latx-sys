@@ -32,6 +32,8 @@
 #include "internal.h"
 #include "info.h"
 #include "hamt-tlb.h"
+#include "hamt-stlb.h"
+#include "hamt-spt.h"
 
 #include "monitor/monitor.h"
 #include "monitor/hmp-target.h"
@@ -53,6 +55,7 @@
 
 #define HAMT_HAVE_TLBRFAST      0x10
 #define HAMT_HAVE_STLB          0x20
+#define HAMT_HAVE_SPT           0x40
 
 int hamt_enable(void)
 {
@@ -92,6 +95,11 @@ int hamt_have_tlbr_fastpath(void)
 int hamt_have_stlb(void)
 {
     return option_hamt & HAMT_HAVE_STLB;
+}
+
+int hamt_have_spt(void)
+{
+    return option_hamt & HAMT_HAVE_SPT;
 }
 
 static int hamt_delay(void)
@@ -2279,6 +2287,14 @@ static int hamt_fast_exception_handler(void)
         res = hamt_fast_store(env, badv);
     } else {
         res = hamt_fast_load(env, badv);
+    }
+
+    if (res == 3) {
+        if (is_store) {
+            latxs_counter_hamt_fast_st_spt_ok(env_cpu(env));
+        } else {
+            latxs_counter_hamt_fast_ld_spt_ok(env_cpu(env));
+        }
     }
 
     if (res == 2) {

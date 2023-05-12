@@ -18,6 +18,7 @@
 
 #include "hamt.h"
 #include "hamt-stlb.h"
+#include "hamt-spt.h"
 
 #define BG_TLB_DEBUG
 
@@ -60,6 +61,9 @@ void tcg_bg_tlb_init_size(int s)
 CPUTLBEntry tcg_bg_tlb[TCG_BG_TLB_MAX][TCG_BG_TLB_SIZE];
 #ifdef HAMT_USE_STLB
 hamt_stlb_entry tcg_bg_hamt_stlb[TCG_BG_TLB_MAX][TCG_BG_TLB_SIZE];
+#endif
+#ifdef HAMT_USE_SPT
+hamt_spt1 tcg_bg_hamt_spt[TCG_BG_TLB_MAX];
 #endif
 
 static QemuMutex  *tcg_bg_tlb_mutex;
@@ -123,6 +127,11 @@ static void tcg_bg_worker_tlb_flush(int tlb_id)
         memset(tcg_bg_hamt_stlb[tlb_id], -1, sizeof(hamt_stlb_entry) * (1 << s));
     }
 #endif
+#ifdef HAMT_USE_SPT
+    if (hamt_have_spt()) {
+        hamt_spt_free2(&tcg_bg_hamt_spt[tlb_id]);
+    }
+#endif
 
     qemu_mutex_lock(tcg_bg_tlb_mutex);
     tcg_bg_tlb_add_id_locked(tlb_id);
@@ -148,6 +157,11 @@ void tcg_bg_tlb_flush(CPUTLBDesc *desc, CPUTLBDescFast *fast)
             fast->stlb = tcg_bg_hamt_stlb[free_id];
         }
 #endif
+#ifdef HAMT_USE_SPT
+        if (hamt_have_spt()) {
+            fast->spt = &tcg_bg_hamt_spt[free_id];
+        }
+#endif
 
         fast->mask = (tcg_bg_tlb_initial_size - 1) << CPU_TLB_ENTRY_BITS;
         tcg_bg_tlb_size_n[free_id] = tcg_bg_tlb_initial_size_n;
@@ -161,6 +175,11 @@ void tcg_bg_tlb_flush(CPUTLBDesc *desc, CPUTLBDescFast *fast)
 #ifdef HAMT_USE_STLB
         if (hamt_have_stlb()) {
             memset(fast->stlb, -1, sizeof(hamt_stlb_entry) * (1 << s));
+        }
+#endif
+#ifdef HAMT_USE_SPT
+        if (hamt_have_spt()) {
+            hamt_spt_free2(fast->spt);
         }
 #endif
     }
@@ -193,6 +212,11 @@ void tcg_bg_tlb_init(CPUTLBDesc *desc, CPUTLBDescFast *fast)
         fast->stlb = tcg_bg_hamt_stlb[free_id];
     }
 #endif
+#ifdef HAMT_USE_SPT
+    if (hamt_have_spt()) {
+        fast->spt = &tcg_bg_hamt_spt[free_id];
+    }
+#endif
     desc->iotlb = g_new(CPUIOTLBEntry, TCG_BG_TLB_SIZE);
 
     desc->bg_tlb_id = free_id;
@@ -217,6 +241,12 @@ void tcg_bg_tlb_init_static(void)
 #ifdef HAMT_USE_STLB
         if (hamt_have_stlb()) {
             memset(tcg_bg_hamt_stlb[i], -1, sizeof(hamt_stlb_entry) * TCG_BG_TLB_SIZE);
+        }
+#endif
+#ifdef HAMT_USE_SPT
+        printf("%s init hamt spt %d\n", __func__, i);
+        if (hamt_have_spt()) {
+            memset(&tcg_bg_hamt_spt[i], 0, sizeof(hamt_spt1));
         }
 #endif
         tcg_bg_tlb_free_ids[i] = i;
