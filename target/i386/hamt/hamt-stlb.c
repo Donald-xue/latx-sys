@@ -41,6 +41,8 @@
 
 #include "latx-counter-sys.h"
 
+#ifdef HAMT_USE_STLB
+
 #define STLB_PAGE_INVALID(p)     (p >> 32)
 #define STLB_PAGE_VALID(p)       !(STLB_PAGE_INVALID(p))
 
@@ -136,3 +138,5 @@ void hamt_stlb_apply(hamt_stlb_entry *stlb, int is_tlbr)
 
     hamt_set_tlb_simple(ehi, elo0, elo1, is_tlbr);
 }
+
+#endif
