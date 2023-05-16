@@ -31,6 +31,7 @@
 #include "hamt-tlb.h"
 #include "hamt-stlb.h"
 #include "hamt-spt.h"
+#include "hamt-assert.h"
 
 #include "monitor/monitor.h"
 #include "monitor/hmp-target.h"
@@ -43,6 +44,21 @@
 #include "latx-counter-sys.h"
 
 #ifdef HAMT_USE_SPT
+
+void hamt_spt_assert_ultra_fastpath(void)
+{
+    int off_env = (int)offsetof(X86CPU, env);
+    int off_f0_spt = (int)offsetof(X86CPU, neg.tlb.f[0].spt) - off_env;
+    int off_f1_spt = (int)offsetof(X86CPU, neg.tlb.f[1].spt) - off_env;
+    int off_f2_spt = (int)offsetof(X86CPU, neg.tlb.f[2].spt) - off_env;
+
+    printf("%s F0 %d F1 %d F2 %d\n", __func__,
+            off_f0_spt, off_f1_spt, off_f2_spt);
+
+    assert(off_f0_spt == -112);
+    assert(off_f1_spt == -80);
+    assert(off_f2_spt == -48);
+}
 
 void hamt_spt_set_page(CPUArchState *env,
         uint64_t vaddr, uint64_t paddr, int prot,
@@ -144,5 +160,9 @@ void hamt_spt_free2(hamt_spt1 *spt)
 
     memset(spt, 0, sizeof(hamt_spt1));
 }
+
+#else
+
+void hamt_spt_assert_ultra_fastpath(void) {}
 
 #endif

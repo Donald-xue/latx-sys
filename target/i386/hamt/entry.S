@@ -66,6 +66,113 @@ ertn
 
 tlb_refill_entry_end:
 
+
+
+.global tlb_ultra_fast_refill_entry_begin
+.global tlb_ultra_fast_refill_entry_end
+tlb_ultra_fast_refill_entry_begin:
+csrwr    t0, LOONGARCH_CSR_TLBRSAVE
+csrwr    t1, LOONGARCH_CSR_KS0
+csrwr    t2, LOONGARCH_CSR_KS1
+
+csrrd    t0, LOONGARCH_CSR_TLBRBADV
+or       t1, zero, zero
+lu32i.d  t1, 0x100000000>>32
+bltu     t0, t1, ultra_fast_hamt_space 
+
+csrrd  t0, LOONGARCH_CSR_TLBREHI
+srli.d t0, t0, (TLB_PS_1G_shift + 1)
+slli.d t0, t0, (TLB_PS_1G_shift + 1)
+ori    t1, zero, TLB_PS_1G
+add.d  t1, t1, t0
+csrwr  t1, LOONGARCH_CSR_TLBREHI
+csrrd  t1, LOONGARCH_CSR_KS6
+add.d  t1, t1, t0
+csrwr  t1, LOONGARCH_CSR_TLBRELO0
+csrrd  t1, LOONGARCH_CSR_KS7
+add.d  t1, t1, t0
+csrwr  t1, LOONGARCH_CSR_TLBRELO1
+tlbfill
+csrrd    t0, LOONGARCH_CSR_TLBRSAVE
+csrrd    t1, LOONGARCH_CSR_KS0
+csrrd    t2, LOONGARCH_CSR_KS1
+ertn
+
+ultra_fast_hamt_space:
+
+ldptr.d   t0, s0, 1024 // hflags
+andi    t1, t0, 0x3
+bnez    t1, cplisthree
+srli.d  t1, t0, 23 // HF_SMAP_MASK
+andi    t1, t1, 0x1
+ld.wu   t2, s0, 1000 // eflags
+srli.d  t2, t2, 18 // AC_MASK
+andi    t2, t2, 0x1
+// t1 == 1 and t2 == 0 : KSMAP_IDX (0)
+xor     t2, t1, t2 // 1
+and     t2, t1, t2 // 1
+ori     t1, zero, 2 // MMU_KNOSMAP_IDX (2)
+maskeqz t2, t1, t2
+b       cpliszero
+
+cplisthree:
+ori     t2, zero, 1
+cpliszero:
+
+// t2: mmu_index
+slli.d  t2, t2, 5
+addi.d  t1, zero, -112
+add.d   t1, t1, t2
+ldx.d   t0, s0, t1 // spt
+
+csrrd   t1, LOONGARCH_CSR_TLBRBADV
+srli.d  t2, t1, 22
+andi    t2, t2, 0x3ff
+slli.d  t2, t2, 3
+ldx.d   t0, t0, t2
+beqz    t0, spt1zero
+srli.d  t2, t1, 12
+andi    t2, t2, 0x3fe
+slli.d  t2, t2, 3
+add.d   t0, t0, t2
+
+ld.d    t2, t0, 0 // elo0
+ld.d    t0, t0, 8 // elo1
+
+csrwr     zero, LOONGARCH_CSR_ASID
+;srli.d    t1, t1, 13
+;slli.d    t1, t1, 13
+bstrins.d t1, zero, 12, 0
+ori       t1, t1, TLB_PS_4K
+csrwr     t1, LOONGARCH_CSR_TLBREHI
+csrwr     t2, LOONGARCH_CSR_TLBRELO0
+csrwr     t0, LOONGARCH_CSR_TLBRELO1
+tlbfill
+b ultra_fast_hamt_done
+
+spt1zero:
+csrrd   t1, LOONGARCH_CSR_TLBREHI
+;srli.d  t1, t1, 0x6
+;slli.d  t1, t1, 0x6
+bstrins.d t1, zero, 5, 0
+ori     t1, t1, TLB_PS_4K
+csrwr   zero, LOONGARCH_CSR_ASID
+csrwr  t1, LOONGARCH_CSR_TLBREHI
+csrwr  zero, LOONGARCH_CSR_TLBRELO0
+csrwr  zero, LOONGARCH_CSR_TLBRELO1
+tlbfill
+;b ultra_fast_hamt_done
+
+ultra_fast_hamt_done:
+csrrd    t0, LOONGARCH_CSR_TLBRSAVE
+csrrd    t1, LOONGARCH_CSR_KS0
+csrrd    t2, LOONGARCH_CSR_KS1
+ertn
+
+tlb_ultra_fast_refill_entry_end:
+
+
+
 .global tlb_fast_refill_entry_begin
 .global tlb_fast_refill_entry_end
 tlb_fast_refill_entry_begin:

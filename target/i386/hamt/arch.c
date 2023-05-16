@@ -17,6 +17,7 @@
 #include <sched.h>
 
 #include "hamt.h"
+#include "hamt-assert.h"
 #include "latx-perfmap.h"
 
 void arch_dump_regs(int debug_fd, struct kvm_regs regs);
@@ -185,6 +186,8 @@ extern void fpe_entry_begin(void);
 extern void fpe_entry_end(void);
 extern void tlb_refill_entry_begin(void);
 extern void tlb_refill_entry_end(void);
+extern void tlb_ultra_fast_refill_entry_begin(void);
+extern void tlb_ultra_fast_refill_entry_end(void);
 extern void tlb_fast_refill_entry_begin(void);
 extern void tlb_fast_refill_entry_end(void);
 extern void tlb_ifetch_entry_begin(void);
@@ -295,7 +298,16 @@ static void init_ebase(struct kvm_cpu *cpu,
     }
 
     // tlb refill exception
-    if (hamt_have_tlbr_fastpath()) {
+    if (hamt_have_tlbr_ultra_fastpath()) {
+        hamt_spt_assert_ultra_fastpath();
+        assert((tlb_ultra_fast_refill_entry_end - tlb_ultra_fast_refill_entry_begin) < 512);
+        memcpy(cpu->info.ebase, tlb_ultra_fast_refill_entry_begin,
+               tlb_ultra_fast_refill_entry_end - tlb_ultra_fast_refill_entry_begin);
+        latx_perfmap_insert(
+                cpu->info.ebase,
+                tlb_ultra_fast_refill_entry_end - tlb_ultra_fast_refill_entry_begin,
+                "hamt_tlb_ultra_fast_refill_entry");
+    } else if (hamt_have_tlbr_fastpath()) {
         assert((tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin) < 512);
         memcpy(cpu->info.ebase, tlb_fast_refill_entry_begin,
                tlb_fast_refill_entry_end - tlb_fast_refill_entry_begin);
