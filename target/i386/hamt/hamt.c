@@ -95,7 +95,8 @@ int hamt_have_tlbr_fastpath(void)
 
 int hamt_have_tlbr_ultra_fastpath(void)
 {
-    return option_hamt & (HAMT_HAVE_ULTRATLBF | HAMT_HAVE_SPT);
+    return (option_hamt & HAMT_HAVE_ULTRATLBF) &&
+           (option_hamt & HAMT_HAVE_SPT);
 }
 
 int hamt_have_stlb(void)
