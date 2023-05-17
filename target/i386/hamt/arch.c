@@ -101,10 +101,13 @@ static u64 kvm_get_csr_reg(const struct kvm_cpu *cpu, u64 id)
     return kvm_access_csr_reg(cpu, id, GET, 0);
 }
 
+#define USE_KVM_SET_CSR_FUNC
+#ifdef USE_KVM_SET_CSR_FUNC
 static void kvm_set_csr_reg(const struct kvm_cpu *cpu, u64 id, u64 v)
 {
     kvm_access_csr_reg(cpu, id, SET, v);
 }
+#endif
 
 static void kvm_enable_fpu(struct kvm_cpu *cpu)
 {
@@ -588,6 +591,9 @@ static void init_csr(struct kvm_cpu *cpu)
     }
 
     for (int i = 0; i < sizeof(one_regs) / sizeof(struct csr_reg); ++i) {
+#ifdef USE_KVM_SET_CSR_FUNC
+        kvm_set_csr_reg(cpu, one_regs[i].reg.id, one_regs[i].v);
+#else
         if (ioctl(cpu->vcpu_fd, KVM_SET_ONE_REG, &(one_regs[i].reg))
                 < 0) {
             die("KVM_SET_ONE_REG %s", one_regs[i].name);
@@ -595,6 +601,7 @@ static void init_csr(struct kvm_cpu *cpu)
             // pr_info("KVM_SET_ONE_REG %s : %llx", one_regs[i].name,
             // one_regs[i].v);
         }
+#endif
     }
 }
 
