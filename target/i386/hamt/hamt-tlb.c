@@ -371,7 +371,7 @@ void hamt_set_tlb(void *env,
 
 #ifdef HAMT_USE_SPT
     if (mode && hamt_have_spt()) {
-        hamt_spt_set_page(env, vaddr, paddr, prot,
+        hamt_spt_set_page(env, vaddr,
                 csr_tlbehi, csr_tlbelo0, csr_tlbelo1);
     }
 #endif
@@ -382,7 +382,7 @@ void hamt_set_tlb(void *env,
          * @mode = false is used to flush hardware tlb in helper_invlpg,
          * where hamt stlb is already flushed along with soft tlb flush.
          */
-        hamt_stlb_set_page(env, vaddr, paddr, prot,
+        hamt_stlb_set_page(env, vaddr,
                 csr_tlbehi, csr_tlbelo0, csr_tlbelo1);
     }
 #endif

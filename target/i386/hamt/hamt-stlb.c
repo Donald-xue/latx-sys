@@ -46,8 +46,7 @@
 #define STLB_PAGE_INVALID(p)     (p >> 32)
 #define STLB_PAGE_VALID(p)       !(STLB_PAGE_INVALID(p))
 
-void hamt_stlb_set_page(CPUArchState *env,
-        uint64_t vaddr, uint64_t paddr, int prot,
+void hamt_stlb_set_page(CPUArchState *env, uint64_t vaddr,
         uint64_t ehi, uint64_t elo0, uint64_t elo1)
 {
     int mmu_idx = cpu_mmu_index(env, false);

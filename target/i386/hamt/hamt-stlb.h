@@ -13,8 +13,7 @@ typedef struct hamt_stlb_entry {
     uint64_t elo[2];
 } hamt_stlb_entry;
 
-void hamt_stlb_set_page(CPUArchState *env,
-        uint64_t vaddr, uint64_t paddr, int prot,
+void hamt_stlb_set_page(CPUArchState *env, uint64_t vaddr,
         uint64_t ehi, uint64_t elo0, uint64_t elo1);
 
 void hamt_stlb_flush_page(CPUArchState *env,

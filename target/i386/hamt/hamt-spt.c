@@ -60,8 +60,7 @@ void hamt_spt_assert_ultra_fastpath(void)
     assert(off_f2_spt == -48);
 }
 
-void hamt_spt_set_page(CPUArchState *env,
-        uint64_t vaddr, uint64_t paddr, int prot,
+void hamt_spt_set_page(CPUArchState *env, uint64_t vaddr,
         uint64_t ehi, uint64_t elo0, uint64_t elo1)
 {
     int mmu_idx = cpu_mmu_index(env, false);
