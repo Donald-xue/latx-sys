@@ -478,8 +478,12 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
         tb->fastcs_ctx != tb_next->fastcs_ctx) {
         return;
     }
-    if (latxs_cc_pro() && tb_next->cc_flags != 0) {
-        return;
+    if (latxs_cc_pro()) {
+        /* next TB have FP and gen excp */
+        if ((tb_next->cc_flags & 0x1)) return;
+        /* no FP -> have FP */
+        if (!(tb->cc_flags & 0x2) &&
+             (tb_next->cc_flags & 0x2)) return;
     }
 #endif
 

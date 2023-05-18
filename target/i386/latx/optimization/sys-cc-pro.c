@@ -20,7 +20,7 @@ int latxs_cc_pro_tb_flags_cmp(
         const TranslationBlock *tb,
         uint32_t cpu_flags)
 {
-    if (latxs_cc_pro() && tb->cc_flags == 0) {
+    if (latxs_cc_pro() && !(tb->cc_flags & 0x2)) {
         uint32_t __tb_flags  = tb->flags & ~0xe00;
         uint32_t __cpu_flags = cpu_flags & ~0xe00;
         if (__tb_flags == __cpu_flags) return 1;

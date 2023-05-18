@@ -2764,7 +2764,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
             g_assert_not_reached();
         }
     }
-    if (latxs_cc_pro() && tb->cc_flags == 0) {
+    if (latxs_cc_pro() && !(tb->cc_flags & 0x2)) {
         tb->flags = tb->flags & ~0xe00;
     }
 #endif
