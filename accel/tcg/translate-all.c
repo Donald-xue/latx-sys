@@ -70,6 +70,8 @@
 #include "latx-fastcs-sys.h"
 #include "hamt.h"
 #include "hamt-tlb.h"
+#include "hamt-stlb.h"
+#include "hamt-spt.h"
 #include "latxs-cc-pro.h"
 #include "latx-counter-sys.h"
 #include "latx-multi-region-sys.h"
@@ -2332,6 +2334,22 @@ static inline void tb_page_add(PageDesc *p, TranslationBlock *tb,
         tlb_protect_code(page_addr);
 #ifdef CONFIG_LATX
         hamt_protect_code(tb->pc, n);
+
+        CPUState *cpu;
+        int mmu_idx;
+        CPU_FOREACH(cpu) {
+#ifdef HAMT_USE_SPT
+            if (hamt_have_spt())
+            for (mmu_idx = 0; mmu_idx < NB_MMU_MODES; mmu_idx++)
+            hamt_spt_flush_page(cpu->env_ptr, mmu_idx, tb->pc);
+#endif
+#ifdef HAMT_USE_STLB
+            if (hamt_have_stlb())
+            for (mmu_idx = 0; mmu_idx < NB_MMU_MODES; mmu_idx++)
+            hamt_stlb_flush_page(cpu->env_ptr, mmu_idx, tb->pc);
+#endif
+        }
+
 #endif
     }
 #endif
@@ -2903,6 +2921,22 @@ tb_invalidate_phys_page_range__locked(struct page_collection *pages,
         tlb_unprotect_code(start);
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
         hamt_unprotect_code(start);
+
+        CPUState *cpu;
+        int mmu_idx;
+        CPU_FOREACH(cpu) {
+#ifdef HAMT_USE_SPT
+            if (hamt_have_spt())
+            for (mmu_idx = 0; mmu_idx < NB_MMU_MODES; mmu_idx++)
+            hamt_spt_flush_page(cpu->env_ptr, mmu_idx, start);
+#endif
+#ifdef HAMT_USE_STLB
+            if (hamt_have_stlb())
+            for (mmu_idx = 0; mmu_idx < NB_MMU_MODES; mmu_idx++) 
+            hamt_stlb_flush_page(cpu->env_ptr, mmu_idx, start);
+#endif
+        }
+
 #endif
     }
 #endif
