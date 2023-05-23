@@ -87,6 +87,7 @@ static void tr_gen_pb_lookup(IR2_OPND *thistb,
                 offsetof(TranslationBlock, intb_target[0].flags));
         latxs_append_ir2_opnd2i(LISA_LD_WU, tmp1, env,
                 offsetof(CPUX86State, hflags));
+        latxs_append_ir2_opnd2i(LISA_ANDI, tmp1, tmp1, CC_FLAG_MASK);
 
         latxs_append_ir2_opnd2i(LISA_LD_WU, tmp, thistb,
                 offsetof(TranslationBlock, intb_target[0].mask));
