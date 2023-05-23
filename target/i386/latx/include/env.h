@@ -179,8 +179,27 @@ typedef struct TRANSLATION_DATA {
     int ignore_eip_update;
     int ignore_top_update;
 
-    /* exit label for icount_decr less than zero */
+    /*
+     * @exitreq_label is used in:
+     * (1) exit in icount mode             (-icount rr=... )
+     * (2) proavtive checking of interrupt (-latxs sigint=0)
+     * (3) dynamic checking of tb flags    (-latxs ccpro=2 )
+     */
     IR2_OPND exitreq_label;
+
+    /*
+     * fail  +------------+ <--- cc_pro_check_label (TB.cc_ck_ptr)
+     *  +--- | flag       |      : run with flags checking
+     *  |    | check      |
+     *  |    +------------+ <--- cc_pro_label (TB.cc_ok_ptr)
+     *  |    | TB         |      : run without flags checking
+     *  |    | codes      |
+     *  +--> +------------+ <--- exitreq_label
+     *       | exitreq    |
+     *       +------------+
+     */
+    IR2_OPND cc_pro_label;
+    IR2_OPND cc_pro_check_label;
 
     int end_with_exception;
     int dec_icount_inst_id;

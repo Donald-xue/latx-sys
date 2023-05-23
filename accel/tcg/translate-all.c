@@ -2179,7 +2179,7 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
     phys_pc = tb->page_addr[0] + (tb->pc & ~TARGET_PAGE_MASK);
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     h = tb_hash_func(phys_pc, tb->pc,
-            latxs_cc_pro() ? tb->flags & ~0xe00 : tb->flags,
+            latxs_cc_pro() ? tb->flags & ~CC_FLAG_MASK : tb->flags,
             orig_cflags, tb->trace_vcpu_dstate);
 #else
     h = tb_hash_func(phys_pc, tb->pc,
@@ -2397,7 +2397,7 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
     /* add in the hash table */
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     h = tb_hash_func(phys_pc, tb->pc,
-            latxs_cc_pro() ? tb->flags & ~0xe00 : tb->flags,
+            latxs_cc_pro() ? tb->flags & ~CC_FLAG_MASK: tb->flags,
             tb->cflags, tb->trace_vcpu_dstate);
 #else
     h = tb_hash_func(phys_pc, tb->pc, tb->flags, tb->cflags,
@@ -2555,6 +2555,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->sigint_link_flag[3] = -1;
     tb->trace_cc = 0;
     tb->cc_flags = 0;
+    tb->cc_mask  = ~CC_FLAG_MASK;
     tb->intb_target[0].pc = 0xffffffffffffffff;
     tb->intb_target[0].tc_ptr = NULL;
 #endif
@@ -2765,7 +2766,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
         }
     }
     if (latxs_cc_pro() && !(tb->cc_flags & 0x2)) {
-        tb->flags = tb->flags & ~0xe00;
+        tb->flags = tb->flags & ~CC_FLAG_MASK;
     }
 #endif
     tb->tc.size = gen_code_size;

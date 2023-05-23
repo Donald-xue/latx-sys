@@ -12,6 +12,7 @@
 #include "translate.h"
 #include "latx-tracecc-sys.h"
 #include "latx-sys-inst-ptn.h"
+#include "latxs-cc-pro.h"
 
 #ifdef CONFIG_SOFTMMU
 #include "latx-static-codes.h"
@@ -3219,7 +3220,19 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
     if (option_lsfpu || tb->_top_out == next_tb->_top_in) {
 #endif
         tb->next_tb[n] = next_tb;
+#ifdef CONFIG_SOFTMMU
+        if (latxs_cc_pro_checktb()) {
+            if (next_tb->cc_flags && !(tb->cc_flags)) {
+                tb_set_jmp_target(tb, n, (uintptr_t)next_tb->cc_ck_ptr);
+            } else {
+                tb_set_jmp_target(tb, n, (uintptr_t)next_tb->cc_ok_ptr);
+            }
+        } else {
+            tb_set_jmp_target(tb, n, (uintptr_t)next_tb->tc.ptr);
+        }
+#else
         tb_set_jmp_target(tb, n, (uintptr_t)next_tb->tc.ptr);
+#endif
     } else {
         lsassert(next_tb != NULL);
         tb->next_tb[n] = next_tb;

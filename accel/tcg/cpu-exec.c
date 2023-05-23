@@ -223,7 +223,11 @@ cpu_tb_exec(CPUState *cpu, TranslationBlock *itb, int *tb_exit)
     latxs_before_exec_tb(cpu, itb);
     uint64_t context_switch_bt_to_native =
         GET_SC_TABLE(itb->region_id, cs_bt_to_native);
-    ret = tcg_qemu_tb_exec(env, tb_ptr);
+    if (latxs_cc_pro_checktb()) {
+        ret = tcg_qemu_tb_exec(env, itb->cc_ok_ptr);
+    } else {
+        ret = tcg_qemu_tb_exec(env, tb_ptr);
+    }
     latxs_after_exec_tb(cpu, itb);
 #endif
 #else
@@ -478,7 +482,7 @@ static inline void tb_add_jump(TranslationBlock *tb, int n,
         tb->fastcs_ctx != tb_next->fastcs_ctx) {
         return;
     }
-    if (latxs_cc_pro()) {
+    if (latxs_cc_pro_nolink()) {
         /* next TB have FP and gen excp */
         if ((tb_next->cc_flags & 0x1)) return;
         /* no FP -> have FP */
@@ -916,6 +920,17 @@ static inline void cpu_loop_exec_tb(CPUState *cpu, TranslationBlock *tb,
          */
         return;
     }
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    CPUArchState *env = cpu->env_ptr;
+    if (latxs_cc_pro_checktb() && env->hflags != tb->flags) {
+        /*
+         * TB exit from failure of flags checking.
+         * reuse the exit port of interrupt checking.
+         */
+        return;
+    }
+#endif
 
     /* Instruction counter expired.  */
     assert(icount_enabled());

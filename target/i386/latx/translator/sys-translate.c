@@ -8,6 +8,7 @@
 #include "qemu/cacheflush.h"
 #include "latx-tracecc-sys.h"
 #include "latx-np-sys.h"
+#include "latxs-cc-pro.h"
 
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
@@ -38,6 +39,10 @@ void latxs_tr_init(TranslationBlock *tb)
         td->x86_ins_nr = 0;
         td->exitreq_label = latxs_ir2_opnd_new_label();
         td->end_with_exception = 0;
+        if (latxs_cc_pro()) {
+            td->cc_pro_label = latxs_ir2_opnd_new_label();
+            td->cc_pro_check_label = latxs_ir2_opnd_new_label();
+        }
     }
 }
 
@@ -134,6 +139,16 @@ void latxs_label_dispose(const void *code_buffer)
                 tb->jmp_reset_offset[1] =
                     (label_pos[label_id_1] << 2) + 8;
                 tb->jmp_target_arg[1] = (label_pos[label_id_1] << 2);
+            }
+
+            if (latxs_cc_pro_checktb() && (tb->flags & 0x3) == 3) {
+                tb->cc_ck_ptr = (void *)tb->tc.ptr;
+
+                int cc_id = latxs_ir2_opnd_label_id(&td->cc_pro_label);
+                tb->cc_ok_ptr = (void *)tb->tc.ptr + (label_pos[cc_id] << 2);
+            } else {
+                tb->cc_ck_ptr = (void *)tb->tc.ptr;
+                tb->cc_ok_ptr = (void *)tb->tc.ptr;
             }
         }
     }
@@ -481,6 +496,7 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 void latxs_tr_gen_tb_start(void)
 {
     latxs_tracecc_gen_tb_start();
+    latxs_cc_pro_gen_tb_start();
 
     if (sigint_enabled()) {
         return;
@@ -524,7 +540,7 @@ void latxs_tr_gen_tb_start(void)
 
 void latxs_tr_gen_tb_end(void)
 {
-    if (sigint_enabled()) {
+    if (sigint_enabled() && !latxs_cc_pro_checktb()) {
         return;
     }
 

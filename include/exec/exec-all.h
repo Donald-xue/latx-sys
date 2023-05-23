@@ -569,7 +569,16 @@ struct TranslationBlock {
     uint8_t fastcs_jmp_glue_checker;
     int sigint_link_flag[4];
     /* code cache */
+    void *cc_ok_ptr;
+    void *cc_ck_ptr;
     int cc_flags;
+    int cc_mask;
+    /*
+     * TODO cc_pro_checkjmp
+     * direction 0 : cc_next_tb[0/1]
+     * direction 1 : cc_next_tb[2/3]
+     */
+    void *cc_next_tb[4];
     int trace_cc;
     uint64_t tb_exec_nr;
     /* indirect branch private buffer */

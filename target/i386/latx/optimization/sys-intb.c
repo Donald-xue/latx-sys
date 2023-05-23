@@ -11,6 +11,7 @@
 #include "latx-np-sys.h"
 #include "latx-intb-sys.h"
 #include "latx-sigint-sys.h"
+#include "latxs-cc-pro.h"
 
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
@@ -62,6 +63,13 @@ int gen_latxs_intb_lookup(void *code_ptr)
     int start = (td->ir2_asm_nr << 2);
     int offset = 0;
     int64_t ins_offset = 0;
+
+    int off_tb_tc_ptr = 0;
+    off_tb_tc_ptr += offsetof(TranslationBlock, tc);
+    off_tb_tc_ptr += offsetof(struct tb_tc, ptr);
+    if (latxs_cc_pro_checktb()) {
+        off_tb_tc_ptr = offsetof(TranslationBlock, cc_ok_ptr);
+    }
 
     IR2_OPND *ret0 = &latxs_ret0_ir2_opnd;    /* $4   a0/v0 */
     IR2_OPND *zero = &latxs_zero_ir2_opnd;    /* $0   zero  */
@@ -148,6 +156,14 @@ int gen_latxs_intb_lookup(void *code_ptr)
          * (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK |
          *                 VM_MASK | AC_MASK));
          */
+        if (latxs_cc_pro()) {
+            /*
+             * cc_flags != 0 : cc_mask = ~0x0
+             * cc_flags == 0 : cc_mask = ~0xe00
+             */
+            latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp, ret0,
+                    offsetof(TranslationBlock, cc_mask));
+        }
         IR2_OPND eflags = latxs_ra_alloc_itemp();
         /* eflags is target_ulong, but high 32 bits is all zeros */
         latxs_append_ir2_opnd2i(LISA_LD_WU, &eflags, &latxs_env_ir2_opnd,
@@ -162,6 +178,10 @@ int gen_latxs_intb_lookup(void *code_ptr)
         /* tb->flags */
         latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp0, ret0,
                 offsetof(TranslationBlock, flags));
+        if (latxs_cc_pro()) {
+            latxs_append_ir2_opnd3(LISA_AND, &tmp0, &tmp0, &tmp);
+            latxs_append_ir2_opnd3(LISA_AND, &tmp1, &tmp1, &tmp);
+        }
         latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &tmp1, &njc_miss);
 
         /* 1.6 NJC lookup success, finish lookup */
@@ -264,8 +284,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
         /* bias ==0, no need to ratate */
         /* fetch native address of next_tb to arg2 */
         latxs_append_ir2_opnd2i(LISA_LD_D, &tmp1, ret0,
-                offsetof(TranslationBlock, tc) +
-                offsetof(struct tb_tc, ptr));
+                off_tb_tc_ptr);
         {
             /* SIGINT check */
             if (sigint_enabled() == 1) {
@@ -297,8 +316,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
         /* top_bias != 0, need to rotate, step is in arg1 */
         /* fetch native address of next_tb to ra */
         latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ra_ir2_opnd, ret0,
-                offsetof(TranslationBlock, tc) +
-                offsetof(struct tb_tc, ptr));
+                off_tb_tc_ptr);
         offset = (lsenv->tr_data->ir2_asm_nr << 2) - start;
 
         int64_t ins_offset =
@@ -327,8 +345,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
 
         /* 3.5 jump to next TB (with LSFPU or SoftFPU enabled) */
         latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
-                offsetof(TranslationBlock, tc) +
-                offsetof(struct tb_tc, ptr));
+                off_tb_tc_ptr);
 
         if (option_intb_pb) {
             /* insert into private buffer */
