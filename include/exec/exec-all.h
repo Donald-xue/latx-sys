@@ -585,6 +585,8 @@ struct TranslationBlock {
     struct {
         uint64_t pc;
         void *tc_ptr;
+        uint32_t flags;
+        uint32_t mask;
     } intb_target[1];
 #endif
 #endif

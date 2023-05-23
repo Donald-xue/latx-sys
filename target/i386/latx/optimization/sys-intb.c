@@ -25,6 +25,85 @@ int __intb_link_enable(void)
 }
 #endif
 
+#ifdef TARGET_X86_64
+#define LISA_LOAD_PC    LISA_LD_D
+#define LISA_STORE_PC   LISA_ST_D
+#else
+#define LISA_LOAD_PC    LISA_LD_WU
+#define LISA_STORE_PC   LISA_ST_W
+#endif
+
+static void tr_gen_pb_insert(IR2_OPND *next_tcptr,
+        IR2_OPND *env,
+        IR2_OPND *thistb, IR2_OPND *nexttb,
+        IR2_OPND *tmp)
+{
+    if (!option_intb_pb) return;
+
+    latxs_append_ir2_opnd2i(LISA_ST_D, next_tcptr, thistb,
+        offsetof(TranslationBlock, intb_target[0].tc_ptr));
+
+    latxs_append_ir2_opnd2i(LISA_LOAD_PC, tmp, env,
+            lsenv_offset_of_eip(lsenv));
+    latxs_append_ir2_opnd2i(LISA_STORE_PC, tmp, thistb,
+        offsetof(TranslationBlock, intb_target[0].pc));
+
+    if (latxs_cc_pro()) {
+        lsassertm(!(CC_FLAG_MASK >> 12),
+                "%s %d : cc mask out of range\n", __func__, __LINE__);
+        latxs_append_ir2_opnd2i(LISA_LD_WU, tmp, nexttb,
+                offsetof(TranslationBlock, flags));
+        latxs_append_ir2_opnd2i(LISA_ANDI, tmp, tmp, CC_FLAG_MASK);
+        latxs_append_ir2_opnd2i(LISA_ST_W, tmp, thistb,
+                offsetof(TranslationBlock, intb_target[0].flags));
+
+        latxs_append_ir2_opnd2i(LISA_LD_WU, tmp, nexttb,
+                offsetof(TranslationBlock, cc_mask));
+        latxs_append_ir2_opnd2i(LISA_ST_W, tmp, thistb,
+                offsetof(TranslationBlock, intb_target[0].mask));
+    }
+}
+
+static void tr_gen_pb_lookup(IR2_OPND *thistb,
+        IR2_OPND *env,
+        IR2_OPND *tmp, IR2_OPND *tmp0, IR2_OPND *tmp1)
+{
+
+    if (!option_intb_pb) return;
+
+    IR2_OPND pb_miss = latxs_ir2_opnd_new_label();
+
+    /* check PC */
+    latxs_append_ir2_opnd2i(LISA_LOAD_PC, tmp0, thistb,
+            offsetof(TranslationBlock, intb_target[0].pc));
+    latxs_append_ir2_opnd2i(LISA_LOAD_PC, tmp1, env,
+            lsenv_offset_of_eip(lsenv));
+    latxs_append_ir2_opnd3(LISA_BNE, tmp0, tmp1, &pb_miss);
+
+    /* cc pro check hflags */
+    if (latxs_cc_pro()) {
+
+        latxs_append_ir2_opnd2i(LISA_LD_WU, tmp0, thistb,
+                offsetof(TranslationBlock, intb_target[0].flags));
+        latxs_append_ir2_opnd2i(LISA_LD_WU, tmp1, env,
+                offsetof(CPUX86State, hflags));
+
+        latxs_append_ir2_opnd2i(LISA_LD_WU, tmp, thistb,
+                offsetof(TranslationBlock, intb_target[0].mask));
+        latxs_append_ir2_opnd3(LISA_AND, tmp0, tmp0, tmp);
+        latxs_append_ir2_opnd3(LISA_AND, tmp1, tmp1, tmp);
+
+        latxs_append_ir2_opnd3(LISA_BNE, tmp0, tmp1, &pb_miss);
+    }
+
+    /* private buffer hit: jump to next TB */
+    latxs_append_ir2_opnd2i(LISA_LD_D, tmp0, thistb,
+            offsetof(TranslationBlock, intb_target[0].tc_ptr));
+    latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_ra_ir2_opnd, tmp0, 0);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &pb_miss);
+}
+
 /*
  * 0. Private Buffer Lookup
  *    0.1 lookup private buffer // => 1. if fail
@@ -92,30 +171,8 @@ int gen_latxs_intb_lookup(void *code_ptr)
      *         > valid after TB lookup
      */
 
-#ifdef TARGET_X86_64
-#define LISA_LOAD_PC    LISA_LD_D
-#define LISA_STORE_PC   LISA_ST_D
-#else
-#define LISA_LOAD_PC    LISA_LD_WU
-#define LISA_STORE_PC   LISA_ST_W
-#endif
-
     /* ======== 0. Private Buffer ========  */
-    if (option_intb_pb) {
-        IR2_OPND pb_miss = latxs_ir2_opnd_new_label();
-        latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp0, &tb,
-                offsetof(TranslationBlock, intb_target[0].pc));
-        latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp1, env,
-                lsenv_offset_of_eip(lsenv));
-        latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &tmp1, &pb_miss);
-
-        /* private buffer hit: jump to next TB */
-        latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, &tb,
-                offsetof(TranslationBlock, intb_target[0].tc_ptr));
-        latxs_append_ir2_opnd2i(LISA_JIRL, &latxs_ra_ir2_opnd, &tmp, 0);
-
-        latxs_append_ir2_opnd1(LISA_LABEL, &pb_miss);
-    }
+    tr_gen_pb_lookup(&tb, env, &tmp, &tmp0, &tmp1);
 
     /* ======== 1. NJC Lookup TB ======== */
     IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
@@ -300,15 +357,8 @@ int gen_latxs_intb_lookup(void *code_ptr)
             }
         }
 
-        if (option_intb_pb) {
-            /* insert into private buffer */
-            latxs_append_ir2_opnd2i(LISA_ST_D, &tmp1, &tmp,
-                offsetof(TranslationBlock, intb_target[0].tc_ptr));
-            latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp0, env,
-                    lsenv_offset_of_eip(lsenv));
-            latxs_append_ir2_opnd2i(LISA_STORE_PC, &tmp0, &tmp,
-                offsetof(TranslationBlock, intb_target[0].pc));
-        }
+        /* insert into private buffer */
+        tr_gen_pb_insert(&tmp1, env, &tmp, ret0, &tmp0);
 
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp1, 0);
         latxs_append_ir2_opnd1(LISA_LABEL, &label_rotate);
@@ -347,15 +397,8 @@ int gen_latxs_intb_lookup(void *code_ptr)
         latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, ret0,
                 off_tb_tc_ptr);
 
-        if (option_intb_pb) {
-            /* insert into private buffer */
-            latxs_append_ir2_opnd2i(LISA_ST_D, &tmp, &tb,
-                offsetof(TranslationBlock, intb_target[0].tc_ptr));
-            latxs_append_ir2_opnd2i(LISA_LOAD_PC, &tmp0, env,
-                    lsenv_offset_of_eip(lsenv));
-            latxs_append_ir2_opnd2i(LISA_STORE_PC, &tmp0, &tb,
-                offsetof(TranslationBlock, intb_target[0].pc));
-        }
+        /* insert into private buffer */
+        tr_gen_pb_insert(&tmp, env, &tb, ret0, &tmp0);
 
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
 
