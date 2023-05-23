@@ -40,9 +40,9 @@ int __latx_multi_region_get_id(void *__cpu)
     CPUState *cpu = __cpu;
     CPUX86State *env = cpu->env_ptr;
     if ((env->hflags & 0x3) == 3) {
-        return 1; /* CPL3 in region[1] */
+        return LATX_REGION_ID_CPL3; /* CPL3 in region[1] */
     } else {
-        return 0; /* CPL0 in region[0] */
+        return LATX_REGION_ID_CPL0; /* CPL0 in region[0] */
     }
 }
 

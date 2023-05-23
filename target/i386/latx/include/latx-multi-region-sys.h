@@ -13,6 +13,9 @@
 
 #define LATX_REGION_N 2
 
+#define LATX_REGION_ID_CPL0 0
+#define LATX_REGION_ID_CPL3 1
+
 #define latx_multi_region_switch(rid) do {  \
       __latx_multi_region_switch(rid);      \
 } while (0)
@@ -35,6 +38,11 @@ void __latx_multi_region_init(int region_nr);
 int __latx_multi_region_get_id(void *cpu);
 
 void __latx_multi_region_prepare_exec(int rid);
+
+static inline
+int latx_rid_is_cpl0(int rid) { return rid == LATX_REGION_ID_CPL0; }
+static inline
+int latx_rid_is_cpl3(int rid) { return rid == LATX_REGION_ID_CPL3; }
 
 #else
 

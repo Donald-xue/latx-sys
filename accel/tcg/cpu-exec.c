@@ -418,13 +418,11 @@ TranslationBlock *tb_htable_lookup(CPUState *cpu, target_ulong pc,
         return NULL;
     }
     desc.phys_page1 = phys_pc & TARGET_PAGE_MASK;
+    uint32_t tbflags = flags;
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    h = tb_hash_func(phys_pc, pc,
-            latxs_cc_pro() ? flags & ~0xe00 : flags,
-            cflags, *cpu->trace_dstate);
-#else
-    h = tb_hash_func(phys_pc, pc, flags, cflags, *cpu->trace_dstate);
+    tbflags = latxs_cc_pro_reset_flags_for_hash(tbflags);
 #endif
+    h = tb_hash_func(phys_pc, pc, tbflags, cflags, *cpu->trace_dstate);
     return qht_lookup_custom(&tb_ctx.htable, &desc, h, tb_lookup_cmp);
 }
 

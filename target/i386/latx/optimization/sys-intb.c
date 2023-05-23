@@ -36,7 +36,8 @@ int __intb_link_enable(void)
 static void tr_gen_pb_insert(IR2_OPND *next_tcptr,
         IR2_OPND *env,
         IR2_OPND *thistb, IR2_OPND *nexttb,
-        IR2_OPND *tmp)
+        IR2_OPND *tmp,
+        int use_cc_pro)
 {
     if (!option_intb_pb) return;
 
@@ -48,7 +49,7 @@ static void tr_gen_pb_insert(IR2_OPND *next_tcptr,
     latxs_append_ir2_opnd2i(LISA_STORE_PC, tmp, thistb,
         offsetof(TranslationBlock, intb_target[0].pc));
 
-    if (latxs_cc_pro()) {
+    if (use_cc_pro && latxs_cc_pro()) {
         lsassertm(!(CC_FLAG_MASK >> 12),
                 "%s %d : cc mask out of range\n", __func__, __LINE__);
         latxs_append_ir2_opnd2i(LISA_LD_WU, tmp, nexttb,
@@ -66,7 +67,8 @@ static void tr_gen_pb_insert(IR2_OPND *next_tcptr,
 
 static void tr_gen_pb_lookup(IR2_OPND *thistb,
         IR2_OPND *env,
-        IR2_OPND *tmp, IR2_OPND *tmp0, IR2_OPND *tmp1)
+        IR2_OPND *tmp, IR2_OPND *tmp0, IR2_OPND *tmp1,
+        int use_cc_pro)
 {
 
     if (!option_intb_pb) return;
@@ -81,7 +83,7 @@ static void tr_gen_pb_lookup(IR2_OPND *thistb,
     latxs_append_ir2_opnd3(LISA_BNE, tmp0, tmp1, &pb_miss);
 
     /* cc pro check hflags */
-    if (latxs_cc_pro()) {
+    if (use_cc_pro && latxs_cc_pro()) {
 
         latxs_append_ir2_opnd2i(LISA_LD_WU, tmp0, thistb,
                 offsetof(TranslationBlock, intb_target[0].flags));
@@ -139,6 +141,13 @@ int gen_latxs_intb_lookup(void *code_ptr)
     lsassert(rid == 0);
 #endif
 
+    int use_cc_pro = latxs_cc_pro();
+#ifdef LATX_USE_MULTI_REGION
+    if (!latx_rid_is_cpl3(rid)) {
+        use_cc_pro = 0;
+    }
+#endif
+
     int start = (td->ir2_asm_nr << 2);
     int offset = 0;
     int64_t ins_offset = 0;
@@ -146,7 +155,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
     int off_tb_tc_ptr = 0;
     off_tb_tc_ptr += offsetof(TranslationBlock, tc);
     off_tb_tc_ptr += offsetof(struct tb_tc, ptr);
-    if (latxs_cc_pro_checktb()) {
+    if (use_cc_pro && latxs_cc_pro_checktb()) {
         off_tb_tc_ptr = offsetof(TranslationBlock, cc_ok_ptr);
     }
 
@@ -172,7 +181,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
      */
 
     /* ======== 0. Private Buffer ========  */
-    tr_gen_pb_lookup(&tb, env, &tmp, &tmp0, &tmp1);
+    tr_gen_pb_lookup(&tb, env, &tmp, &tmp0, &tmp1, use_cc_pro);
 
     /* ======== 1. NJC Lookup TB ======== */
     IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
@@ -213,7 +222,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
          * (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK |
          *                 VM_MASK | AC_MASK));
          */
-        if (latxs_cc_pro()) {
+        if (use_cc_pro && latxs_cc_pro()) {
             /*
              * cc_flags != 0 : cc_mask = ~0x0
              * cc_flags == 0 : cc_mask = ~0xe00
@@ -235,7 +244,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
         /* tb->flags */
         latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp0, ret0,
                 offsetof(TranslationBlock, flags));
-        if (latxs_cc_pro()) {
+        if (use_cc_pro && latxs_cc_pro()) {
             latxs_append_ir2_opnd3(LISA_AND, &tmp0, &tmp0, &tmp);
             latxs_append_ir2_opnd3(LISA_AND, &tmp1, &tmp1, &tmp);
         }
@@ -358,7 +367,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
         }
 
         /* insert into private buffer */
-        tr_gen_pb_insert(&tmp1, env, &tmp, ret0, &tmp0);
+        tr_gen_pb_insert(&tmp1, env, &tmp, ret0, &tmp0, use_cc_pro);
 
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp1, 0);
         latxs_append_ir2_opnd1(LISA_LABEL, &label_rotate);
@@ -398,7 +407,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
                 off_tb_tc_ptr);
 
         /* insert into private buffer */
-        tr_gen_pb_insert(&tmp, env, &tb, ret0, &tmp0);
+        tr_gen_pb_insert(&tmp, env, &tb, ret0, &tmp0, use_cc_pro);
 
         latxs_append_ir2_opnd2i(LISA_JIRL, zero, &tmp, 0);
 

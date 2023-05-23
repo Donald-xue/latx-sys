@@ -2177,15 +2177,13 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
 
     /* remove the TB from the hash list */
     phys_pc = tb->page_addr[0] + (tb->pc & ~TARGET_PAGE_MASK);
+    uint32_t tbflags = tb->flags;
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    h = tb_hash_func(phys_pc, tb->pc,
-            latxs_cc_pro() ? tb->flags & ~CC_FLAG_MASK : tb->flags,
-            orig_cflags, tb->trace_vcpu_dstate);
-#else
-    h = tb_hash_func(phys_pc, tb->pc,
-            tb->flags,
-            orig_cflags, tb->trace_vcpu_dstate);
+    tbflags = latxs_cc_pro_get_tb_flags_for_hash(tb);
 #endif
+    h = tb_hash_func(phys_pc, tb->pc,
+            tbflags,
+            orig_cflags, tb->trace_vcpu_dstate);
     if (!qht_remove(&tb_ctx.htable, tb, h)) {
         return;
     }
@@ -2395,14 +2393,12 @@ tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
     }
 
     /* add in the hash table */
+    uint32_t tbflags = tb->flags;
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    h = tb_hash_func(phys_pc, tb->pc,
-            latxs_cc_pro() ? tb->flags & ~CC_FLAG_MASK: tb->flags,
-            tb->cflags, tb->trace_vcpu_dstate);
-#else
-    h = tb_hash_func(phys_pc, tb->pc, tb->flags, tb->cflags,
-                     tb->trace_vcpu_dstate);
+    tbflags = latxs_cc_pro_get_tb_flags_for_hash(tb);
 #endif
+    h = tb_hash_func(phys_pc, tb->pc, tbflags, tb->cflags,
+                     tb->trace_vcpu_dstate);
     qht_insert(&tb_ctx.htable, tb, h, &existing_tb);
 
     /* remove TB from the page(s) if we couldn't insert it */
@@ -2554,8 +2550,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->sigint_link_flag[2] = -1;
     tb->sigint_link_flag[3] = -1;
     tb->trace_cc = 0;
-    tb->cc_flags = 0;
-    tb->cc_mask  = ~CC_FLAG_MASK;
+    latxs_cc_pro_init_tb(tb);
     tb->intb_target[0].pc = 0xffffffffffffffff;
     tb->intb_target[0].tc_ptr = NULL;
 #endif
@@ -2765,7 +2760,10 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
             g_assert_not_reached();
         }
     }
-    if (latxs_cc_pro() && !(tb->cc_flags & 0x2)) {
+    /* CCPRO reset tb flags */
+    if (latxs_cc_pro() &&
+            latxs_cc_pro_for_tb(tb) &&
+            !(tb->cc_flags & 0x2)) {
         tb->flags = tb->flags & ~CC_FLAG_MASK;
     }
 #endif

@@ -64,18 +64,59 @@ int latxs_cc_pro_tb_flags_cmp(
 {
     uint32_t cc_mask = tb->cc_mask;
     /*
+     * ============== CPL3 ============== 
      * tb.cc_flags != 0 : tb.cc_mask = ~0
      * tb.cc_flags == 0 : tb.cc_mask = ~0xe00 (CC_FLAG_MASK)
+     * ============== CPL0 ============== 
+     * tb.cc_flags = 0  , tb.cc_mask = ~0
      */
     uint32_t __tb_flags  = tb->flags & cc_mask;
     uint32_t __cpu_flags = cpu_flags & cc_mask;
     return __tb_flags == __cpu_flags;
 }
 
+int latxs_cc_pro_for_tb(void *_tb)
+{
+    TranslationBlock *tb = _tb;
+    return (tb->flags & 0x3) == 3;
+}
+
+void latxs_cc_pro_init_tb(void *_tb)
+{
+    TranslationBlock *tb = _tb;
+
+    tb->cc_flags = 0;
+
+    if (latxs_cc_pro_for_tb(tb)) {
+        tb->cc_mask  = ~CC_FLAG_MASK;
+    } else {
+        tb->cc_mask  = 0;
+    }
+}
+
+uint32_t latxs_cc_pro_reset_flags_for_hash(uint32_t flags)
+{
+    if (latxs_cc_pro() && (flags & 0x3) == 3) {
+        return flags & ~CC_FLAG_MASK;
+    }
+    return flags;
+}
+uint32_t latxs_cc_pro_get_tb_flags_for_hash(void *_tb)
+{
+    TranslationBlock *tb = _tb;
+
+    return latxs_cc_pro_reset_flags_for_hash(tb->flags);
+}
+
 void *latxs_cc_pro_get_next_ptr(void *_tb, void *_nexttb)
 {
     TranslationBlock *tb = _tb;
     TranslationBlock *nexttb = _nexttb;
+
+    if (!latxs_cc_pro() ||
+        !latxs_cc_pro_for_tb(tb)) {
+        return (void *)nexttb->tc.ptr;
+    }
 
     void *next_ptr = NULL;
 
