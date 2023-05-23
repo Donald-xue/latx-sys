@@ -11,6 +11,8 @@ int latxs_cc_pro_checkjmp(void);
 
 void latxs_cc_pro_gen_tb_start(void);
 
+void *latxs_cc_pro_get_next_ptr(void *tb, void *nexttb);
+
 int latxs_cc_pro_tb_flags_cmp(
         const TranslationBlock *tb,
         uint32_t cpu_flags);

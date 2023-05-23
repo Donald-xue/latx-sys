@@ -72,6 +72,27 @@ int latxs_cc_pro_tb_flags_cmp(
     return __tb_flags == __cpu_flags;
 }
 
+void *latxs_cc_pro_get_next_ptr(void *_tb, void *_nexttb)
+{
+    TranslationBlock *tb = _tb;
+    TranslationBlock *nexttb = _nexttb;
+
+    void *next_ptr = NULL;
+
+    if (latxs_cc_pro_checktb()) {
+        if (nexttb->cc_flags && !(tb->cc_flags)) {
+            next_ptr = (void *)nexttb->cc_ck_ptr;
+        } else {
+            next_ptr = (void *)nexttb->cc_ok_ptr;
+        }
+    } else {
+        next_ptr = (void *)nexttb->tc.ptr;
+    }
+
+    assert(next_ptr);
+    return next_ptr;
+}
+
 void latxs_cc_pro_gen_tb_start(void)
 {
     if (!latxs_cc_pro_checktb()) return;
