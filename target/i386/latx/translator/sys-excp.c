@@ -5,6 +5,7 @@
 #include "latx-options.h"
 #include "translate.h"
 #include "latxs-cc-pro.h"
+#include "latxs-cc-pro-excp.h"
 #include <string.h>
 
 /*
@@ -56,10 +57,12 @@ static void latxs_tr_gen_raise_exception(
      *      CPUX86State *env,
      *      int exception_index)
      */
+    td->in_gen_excp_dynamic_check = 1;
     helper_cfg_t cfg = default_helper_cfg;
     latxs_tr_gen_call_to_helper2_cfg(
             (ADDR)helper_raise_exception,
             excp_index, cfg);
+    td->in_gen_excp_dynamic_check = 0;
 
     /* 3. Exception in native code should never return */
     latxs_tr_gen_infinite_loop();
@@ -78,6 +81,8 @@ static void latxs_tr_gen_raise_exception(
 static void latxs_tr_gen_raise_exception_addr(
         ADDRX addr, int excp_index, int end)
 {
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
     /* 1. save exception instruction's EIP */
     IR2_OPND eip_reg = latxs_ra_alloc_itemp();
     latxs_load_addrx_to_ir2(&eip_reg, addr);
@@ -90,10 +95,12 @@ static void latxs_tr_gen_raise_exception_addr(
 #endif
 
     /* 2. call helper raise exception */
+    td->in_gen_excp_dynamic_check = 1;
     helper_cfg_t cfg = default_helper_cfg;
     latxs_tr_gen_call_to_helper2_cfg(
             (ADDR)helper_raise_exception,
             excp_index, cfg);
+    td->in_gen_excp_dynamic_check = 0;
 
     /* 3. Exception in native code should never return */
     latxs_tr_gen_infinite_loop();
@@ -173,6 +180,8 @@ int latxs_tr_gen_fp_common_excp_check(IR1_INST *pir1)
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
 
+    if (latxs_cc_pro_excp_check_fp(pir1)) return 0;
+
     CCPRO_SET_INST(tb);
 
     if (td->sys.flags & (HF_TS_MASK | HF_EM_MASK)) {
@@ -187,6 +196,8 @@ int latxs_tr_gen_sse_common_excp_check(IR1_INST *pir1)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
     TranslationBlock *tb = td->curr_tb;
+
+    if (latxs_cc_pro_excp_check_sse(pir1)) return 0;
 
     CCPRO_SET_INST(tb);
 
@@ -210,6 +221,8 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
 
     IR1_OPND *opnd0;
     IR1_OPND *opnd1;
+
+    int cc_pro_res = 0;
 
     IR1_OPCODE opc = ir1_opcode(pir1);
     switch (opc) {
@@ -335,6 +348,10 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
         break;
     case X86_INS_LDMXCSR:
     case X86_INS_STMXCSR:
+        cc_pro_res = latxs_cc_pro_excp_check_ldst_mxcsr(pir1);
+        if (cc_pro_res == 1) return 0; /* OSFXSR no excp */
+        if (cc_pro_res == 2) return 1; /* OSFXSR do excp */
+
         CCPRO_SET_INST(tb);
         if ((td->sys.flags & HF_EM_MASK) ||
             !(td->sys.flags & HF_OSFXSR_MASK)) {
@@ -429,6 +446,9 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
         if (!(td->sys.cpuid_features & CPUID_FXSR)) {
             GEN_EXCP_ILLOP_AND_RETURN();
         }
+
+        if (latxs_cc_pro_excp_check_fxsave(pir1)) return 0;
+
         CCPRO_SET_INST(tb);
         if ((td->sys.flags & HF_EM_MASK) ||
             (td->sys.flags & HF_TS_MASK)) {
@@ -437,6 +457,9 @@ int latxs_tr_gen_excp_check(IR1_INST *pir1)
         }
         break;
     case X86_INS_WAIT:
+
+        if (latxs_cc_pro_excp_check_wait(pir1)) return 0;
+
         CCPRO_SET_INST(tb);
         if ((td->sys.flags & (HF_MP_MASK | HF_TS_MASK)) ==
             (HF_MP_MASK | HF_TS_MASK)) {

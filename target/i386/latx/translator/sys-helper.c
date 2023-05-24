@@ -252,7 +252,9 @@ void latxs_tr_gen_call_to_helper_epilogue_cfg(helper_cfg_t cfg)
      */
     TRANSLATION_DATA *td = lsenv->tr_data;
     int rid = td->region_id;
-    int fix_em = option_by_hand && !(td->in_gen_slow_path);
+    int fix_em = option_by_hand &&
+        !(td->in_gen_slow_path) &&
+        !(td->in_gen_excp_dynamic_check);
 
     /* Use static helper epilogue for default */
     if (scs_enabled() && cmp_helper_cfg(cfg, default_helper_cfg)) {

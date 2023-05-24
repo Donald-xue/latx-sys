@@ -10,16 +10,18 @@
 #include <signal.h>
 #include <ucontext.h>
 #include "latxs-cc-pro.h"
+#include "latxs-cc-pro-excp.h"
 
 #define CCPRO_NOLINK    0x1
 #define CCPRO_CHECKTB   0x2
 #define CCPRO_CHECKJMP  0x3
+#define CCPRO_DYINST    0x4
 
 #define CCPRO_TYPE_MASK 0xf
 
 int latxs_cc_pro(void)
 {
-    return option_code_cache_pro;
+    return option_code_cache_pro && !latxs_cc_pro_dyinst();
 }
 
 int latxs_cc_pro_nolink(void)
@@ -58,6 +60,11 @@ int latxs_cc_pro_checkjmp(void)
     return (option_code_cache_pro & CCPRO_TYPE_MASK) == CCPRO_CHECKJMP;
 }
 
+int latxs_cc_pro_dyinst(void)
+{
+    return (option_code_cache_pro & CCPRO_TYPE_MASK) == CCPRO_DYINST;
+}
+
 int latxs_cc_pro_tb_flags_cmp(
         const TranslationBlock *tb,
         uint32_t cpu_flags)
@@ -77,8 +84,11 @@ int latxs_cc_pro_tb_flags_cmp(
 
 int latxs_cc_pro_for_tb(void *_tb)
 {
-    TranslationBlock *tb = _tb;
-    return (tb->flags & 0x3) == 3;
+    if (latxs_cc_pro()) {
+        TranslationBlock *tb = _tb;
+        return (tb->flags & 0x3) == 3;
+    }
+    return 0;
 }
 
 void latxs_cc_pro_init_tb(void *_tb)
@@ -167,4 +177,141 @@ void latxs_cc_pro_gen_tb_start(void)
             &(td->exitreq_label));
 
     latxs_append_ir2_opnd1(LISA_LABEL, &td->cc_pro_label);
+}
+
+
+
+static void __excp_dy_check_em_or_ts_gen_prex(IR1_INST *pir1)
+{
+    /* TS | EM : prex exception */
+    assert(!((HF_TS_MASK | HF_EM_MASK) >> 12));
+
+    IR2_OPND no_excp = latxs_ir2_opnd_new_label();
+    IR2_OPND flags = latxs_ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &flags, &latxs_env_ir2_opnd,
+            offsetof(CPUX86State, hflags));
+    latxs_append_ir2_opnd2i(LISA_ANDI, &flags, &flags,
+            HF_TS_MASK | HF_EM_MASK);
+    latxs_append_ir2_opnd2(LISA_BEQZ, &flags, &no_excp);
+
+    latxs_tr_gen_excp_prex(pir1, 0);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &no_excp);
+    latxs_ra_free_temp(&flags);
+}
+
+
+
+int latxs_cc_pro_excp_check_fp(IR1_INST *pir1)
+{
+    if (!latxs_cc_pro_dyinst()) return 0;
+
+    __excp_dy_check_em_or_ts_gen_prex(pir1);
+
+    return 1;
+}
+
+int latxs_cc_pro_excp_check_sse(IR1_INST *pir1)
+{
+    if (!latxs_cc_pro_dyinst()) return 0;
+
+    /* TS : prex exception    */
+    /* EM : illegal operation */
+    assert(!((HF_TS_MASK | HF_EM_MASK) >> 12));
+
+    IR2_OPND no_excp = latxs_ir2_opnd_new_label();
+    IR2_OPND flags = latxs_ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &flags, &latxs_env_ir2_opnd,
+            offsetof(CPUX86State, hflags));
+    latxs_append_ir2_opnd2i(LISA_ANDI, &flags, &flags,
+            HF_TS_MASK | HF_EM_MASK);
+    latxs_append_ir2_opnd2(LISA_BEQZ, &flags, &no_excp);
+
+    IR2_OPND ill_excp = latxs_ir2_opnd_new_label();
+    latxs_append_ir2_opnd2i(LISA_ANDI, &flags, &flags, HF_TS_MASK);
+    latxs_append_ir2_opnd2(LISA_BEQZ, &flags, &ill_excp);
+
+    latxs_tr_gen_excp_prex(pir1, 0); /* TS */
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &ill_excp);
+    latxs_tr_gen_excp_illegal_op(pir1, 0); /* EM */
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &no_excp);
+
+    latxs_ra_free_temp(&flags);
+
+    return 1;
+}
+
+int latxs_cc_pro_excp_check_ldst_mxcsr(IR1_INST *pir1)
+{
+    if (!latxs_cc_pro_dyinst()) return 0;
+
+    TRANSLATION_DATA *td = lsenv->tr_data;
+
+    assert(!(HF_EM_MASK >> 12));
+
+    IR2_OPND no_excp = latxs_ir2_opnd_new_label();
+    IR2_OPND flags = latxs_ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &flags, &latxs_env_ir2_opnd,
+            offsetof(CPUX86State, hflags));
+    latxs_append_ir2_opnd2i(LISA_ANDI, &flags, &flags, HF_EM_MASK);
+    latxs_append_ir2_opnd2(LISA_BEQZ, &flags, &no_excp);
+
+    latxs_tr_gen_excp_illegal_op(pir1, 0); /* EM */
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &no_excp);
+
+    latxs_ra_free_temp(&flags);
+
+    if (!(td->sys.flags & HF_OSFXSR_MASK)) {
+        latxs_tr_gen_excp_illegal_op(pir1, 1);
+        return 2;
+    }
+
+    return 1;
+}
+
+int latxs_cc_pro_excp_check_fxsave(IR1_INST *pir1)
+{
+    if (!latxs_cc_pro_dyinst()) return 0;
+
+    __excp_dy_check_em_or_ts_gen_prex(pir1);
+
+    return 1;
+}
+
+int latxs_cc_pro_excp_check_wait(IR1_INST *pir1)
+{
+    if (!latxs_cc_pro_dyinst()) return 0;
+
+    /* TS & MP : illegal operation */
+    assert(!((HF_TS_MASK | HF_MP_MASK) >> 12));
+
+    IR2_OPND no_excp = latxs_ir2_opnd_new_label();
+    IR2_OPND flags = latxs_ra_alloc_itemp();
+    IR2_OPND tmp = latxs_ra_alloc_itemp();
+
+    latxs_append_ir2_opnd2i(LISA_LD_WU, &flags, &latxs_env_ir2_opnd,
+            offsetof(CPUX86State, hflags));
+    latxs_append_ir2_opnd2_(lisa_mov, &tmp, &flags);
+
+    latxs_append_ir2_opnd2i(LISA_SRLI_D, &flags, &flags, HF_TS_SHIFT);
+    latxs_append_ir2_opnd2i(LISA_SRLI_D, &tmp,   &tmp,   HF_MP_SHIFT);
+
+    latxs_append_ir2_opnd3(LISA_AND,   &tmp, &tmp, &flags);
+    latxs_append_ir2_opnd2i(LISA_ANDI, &tmp, &tmp, 0x1);
+
+    latxs_append_ir2_opnd2(LISA_BEQZ, &tmp, &no_excp);
+
+    latxs_tr_gen_excp_prex(pir1, 0);
+
+    latxs_append_ir2_opnd1(LISA_LABEL, &no_excp);
+    latxs_ra_free_temp(&flags);
+    latxs_ra_free_temp(&tmp);
+
+    return 1;
 }

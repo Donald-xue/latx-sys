@@ -240,6 +240,11 @@ int gen_latxs_intb_lookup(void *code_ptr)
         latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp1, env,
                 offsetof(CPUX86State, hflags));
         latxs_append_ir2_opnd3(LISA_OR, &tmp1, &tmp1, &tmp0);
+        if (latxs_cc_pro_dyinst()) {
+            latxs_append_ir2_opnd2i(LISA_ORI, &tmp0, zero,  CC_FLAG_MASK);
+            latxs_append_ir2_opnd3(LISA_NOR,  &tmp0, &tmp0, zero);
+            latxs_append_ir2_opnd3(LISA_AND,  &tmp1, &tmp1, &tmp0);
+        }
         /* tb->flags */
         latxs_append_ir2_opnd2i(LISA_LD_WU, &tmp0, ret0,
                 offsetof(TranslationBlock, flags));

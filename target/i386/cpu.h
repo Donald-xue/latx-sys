@@ -2086,6 +2086,10 @@ typedef X86CPU ArchCPU;
 #include "hw/i386/apic.h"
 #endif
 
+#if !defined(CONFIG_USER_ONLY) && defined(CONFIG_LATX)
+#include "latxs-cc-pro.h"
+#endif
+
 static inline void cpu_get_tb_cpu_state(CPUX86State *env, target_ulong *pc,
                                         target_ulong *cs_base, uint32_t *flags)
 {
@@ -2093,6 +2097,12 @@ static inline void cpu_get_tb_cpu_state(CPUX86State *env, target_ulong *pc,
     *pc = *cs_base + env->eip;
     *flags = env->hflags |
         (env->eflags & (IOPL_MASK | TF_MASK | RF_MASK | VM_MASK | AC_MASK));
+#if !defined(CONFIG_USER_ONLY) && defined(CONFIG_LATX)
+    if (latxs_cc_pro_dyinst()) {
+        /* ignore MP/EM/TS bits forever */
+        *flags = *flags & ~CC_FLAG_MASK;
+    }
+#endif
 }
 
 void do_cpu_init(X86CPU *cpu);

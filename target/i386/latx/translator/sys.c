@@ -300,6 +300,7 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     td->ignore_eip_update = 0;
     td->ignore_top_update = 0;
 
+    td->in_gen_excp_dynamic_check = 0;
     td->end_with_exception = 0;
     td->dec_icount_inst_id = 0;
 

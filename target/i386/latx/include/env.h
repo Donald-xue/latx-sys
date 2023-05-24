@@ -201,6 +201,7 @@ typedef struct TRANSLATION_DATA {
     IR2_OPND cc_pro_label;
     IR2_OPND cc_pro_check_label;
 
+    int in_gen_excp_dynamic_check;
     int end_with_exception;
     int dec_icount_inst_id;
 
