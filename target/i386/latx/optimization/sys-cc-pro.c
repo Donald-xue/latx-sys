@@ -18,6 +18,9 @@
 #define CCPRO_DYINST    0x4
 
 #define CCPRO_TYPE_MASK 0xf
+#define CCPRO_MODE_MASK 0xf0
+
+#define CCPRO_DYINST_WITH_FILTER    (0x1 << 4)
 
 int latxs_cc_pro(void)
 {
@@ -63,6 +66,13 @@ int latxs_cc_pro_checkjmp(void)
 int latxs_cc_pro_dyinst(void)
 {
     return (option_code_cache_pro & CCPRO_TYPE_MASK) == CCPRO_DYINST;
+}
+
+int latxs_cc_pro_dyinst_with_filter(void)
+{
+    return latxs_cc_pro_dyinst() &&
+        (option_code_cache_pro & CCPRO_MODE_MASK) ==
+                                 CCPRO_DYINST_WITH_FILTER;
 }
 
 int latxs_cc_pro_tb_flags_cmp(
@@ -203,9 +213,24 @@ static void __excp_dy_check_em_or_ts_gen_prex(IR1_INST *pir1)
 
 
 
+#define DY_CHECK_FP     (1<<0)
+#define DY_CHECK_SSE    (1<<1)
+#define DY_CHECK_MXCSR  (1<<2)
+#define DY_CHECK_FX     (1<<3)
+#define DY_CHECK_WAIT   (1<<4)
+
+#define DY_CHECK_FILTER(td, n) do {             \
+    if (latxs_cc_pro_dyinst_with_filter()) {    \
+        if (td->cc_pro_dycheck_filter & n)      \
+            return 1;                           \
+        td->cc_pro_dycheck_filter |= n;         \
+    }                                           \
+} while (0)
+
 int latxs_cc_pro_excp_check_fp(IR1_INST *pir1)
 {
     if (!latxs_cc_pro_dyinst()) return 0;
+    DY_CHECK_FILTER(lsenv->tr_data, DY_CHECK_FP);
 
     __excp_dy_check_em_or_ts_gen_prex(pir1);
 
@@ -215,6 +240,7 @@ int latxs_cc_pro_excp_check_fp(IR1_INST *pir1)
 int latxs_cc_pro_excp_check_sse(IR1_INST *pir1)
 {
     if (!latxs_cc_pro_dyinst()) return 0;
+    DY_CHECK_FILTER(lsenv->tr_data, DY_CHECK_SSE);
 
     /* TS : prex exception    */
     /* EM : illegal operation */
@@ -248,6 +274,7 @@ int latxs_cc_pro_excp_check_sse(IR1_INST *pir1)
 int latxs_cc_pro_excp_check_ldst_mxcsr(IR1_INST *pir1)
 {
     if (!latxs_cc_pro_dyinst()) return 0;
+    DY_CHECK_FILTER(lsenv->tr_data, DY_CHECK_MXCSR);
 
     TRANSLATION_DATA *td = lsenv->tr_data;
 
@@ -278,6 +305,7 @@ int latxs_cc_pro_excp_check_ldst_mxcsr(IR1_INST *pir1)
 int latxs_cc_pro_excp_check_fxsave(IR1_INST *pir1)
 {
     if (!latxs_cc_pro_dyinst()) return 0;
+    DY_CHECK_FILTER(lsenv->tr_data, DY_CHECK_FX);
 
     __excp_dy_check_em_or_ts_gen_prex(pir1);
 
@@ -287,6 +315,7 @@ int latxs_cc_pro_excp_check_fxsave(IR1_INST *pir1)
 int latxs_cc_pro_excp_check_wait(IR1_INST *pir1)
 {
     if (!latxs_cc_pro_dyinst()) return 0;
+    DY_CHECK_FILTER(lsenv->tr_data, DY_CHECK_WAIT);
 
     /* TS & MP : illegal operation */
     assert(!((HF_TS_MASK | HF_MP_MASK) >> 12));

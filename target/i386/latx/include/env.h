@@ -204,6 +204,7 @@ typedef struct TRANSLATION_DATA {
     int in_gen_excp_dynamic_check;
     int end_with_exception;
     int dec_icount_inst_id;
+    int cc_pro_dycheck_filter;
 
     /*
      * Usually sys-eob is not allowed tb-link.

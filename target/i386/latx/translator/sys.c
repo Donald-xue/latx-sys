@@ -303,6 +303,7 @@ void latxs_tr_sys_init(TranslationBlock *tb,
     td->in_gen_excp_dynamic_check = 0;
     td->end_with_exception = 0;
     td->dec_icount_inst_id = 0;
+    td->cc_pro_dycheck_filter = 0;
 
     td->sys_eob_can_link = 0;
 
