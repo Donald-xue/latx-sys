@@ -184,7 +184,10 @@ static void latxs_translate_xor_and_or_byhand_gpr_imm(IR1_INST *pir1,
     IR2_OPND reg0 = latxs_ra_alloc_gpr(ir1_opnd_base_reg_num(opnd0));
 
     IR2_OPND reg1 = latxs_ra_alloc_itemp();
-    latxs_load_ir1_imm_to_ir2_em(&reg1, opnd1, EXMode_N);
+    if (lisa_op == LISA_AND) 
+        latxs_load_ir1_imm_to_ir2_em(&reg1, opnd1, EXMode_Z);
+    else
+        latxs_load_ir1_imm_to_ir2_em(&reg1, opnd1, EXMode_N);
 
     if (ir1_opnd_is_8h(opnd0)) {
         /* xor 8H, imm */
