@@ -79,6 +79,7 @@ int latxs_allow_cross_page_link(void);
 extern int option_sys_flag_reduction;
 extern int option_instptn;
 extern int option_risk_mem_offset;
+extern int option_jr_ra;
 
 /* For QEMU monitor in softmmu */
 extern int option_monitor_sc; /* Simple Counter */

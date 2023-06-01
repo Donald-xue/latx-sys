@@ -6,6 +6,7 @@
 #include "translate.h"
 #include "sys-excp.h"
 #include "flag-lbt.h"
+#include "latx-callret-internal.h"
 #include <string.h>
 
 void latxs_sys_misc_register_ir1(void)
@@ -384,6 +385,11 @@ bool latxs_translate_call(IR1_INST *pir1)
     }
 #endif
 
+    int jr_ra = 0;
+    if (latxs_jr_ra() && latxs_jr_ra_for_tb(lsenv->tr_data->curr_tb)) {
+        jr_ra = 1;
+    }
+
     bool ss32 = lsenv->tr_data->sys.ss32;
     IR1_OPND *opnd0 = ir1_get_opnd(pir1, 0);
     int data_size = latxs_ir1_data_size(pir1);
@@ -417,7 +423,6 @@ bool latxs_translate_call(IR1_INST *pir1)
             X86_REG_SS, X86_REG_ESP, 0 - (opnd_size >> 3), 0, 0);
     latxs_store_ir2_to_ir1_mem(&return_addr_opnd,
             &mem_ir1_opnd, ss_addr_size);
-    latxs_ra_free_temp(&return_addr_opnd);
 
     /* 3. update ESP */
     IR2_OPND esp_opnd = latxs_ra_alloc_gpr(esp_index);
@@ -447,6 +452,13 @@ bool latxs_translate_call(IR1_INST *pir1)
         latxs_store_ir2_to_ir1_gpr(&tmp, &sp_ir1_opnd);
         latxs_ra_free_temp(&tmp);
     }
+
+    if (jr_ra) {
+        IR2_OPND scr = latxs_ra_alloc_itemp();
+        latxs_jr_ra_gen_call(pir1, &return_addr_opnd, &scr);
+        latxs_ra_free_temp(&scr);
+    }
+    latxs_ra_free_temp(&return_addr_opnd);
 
     /* 4. exit TB */
     latxs_tr_generate_exit_tb(pir1, 0);
@@ -1321,6 +1333,11 @@ bool latxs_translate_push(IR1_INST *pir1)
 
 bool latxs_translate_ret(IR1_INST *pir1)
 {
+    int jr_ra = 0;
+    if (latxs_jr_ra() && latxs_jr_ra_for_tb(lsenv->tr_data->curr_tb)) {
+        jr_ra = 1;
+    }
+
     /*
      * ESP update   according to dflag(opnd size)
      * Value size   according to dflag(opnd size)
@@ -1443,6 +1460,15 @@ bool latxs_translate_ret(IR1_INST *pir1)
             latxs_ra_free_temp(&tmp);
         }
     }
+
+    if (jr_ra) {
+        latxs_tr_reset_extmb(0xFF);
+
+        IR2_OPND scr = latxs_ra_alloc_itemp();
+        latxs_jr_ra_gen_ret(pir1, &return_addr_opnd, &scr);
+        latxs_ra_free_temp(&scr);
+    }
+    latxs_ra_free_temp(&return_addr_opnd);
 
     latxs_tr_generate_exit_tb(pir1, 0);
 

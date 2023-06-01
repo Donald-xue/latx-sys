@@ -75,6 +75,7 @@
 #include "latxs-cc-pro.h"
 #include "latx-counter-sys.h"
 #include "latx-multi-region-sys.h"
+#include "latx-callret-func.h"
 #endif
 #endif
 
@@ -2175,6 +2176,10 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
     latxs_counter_tb_inv(current_cpu);
 #endif
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    if (latxs_jr_ra()) latxs_jr_ra_reset_call(tb);
+#endif
+
     /* remove the TB from the hash list */
     phys_pc = tb->page_addr[0] + (tb->pc & ~TARGET_PAGE_MASK);
     uint32_t tbflags = tb->flags;
@@ -2553,6 +2558,9 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     latxs_cc_pro_init_tb(tb);
     tb->intb_target[0].pc = 0xffffffffffffffff;
     tb->intb_target[0].tc_ptr = NULL;
+    tb->scr_reg = -1;
+    tb->jr_ra_call_from = NULL;
+    tb->jr_ra_call_to   = NULL;
 #endif
 #endif
 

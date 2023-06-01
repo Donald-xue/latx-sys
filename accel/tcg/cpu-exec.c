@@ -50,6 +50,7 @@
 #include "latx-options.h"
 #include "latx-static-codes.h"
 #define USE_LATX_SYS_TB_FUNCTIONS
+#include "latx-callret-func.h"
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
 #include "sigint-i386-tcg-la.h"
@@ -587,9 +588,10 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
         TranslationBlock *last_tb, int tb_exit, uint32_t cflags)
 {
     CPUArchState *env = (CPUArchState *)cpu->env_ptr;
-    TranslationBlock *tb;
-    target_ulong cs_base, pc;
+    TranslationBlock *tb, *tb2, *tb3;
+    target_ulong cs_base, pc, pc3;
     uint32_t flags;
+    int page_idx;
 
     if (latx_test_sys_enabled()) {
         return latx_test_sys_start(cpu);
@@ -600,9 +602,24 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
     if (tb == NULL) {
         tb = tb_gen_code(cpu, pc, cs_base, flags, cflags);
 
-        int page_idx = tb_jmp_cache_hash_page(pc) >> TB_JC_PAGE_BITS;
-        cpu->tb_jc_flag[page_idx] = 1;
+        if (latxs_jr_ra()) {
+            tb2 = tb; tb3 = NULL;
+            /* tb2 => tb3 */
+            while (latxs_jr_ra() && tb2->scr_reg > 0) {
+                pc3 = tb2->nextpc + cs_base;
+                tb3 = tb_gen_code(cpu, pc3, cs_base, flags, cflags);
+                latxs_jr_ra_finish_call(tb2, tb3);
 
+                page_idx = tb_jmp_cache_hash_page(pc3) >> TB_JC_PAGE_BITS;
+                cpu->tb_jc_flag[page_idx] = 1;
+                __cpu_jmp_cache_set(cpu, tb_jmp_cache_hash_func(pc3), tb3);
+
+                tb2 = tb3; tb3 = NULL;
+            }
+        }
+
+        page_idx = tb_jmp_cache_hash_page(pc) >> TB_JC_PAGE_BITS;
+        cpu->tb_jc_flag[page_idx] = 1;
         __cpu_jmp_cache_set(cpu, tb_jmp_cache_hash_func(pc), tb);
     }
 

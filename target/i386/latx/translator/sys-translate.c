@@ -43,6 +43,9 @@ void latxs_tr_init(TranslationBlock *tb)
             td->cc_pro_label = latxs_ir2_opnd_new_label();
             td->cc_pro_check_label = latxs_ir2_opnd_new_label();
         }
+        if (latxs_jr_ra() && latxs_jr_ra_for_tb(tb)) {
+            td->jr_ra_label = latxs_ir2_opnd_new_label();
+        }
     }
 }
 
@@ -149,6 +152,13 @@ void latxs_label_dispose(const void *code_buffer)
             } else {
                 tb->cc_ck_ptr = (void *)tb->tc.ptr;
                 tb->cc_ok_ptr = (void *)tb->tc.ptr;
+            }
+
+            if (latxs_jr_ra() && latxs_jr_ra_for_tb(tb)) {
+                int jr_ra_id = latxs_ir2_opnd_label_id(&td->jr_ra_label);
+                tb->jr_ra_ptr = (void *)tb->tc.ptr + (label_pos[jr_ra_id] << 2);
+            } else {
+                tb->jr_ra_ptr = NULL;
             }
         }
     }

@@ -588,6 +588,12 @@ struct TranslationBlock {
         uint32_t flags;
         uint32_t mask;
     } intb_target[1];
+    /* jr ra */
+    void *jr_ra_ptr;
+    int scr_reg;
+    target_ulong nextpc;
+    TranslationBlock *jr_ra_call_from;
+    TranslationBlock *jr_ra_call_to;
 #endif
 #endif
 };

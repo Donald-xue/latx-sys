@@ -228,6 +228,8 @@ typedef struct TRANSLATION_DATA {
     int ignore_rcd_curr_top;
     int force_curr_top_save;
     int force_curr_top_save_bak;
+
+    IR2_OPND jr_ra_label;
 #endif
 
 } TRANSLATION_DATA;
