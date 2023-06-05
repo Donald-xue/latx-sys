@@ -247,13 +247,14 @@ struct kvm_run;
 struct hax_vcpu_state;
 
 #ifdef CONFIG_LATX
-#define TB_JMP_CACHE_BITS 12
+#define TB_JMP_CACHE_BITS 14
+#define TB_JC_PAGE_BITS   (6)
 #else
 #define TB_JMP_CACHE_BITS 12
+#define TB_JC_PAGE_BITS   (TB_JMP_CACHE_BITS / 2)
 #endif
 #define TB_JMP_CACHE_SIZE (1 << TB_JMP_CACHE_BITS)
-#define TB_JC_PAGE_BITS   (TB_JMP_CACHE_BITS / 2)
-#define TB_JC_FLAG_SIZE   (1 << TB_JC_PAGE_BITS)
+#define TB_JC_FLAG_SIZE   (1 << (TB_JMP_CACHE_BITS - TB_JC_PAGE_BITS))
 
 /* work queue */
 
