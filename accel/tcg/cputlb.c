@@ -507,7 +507,6 @@ void tlb_flush(CPUState *cpu)
 #ifdef CONFIG_LATX
     if (hamt_enable() && hamt_started()) {
         hamt_flush_all();
-        from_tlb_flush++;
     }
 #endif
 

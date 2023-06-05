@@ -202,9 +202,7 @@ static uint64_t new_round_asid = 0;
 static uint64_t delete_some_pgtable = 0;
 static uint64_t write_2111 = 0;
 static uint64_t other_source = 0;
-uint64_t from_tlb_flush = 0;
-uint64_t from_tlb_flush_page_locked = 0;
-uint64_t from_by_mmuidx = 0;
+
 static uint64_t tlb_lsm = 0;
 static uint64_t page_fault = 0;
 static int highest_guest_tlb = 0;
@@ -223,9 +221,7 @@ void hmp_hamt(Monitor *mon, const QDict *qdict)
     monitor_printf(mon, "--new round of asid: %ld\n", new_round_asid);
     monitor_printf(mon, "--write 2111st mtlb: %ld\n", write_2111);
     monitor_printf(mon, "--other source     : %ld\n", other_source);
-    monitor_printf(mon, "----tlb flush            : %ld\n", from_tlb_flush);
-    monitor_printf(mon, "----tlb flush page locked: %ld\n", from_tlb_flush_page_locked);
-    monitor_printf(mon, "----tlb flush by mmuidx  : %ld\n", from_by_mmuidx);
+    
     monitor_printf(mon, "asid version : %ld\n", asid_version);
     monitor_printf(mon, "tlb load/store/modify: %ld\n", tlb_lsm);
     monitor_printf(mon, "page fault: %ld\n", page_fault);
