@@ -214,9 +214,6 @@ void helper_invlpg(CPUX86State *env, target_ulong addr)
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     latxs_counter_exe_invlpg(env_cpu(env));
-    if (hamt_enable() && hamt_started()) {
-        hamt_invlpg_helper(addr);
-    }
 #endif
 }
 

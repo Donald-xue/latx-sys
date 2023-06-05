@@ -796,7 +796,7 @@ static uint64_t hamt_get_st_val_softmmu(CPUX86State *env,
     return 0;
 }
 
-void hamt_invlpg_helper(uint32_t i386_addr)
+void hamt_local_flush_page(uint32_t i386_addr)
 {
     if (hamt_interpreter()) {
         return;

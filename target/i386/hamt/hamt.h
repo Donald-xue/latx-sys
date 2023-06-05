@@ -27,7 +27,7 @@ bool hamt_started(void);
 void start_hamt(bool *enable);
 void stop_hamt(bool *disable);
 
-void hamt_invlpg_helper(uint32_t i386_addr);
+void hamt_local_flush_page(uint32_t i386_addr);
 
 void hamt_flush_all(void);
 

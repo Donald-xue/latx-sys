@@ -618,8 +618,7 @@ static void tlb_flush_page_locked(CPUArchState *env, int midx,
 
 #ifdef CONFIG_LATX
     if (hamt_enable() && hamt_started()) {
-        hamt_flush_all();
-        from_tlb_flush_page_locked++;
+        hamt_local_flush_page(page);
     }
 #ifdef HAMT_USE_SPT
     if (hamt_have_spt()) {
@@ -731,10 +730,6 @@ void tlb_flush_page_by_mmuidx(CPUState *cpu, target_ulong addr, uint16_t idxmap)
 
 #ifdef CONFIG_LATX
     latxs_counter_stlb_flush_page(cpu);
-    if (hamt_enable() && hamt_started()) {
-        from_by_mmuidx++;
-        hamt_flush_all();
-    }
 #endif
 
     if (qemu_cpu_is_self(cpu)) {
