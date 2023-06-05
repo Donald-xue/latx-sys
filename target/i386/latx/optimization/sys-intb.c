@@ -12,6 +12,7 @@
 #include "latx-intb-sys.h"
 #include "latx-sigint-sys.h"
 #include "latxs-cc-pro.h"
+#include "latx-helper.h"
 
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
@@ -268,7 +269,7 @@ int gen_latxs_intb_lookup(void *code_ptr)
     latxs_append_ir2_jmp_far(ins_offset, 1);
 
     latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
-    latxs_tr_gen_call_to_helper((ADDR)helper_lookup_tb);
+    latxs_tr_gen_call_to_helper((ADDR)latx_helper_lookup_tb_hashtable);
 
     offset = (td->ir2_asm_nr << 2) - start;
     ins_offset = (GET_SC_TABLE(rid, scs_epilogue) - (ADDR)code_ptr - offset) >> 2;

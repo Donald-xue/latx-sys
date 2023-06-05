@@ -50,6 +50,7 @@
 #include "latx-options.h"
 #include "latx-static-codes.h"
 #define USE_LATX_SYS_TB_FUNCTIONS
+#include "latx-helper.h"
 #include "latx-callret-func.h"
 #endif
 #if defined(CONFIG_SIGINT) && defined(CONFIG_SOFTMMU)
@@ -551,6 +552,29 @@ static inline void *__cpu_jmp_cache_get(CPUState *cpu,
     } else {
         return qatomic_rcu_read(&cpu->tb_jmp_cache[idx]);
     }
+}
+
+void *latx_helper_lookup_tb_hashtable(void *_env)
+{
+    CPUArchState *env = (CPUArchState *)_env;
+    CPUState *cpu = env_cpu(env);
+    TranslationBlock *tb;
+    target_ulong cs_base, pc;
+    uint32_t flags;
+
+    cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
+
+    tb = tb_htable_lookup(cpu, pc, cs_base, flags, curr_cflags(cpu));
+    if (tb == NULL) return NULL;
+
+    uint32_t hash = tb_jmp_cache_hash_func(pc);
+    if (qemu_tcg_bg_jc_enabled(cpu)) {
+        qatomic_set(&cpu->tcg_bg_jc[hash], tb);
+    } else {
+        qatomic_set(&cpu->tb_jmp_cache[hash], tb);
+    }
+
+    return tb;
 }
 
 static inline TranslationBlock *__tb_lookup(CPUState *cpu, target_ulong pc,
