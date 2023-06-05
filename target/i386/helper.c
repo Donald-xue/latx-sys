@@ -170,7 +170,7 @@ void cpu_x86_update_cr3(CPUX86State *env, target_ulong new_cr3)
        }
     } 
 
-    if (hamt_enable()) {
+    if (hamt_enable() && hamt_pg_asid()) {
         hamt_set_context(new_cr3);
     }
 #else
