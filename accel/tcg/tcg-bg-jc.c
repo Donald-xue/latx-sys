@@ -120,6 +120,8 @@ static void tcg_bg_func_jc_clear(void *_cpu)
             cpu->cpu_index, old_id, free_id);
 #endif
 
+        latxs_counter_jc_flush_bg(cpu);
+
         /* set jmp cache to a new one */
         qatomic_set(&cpu->tcg_bg_jc, tcg_bg_jc[free_id]);
         qatomic_set(&cpu->tb_jc_flag, tcg_bg_jc_flag[free_id]);
