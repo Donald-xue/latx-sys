@@ -7,6 +7,7 @@
 #include "sys-excp.h"
 #include <string.h>
 
+#include "tcg/tcg-bg-jc.h"
 #include "exec/tb-hash.h"
 
 int intb_njc_enabled(void)
@@ -17,6 +18,14 @@ int intb_njc_enabled(void)
 int gen_latxs_intb_njc_lookup(void *code_ptr)
 {
     int code_nr = 0;
+
+#ifdef TCG_BG_JC_CONFIG_SIZE
+    printf("%s use config size %d %d\n", __func__,
+            tcg_bg_jc_bits, tcg_bg_jc_page_bits);
+#else
+    printf("%s use TB_JMP_PAGE_BITS %d\n", __func__,
+            TB_JMP_PAGE_BITS);
+#endif
 
     latxs_tr_init(NULL);
 
@@ -42,8 +51,13 @@ int gen_latxs_intb_njc_lookup(void *code_ptr)
      *         ^
      *         (pc >> (TARGET_PAGE_BITS - TB_JMP_PAGE_BITS))
      */
+#ifdef TCG_BG_JC_CONFIG_SIZE
+    latxs_append_ir2_opnd2i(LISA_SRLI_D, stmp1, &gpc,
+            (TARGET_PAGE_BITS - tcg_bg_jc_page_bits));
+#else
     latxs_append_ir2_opnd2i(LISA_SRLI_D, stmp1, &gpc,
             (TARGET_PAGE_BITS - TB_JMP_PAGE_BITS));
+#endif
     latxs_append_ir2_opnd3(LISA_XOR, stmp1, &gpc, stmp1);
 
     /*
@@ -51,13 +65,23 @@ int gen_latxs_intb_njc_lookup(void *code_ptr)
      *          &
      *          TB_JMP_PAGE_MASK)
      */
+#ifdef TCG_BG_JC_CONFIG_SIZE
+    latxs_load_imm32_to_ir2(&tmp, tcg_bg_jc_page_mask, EXMode_Z);
+    latxs_append_ir2_opnd2i(LISA_SRLI_D, stmp2, stmp1,
+            (TARGET_PAGE_BITS - tcg_bg_jc_page_bits));
+#else
     latxs_load_imm32_to_ir2(&tmp, TB_JMP_PAGE_MASK, EXMode_Z);
     latxs_append_ir2_opnd2i(LISA_SRLI_D, stmp2, stmp1,
             (TARGET_PAGE_BITS - TB_JMP_PAGE_BITS));
+#endif
     latxs_append_ir2_opnd3(LISA_AND, stmp2, stmp2, &tmp);
 
     /* stmp1 = (tmp & TB_JMP_ADDR_MASK)) */
+#ifdef TCG_BG_JC_CONFIG_SIZE
+    latxs_load_imm32_to_ir2(&tmp, tcg_bg_jc_addr_mask, EXMode_Z);
+#else
     latxs_load_imm32_to_ir2(&tmp, TB_JMP_ADDR_MASK, EXMode_Z);
+#endif
     latxs_append_ir2_opnd3(LISA_AND, stmp1, stmp1, &tmp);
 
     /* index = stmp1 | stmp2 */

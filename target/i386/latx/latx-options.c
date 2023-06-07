@@ -2,6 +2,7 @@
 #include "qemu/osdep.h"
 #include "latx-options.h"
 
+#include "tcg/tcg-bg-jc.h"
 #include "tcg/tcg-bg-tlb-init.h"
 
 int option_by_hand;
@@ -320,6 +321,14 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_BOOL,
             .help = "private buffer for indirect branch",
         }, {
+            .name = "jc",
+            .type = QEMU_OPT_NUMBER,
+            .help = "jmp cache size in bits (1<<bits)",
+        }, {
+            .name = "jcpage",
+            .type = QEMU_OPT_NUMBER,
+            .help = "jmp cache page size in bits (1<<bits)",
+        }, {
             .name = "sigint",
             .type = QEMU_OPT_BOOL,
             .help = "signal interrupt handle",
@@ -537,6 +546,16 @@ static void parse_options_tlb_size(unsigned long long t)
     tcg_bg_tlb_init_size(t);
 }
 
+static void parse_options_jmp_cache(unsigned long long t)
+{
+    tcg_bg_jc_init_jmp_cache_bits(t);
+}
+
+static void parse_options_jmp_cache_page(unsigned long long t)
+{
+    tcg_bg_jc_init_jmp_cache_page_bits(t);
+}
+
 static void parse_options_hamt_delay(unsigned long long t)
 {
     option_hamt_delay = t;
@@ -736,6 +755,16 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "tlbsize");
     if (opt) {
         parse_options_tlb_size(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "jc");
+    if (opt) {
+        parse_options_jmp_cache(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "jcpage");
+    if (opt) {
+        parse_options_jmp_cache_page(opt->value.uint);
     }
 
     opt = qemu_opt_find(opts, "hamtdelay");

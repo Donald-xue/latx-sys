@@ -31,6 +31,7 @@
    TLB invalidation to quickly clear a subset of the hash table.  */
 #ifdef CONFIG_LATX
 #define TB_JMP_PAGE_BITS (6)
+#include "tcg/tcg-bg-jc.h"
 #else
 #define TB_JMP_PAGE_BITS (TB_JMP_CACHE_BITS / 2)
 #endif
@@ -38,6 +39,25 @@
 #define TB_JMP_PAGE_SIZE (1 << TB_JMP_PAGE_BITS)
 #define TB_JMP_ADDR_MASK (TB_JMP_PAGE_SIZE - 1)
 #define TB_JMP_PAGE_MASK (TB_JMP_CACHE_SIZE - TB_JMP_PAGE_SIZE)
+
+#ifdef TCG_BG_JC_CONFIG_SIZE
+
+static inline unsigned int tb_jmp_cache_hash_page(target_ulong pc)
+{
+    target_ulong tmp;
+    tmp = pc ^ (pc >> (TARGET_PAGE_BITS - tcg_bg_jc_page_bits));
+    return (tmp >> (TARGET_PAGE_BITS - tcg_bg_jc_page_bits)) & tcg_bg_jc_page_mask;
+}
+
+static inline unsigned int tb_jmp_cache_hash_func(target_ulong pc)
+{
+    target_ulong tmp;
+    tmp = pc ^ (pc >> (TARGET_PAGE_BITS - tcg_bg_jc_page_bits));
+    return (((tmp >> (TARGET_PAGE_BITS - tcg_bg_jc_page_bits)) & tcg_bg_jc_page_mask)
+            | (tmp & tcg_bg_jc_addr_mask));
+}
+
+#else
 
 static inline unsigned int tb_jmp_cache_hash_page(target_ulong pc)
 {
@@ -53,6 +73,8 @@ static inline unsigned int tb_jmp_cache_hash_func(target_ulong pc)
     return (((tmp >> (TARGET_PAGE_BITS - TB_JMP_PAGE_BITS)) & TB_JMP_PAGE_MASK)
            | (tmp & TB_JMP_ADDR_MASK));
 }
+
+#endif
 
 #else
 
