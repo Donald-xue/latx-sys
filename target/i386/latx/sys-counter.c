@@ -1,4 +1,9 @@
 #include "common.h"
+#include "cpu.h"
+#include "lsenv.h"
+#include "reg-alloc.h"
+#include "latx-options.h"
+#include "translate.h"
 #include "latx-counter-sys.h"
 #include "tcg/tcg-bg-thread.h"
 #include "tcg/tcg-bg-log.h"
@@ -21,6 +26,7 @@ typedef struct {
     BG_COUNTER_DEF_EXEC
     BG_COUNTER_DEF_STLB
     BG_COUNTER_DEF_HAMT
+    BG_COUNTER_DEF_INDIRBR
     BG_COUNTER_DEF_DUMMY
 } latxs_counter_t;
 
@@ -54,6 +60,15 @@ void __attribute__((__constructor__)) latx_counter_init(void)
 __latxs_counter_data[id].name ## _nr += 1;  \
 } while (0)
 
+#define COUNTER_OP_GEN_INC(id, name, tmp1, tmp2) do {       \
+    IR2_OPND *t1 = (IR2_OPND *)tmp1;                        \
+    IR2_OPND *t2 = (IR2_OPND *)tmp2;                        \
+    uint64_t addr = (uint64_t)(&__latxs_counter_data[id].name ## _nr);  \
+    latxs_load_imm64(t1, addr);                             \
+    latxs_append_ir2_opnd2i(LISA_LD_D,   t2, t1, 0); \
+    latxs_append_ir2_opnd2i(LISA_ADDI_D, t2, t2, 1); \
+    latxs_append_ir2_opnd2i(LISA_ST_D,   t2, t1, 0); \
+} while (0)
 
 #define IMP_COUNTER_FUNC(name)                  \
 void __latxs_counter_ ## name (void *cpu)       \
@@ -63,6 +78,42 @@ void __latxs_counter_ ## name (void *cpu)       \
         cpuid = ((CPUState *)cpu)->cpu_index;   \
     }                                           \
     COUNTER_OP_INC(cpuid, name);                \
+}
+
+#define IMP_COUNTER_CPL_FUNC(name)              \
+void __latxs_counter_cpl_ ## name (void *_cpu)  \
+{                                               \
+    CPUState *cpu = _cpu;                       \
+    CPUX86State *env = cpu->env_ptr;            \
+    int cpuid = 0;                              \
+    if (qemu_tcg_mttcg_enabled()) {             \
+        cpuid = cpu->cpu_index;                 \
+    }                                           \
+    int cpl = env->hflags & 0x3;                \
+    if (cpl == 0) {                             \
+        COUNTER_OP_INC(cpuid, cpl0_ ## name);   \
+    }                                           \
+    if (cpl == 3) {                             \
+        COUNTER_OP_INC(cpuid, cpl3_ ## name);   \
+    }                                           \
+}
+
+#define IMP_COUNTER_GEN_FUNC(name)                  \
+void __latxs_counter_gen_ ## name (void *cpu,       \
+        void *tmp1, void *tmp2)                     \
+{                                                   \
+    int cpuid = 0;                                  \
+    if (qemu_tcg_mttcg_enabled()) {                 \
+        cpuid = ((CPUState *)cpu)->cpu_index;       \
+    }                                               \
+    COUNTER_OP_GEN_INC(cpuid, name, tmp1, tmp2);    \
+}
+
+#define IMP_COUNTER_STATIC_GEN_FUNC(name)           \
+void __latxs_counter_gen_ ## name (                 \
+        void *tmp1, void *tmp2)                     \
+{                                                   \
+    COUNTER_OP_GEN_INC(0, name, tmp1, tmp2);        \
 }
 
 #ifdef BG_COUNTER_GROUP_TB
@@ -139,6 +190,23 @@ IMP_COUNTER_FUNC(hamt_st_spt_ok)
 IMP_COUNTER_FUNC(hamt_st_stlb_ok)
 #endif
 
+#ifdef BG_COUNTER_GROUP_INDIRBR
+IMP_COUNTER_GEN_FUNC(inbr_cpl0_ret)
+IMP_COUNTER_GEN_FUNC(inbr_cpl0_call)
+IMP_COUNTER_GEN_FUNC(inbr_cpl0_jmp)
+IMP_COUNTER_GEN_FUNC(inbr_cpl3_ret)
+IMP_COUNTER_GEN_FUNC(inbr_cpl3_call)
+IMP_COUNTER_GEN_FUNC(inbr_cpl3_jmp)
+
+IMP_COUNTER_STATIC_GEN_FUNC(inbr_cpl0_njc)
+IMP_COUNTER_STATIC_GEN_FUNC(inbr_cpl0_njc_hit)
+IMP_COUNTER_STATIC_GEN_FUNC(inbr_cpl3_njc)
+IMP_COUNTER_STATIC_GEN_FUNC(inbr_cpl3_njc_hit)
+
+IMP_COUNTER_CPL_FUNC(inbr_hp)
+IMP_COUNTER_CPL_FUNC(inbr_hp_hit)
+#endif
+
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
@@ -154,6 +222,8 @@ static void __latxs_counter_bg_log(int n, int sec)
             BG_COUNTER_LOG_STLB     \
             BG_COUNTER_LOG_HAMT_P1  \
             BG_COUNTER_LOG_HAMT_P2  \
+            BG_COUNTER_LOG_INDIRBR  \
+            BG_COUNTER_LOG_INDIRBR_NJC  \
             BG_COUNTER_LOG_MISC     \
             "\n" , sec, n
             BG_COUNTER_LOG_DATA_TB(n)
@@ -165,6 +235,8 @@ static void __latxs_counter_bg_log(int n, int sec)
             BG_COUNTER_LOG_DATA_STLB(n)
             BG_COUNTER_LOG_DATA_HAMT_P1(n)
             BG_COUNTER_LOG_DATA_HAMT_P2(n)
+            BG_COUNTER_LOG_DATA_INDIRBR(n)
+            BG_COUNTER_LOG_DATA_INDIRBR_NJC(n)
             BG_COUNTER_LOG_DATA_MISC(n)
             );
 }

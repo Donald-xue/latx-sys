@@ -6,7 +6,7 @@
 #include "translate.h"
 #include "latx-intb-sys.h"
 #include "latx-string-sys.h"
-
+#include "latx-counter-sys.h"
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
 
@@ -481,6 +481,38 @@ void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
     latxs_append_ir2_jmp_far(ins_offset, 0);
 }
 
+#if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_INDIRBR)
+static void latxs_counter_patch_inbr(CPUState *cpu, IR1_INST *pir1)
+{
+    CPUX86State *env = cpu->env_ptr;
+    int cpl = env->hflags & 0x3;
+
+    IR2_OPND tmp1 = latxs_ra_alloc_itemp();
+    IR2_OPND tmp2 = latxs_ra_alloc_itemp();
+
+    IR1_OPCODE opcode = ir1_opcode(pir1);
+    switch (opcode) {
+    case X86_INS_RET:
+        if (cpl == 0) latxs_counter_gen_inbr_cpl0_ret(cpu, &tmp1, &tmp2);
+        if (cpl == 3) latxs_counter_gen_inbr_cpl3_ret(cpu, &tmp1, &tmp2);
+        break;
+    case X86_INS_CALL:
+        if (cpl == 0) latxs_counter_gen_inbr_cpl0_call(cpu, &tmp1, &tmp2);
+        if (cpl == 3) latxs_counter_gen_inbr_cpl3_call(cpu, &tmp1, &tmp2);
+        break;
+    case X86_INS_JMP:
+        if (cpl == 0) latxs_counter_gen_inbr_cpl0_jmp(cpu, &tmp1, &tmp2);
+        if (cpl == 3) latxs_counter_gen_inbr_cpl3_jmp(cpu, &tmp1, &tmp2);
+        break;
+    default:
+        break;
+    }
+
+    latxs_ra_free_temp(&tmp1);
+    latxs_ra_free_temp(&tmp2);
+}
+#endif
+
 /* Should always use TB-Link. */
 void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
 {
@@ -742,6 +774,10 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
     case X86_INS_RET:
 indirect_call:
 indirect_jmp:
+
+#if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_INDIRBR)
+        latxs_counter_patch_inbr(cpu, branch);
+#endif
 
         if (sigint_enabled() == 1) {
 #ifdef LATXS_INTB_LINK_ENABLE

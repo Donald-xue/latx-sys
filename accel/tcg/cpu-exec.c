@@ -562,10 +562,12 @@ void *latx_helper_lookup_tb_hashtable(void *_env)
     target_ulong cs_base, pc;
     uint32_t flags;
 
+    latxs_counter_cpl_inbr_hp(cpu);
     cpu_get_tb_cpu_state(env, &pc, &cs_base, &flags);
 
     tb = tb_htable_lookup(cpu, pc, cs_base, flags, curr_cflags(cpu));
     if (tb == NULL) return NULL;
+    latxs_counter_cpl_inbr_hp_hit(cpu);
 
     uint32_t hash = tb_jmp_cache_hash_func(pc);
     if (qemu_tcg_bg_jc_enabled(cpu)) {

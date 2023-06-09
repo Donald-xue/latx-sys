@@ -14,6 +14,7 @@
 #include "latxs-cc-pro.h"
 #include "latx-helper.h"
 
+#include "latx-counter-sys.h"
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
 
@@ -184,6 +185,10 @@ int gen_latxs_intb_lookup(void *code_ptr)
     tr_gen_pb_lookup(&tb, env, &tmp, &tmp0, &tmp1, use_cc_pro);
 
     /* ======== 1. NJC Lookup TB ======== */
+#if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_INDIRBR)
+    if (rid == 0) latxs_counter_gen_inbr_cpl0_njc(&tmp0, &tmp1);
+    if (rid == 1) latxs_counter_gen_inbr_cpl3_njc(&tmp0, &tmp1);
+#endif
     IR2_OPND njc_miss = latxs_ir2_opnd_new_label();
     if (intb_njc_enabled()) {
         /* 1.1 */
@@ -255,6 +260,10 @@ int gen_latxs_intb_lookup(void *code_ptr)
         }
         latxs_append_ir2_opnd3(LISA_BNE, &tmp0, &tmp1, &njc_miss);
 
+#if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_INDIRBR)
+        if (rid == 0) latxs_counter_gen_inbr_cpl0_njc_hit(&tmp0, &tmp1);
+        if (rid == 1) latxs_counter_gen_inbr_cpl3_njc_hit(&tmp0, &tmp1);
+#endif
         /* 1.6 NJC lookup success, finish lookup */
         latxs_append_ir2_opnd1(LISA_B, &label_next_tb_exist);
 

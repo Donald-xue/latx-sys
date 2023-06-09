@@ -11,6 +11,7 @@
 #define BG_COUNTER_GROUP_EXEC
 #define BG_COUNTER_GROUP_STLB
 #define BG_COUNTER_GROUP_HAMT
+#define BG_COUNTER_GROUP_INDIRBR
 
 #define BG_COUNTER_DEF_DUMMY    \
     uint64_t dummy;
@@ -545,6 +546,115 @@ void __latxs_counter_hamt_st_stlb_ok(void *cpu);
 #define latxs_counter_hamt_st_spt_ok(cpu)
 #define latxs_counter_hamt_ld_stlb_ok(cpu)
 #define latxs_counter_hamt_st_stlb_ok(cpu)
+
+#endif
+
+/* ======================== INDIRBR ======================== */
+
+#if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_INDIRBR)
+
+#define BG_COUNTER_DEF_INDIRBR  \
+    uint64_t inbr_cpl0_ret_nr;  \
+    uint64_t inbr_cpl0_call_nr; \
+    uint64_t inbr_cpl0_jmp_nr;  \
+    uint64_t cpl0_inbr_hp_nr;       \
+    uint64_t cpl0_inbr_hp_hit_nr;   \
+    uint64_t inbr_cpl0_njc_nr;      \
+    uint64_t inbr_cpl0_njc_hit_nr;  \
+    uint64_t inbr_cpl3_ret_nr;  \
+    uint64_t inbr_cpl3_call_nr; \
+    uint64_t inbr_cpl3_jmp_nr;  \
+    uint64_t cpl3_inbr_hp_nr;       \
+    uint64_t cpl3_inbr_hp_hit_nr;   \
+    uint64_t inbr_cpl3_njc_nr;      \
+    uint64_t inbr_cpl3_njc_hit_nr;  \
+
+#define BG_COUNTER_LOG_INDIRBR  \
+    "inbr C0 %d %d %d C3 %d %d %d C0HP %d %d C3HP %d %d "
+#define BG_COUNTER_LOG_INDIRBR_NJC  \
+    "C0njc %d %d C3njc %d %d "
+#define BG_COUNTER_LOG_DATA_INDIRBR(n)  \
+   ,BG_LOG_DIFF(n, inbr_cpl0_ret)       \
+   ,BG_LOG_DIFF(n, inbr_cpl0_call)      \
+   ,BG_LOG_DIFF(n, inbr_cpl0_jmp)       \
+   ,BG_LOG_DIFF(n, inbr_cpl3_ret)       \
+   ,BG_LOG_DIFF(n, inbr_cpl3_call)      \
+   ,BG_LOG_DIFF(n, inbr_cpl3_jmp)       \
+   ,BG_LOG_DIFF(n, cpl0_inbr_hp)        \
+   ,BG_LOG_DIFF(n, cpl0_inbr_hp_hit)    \
+   ,BG_LOG_DIFF(n, cpl3_inbr_hp)        \
+   ,BG_LOG_DIFF(n, cpl3_inbr_hp_hit)
+#define BG_COUNTER_LOG_DATA_INDIRBR_NJC(n)  \
+   ,BG_LOG_DIFF(n, inbr_cpl0_njc)           \
+   ,BG_LOG_DIFF(n, inbr_cpl0_njc_hit)       \
+   ,BG_LOG_DIFF(n, inbr_cpl3_njc)           \
+   ,BG_LOG_DIFF(n, inbr_cpl3_njc_hit)
+
+#define latxs_counter_gen_inbr_cpl0_ret(cpu, t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl0_ret(cpu, t1, t2);        \
+} while (0)
+#define latxs_counter_gen_inbr_cpl0_call(cpu, t1, t2) do {   \
+      __latxs_counter_gen_inbr_cpl0_call(cpu, t1, t2);       \
+} while (0)
+#define latxs_counter_gen_inbr_cpl0_jmp(cpu, t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl0_jmp(cpu, t1, t2);        \
+} while (0)
+#define latxs_counter_gen_inbr_cpl3_ret(cpu, t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl3_ret(cpu, t1, t2);        \
+} while (0)
+#define latxs_counter_gen_inbr_cpl3_call(cpu, t1, t2) do {   \
+      __latxs_counter_gen_inbr_cpl3_call(cpu, t1, t2);       \
+} while (0)
+#define latxs_counter_gen_inbr_cpl3_jmp(cpu, t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl3_jmp(cpu, t1, t2);        \
+} while (0)
+
+#define latxs_counter_gen_inbr_cpl0_njc(t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl0_njc(t1, t2);        \
+} while (0)
+#define latxs_counter_gen_inbr_cpl0_njc_hit(t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl0_njc_hit(t1, t2);        \
+} while (0)
+#define latxs_counter_gen_inbr_cpl3_njc(t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl3_njc(t1, t2);        \
+} while (0)
+#define latxs_counter_gen_inbr_cpl3_njc_hit(t1, t2) do {    \
+      __latxs_counter_gen_inbr_cpl3_njc_hit(t1, t2);        \
+} while (0)
+
+#define latxs_counter_cpl_inbr_hp(cpu) do {    \
+      __latxs_counter_cpl_inbr_hp(cpu);        \
+} while (0)
+#define latxs_counter_cpl_inbr_hp_hit(cpu) do {    \
+      __latxs_counter_cpl_inbr_hp_hit(cpu);        \
+} while (0)
+
+void __latxs_counter_gen_inbr_cpl0_ret(void *cpu, void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl0_call(void *cpu, void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl0_jmp(void *cpu, void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl3_ret(void *cpu, void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl3_call(void *cpu, void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl3_jmp(void *cpu, void *t1, void *t2);
+
+void __latxs_counter_gen_inbr_cpl0_njc(void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl0_njc_hit(void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl3_njc(void *t1, void *t2);
+void __latxs_counter_gen_inbr_cpl3_njc_hit(void *t1, void *t2);
+
+void __latxs_counter_cpl_inbr_hp(void *cpu);
+void __latxs_counter_cpl_inbr_hp_hit(void *cpu);
+
+#else
+
+#define latxs_counter_gen_inbr_ret(cpu, tmp)
+#define latxs_counter_gen_inbr_call(cpu, tmp)
+#define latxs_counter_gen_inbr_jmp(cpu, tmp)
+
+#define latxs_counter_gen_inbr_hp(cpu)
+#define latxs_counter_gen_inbr_hp_hit(cpu)
+
+#define latxs_counter_cpl_inbr_hp(cpu)
+#define latxs_counter_cpl_inbr_hp_hit(cpu)
 
 #endif
 
