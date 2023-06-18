@@ -10,6 +10,8 @@ int latxs_cc_pro_checktb(void);
 int latxs_cc_pro_checkjmp(void);
 int latxs_cc_pro_dyinst(void);
 
+int latxs_cc_pro_dyinst_with_filter(void);
+
 int latxs_cc_pro_for_tb(void *tb);
 
 #define CCPRO_SET_INST(tb) do {     \
