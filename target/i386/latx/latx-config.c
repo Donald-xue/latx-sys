@@ -28,6 +28,7 @@
 #include "latx-sigint-sys.h"
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
+#include "latx-callret-func.h"
 
 int target_latx_host(CPUArchState *env, struct TranslationBlock *tb)
 {

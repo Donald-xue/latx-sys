@@ -9,6 +9,7 @@
 #include "latx-tracecc-sys.h"
 #include "latx-np-sys.h"
 #include "latxs-cc-pro.h"
+#include "latx-callret-func.h"
 
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
