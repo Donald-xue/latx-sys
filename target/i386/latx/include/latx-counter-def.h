@@ -1,0 +1,30 @@
+#ifndef _LATX_COUNTER_DEF_H_
+#define _LATX_COUNTER_DEF_H_
+
+//#define BG_COUNTER_ENABLE
+
+
+
+#ifdef BG_COUNTER_ENABLE
+
+#define BG_COUNTER_GROUP_TB
+#define BG_COUNTER_GROUP_EXCP
+#define BG_COUNTER_GROUP_INT
+#define BG_COUNTER_GROUP_JC
+#define BG_COUNTER_GROUP_HP_LDST
+#define BG_COUNTER_GROUP_EXEC
+#define BG_COUNTER_GROUP_STLB
+#define BG_COUNTER_GROUP_HAMT
+#define BG_COUNTER_GROUP_INDIRBR
+
+#endif
+
+#if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_HAMT)
+
+#define __BG_COUNTER_HAMT_P0
+#define __BG_COUNTER_HAMT_P1
+#define __BG_COUNTER_HAMT_P2
+
+#endif
+
+#endif

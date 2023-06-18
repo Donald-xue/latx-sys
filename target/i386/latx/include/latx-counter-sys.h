@@ -1,17 +1,7 @@
 #ifndef _LATX_COUNTER_SYS_H_
 #define _LATX_COUNTER_SYS_H_
 
-//#define BG_COUNTER_ENABLE
-
-#define BG_COUNTER_GROUP_TB
-#define BG_COUNTER_GROUP_EXCP
-#define BG_COUNTER_GROUP_INT
-#define BG_COUNTER_GROUP_JC
-#define BG_COUNTER_GROUP_HP_LDST
-#define BG_COUNTER_GROUP_EXEC
-#define BG_COUNTER_GROUP_STLB
-#define BG_COUNTER_GROUP_HAMT
-#define BG_COUNTER_GROUP_INDIRBR
+#include "latx-counter-def.h"
 
 #define BG_COUNTER_DEF_DUMMY    \
     uint64_t dummy;
@@ -416,7 +406,16 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
 /* ======================== HAMT ======================== */
 #if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_HAMT)
 
-#define BG_COUNTER_DEF_HAMT         \
+#ifdef  __BG_COUNTER_HAMT_P0
+#define   BG_COUNTER_DEF_HAMT_P0    \
+    uint64_t hamt_ufast_nr;         \
+    uint64_t qemu_ufast_nr;
+#else
+#define   BG_COUNTER_DEF_HAMT_P0
+#endif
+
+#ifdef  __BG_COUNTER_HAMT_P1
+#define   BG_COUNTER_DEF_HAMT_P1    \
     uint64_t hamt_fast_nr;          \
     uint64_t hamt_fast_badv0_nr;    \
     uint64_t hamt_fast_undef_nr;    \
@@ -427,16 +426,38 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
     uint64_t hamt_fast_ld_ok_nr;       /* qemu software tlb */  \
     uint64_t hamt_fast_st_spt_ok_nr;   /* hamt spt */           \
     uint64_t hamt_fast_st_stlb_ok_nr;  /* hamt stlb */          \
-    uint64_t hamt_fast_st_ok_nr;       /* qemu software tlb */  \
+    uint64_t hamt_fast_st_ok_nr;       /* qemu software tlb */
+#else
+#define   BG_COUNTER_DEF_HAMT_P1
+#endif
+
+#ifdef  __BG_COUNTER_HAMT_P2
+#define   BG_COUNTER_DEF_HAMT_P2    \
     uint64_t hamt_ld_spt_ok_nr;  /* hamt spt  in  load_helper */    \
     uint64_t hamt_ld_stlb_ok_nr; /* hamt stlb in  load_helper */    \
     uint64_t hamt_st_spt_ok_nr;  /* hamt spt  in store_helper */    \
     uint64_t hamt_st_stlb_ok_nr; /* hamt stlb in store_helper */
+#else
+#define   BG_COUNTER_DEF_HAMT_P2
+#endif
 
+
+
+#ifdef __BG_COUNTER_HAMT_P0
+#define BG_COUNTER_SYNC_HAMT(ds, dd, n) do {    \
+    uint64_t *dsptr = (void *)ds[0];            \
+    dd[n].hamt_ufast_nr = dsptr[100];           \
+    dd[n].qemu_ufast_nr = dsptr[101];           \
+} while (0)
+#define BG_COUNTER_LOG_HAMT_P0 "hamtUF %d qemuUF %d "
+#define BG_COUNTER_LOG_DATA_HAMT_P0(n)  \
+   ,BG_LOG_DIFF(n, hamt_ufast)  \
+   ,BG_LOG_DIFF(n, qemu_ufast)
+#endif
+
+#ifdef __BG_COUNTER_HAMT_P1
 #define BG_COUNTER_LOG_HAMT_P1   \
     "hamtF %d %d %d %d %d LD %d %d %d ST %d %d %d "
-#define BG_COUNTER_LOG_HAMT_P2   \
-    "hstlb %d %d hspt %d %d "
 #define BG_COUNTER_LOG_DATA_HAMT_P1(n)  \
    ,BG_LOG_DIFF(n, hamt_fast)           \
    ,BG_LOG_DIFF(n, hamt_fast_badv0)     \
@@ -449,11 +470,26 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
    ,BG_LOG_DIFF(n, hamt_fast_st_spt_ok)     \
    ,BG_LOG_DIFF(n, hamt_fast_st_stlb_ok)    \
    ,BG_LOG_DIFF(n, hamt_fast_st_ok)
+#endif
+
+#ifdef __BG_COUNTER_HAMT_P2
+#define BG_COUNTER_LOG_HAMT_P2   \
+    "hstlb %d %d hspt %d %d "
 #define BG_COUNTER_LOG_DATA_HAMT_P2(n)  \
    ,BG_LOG_DIFF(n, hamt_ld_spt_ok)      \
    ,BG_LOG_DIFF(n, hamt_ld_stlb_ok)     \
    ,BG_LOG_DIFF(n, hamt_st_spt_ok)      \
    ,BG_LOG_DIFF(n, hamt_st_stlb_ok)
+#endif
+
+#define BG_COUNTER_DEF_HAMT         \
+        BG_COUNTER_DEF_HAMT_P0      \
+        BG_COUNTER_DEF_HAMT_P1      \
+        BG_COUNTER_DEF_HAMT_P2
+
+
+
+#ifdef __BG_COUNTER_HAMT_P1
 
 #define latxs_counter_hamt_fast(cpu) do {    \
       __latxs_counter_hamt_fast(cpu);        \
@@ -503,6 +539,10 @@ void __latxs_counter_hamt_fast_st_ok(void *cpu);
 void __latxs_counter_hamt_fast_st_spt_ok(void *cpu);
 void __latxs_counter_hamt_fast_st_stlb_ok(void *cpu);
 
+#endif /* __BG_COUNTER_HAMT_P1 */
+
+#ifdef __BG_COUNTER_HAMT_P2
+
 #define latxs_counter_hamt_ld_spt_ok(cpu) do {    \
       __latxs_counter_hamt_ld_spt_ok(cpu);        \
 } while (0)
@@ -521,14 +561,23 @@ void __latxs_counter_hamt_ld_stlb_ok(void *cpu);
 void __latxs_counter_hamt_st_spt_ok(void *cpu);
 void __latxs_counter_hamt_st_stlb_ok(void *cpu);
 
+#endif /* __BG_COUNTER_HAMT_P2 */
+
 #else
-
 #define BG_COUNTER_DEF_HAMT
-#define BG_COUNTER_LOG_HAMT_P1
-#define BG_COUNTER_LOG_HAMT_P2
-#define BG_COUNTER_LOG_DATA_HAMT_P1(n)
-#define BG_COUNTER_LOG_DATA_HAMT_P2(n)
+#endif /* BG_COUNTER_ENABLE && BG_COUNTER_GROUP_HAMT */
 
+
+
+#ifndef __BG_COUNTER_HAMT_P0
+#define BG_COUNTER_SYNC_HAMT(ds, dd, n)
+#define BG_COUNTER_LOG_HAMT_P0
+#define BG_COUNTER_LOG_DATA_HAMT_P0(n)
+#endif
+
+#ifndef __BG_COUNTER_HAMT_P1
+#define BG_COUNTER_LOG_HAMT_P1
+#define BG_COUNTER_LOG_DATA_HAMT_P1(n)
 #define latxs_counter_hamt_fast(cpu)
 #define latxs_counter_hamt_fast_badv0(cpu)
 #define latxs_counter_hamt_fast_undef(cpu)
@@ -536,17 +585,19 @@ void __latxs_counter_hamt_st_stlb_ok(void *cpu);
 #define latxs_counter_hamt_fast_ld_ok(cpu)
 #define latxs_counter_hamt_fast_st(cpu)
 #define latxs_counter_hamt_fast_st_ok(cpu)
-
 #define latxs_counter_hamt_fast_ld_stlb_ok(cpu)
 #define latxs_counter_hamt_fast_st_stlb_ok(cpu)
 #define latxs_counter_hamt_fast_ld_spt_ok(cpu)
 #define latxs_counter_hamt_fast_st_spt_ok(cpu)
+#endif
 
+#ifndef __BG_COUNTER_HAMT_P2
+#define BG_COUNTER_LOG_HAMT_P2
+#define BG_COUNTER_LOG_DATA_HAMT_P2(n)
 #define latxs_counter_hamt_ld_spt_ok(cpu)
 #define latxs_counter_hamt_st_spt_ok(cpu)
 #define latxs_counter_hamt_ld_stlb_ok(cpu)
 #define latxs_counter_hamt_st_stlb_ok(cpu)
-
 #endif
 
 /* ======================== INDIRBR ======================== */

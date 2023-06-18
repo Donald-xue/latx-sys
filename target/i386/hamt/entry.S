@@ -5,6 +5,7 @@
 ; err_entry_begin:
 ; INVALID_CODEFLOW_1
 ; err_entry_end:
+#include "latx-counter-def.h"
 
 .global tlb_refill_entry_begin
 .global tlb_refill_entry_end
@@ -78,7 +79,18 @@ csrwr    t2, LOONGARCH_CSR_KS1
 csrrd    t0, LOONGARCH_CSR_TLBRBADV
 or       t1, zero, zero
 lu32i.d  t1, 0x100000000>>32
+#ifdef __BG_COUNTER_HAMT_P0
+or      t2, zero, zero
+lu32i.d t2, 0x8100000000>>32
+lu52i.d t2, t2, 0x9000000000000000>>52
+#endif
 bltu     t0, t1, ultra_fast_hamt_space 
+
+#ifdef __BG_COUNTER_HAMT_P0
+ld.d    t1, t2, (COUNTER_UFAST_QEMU * 8)
+addi.d  t1, t1, 1
+st.d    t1, t2, (COUNTER_UFAST_QEMU * 8)
+#endif
 
 csrrd  t0, LOONGARCH_CSR_TLBREHI
 srli.d t0, t0, (TLB_PS_1G_shift + 1)
@@ -99,6 +111,12 @@ csrrd    t2, LOONGARCH_CSR_KS1
 ertn
 
 ultra_fast_hamt_space:
+
+#ifdef __BG_COUNTER_HAMT_P0
+ld.d    t1, t2, (COUNTER_UFAST_HAMT * 8)
+addi.d  t1, t1, 1
+st.d    t1, t2, (COUNTER_UFAST_HAMT * 8)
+#endif
 
 ldptr.d   t0, s0, 1024 // hflags
 andi    t1, t0, 0x3

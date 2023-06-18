@@ -486,6 +486,10 @@
 #define ERA_INDEX       32
 #define BADV_INDEX      33
 #define TLBR_EHI_INDEX  40
+
+#define COUNTER_UFAST_HAMT   100
+#define COUNTER_UFAST_QEMU   101
+
 #define TRAP_CODE_INDEX 506
 #define ASID_INDEX      507
 #define TLBELO1_INDEX   508

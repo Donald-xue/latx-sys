@@ -173,6 +173,7 @@ IMP_COUNTER_FUNC(stlb_resize_dec)
 #endif
 
 #ifdef BG_COUNTER_GROUP_HAMT
+#ifdef __BG_COUNTER_HAMT_P1
 IMP_COUNTER_FUNC(hamt_fast)
 IMP_COUNTER_FUNC(hamt_fast_badv0)
 IMP_COUNTER_FUNC(hamt_fast_undef)
@@ -184,10 +185,13 @@ IMP_COUNTER_FUNC(hamt_fast_ld_ok)
 IMP_COUNTER_FUNC(hamt_fast_st_spt_ok)
 IMP_COUNTER_FUNC(hamt_fast_st_stlb_ok)
 IMP_COUNTER_FUNC(hamt_fast_st_ok)
+#endif
+#ifdef __BG_COUNTER_HAMT_P2
 IMP_COUNTER_FUNC(hamt_ld_spt_ok)
 IMP_COUNTER_FUNC(hamt_ld_stlb_ok)
 IMP_COUNTER_FUNC(hamt_st_spt_ok)
 IMP_COUNTER_FUNC(hamt_st_stlb_ok)
+#endif
 #endif
 
 #ifdef BG_COUNTER_GROUP_INDIRBR
@@ -210,6 +214,8 @@ IMP_COUNTER_CPL_FUNC(inbr_hp_hit)
 #define BG_LOG_DIFF(n, var) \
 (__latxs_counter_data[n].var ## _nr - __local_latxs_counter_data[n].var ## _nr)
 
+extern uint64_t data_storage_s[4];
+
 static void __latxs_counter_bg_log(int n, int sec)
 {
     qemu_bglog("[%7d][%1d] "\
@@ -220,6 +226,7 @@ static void __latxs_counter_bg_log(int n, int sec)
             BG_COUNTER_LOG_HP_LDST  \
             BG_COUNTER_LOG_EXEC     \
             BG_COUNTER_LOG_STLB     \
+            BG_COUNTER_LOG_HAMT_P0  \
             BG_COUNTER_LOG_HAMT_P1  \
             BG_COUNTER_LOG_HAMT_P2  \
             BG_COUNTER_LOG_INDIRBR  \
@@ -233,6 +240,7 @@ static void __latxs_counter_bg_log(int n, int sec)
             BG_COUNTER_LOG_DATA_HP_LDST(n)
             BG_COUNTER_LOG_DATA_EXEC(n)
             BG_COUNTER_LOG_DATA_STLB(n)
+            BG_COUNTER_LOG_DATA_HAMT_P0(n)
             BG_COUNTER_LOG_DATA_HAMT_P1(n)
             BG_COUNTER_LOG_DATA_HAMT_P2(n)
             BG_COUNTER_LOG_DATA_INDIRBR(n)
@@ -242,14 +250,16 @@ static void __latxs_counter_bg_log(int n, int sec)
 }
 
 #define BG_COUNTER_COPY(n) do {             \
-memcpy(&__latxs_counter_data[n],            \
-       &__local_latxs_counter_data[n],      \
+memcpy(&__local_latxs_counter_data[n],            \
+       &__latxs_counter_data[n],      \
        sizeof(latxs_counter_t));            \
 } while (0)
 
 /* worker function */
 static void latxs_counter_bg_log(int sec)
 {
+    BG_COUNTER_SYNC_HAMT(data_storage_s, __latxs_counter_data, 0);
+
     if (qemu_tcg_mttcg_enabled()) {
         __latxs_counter_bg_log(0, sec);
         __latxs_counter_bg_log(1, sec);
