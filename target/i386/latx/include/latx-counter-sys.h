@@ -697,6 +697,12 @@ void __latxs_counter_cpl_inbr_hp_hit(void *cpu);
 
 #else
 
+#define BG_COUNTER_DEF_INDIRBR
+#define BG_COUNTER_LOG_INDIRBR
+#define BG_COUNTER_LOG_INDIRBR_NJC
+#define BG_COUNTER_LOG_DATA_INDIRBR(n)
+#define BG_COUNTER_LOG_DATA_INDIRBR_NJC(n)
+
 #define latxs_counter_gen_inbr_ret(cpu, tmp)
 #define latxs_counter_gen_inbr_call(cpu, tmp)
 #define latxs_counter_gen_inbr_jmp(cpu, tmp)
