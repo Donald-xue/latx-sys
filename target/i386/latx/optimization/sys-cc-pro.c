@@ -110,7 +110,7 @@ void latxs_cc_pro_init_tb(void *_tb)
     if (latxs_cc_pro_for_tb(tb)) {
         tb->cc_mask  = ~CC_FLAG_MASK;
     } else {
-        tb->cc_mask  = 0;
+        tb->cc_mask  = ~0;
     }
 }
 
