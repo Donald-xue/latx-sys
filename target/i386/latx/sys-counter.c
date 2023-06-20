@@ -218,7 +218,7 @@ extern uint64_t data_storage_s[4];
 
 static void __latxs_counter_bg_log(int n, int sec)
 {
-    qemu_bglog("[%7d][%1d] "\
+    qemu_bglog("SEC %d Thread %d "\
             BG_COUNTER_LOG_TB       \
             BG_COUNTER_LOG_EXCP     \
             BG_COUNTER_LOG_INT      \
@@ -293,6 +293,38 @@ void __latxs_counter_wake(void *cpu)
         /* construct worker and wake up bg thread */
         tcg_bg_counter_wake(latxs_counter_bg_log, st);
     }
+}
+
+static FILE *latx_syscounter_map;
+
+#define SYSCOUNTER_MAP(name, index) do {    \
+    fprintf(latx_syscounter_map, "%s %d\n", name, index); \
+} while (0)
+
+#define SYSCOUNTER_MAP_NEXT(n) do { \
+    index += n; \
+} while (0)
+
+static
+void __attribute__((__constructor__)) latx_syscounter_map_init(void)
+{
+    char syscounter_map_file[64];
+    sprintf(syscounter_map_file, "/tmp/syscounter-%d.map", getpid());
+    latx_syscounter_map = fopen(syscounter_map_file, "w");
+
+    int index = 0;
+    SYSCOUNTER_MAP_NEXT(1);
+
+    SYSCOUNTER_MAP("SEC",    index++);
+    SYSCOUNTER_MAP_NEXT(1);
+
+    SYSCOUNTER_MAP("Thread", index++);
+    SYSCOUNTER_MAP_NEXT(1);
+
+    BG_COUNTER_MAP_ALL;
+
+    fflush(latx_syscounter_map);
+    fclose(latx_syscounter_map);
 }
 
 #endif

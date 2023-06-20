@@ -34,6 +34,19 @@
    ,BG_LOG_DIFF(n, tb_lookup_cpl3)      \
    ,BG_LOG_DIFF(n, tb_lookup_ht_cpl3) 
 
+#define BG_COUNTER_MAP_TB                   \
+    SYSCOUNTER_MAP("tb_tr",    index++);    \
+    SYSCOUNTER_MAP_NEXT(1);                 \
+    SYSCOUNTER_MAP("tb_inv",   index++);    \
+    SYSCOUNTER_MAP_NEXT(1);                 \
+    SYSCOUNTER_MAP("tb_flush", index++);    \
+    SYSCOUNTER_MAP_NEXT(1);                 \
+    SYSCOUNTER_MAP("tb_lookup",          index++);  \
+    SYSCOUNTER_MAP("tb_lookup_hit",      index++);  \
+    SYSCOUNTER_MAP("tb_lookup_cpl3",     index++);  \
+    SYSCOUNTER_MAP("tb_lookup_cpl3_hit", index++);  \
+    SYSCOUNTER_MAP_NEXT(1);
+
 #define latxs_counter_tb_tr(cpu) do {   \
       __latxs_counter_tb_tr(cpu);       \
 } while (0)
@@ -68,6 +81,8 @@ void __latxs_counter_tb_lookup_ht_cpl3(void *cpu);
 
 #else
 
+#define BG_COUNTER_MAP_TB
+
 #define BG_COUNTER_DEF_TB
 #define BG_COUNTER_LOG_TB
 #define BG_COUNTER_LOG_DATA_TB(n)
@@ -94,6 +109,11 @@ void __latxs_counter_tb_lookup_ht_cpl3(void *cpu);
    ,BG_LOG_DIFF(n, excp_pf)         \
    ,BG_LOG_DIFF(n, excp_pf_cpl3)
 
+#define BG_COUNTER_MAP_EXCP \
+    SYSCOUNTER_MAP("excp_pf",       index++);   \
+    SYSCOUNTER_MAP("excp_pf_cpl3",  index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
+
 #define latxs_counter_excp_pf(cpu) do {    \
       __latxs_counter_excp_pf(cpu);        \
 } while (0)
@@ -106,6 +126,8 @@ void __latxs_counter_excp_pf(void *cpu);
 void __latxs_counter_excp_pf_cpl3(void *cpu);
 
 #else
+
+#define BG_COUNTER_MAP_EXCP
 
 #define BG_COUNTER_DEF_EXCP
 #define BG_COUNTER_LOG_EXCP
@@ -126,6 +148,10 @@ void __latxs_counter_excp_pf_cpl3(void *cpu);
 #define BG_COUNTER_LOG_DATA_INT(n) \
    ,BG_LOG_DIFF(n, interrupt)
 
+#define BG_COUNTER_MAP_INT  \
+    SYSCOUNTER_MAP("interrupt", index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
+
 #define latxs_counter_interrupt(cpu) do {    \
       __latxs_counter_interrupt(cpu);        \
 } while (0)
@@ -133,6 +159,8 @@ void __latxs_counter_excp_pf_cpl3(void *cpu);
 void __latxs_counter_interrupt(void *cpu);
 
 #else
+
+#define BG_COUNTER_MAP_INT
 
 #define BG_COUNTER_DEF_INT
 #define BG_COUNTER_LOG_INT
@@ -160,6 +188,14 @@ void __latxs_counter_interrupt(void *cpu);
    ,BG_LOG_DIFF(n, jc_flush_page_go)    \
    ,BG_LOG_DIFF(n, jc_flush_page_do)
 
+#define BG_COUNTER_MAP_JC   \
+    SYSCOUNTER_MAP("jc_flush",          index++);   \
+    SYSCOUNTER_MAP("jc_flush_bg",       index++);   \
+    SYSCOUNTER_MAP("jc_flush_page",     index++);   \
+    SYSCOUNTER_MAP("jc_flush_page_go",  index++);   \
+    SYSCOUNTER_MAP("jc_flush_page_do",  index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
+
 #define latxs_counter_jc_flush(cpu) do {    \
       __latxs_counter_jc_flush(cpu);        \
 } while (0)
@@ -183,6 +219,8 @@ void __latxs_counter_jc_flush_page_go(void *cpu);
 void __latxs_counter_jc_flush_page_do(void *cpu);
 
 #else
+
+#define BG_COUNTER_MAP_JC
 
 #define BG_COUNTER_DEF_JC
 #define BG_COUNTER_LOG_JC
@@ -224,6 +262,22 @@ void __latxs_counter_jc_flush_page_do(void *cpu);
    ,BG_LOG_DIFF(n, helper_store_stlbfill_cpl3)  \
    ,BG_LOG_DIFF(n, helper_load_cpl3)            \
    ,BG_LOG_DIFF(n, helper_load_stlbfill_cpl3)
+
+#define BG_COUNTER_MAP_HP_LDST                          \
+    SYSCOUNTER_MAP("hp_store",          index++);       \
+    SYSCOUNTER_MAP("hp_store_stlbfill", index++);       \
+    SYSCOUNTER_MAP("hp_store_io",       index++);       \
+    SYSCOUNTER_MAP_NEXT(1);                             \
+    SYSCOUNTER_MAP("hp_load",           index++);       \
+    SYSCOUNTER_MAP("hp_load_stlbfill",  index++);       \
+    SYSCOUNTER_MAP("hp_load_io",        index++);       \
+    SYSCOUNTER_MAP_NEXT(1);                             \
+    SYSCOUNTER_MAP("hp_store_cpl3",          index++);  \
+    SYSCOUNTER_MAP("hp_store_stlbfill_cpl3", index++);  \
+    SYSCOUNTER_MAP_NEXT(1);                             \
+    SYSCOUNTER_MAP("hp_load_cpl3",           index++);  \
+    SYSCOUNTER_MAP("hp_load_stlbfill_cpl3",  index++);  \
+    SYSCOUNTER_MAP_NEXT(1);
 
 #define latxs_counter_helper_store(cpu) do {    \
       __latxs_counter_helper_store(cpu);        \
@@ -275,6 +329,8 @@ void __latxs_counter_helper_load_stlbfill_cpl3(void *cpu);
 
 #else
 
+#define BG_COUNTER_MAP_HP_LDST
+
 #define BG_COUNTER_DEF_HP_LDST
 #define BG_COUNTER_LOG_HP_LDST
 #define BG_COUNTER_LOG_DATA_HP_LDST(n)
@@ -307,6 +363,13 @@ void __latxs_counter_helper_load_stlbfill_cpl3(void *cpu);
    ,BG_LOG_DIFF(n, exe_write_cr3)   \
    ,BG_LOG_DIFF(n, exe_invlpg)
 
+#define BG_COUNTER_MAP_EXEC \
+    SYSCOUNTER_MAP("exec_wr_cr0", index++); \
+    SYSCOUNTER_MAP("exec_wr_cr3", index++); \
+    SYSCOUNTER_MAP_NEXT(1);                 \
+    SYSCOUNTER_MAP("exec_invlpg", index++); \
+    SYSCOUNTER_MAP_NEXT(1);
+
 #define latxs_counter_exe_write_cr0(cpu) do {   \
       __latxs_counter_exe_write_cr0(cpu);       \
 } while (0)
@@ -324,6 +387,8 @@ void __latxs_counter_exe_write_cr3(void *cpu);
 void __latxs_counter_exe_invlpg(void *cpu);
 
 #else
+
+#define BG_COUNTER_MAP_EXEC
 
 #define BG_COUNTER_DEF_EXEC
 #define BG_COUNTER_LOG_EXEC
@@ -357,6 +422,17 @@ void __latxs_counter_exe_invlpg(void *cpu);
    ,BG_LOG_DIFF(n, stlb_resize_inc)     \
    ,BG_LOG_DIFF(n, stlb_resize_dec)
 
+#define BG_COUNTER_MAP_STLB \
+    SYSCOUNTER_MAP("stlb_flush_full",  index++);    \
+    SYSCOUNTER_MAP("stlb_flush_part",  index++);    \
+    SYSCOUNTER_MAP("stlb_flush_elide", index++);    \
+    SYSCOUNTER_MAP("stlb_flush_page",  index++);    \
+    SYSCOUNTER_MAP_NEXT(1);                         \
+    SYSCOUNTER_MAP("stlb_resize",      index++);    \
+    SYSCOUNTER_MAP("stlb_resize_inc",  index++);    \
+    SYSCOUNTER_MAP("stlb_resize_dec",  index++);    \
+    SYSCOUNTER_MAP_NEXT(1);
+
 #define latxs_counter_stlb_flush_full(cpu) do { \
       __latxs_counter_stlb_flush_full(cpu);     \
 } while (0)
@@ -388,6 +464,8 @@ void __latxs_counter_stlb_resize_inc(void *cpu);
 void __latxs_counter_stlb_resize_dec(void *cpu);
 
 #else
+
+#define BG_COUNTER_MAP_STLB
 
 #define BG_COUNTER_DEF_STLB
 #define BG_COUNTER_LOG_STLB
@@ -453,6 +531,11 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
 #define BG_COUNTER_LOG_DATA_HAMT_P0(n)  \
    ,BG_LOG_DIFF(n, hamt_ufast)  \
    ,BG_LOG_DIFF(n, qemu_ufast)
+#define BG_COUNTER_MAP_HAMT_P0  \
+    SYSCOUNTER_MAP("hamt_ultra_fast_tlbrefill", index++);   \
+    SYSCOUNTER_MAP_NEXT(1);                                 \
+    SYSCOUNTER_MAP("qemu_ultra_fast_tlbrefill", index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
 #endif
 
 #ifdef __BG_COUNTER_HAMT_P1
@@ -470,6 +553,21 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
    ,BG_LOG_DIFF(n, hamt_fast_st_spt_ok)     \
    ,BG_LOG_DIFF(n, hamt_fast_st_stlb_ok)    \
    ,BG_LOG_DIFF(n, hamt_fast_st_ok)
+#define BG_COUNTER_MAP_HAMT_P1                  \
+    SYSCOUNTER_MAP("hamt_fast",       index++); \
+    SYSCOUNTER_MAP("hamt_fast_badv0", index++); \
+    SYSCOUNTER_MAP("hamt_fast_undef", index++); \
+    SYSCOUNTER_MAP("hamt_fast_ld",    index++); \
+    SYSCOUNTER_MAP("hamt_fast_st",    index++); \
+    SYSCOUNTER_MAP_NEXT(1);                         \
+    SYSCOUNTER_MAP("hamt_fast_ld_spt",  index++);   \
+    SYSCOUNTER_MAP("hamt_fast_ld_stlb", index++);   \
+    SYSCOUNTER_MAP("hamt_fast_ld_ok",   index++);   \
+    SYSCOUNTER_MAP_NEXT(1);                         \
+    SYSCOUNTER_MAP("hamt_fast_st_spt",  index++);   \
+    SYSCOUNTER_MAP("hamt_fast_st_stlb", index++);   \
+    SYSCOUNTER_MAP("hamt_fast_st_ok",   index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
 #endif
 
 #ifdef __BG_COUNTER_HAMT_P2
@@ -480,6 +578,13 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
    ,BG_LOG_DIFF(n, hamt_ld_stlb_ok)     \
    ,BG_LOG_DIFF(n, hamt_st_spt_ok)      \
    ,BG_LOG_DIFF(n, hamt_st_stlb_ok)
+#define BG_COUNTER_MAP_HAMT_P2                  \
+    SYSCOUNTER_MAP("hamt_ld_spt",  index++);    \
+    SYSCOUNTER_MAP("hamt_ld_stlb", index++);    \
+    SYSCOUNTER_MAP_NEXT(1);                     \
+    SYSCOUNTER_MAP("hamt_st_spt",  index++);    \
+    SYSCOUNTER_MAP("hamt_st_stlb", index++);    \
+    SYSCOUNTER_MAP_NEXT(1);
 #endif
 
 #define BG_COUNTER_DEF_HAMT         \
@@ -487,6 +592,10 @@ void __latxs_counter_stlb_resize_dec(void *cpu);
         BG_COUNTER_DEF_HAMT_P1      \
         BG_COUNTER_DEF_HAMT_P2
 
+#define BG_COUNTER_MAP_HAMT \
+        BG_COUNTER_MAP_HAMT_P0  \
+        BG_COUNTER_MAP_HAMT_P1  \
+        BG_COUNTER_MAP_HAMT_P2
 
 
 #ifdef __BG_COUNTER_HAMT_P1
@@ -564,6 +673,7 @@ void __latxs_counter_hamt_st_stlb_ok(void *cpu);
 #endif /* __BG_COUNTER_HAMT_P2 */
 
 #else
+#define BG_COUNTER_MAP_HAMT
 #define BG_COUNTER_DEF_HAMT
 #endif /* BG_COUNTER_ENABLE && BG_COUNTER_GROUP_HAMT */
 
@@ -621,9 +731,9 @@ void __latxs_counter_hamt_st_stlb_ok(void *cpu);
     uint64_t inbr_cpl3_njc_hit_nr;  \
 
 #define BG_COUNTER_LOG_INDIRBR  \
-    "inbr C0 %d %d %d C3 %d %d %d C0HP %d %d C3HP %d %d "
+    "inbrC0 %d %d %d inbrC3 %d %d %d inbrC0HP %d %d inbrC3HP %d %d "
 #define BG_COUNTER_LOG_INDIRBR_NJC  \
-    "C0njc %d %d C3njc %d %d "
+    "njcC0 %d %d njcC3 %d %d "
 #define BG_COUNTER_LOG_DATA_INDIRBR(n)  \
    ,BG_LOG_DIFF(n, inbr_cpl0_ret)       \
    ,BG_LOG_DIFF(n, inbr_cpl0_call)      \
@@ -640,6 +750,28 @@ void __latxs_counter_hamt_st_stlb_ok(void *cpu);
    ,BG_LOG_DIFF(n, inbr_cpl0_njc_hit)       \
    ,BG_LOG_DIFF(n, inbr_cpl3_njc)           \
    ,BG_LOG_DIFF(n, inbr_cpl3_njc_hit)
+#define BG_COUNTER_MAP_INDIRBR  \
+    SYSCOUNTER_MAP("inbr_cpl0_ret",  index++);  \
+    SYSCOUNTER_MAP("inbr_cpl0_call", index++);  \
+    SYSCOUNTER_MAP("inbr_cpl0_jmp",  index++);  \
+    SYSCOUNTER_MAP_NEXT(1);                     \
+    SYSCOUNTER_MAP("inbr_cpl3_ret",  index++);  \
+    SYSCOUNTER_MAP("inbr_cpl3_call", index++);  \
+    SYSCOUNTER_MAP("inbr_cpl3_jmp",  index++);  \
+    SYSCOUNTER_MAP_NEXT(1);                     \
+    SYSCOUNTER_MAP("inbr_cpl0_hp",      index++);   \
+    SYSCOUNTER_MAP("inbr_cpl0_hp_hit",  index++);   \
+    SYSCOUNTER_MAP_NEXT(1);                         \
+    SYSCOUNTER_MAP("inbr_cpl3_hp",      index++);   \
+    SYSCOUNTER_MAP("inbr_cpl3_hp_hit",  index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
+#define BG_COUNTER_MAP_INDIRBR_NJC  \
+    SYSCOUNTER_MAP("njc_cpl0",      index++);   \
+    SYSCOUNTER_MAP("njc_hit_cpl0",  index++);   \
+    SYSCOUNTER_MAP_NEXT(1);                     \
+    SYSCOUNTER_MAP("njc_cpl3",      index++);   \
+    SYSCOUNTER_MAP("njc_hit_cpl3",  index++);   \
+    SYSCOUNTER_MAP_NEXT(1);
 
 #define latxs_counter_gen_inbr_cpl0_ret(cpu, t1, t2) do {    \
       __latxs_counter_gen_inbr_cpl0_ret(cpu, t1, t2);        \
@@ -697,6 +829,9 @@ void __latxs_counter_cpl_inbr_hp_hit(void *cpu);
 
 #else
 
+#define BG_COUNTER_MAP_INDIRBR
+#define BG_COUNTER_MAP_INDIRBR_NJC
+
 #define BG_COUNTER_DEF_INDIRBR
 #define BG_COUNTER_LOG_INDIRBR
 #define BG_COUNTER_LOG_INDIRBR_NJC
@@ -720,6 +855,7 @@ void __latxs_counter_cpl_inbr_hp_hit(void *cpu);
 #define BG_COUNTER_DEF_MISC
 #define BG_COUNTER_LOG_MISC
 #define BG_COUNTER_LOG_DATA_MISC(n)
+#define BG_COUNTER_MAP_MISC
 
 /* ======================== WAKE ======================== */
 
@@ -730,9 +866,27 @@ void __latxs_counter_cpl_inbr_hp_hit(void *cpu);
 } while (0)
 void __latxs_counter_wake(void *cpu);
 
+#define BG_COUNTER_MAP_ALL do {     \
+        BG_COUNTER_MAP_TB           \
+        BG_COUNTER_MAP_EXCP         \
+        BG_COUNTER_MAP_INT          \
+        BG_COUNTER_MAP_JC           \
+        BG_COUNTER_MAP_HP_LDST      \
+        BG_COUNTER_MAP_EXEC         \
+        BG_COUNTER_MAP_STLB         \
+        BG_COUNTER_MAP_HAMT         \
+        BG_COUNTER_MAP_INDIRBR      \
+        BG_COUNTER_MAP_INDIRBR_NJC  \
+        BG_COUNTER_MAP_MISC         \
+} while (0)
+
 #else /* disable bg thread counter */
 
 #define latxs_counter_wake(cpu)
+
+#define BG_COUNTER_MAP_ALL do { \
+    SYSCOUNTER_MAP("bg_counter_is_disabled", index++);
+} while (0)
 
 #endif /* BG_COUNTER_ENABLE */
 
