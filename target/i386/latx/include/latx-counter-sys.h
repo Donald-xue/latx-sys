@@ -885,7 +885,7 @@ void __latxs_counter_wake(void *cpu);
 #define latxs_counter_wake(cpu)
 
 #define BG_COUNTER_MAP_ALL do { \
-    SYSCOUNTER_MAP("bg_counter_is_disabled", index++);
+    SYSCOUNTER_MAP("bg_counter_is_disabled", index++); \
 } while (0)
 
 #endif /* BG_COUNTER_ENABLE */
