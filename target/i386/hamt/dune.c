@@ -468,6 +468,21 @@ void host_loop(struct kvm_cpu *vcpu)
             pr_info("   TLBR  EPC 0x%lx", csr_value);
 
             csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_TLBREHI;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("   TLBR EHI  0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_TLBRELO0;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("   TLBR ELO0 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_TLBRELO1;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("   TLBR ELO1 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
             csr.id = KVM_CSR_BADI;
             err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
             pr_info("         BADI 0x%lx", csr_value);
@@ -476,6 +491,11 @@ void host_loop(struct kvm_cpu *vcpu)
             csr.id = KVM_CSR_ESTAT;
             err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
             pr_info("         ESTAT 0x%lx", csr_value);
+
+            csr.addr = (uint64_t) & (csr_value);
+            csr.id = KVM_CSR_STLBPS;
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
+            pr_info("   STLBPS    0x%lx", csr_value);
 
             die("KVM_EXIT_IS_NOT_HYPERCALL vcpu=%d exit_reason=%d",
                 vcpu->cpu_id, vcpu->kvm_run->exit_reason);
