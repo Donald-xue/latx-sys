@@ -1,3 +1,8 @@
+#include <string.h>
+#include <stdarg.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
 #include "lsenv.h"
 #include "common.h"
 #include "reg-alloc.h"
@@ -7,10 +12,56 @@
 #include <string.h>
 #include "trace.h"
 #include "latx-tracecc-sys.h"
+#include "latx-tracecc-init.h"
 #include "latxs-fastcs-cfg.h"
 #include "latxs-cc-pro.h"
 
 #ifdef LATXS_TRACECC_ENABLE
+
+static FILE *tracecc_log;
+
+static
+void __attribute__((__constructor__)) tracecc_log_init_static(void)
+{
+    tracecc_log = NULL;
+}
+
+void latx_tracecc_log_init(bool enable)
+{
+    char tracecc_file[64];
+
+    if (enable) {
+        sprintf(tracecc_file, "/tmp/tracecc-%d.log", getpid());
+        tracecc_log = fopen(tracecc_file, "w");
+    } else {
+        tracecc_log = NULL;
+    }
+}
+
+static
+void latx_tracecc_flush(void)
+{
+    if (tracecc_log) {
+        fflush(tracecc_log);
+    }
+}
+
+#define TRACECC_RECORD(format, ...) do {            \
+    if (tracecc_log) {                              \
+        fprintf(tracecc_log, format, __VA_ARGS__);  \
+    } else {                                        \
+        fprintf(stderr, format, __VA_ARGS__);       \
+    }                                               \
+} while (0)
+
+#define TRACECC_RECORD_ENDLINE() do {   \
+    if (tracecc_log) {                  \
+        fprintf(tracecc_log, "\n");     \
+        latx_tracecc_flush();           \
+    } else {                            \
+        fprintf(stderr, "\n");          \
+    }                                   \
+} while (0)
 
 /*
  * option_trace_code_cache
@@ -58,9 +109,10 @@ void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
         return;
     }
 
-    fprintf(stderr, "[CC] Insert %p %p %p %d 0x%lx\n",
+    TRACECC_RECORD("Insert %p %p %p %d 0x%lx",
             (void *)tb, (void *)p1, (void *)p2, exist,
             tb->tc.size);
+    TRACECC_RECORD_ENDLINE();
 }
 
 void __latxs_tracecc_target_to_host(
@@ -75,7 +127,7 @@ void __latxs_tracecc_target_to_host(
     int ir1_nr = td->ir1_nr;
 
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    fprintf(stderr, "[CC] TR %p %x %x %x %d %p %x %x %d ",
+    TRACECC_RECORD("TR %p %x %x %x %d %p %x %x %d ",
             (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->icount,
@@ -88,10 +140,10 @@ void __latxs_tracecc_target_to_host(
     for (i = 0; i < ir1_nr; ++i) {
         pir1 = ir1_list + i;
         for (j = 0; j < pir1->info->size; j++) {
-            fprintf(stderr, "%02x", pir1->info->bytes[j]);
+            TRACECC_RECORD("%02x", pir1->info->bytes[j]);
         }
     }
-    fprintf(stderr, "\n");
+    TRACECC_RECORD_ENDLINE();
 }
 
 static int tb_trace_cc_done(TranslationBlock *tb)
@@ -106,7 +158,7 @@ void __latxs_tracecc_before_exec_tb(
         return;
     }
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    fprintf(stderr, "[CC] EXEC %p %x %x %x %x %d %p %lx %x %x %x %x\n",
+    TRACECC_RECORD("EXEC %p %x %x %x %x %d %p %lx %x %x %x %x",
             (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
@@ -114,6 +166,7 @@ void __latxs_tracecc_before_exec_tb(
             (uint32_t)env->cr[3],
             (uint32_t)tb->page_addr[0],
             (uint32_t)tb->page_addr[1], fcs);
+    TRACECC_RECORD_ENDLINE();
     tb->trace_cc |= 0x1;
 }
 
@@ -124,7 +177,7 @@ static gboolean latxs_tracecc_tb(
     int *flushnr = data;
 
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    fprintf(stderr, "[CC] FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld %x %d\n",
+    TRACECC_RECORD("FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld %x %d",
             *flushnr, (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
@@ -133,6 +186,7 @@ static gboolean latxs_tracecc_tb(
             (uint32_t)tb->page_addr[1],
             (uint64_t)tb->tb_exec_nr,
             fcs, tb->cc_flags);
+    TRACECC_RECORD_ENDLINE();
 
     return false;
 }
@@ -154,12 +208,13 @@ void __latxs_tracecc_tb_inv(TranslationBlock *tb)
         return;
     }
 
-    fprintf(stderr, "[CC] INV %p %x %x %x %x %d %p %lx %x %x\n", (void *)tb,
+    TRACECC_RECORD("INV %p %x %x %x %x %d %p %lx %x %x", (void *)tb,
             tb->flags, tb->cflags,
             (int)tb->pc, tb->size, tb->icount,
             (void *)tb->tc.ptr, tb->tc.size,
             (uint32_t)tb->page_addr[0],
             (uint32_t)tb->page_addr[1]);
+    TRACECC_RECORD_ENDLINE();
 }
 
 void __latxs_tracecc_gen_tb_start(void)
@@ -188,9 +243,14 @@ void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
         return;
     }
 
-    fprintf(stderr, "[CC] LINK %p %d %p %p %p\n",
+    TRACECC_RECORD("LINK %p %d %p %p %p\n",
             (void *)tb, n, (void *)ntb,
             tb->tc.ptr, ntb->tc.ptr);
+    TRACECC_RECORD_ENDLINE();
 }
+
+#else
+
+void latx_tracecc_log_init(bool enable) {}
 
 #endif

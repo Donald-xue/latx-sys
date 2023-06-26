@@ -2,6 +2,8 @@
 #include "qemu/osdep.h"
 #include "latx-options.h"
 
+#include "latx-tracecc-init.h"
+
 #include "tcg/tcg-bg-jc.h"
 #include "tcg/tcg-bg-tlb-init.h"
 
@@ -405,6 +407,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "trace code cache block",
         }, {
+            .name = "cclog",
+            .type = QEMU_OPT_BOOL,
+            .help = "enable trace cc log file",
+        }, {
             .name = "traceir1",
             .type = QEMU_OPT_NUMBER,
             .help = "trace ir1 by type or id",
@@ -518,6 +524,11 @@ static void parse_options_trace_code_cache(unsigned long long t)
      * [4] : print all TBs that are flushed
      */
     option_trace_code_cache = t;
+}
+
+static void parse_options_cclog(bool enable)
+{
+    latx_tracecc_log_init(enable);
 }
 
 static void parse_options_traceir1(unsigned long long t)
@@ -692,6 +703,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "tracecc");
     if (opt) {
         parse_options_trace_code_cache(opt->value.uint);
+    }
+
+    opt = qemu_opt_find(opts, "cclog");
+    if (opt) {
+        parse_options_cclog(opt->value.boolean);
     }
 
     opt = qemu_opt_find(opts, "traceir1");
