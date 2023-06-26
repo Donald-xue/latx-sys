@@ -16,6 +16,13 @@
 #include "latxs-fastcs-cfg.h"
 #include "latxs-cc-pro.h"
 
+#define LATXS_TRACECC_TB_TR           (1 << 0)
+#define LATXS_TRACECC_TB_EXEC         (1 << 1)
+#define LATXS_TRACECC_TB_INV          (1 << 2)
+#define LATXS_TRACECC_TB_FLUSH        (1 << 3)
+#define LATXS_TRACECC_TB_FLUSH_PRINT  (1 << 4)
+#define LATXS_TRACECC_TB_LINK         (1 << 5)
+
 #ifdef LATXS_TRACECC_ENABLE
 
 static FILE *tracecc_log;
