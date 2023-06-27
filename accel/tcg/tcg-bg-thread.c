@@ -235,9 +235,8 @@ void qemu_set_bglog_filename(const char *filename)
     if (bglogfilename) {
         logfile->fd = fopen(bglogfilename, "w");
         if (!logfile->fd) {
-            g_free(logfile);
-            perror(bglogfilename);
-            _exit(1);
+            fprintf(stderr, "bg log open fail. output to stderr.\n");
+            logfile->fd = stderr;
         }
     } else {
         logfile->fd = stderr;

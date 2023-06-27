@@ -40,6 +40,9 @@ void latx_tracecc_log_init(bool enable)
     if (enable) {
         sprintf(tracecc_file, "/tmp/tracecc-%d.log", getpid());
         tracecc_log = fopen(tracecc_file, "w");
+        if (tracecc_log == NULL) {
+            fprintf(stderr, "tracecc log open fail. output to stderr.\n");
+        }
     } else {
         tracecc_log = NULL;
     }
