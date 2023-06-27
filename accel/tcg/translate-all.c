@@ -2501,12 +2501,23 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
 
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
     int latxs_is_buffer_overflow = 0;
+    int latxs_need_tb_flush = 0;
 #endif
 
  buffer_overflow:
     tb = tcg_tb_alloc(tcg_ctx);
 #if defined(CONFIG_LATX) && defined(CONFIG_SOFTMMU)
-    if (unlikely(!tb) || latxs_is_buffer_overflow) {
+    if (latxs_is_buffer_overflow) {
+        if (tcg_region_try_alloc(tcg_ctx)) {
+            /* no more region. need flush */
+            latxs_need_tb_flush = 1;
+        } else {
+            /* new region is ready */
+            latxs_is_buffer_overflow = 0;
+            goto buffer_overflow;
+        }
+    }
+    if (unlikely(!tb) || latxs_need_tb_flush) {
 #else
     if (unlikely(!tb)) {
 #endif

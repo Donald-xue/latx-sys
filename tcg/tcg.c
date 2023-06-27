@@ -1571,6 +1571,11 @@ TranslationBlock *tcg_tb_alloc(TCGContext *s)
     return tb;
 }
 
+bool tcg_region_try_alloc(TCGContext *s)
+{
+    return tcg_region_alloc(s);
+}
+
 void tcg_prologue_init(TCGContext *s)
 {
     size_t prologue_size, total_size;
