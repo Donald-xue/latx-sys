@@ -201,6 +201,7 @@ struct tcg_region_state {
     /* fields protected by the lock */
     size_t current; /* current region index */
     size_t agg_size_full; /* aggregate size of full regions */
+    size_t n_assigned;
 };
 
 #ifdef TCG_USE_MULTI_REGION
@@ -860,24 +861,29 @@ static bool tcg_region_alloc__locked(TCGContext *s)
 #ifdef TCG_USE_MULTI_REGION
     int rid = s->region_id;
 #ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] %p region[%d] curr=%d n=%d\n",
+    printf("%-20s [TCG] %p region[%d] curr=%d n_ass=%d n=%d\n",
             __func__, s, rid,
-            (int)region[rid].current, (int)region[rid].n);
+            (int)region[rid].current,
+            (int)region[rid].n_assigned,
+            (int)region[rid].n);
 #endif
-    if (region[rid].current == region[rid].n) {
+
+    if (region[rid].n_assigned == region[rid].n) {
         return true;
     }
     tcg_region_assign(s, region[rid].current);
     region[rid].current++;
+    region[rid].n_assigned++;
     return false;
 
 #else /* no TCG_USE_MULTI_REGION */
 
-    if (region.current == region.n) {
+    if (region.n_assigned == region.n) {
         return true;
     }
     tcg_region_assign(s, region.current);
     region.current++;
+    region.n_assigned++;
     return false;
 #endif /* TCG_USE_MULTI_REGION */
 }
@@ -946,6 +952,7 @@ void tcg_region_reset_all(void)
         qemu_mutex_lock(&region[idx].lock);
         region[idx].current = 0;
         region[idx].agg_size_full = 0;
+        region[idx].n_assigned = 0;
 
         /* reset all tcg conext to region[0] */
         for (i = 0; i < n_ctxs; i++) {
@@ -963,6 +970,7 @@ void tcg_region_reset_all(void)
 
     qemu_mutex_lock(&region.lock);
     region.current = 0;
+    region.n_assigned = 0;
     region.agg_size_full = 0;
 
     for (i = 0; i < n_ctxs; i++) {
