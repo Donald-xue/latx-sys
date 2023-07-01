@@ -1934,6 +1934,62 @@ static gboolean tb_host_size_iter(gpointer key, gpointer value, gpointer data)
     return false;
 }
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+
+#ifdef TCG_USE_REGION_FIFO
+
+typedef struct region_fifo_stat {
+    uint64_t tb_cpl0_nr;
+    uint64_t tb_cpl3_nr;
+} region_fifo_stat;
+
+static gboolean tb_inv_iter(gpointer key, gpointer value, gpointer data)
+{
+    TranslationBlock *tb = value;
+    region_fifo_stat *stat = data;
+
+    /*
+     * 1. lock page
+     * 2. do_tb_phys_invalidate
+     * 3. unlock page
+     */
+    tb_phys_invalidate(tb, -1);
+
+    if (stat) {
+        if ((tb->flags & 0x3) == 3) {
+            stat->tb_cpl3_nr += 1;
+        } else {
+            stat->tb_cpl0_nr += 1;
+        }
+    }
+
+    return false;
+}
+
+static bool do_tb_flush_fifo_region_locked(CPUState *cpu)
+{
+#ifdef TCG_USE_MULTI_REGION
+    int rid = latx_multi_region_get_id(cpu);
+#else
+    int rid = 0;
+#endif
+
+    region_fifo_stat s;
+    s.tb_cpl0_nr = 0;
+    s.tb_cpl3_nr = 0;
+
+    bool res = tcg_region_free_next(tb_inv_iter, rid, &s);
+
+    printf("%s region[%d] fifo flush : CPL0 %ld CPL3 %ld\n",
+            __func__, rid,
+            s.tb_cpl0_nr, s.tb_cpl3_nr);
+
+    return res;
+}
+#endif
+
+#endif
+
 /* flush all the translation blocks */
 static void do_tb_flush(CPUState *cpu, run_on_cpu_data tb_flush_count)
 {
@@ -1949,6 +2005,14 @@ static void do_tb_flush(CPUState *cpu, run_on_cpu_data tb_flush_count)
     did_flush = true;
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+
+#ifdef TCG_USE_REGION_FIFO
+    if (do_tb_flush_fifo_region_locked(cpu)) {
+        qatomic_mb_set(&tb_ctx.tb_flush_count, tb_ctx.tb_flush_count + 1);
+        goto done;
+    }
+#endif
+
     latxs_tracecc_do_tb_flush();
     latxs_counter_tb_flush(cpu);
 #endif
@@ -2163,13 +2227,19 @@ static void do_tb_phys_invalidate(TranslationBlock *tb, bool rm_from_page_list)
     uint32_t h;
     tb_page_addr_t phys_pc;
     uint32_t orig_cflags = tb_cflags(tb);
+    uint32_t tb_cflags;
 
     assert_memory_lock();
 
     /* make sure no further incoming jumps will be chained to this TB */
     qemu_spin_lock(&tb->jmp_lock);
+    tb_cflags = qatomic_read(&tb->cflags);
     qatomic_set(&tb->cflags, tb->cflags | CF_INVALID);
     qemu_spin_unlock(&tb->jmp_lock);
+
+    if (tb_cflags & CF_INVALID) {
+        return;
+    }
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     latxs_tracecc_tb_inv(tb);

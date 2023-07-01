@@ -202,7 +202,16 @@ struct tcg_region_state {
     size_t current; /* current region index */
     size_t agg_size_full; /* aggregate size of full regions */
     size_t n_assigned;
+    size_t next_free;
 };
+
+/*
+ * 0 1 2 3 4 5 6 7
+ * |O|O|O|O|O|X|X|X|    n_assigned = 5 ; n = 8
+ *  \         \
+ *   \         current = 5
+ *    next_free = 0
+ */
 
 #ifdef TCG_USE_MULTI_REGION
 static struct tcg_region_state region[TCG_MULTI_REGION_N];
@@ -837,6 +846,7 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
     int rid = s->region_id;
     tcg_region_bounds_mr(curr_region, &start, &end, rid);
 #else /* no TCG_USE_MULTI_REGION */
+    int rid = 0;
     tcg_region_bounds(curr_region, &start, &end);
 #endif /* TCG_USE_MULTI_REGION */
 
@@ -873,16 +883,33 @@ static bool tcg_region_alloc__locked(TCGContext *s)
     }
     tcg_region_assign(s, region[rid].current);
     region[rid].current++;
+#ifdef TCG_USE_REGION_FIFO
+    if (region[rid].current == region[rid].n) {
+        region[rid].current = 0;
+    }
+#endif
     region[rid].n_assigned++;
     return false;
 
 #else /* no TCG_USE_MULTI_REGION */
+
+    printf("%-20s [TCG] %p region curr=%d n_ass=%d n=%d next_free=%d\n",
+            __func__, s,
+            (int)region.current,
+            (int)region.n_assigned,
+            (int)region.n,
+            (int)region.next_free);
 
     if (region.n_assigned == region.n) {
         return true;
     }
     tcg_region_assign(s, region.current);
     region.current++;
+#ifdef TCG_USE_REGION_FIFO
+    if (region.current == region.n) {
+        region.current = 0;
+    }
+#endif
     region.n_assigned++;
     return false;
 #endif /* TCG_USE_MULTI_REGION */
@@ -928,6 +955,75 @@ static bool tcg_region_alloc(TCGContext *s)
 #endif /* TCG_USE_MULTI_REGION */
 }
 
+static void __tcg_region_free_next(
+        GTraverseFunc tb_inv_func, void *data,
+        struct tcg_region_state *r, void *rts)
+{
+    int free = r->next_free;
+    struct tcg_region_tree *rt = rts + free * tree_size;
+
+    g_tree_foreach(rt->tree, tb_inv_func, data);
+
+    r->next_free += 1;
+    if (r->next_free == r->n) {
+        r->next_free = 0;
+    }
+    r->n_assigned -= 1;
+
+    g_tree_foreach(rt->tree, tcg_region_tree_traverse, NULL);
+    g_tree_ref(rt->tree);
+    g_tree_destroy(rt->tree);
+}
+
+bool tcg_region_free_next(GTraverseFunc tb_inv_func,
+        int rid, void *data)
+{
+#ifdef TCG_USE_MULTI_REGION
+    printf("%s region[%d] before : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n"
+            ,__func__ ,rid
+            ,(int)region[rid].next_free
+            ,(int)region[rid].n_assigned
+            ,(int)region[rid].n
+            ,(int)region[rid].current);
+
+    if (region[rid].n_assigned == region[rid].n) {
+        __tcg_region_free_next(tb_inv_func, data,
+                &region[rid], region_trees[rid]);
+    } else {
+        assert(0);
+    }
+
+    printf("%s region[%d] after  : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n"
+            ,__func__ ,rid
+            ,(int)region[rid].next_free
+            ,(int)region[rid].n_assigned
+            ,(int)region[rid].n
+            ,(int)region[rid].current);
+#else
+    printf("%s region before : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n"
+            ,__func__
+            ,(int)region.next_free
+            ,(int)region.n_assigned
+            ,(int)region.n
+            ,(int)region.current);
+
+    __tcg_region_free_next(tb_inv_func, data,
+            &region, region_trees);
+
+    printf("%s region after  : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n"
+            ,__func__
+            ,(int)region.next_free
+            ,(int)region.n_assigned
+            ,(int)region.n
+            ,(int)region.current);
+#endif
+    return true;
+}
+
 /*
  * Perform a context's first region allocation.
  * This function does _not_ increment region.agg_size_full.
@@ -953,6 +1049,7 @@ void tcg_region_reset_all(void)
         region[idx].current = 0;
         region[idx].agg_size_full = 0;
         region[idx].n_assigned = 0;
+        region[idx].next_free = 0;
 
         /* reset all tcg conext to region[0] */
         for (i = 0; i < n_ctxs; i++) {
@@ -971,6 +1068,7 @@ void tcg_region_reset_all(void)
     qemu_mutex_lock(&region.lock);
     region.current = 0;
     region.n_assigned = 0;
+    region.next_free = 0;
     region.agg_size_full = 0;
 
     for (i = 0; i < n_ctxs; i++) {

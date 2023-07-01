@@ -913,6 +913,8 @@ void *tcg_malloc_internal(TCGContext *s, int size);
 void tcg_pool_reset(TCGContext *s);
 TranslationBlock *tcg_tb_alloc(TCGContext *s);
 bool tcg_region_try_alloc(TCGContext *s);
+bool tcg_region_free_next(GTraverseFunc tb_inv_func,
+        int rid, void *data);
 
 void tcg_region_init(void);
 void tb_destroy(TranslationBlock *tb);
