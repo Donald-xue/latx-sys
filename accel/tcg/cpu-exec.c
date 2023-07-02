@@ -631,9 +631,16 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
         if (latxs_jr_ra()) {
             tb2 = tb; tb3 = NULL;
             /* tb2 => tb3 */
-            while (latxs_jr_ra() && tb2->scr_reg > 0) {
+            int goon = 1;
+            while (latxs_jr_ra() && tb2->scr_reg > 0 && goon) {
                 pc3 = tb2->nextpc + cs_base;
-                tb3 = tb_gen_code(cpu, pc3, cs_base, flags, cflags);
+                tb3 = tb_htable_lookup(cpu, pc3, cs_base, flags, cflags);
+                if (tb3 == NULL) {
+                    tb3 = tb_gen_code(cpu, pc3, cs_base, flags, cflags);
+                    goon = 1;
+                } else {
+                    goon = 0;
+                }
                 latxs_jr_ra_finish_call(tb2, tb3);
 
                 page_idx = tb_jmp_cache_hash_page(pc3) >> TB_JC_PAGE_BITS;
