@@ -850,6 +850,7 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
     tcg_region_bounds(curr_region, &start, &end);
 #endif /* TCG_USE_MULTI_REGION */
 
+    (void)rid;
 #ifdef NG_TCG_DEBUG_CC
     printf("%-20s [TCG][%p] region[%d] curr=%d "\
             "CGbuffer=%p CGptr=%p CGsize=0x%lx CGhw=%p\n",
