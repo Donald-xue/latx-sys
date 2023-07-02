@@ -19,6 +19,22 @@
 
 //#define LATX_JR_RA_DEBUG
 
+#ifdef LATX_JR_RA_DEBUG
+#define FROMTO_PRINT(fmt, ...)  do {    \
+    printf(fmt, __VA_ARGS__);           \
+} while (0)
+#define FROMTO_PRINT_LINE()     do {    \
+    printf("\n");                       \
+} while (0)
+#else
+#define FROMTO_PRINT(fmt, ...)
+#define FROMTO_PRINT_LINE()
+#endif
+
+#define FROMTO_PTR(p)   ((void *)(((uint64_t)(p)) & (~0x1)))
+#define FROMTO_NEXT(p)  (((uint64_t)(p)) & 0x1)
+#define FROMTO_BUILD(p) ((void *)(((uint64_t)(p)) | (0x1)))
+
 int latxs_jr_ra(void)
 {
     return option_jr_ra;
@@ -51,10 +67,8 @@ void latxs_jr_ra_finish_call(TranslationBlock *tb, TranslationBlock *tb2)
     int reg = tb->scr_reg;
     uint32_t *jr_ra_ptr = tb->jr_ra_ptr;
 
-#ifdef LATX_JR_RA_DEBUG
-    printf("%s jrraptr %p from %x to %x\n",
-            __func__, tb->jr_ra_ptr, tb->pc, tb2->pc);
-#endif
+    FROMTO_PRINT("%s from tb.pc %lx to tb.pc %lx\n",
+            __func__, (uint64_t)tb->pc, (uint64_t)tb2->pc);
 
     uint32_t i1_pcalau12i = 0;
     uint32_t i2_ori = 0;
@@ -77,35 +91,104 @@ void latxs_jr_ra_finish_call(TranslationBlock *tb, TranslationBlock *tb2)
     jr_ra_ptr[1] = i2_ori;
     jr_ra_ptr[2] = i3_gr2scr;
 
-    tb->jr_ra_call_to = tb2;
-    tb2->jr_ra_call_from = tb;
+    if (tb2->jr_ra_call_from == NULL) {
+        tb->jr_ra_call_to    = tb2;
+        tb2->jr_ra_call_from = tb;
+    } else {
+        TranslationBlock *_tb = tb2->jr_ra_call_from;
+        tb2->jr_ra_call_from = tb;
+        tb->jr_ra_call_to = FROMTO_BUILD(_tb);
+    }
+
+    FROMTO_PRINT("%s tb %p tb.to   %p\n", __func__, tb, tb->jr_ra_call_to);
+    FROMTO_PRINT("%s tb %p tb.from %p\n", __func__, tb2, tb2->jr_ra_call_from);
+    FROMTO_PRINT_LINE();
 }
 
 void latxs_jr_ra_reset_call(TranslationBlock *tb)
 {
     TranslationBlock *from = tb->jr_ra_call_from;
-    if (from) {
-#ifdef LATX_JR_RA_DEBUG
-        printf("%s from %x to %x\n",
-                __func__, from->pc, tb->pc);
-#endif
+    TranslationBlock *to   = tb->jr_ra_call_to;
 
-        lsassertm(from->jr_ra_call_to == tb,
-                "%s from %p from.to %p tb %p tb.from %p\n",
-                __func__,
-                from, from->jr_ra_call_to,
-                tb, tb->jr_ra_call_from);
-        lsassertm(from->jr_ra_ptr, "%s jr ra ptr is %p\n",
-                __func__, from->jr_ra_ptr);
+    tb->jr_ra_call_from = NULL;
+    tb->jr_ra_call_to   = NULL;
 
-        uint32_t *jr_ra_ptr = from->jr_ra_ptr;
+    TranslationBlock *ptb = NULL;
+    uint32_t *jr_ra_ptr = NULL;
 
+    int fromto_done = 0;
+
+    while (from) {
+        FROMTO_PRINT("%s from %p to %p\n", __func__, from, tb);
+
+        lsassertm(from->jr_ra_ptr, "%s jr ra ptr is null\n", __func__);
+
+        jr_ra_ptr = from->jr_ra_ptr;
         jr_ra_ptr[0] = 0x03400000; /* andi   zero, zero, 0 */
         jr_ra_ptr[1] = 0x03400000; /* andi   zero, zero, 0 */
         jr_ra_ptr[2] = 0x00000801; /* gr2scr scr1, zero    */
 
-        from->jr_ra_call_to = NULL;
-        tb->jr_ra_call_from = NULL;
+        if (FROMTO_PTR(from->jr_ra_call_to) != tb) {
+            ptb = FROMTO_PTR(from->jr_ra_call_to);
+            from->jr_ra_call_to = NULL;
+
+            from = ptb;
+        } else {
+            from->jr_ra_call_to = NULL;
+            from = NULL;
+        }
+
+        fromto_done = 1;
+    }
+
+    if (to) {
+        if (FROMTO_NEXT(to)) {
+            FROMTO_PRINT("%s tb %p to %p next\n", __func__, tb, to);
+            ptb = FROMTO_PTR(to);
+            while (FROMTO_NEXT(ptb->jr_ra_call_to)) {
+                FROMTO_PRINT("%s tb %p to %p next\n", __func__, tb, ptb->jr_ra_call_to);
+                ptb = FROMTO_PTR(ptb->jr_ra_call_to);
+            }
+            ptb = ptb->jr_ra_call_to;
+            FROMTO_PRINT("%s tb %p to %p next find\n", __func__, tb, ptb);
+
+            from = ptb->jr_ra_call_from;
+            if (from == tb) {
+                FROMTO_PRINT("%s tb.to %p from %p find tb-self\n", __func__, ptb, from);
+                ptb->jr_ra_call_from = FROMTO_PTR(to);
+            } else {
+                FROMTO_PRINT("%s tb.to %p from search %p\n", __func__, ptb, from);
+                while (FROMTO_PTR(from->jr_ra_call_to) != tb) {
+                    from = FROMTO_PTR(from->jr_ra_call_to);
+                    FROMTO_PRINT("%s tb.to %p from search %p\n", __func__, ptb, from);
+                }
+                FROMTO_PRINT("%s tb.to %p from search %p find\n", __func__, ptb, from);
+                from->jr_ra_call_to = to;
+                FROMTO_PRINT("%s set %p.to = %p\n", __func__, from, to);
+            }
+        } else {
+            FROMTO_PRINT("%s tb %p to %p\n", __func__, tb, to);
+            from = to->jr_ra_call_from;
+            if (from == tb) {
+                FROMTO_PRINT("%s tb %p to %p to.from %p find tb-self\n", __func__, tb, to, from);
+                to->jr_ra_call_from = NULL;
+            } else {
+                FROMTO_PRINT("%s tb %p to %p to.from %p search\n", __func__, tb, to, from);
+                while (FROMTO_PTR(from->jr_ra_call_to)!= tb) {
+                    from = FROMTO_PTR(from->jr_ra_call_to);
+                    FROMTO_PRINT("%s tb %p to %p to.from %p search\n", __func__, tb, to, from);
+                }
+                FROMTO_PRINT("%s tb %p to %p to.from %p search find to.from.to %p\n", __func__, tb, to, from, FROMTO_PTR(from->jr_ra_call_to));
+                from->jr_ra_call_to = to;
+                FROMTO_PRINT("%s set %p.to = %p\n", __func__, from, to);
+            }
+        }
+
+        fromto_done = 1;
+    }
+
+    if (fromto_done) {
+        FROMTO_PRINT_LINE();
     }
 }
 
