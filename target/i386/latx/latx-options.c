@@ -62,6 +62,7 @@ int option_fastcs;
 int option_hamt;
 int option_hamt_delay;
 int option_code_cache_pro;
+int option_code_cache_region;
 int option_sys_flag_reduction;
 int option_instptn;
 int option_risk_mem_offset;
@@ -355,6 +356,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "code cache pro",
         }, {
+            .name = "ccregion",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache region",
+        }, {
             .name = "sysflag",
             .type = QEMU_OPT_NUMBER,
             .help = "optimization for eflags",
@@ -582,6 +587,11 @@ static void parse_options_code_cache_pro(unsigned long long t)
     option_code_cache_pro = t;
 }
 
+static void parse_options_code_cache_region(unsigned long long t)
+{
+    option_code_cache_region = t;
+}
+
 #define LATXS_OPT_FLAG_REDUCTION    (1 << 0)
 static void parse_options_sys_flag(unsigned long long t)
 {
@@ -798,6 +808,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_code_cache_pro(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "ccregion");
+    if (opt) {
+        parse_options_code_cache_region(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "sysflag");
     if (opt) {
         parse_options_sys_flag(opt->value.uint);
@@ -981,6 +996,8 @@ void latxs_options_init(void)
     option_fast_fpr_ldst = 0;
     option_by_hand_64 = 0;
     option_code_cache_pro = 0;
+    /* one region for one code cache */
+    option_code_cache_region = 1;
     option_sys_flag_reduction = 0;
     option_instptn = 0;
 

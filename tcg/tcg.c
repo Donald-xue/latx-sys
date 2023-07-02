@@ -69,6 +69,7 @@
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-perfmap.h"
+#include "latx-region-cfg.h"
 #endif
 
 /* Forward declarations for functions declared in tcg-target.c.inc and
@@ -1099,6 +1100,14 @@ static size_t tcg_n_regions(void)
 static size_t tcg_n_regions(void)
 {
     size_t i;
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    int n = latx_region_n_parts();
+#ifdef NG_TCG_DEBUG_CC
+    printf("%s %d\n", __func__, n);
+#endif
+    return n;
+#endif
 
     /* Use a single region if all we have is one vCPU thread */
 #if !defined(CONFIG_USER_ONLY)
