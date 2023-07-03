@@ -957,24 +957,30 @@ static bool tcg_region_alloc(TCGContext *s)
 #endif /* TCG_USE_MULTI_REGION */
 }
 
-static void __tcg_region_free_next(
+static void __tcg_region_free_next(int rid,
         GTraverseFunc tb_inv_func, void *data,
         struct tcg_region_state *r, void *rts)
 {
     int free = r->next_free;
     struct tcg_region_tree *rt = rts + free * tree_size;
 
-    g_tree_foreach(rt->tree, tb_inv_func, data);
+    if (g_tree_nnodes(rt->tree) != 0) {
+        g_tree_foreach(rt->tree, tb_inv_func, data);
+        g_tree_foreach(rt->tree, tcg_region_tree_traverse, NULL);
+        g_tree_ref(rt->tree);
+        g_tree_destroy(rt->tree);
+    } else {
+#ifdef NG_TCG_DEBUG_CC
+        printf("%-20s region[%d] nnodes = 0 , no need flush\n",
+                __func__, rid);
+#endif
+    }
 
     r->next_free += 1;
     if (r->next_free == r->n) {
         r->next_free = 0;
     }
     r->n_assigned -= 1;
-
-    g_tree_foreach(rt->tree, tcg_region_tree_traverse, NULL);
-    g_tree_ref(rt->tree);
-    g_tree_destroy(rt->tree);
 }
 
 bool tcg_region_free_next(GTraverseFunc tb_inv_func,
@@ -994,7 +1000,7 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
             ,(int)region[rid].current);
 
     if (region[rid].n_assigned == region[rid].n) {
-        __tcg_region_free_next(tb_inv_func, data,
+        __tcg_region_free_next(rid, tb_inv_func, data,
                 &region[rid], region_trees[rid]);
     } else {
         assert(0);
@@ -1020,7 +1026,7 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
             ,(int)region.n
             ,(int)region.current);
 
-    __tcg_region_free_next(tb_inv_func, data,
+    __tcg_region_free_next(rid, tb_inv_func, data,
             &region, region_trees);
 
     printf("%s region after  : " \
