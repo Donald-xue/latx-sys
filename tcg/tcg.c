@@ -1703,6 +1703,9 @@ TranslationBlock *tcg_tb_alloc(TCGContext *s)
 
 bool tcg_region_try_alloc(TCGContext *s)
 {
+#ifdef NG_TCG_DEBUG_CC
+    printf("%-20s [TCG] %p\n", __func__, s);
+#endif
     return tcg_region_alloc(s);
 }
 
