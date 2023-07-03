@@ -981,6 +981,10 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
         int rid, void *data)
 {
 #ifdef TCG_USE_MULTI_REGION
+    if (region[rid].n == 1) {
+        return false; /* do full flush */
+    }
+
     printf("%s region[%d] before : " \
            "next_free=%d n_ass=%d n=%d curr=%d\n"
             ,__func__ ,rid
@@ -1004,6 +1008,10 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
             ,(int)region[rid].n
             ,(int)region[rid].current);
 #else
+    if (region.n == 1) {
+        return false; /* do full flush */
+    }
+
     printf("%s region before : " \
            "next_free=%d n_ass=%d n=%d curr=%d\n"
             ,__func__

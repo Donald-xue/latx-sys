@@ -5,6 +5,6 @@
 
 #define TCG_USE_MULTI_REGION
 
-//#define TCG_USE_REGION_FIFO
+#define TCG_USE_REGION_FIFO
 
 #endif
