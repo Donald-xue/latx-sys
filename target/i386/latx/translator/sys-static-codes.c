@@ -585,7 +585,14 @@ int target_latxs_static_codes(void *code_base, int region_id)
 
     latxs_set_lsenv_tmp();
 #ifdef LATX_USE_MULTI_REGION
-    lsenv->tr_data->region_id = region_id;
+    if (latx_multi_region_enable()) {
+        lsenv->tr_data->region_id = region_id;
+    } else {
+        if (region_id != LATX_REGION_ID_DISABLE) {
+            /* only use one region */
+            return 0;
+        }
+    }
 #else
     lsassert(region_id == 0);
     lsenv->tr_data->region_id = 0;

@@ -63,6 +63,7 @@ int option_hamt;
 int option_hamt_delay;
 int option_code_cache_pro;
 int option_code_cache_region;
+int option_code_cache_multi_region;
 int option_sys_flag_reduction;
 int option_instptn;
 int option_risk_mem_offset;
@@ -356,6 +357,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "code cache pro",
         }, {
+            .name = "ccmultiregion",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache multi region",
+        }, {
             .name = "ccregion",
             .type = QEMU_OPT_NUMBER,
             .help = "code cache region",
@@ -592,6 +597,11 @@ static void parse_options_code_cache_region(unsigned long long t)
     option_code_cache_region = t;
 }
 
+static void parse_options_code_cache_multi_region(unsigned long long t)
+{
+    option_code_cache_multi_region = t;
+}
+
 #define LATXS_OPT_FLAG_REDUCTION    (1 << 0)
 static void parse_options_sys_flag(unsigned long long t)
 {
@@ -813,6 +823,11 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_code_cache_region(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "ccmultiregion");
+    if (opt) {
+        parse_options_code_cache_multi_region(opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "sysflag");
     if (opt) {
         parse_options_sys_flag(opt->value.uint);
@@ -998,6 +1013,7 @@ void latxs_options_init(void)
     option_code_cache_pro = 0;
     /* one region for one code cache */
     option_code_cache_region = 1;
+    option_code_cache_multi_region = 0;
     option_sys_flag_reduction = 0;
     option_instptn = 0;
 

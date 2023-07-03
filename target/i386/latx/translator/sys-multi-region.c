@@ -34,14 +34,27 @@ int latx_region_n_parts(void)
 
 #ifdef LATX_USE_MULTI_REGION
 
+int latx_multi_region_enable(void)
+{
+    return option_code_cache_multi_region;
+}
+
 void __latx_multi_region_switch(int rid)
 {
+    if (!latx_multi_region_enable()) {
+        assert(rid == LATX_REGION_ID_DISABLE);
+    }
+
     TRANSLATION_DATA *td = lsenv->tr_data;
     td->region_id = rid;
 }
 
 void __latx_multi_region_save(int rid)
 {
+    if (!latx_multi_region_enable()) {
+        assert(rid == LATX_REGION_ID_DISABLE);
+    }
+
     TRANSLATION_DATA *td = lsenv->tr_data;
     lsassert(td->region_id == rid);
 }
@@ -53,6 +66,10 @@ void __latx_multi_region_init(int region_nr)
 
 int __latx_multi_region_get_id(void *__cpu)
 {
+    if (!latx_multi_region_enable()) {
+        return LATX_REGION_ID_DISABLE;
+    }
+
     CPUState *cpu = __cpu;
     CPUX86State *env = cpu->env_ptr;
     if ((env->hflags & 0x3) == 3) {
@@ -64,6 +81,10 @@ int __latx_multi_region_get_id(void *__cpu)
 
 void __latx_multi_region_prepare_exec(int rid)
 {
+    if (!latx_multi_region_enable()) {
+        assert(rid == LATX_REGION_ID_DISABLE);
+    }
+
     latxs_fastcs_set_indir_table(rid);
 }
 

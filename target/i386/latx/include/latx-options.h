@@ -76,6 +76,7 @@ extern int option_intb_pb;
 extern int option_by_hand_64;
 extern int option_code_cache_pro;
 extern int option_code_cache_region;
+extern int option_code_cache_multi_region;
 int latxs_allow_cross_page_link(void);
 extern int option_sys_flag_reduction;
 extern int option_instptn;

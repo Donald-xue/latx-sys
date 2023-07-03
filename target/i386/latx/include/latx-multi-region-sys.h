@@ -13,6 +13,7 @@
 
 #define LATX_REGION_N 2
 
+#define LATX_REGION_ID_DISABLE  0
 #define LATX_REGION_ID_CPL0 0
 #define LATX_REGION_ID_CPL3 1
 
@@ -31,6 +32,8 @@
 #define latx_multi_region_prepare_exec(rid) do {    \
       __latx_multi_region_prepare_exec(rid);        \
 } while (0)
+
+int latx_multi_region_enable(void);
 
 void __latx_multi_region_switch(int rid);
 void __latx_multi_region_save(int rid);
