@@ -1,22 +1,25 @@
 #ifndef _LATXS_CODE_CACHE_H_
 #define _LATXS_CODE_CACHE_H_
 
-/*#define LATXS_TRACECC_ENABLE*/
+//#define LATXS_TRACECC_ENABLE
 
 #ifdef LATXS_TRACECC_ENABLE
 
 int tracecc_has_tb_tr(void);
 int tracecc_has_tb_exec(void);
 int tracecc_has_tb_inv(void);
-int tracecc_has_tb_flush(void);
-int tracecc_has_tb_flush_print(void);
+int tracecc_has_tb_flush_full(void);
+int tracecc_has_tb_flush_full_print(void);
 int tracecc_has_tb_link(void);
+int tracecc_has_tb_flush_fifo(void);
+int tracecc_has_tb_flush_fifo_print(void);
 
 void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb, uint64_t p1, uint64_t p2, int exist);
 void __latxs_tracecc_gen_tb_start(void);
 void __latxs_tracecc_before_exec_tb(CPUX86State *env, TranslationBlock *tb);
 void __latxs_tracecc_target_to_host(CPUX86State *env, TranslationBlock *tb);
-void __latxs_tracecc_do_tb_flush(void);
+void __latxs_tracecc_do_tb_flush_full(void);
+void __latxs_tracecc_do_tb_flush_fifo(int rid, int tid);
 void __latxs_tracecc_tb_inv(TranslationBlock *tb);
 void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb);
 
@@ -36,8 +39,12 @@ void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
       __latxs_tracecc_target_to_host(env, tb);      \
 } while (0)
 
-#define latxs_tracecc_do_tb_flush() do {    \
-      __latxs_tracecc_do_tb_flush();        \
+#define latxs_tracecc_do_tb_flush_full() do {    \
+      __latxs_tracecc_do_tb_flush_full();        \
+} while (0)
+
+#define latxs_tracecc_do_tb_flush_fifo(rid, tid) do {    \
+      __latxs_tracecc_do_tb_flush_fifo(rid, tid);        \
 } while (0)
 
 #define latxs_tracecc_tb_inv(tb) do {   \
@@ -54,7 +61,8 @@ void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
 #define latxs_tracecc_gen_tb_start()
 #define latxs_tracecc_before_exec_tb(env, tb)
 #define latxs_tracecc_target_to_host(env, tb)
-#define latxs_tracecc_do_tb_flush()
+#define latxs_tracecc_do_tb_flush_full()
+#define latxs_tracecc_do_tb_flush_fifo(rid, tid)
 #define latxs_tracecc_tb_inv(tb)
 #define latxs_tracecc_tb_link(tb, n, ntb)
 

@@ -71,6 +71,7 @@
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-perfmap.h"
 #include "latx-region-cfg.h"
+#include "latx-tracecc-sys.h"
 #endif
 
 /* Forward declarations for functions declared in tcg-target.c.inc and
@@ -710,6 +711,24 @@ static void tcg_region_tree_unlock_all(void)
 #endif /* TCG_USE_MULTI_REGION */
 }
 
+void tcg_tb_foreach_region_tree(int rid, int tree_id,
+        GTraverseFunc func, gpointer user_data)
+{
+    void *rts = NULL;
+
+#ifdef  TCG_USE_MULTI_REGION
+    rts = region_trees[rid];
+#else
+    rts = region_trees;
+#endif
+
+    struct tcg_region_tree *rt = rts + tree_id * tree_size;
+
+    qemu_mutex_lock(&rt->lock);
+    g_tree_foreach(rt->tree, func, user_data);
+    qemu_mutex_unlock(&rt->lock);
+}
+
 void tcg_tb_foreach(GTraverseFunc func, gpointer user_data)
 {
     size_t i;
@@ -989,6 +1008,10 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
             (int)region[rid].next_free);
 
     assert(region[rid].n_assigned == region[rid].n);
+
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_tracecc_do_tb_flush_fifo(rid, region[rid].next_free);
+#endif
 
     __tcg_region_free_next(rid, tb_inv_func, data,
             &region[rid], region_trees[rid]);

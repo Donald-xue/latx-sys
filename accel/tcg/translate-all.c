@@ -2003,7 +2003,7 @@ static void do_tb_flush(CPUState *cpu, run_on_cpu_data tb_flush_count)
     }
 #endif
 
-    latxs_tracecc_do_tb_flush();
+    latxs_tracecc_do_tb_flush_full();
     latxs_counter_tb_flush(cpu);
 #endif
 

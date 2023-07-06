@@ -928,6 +928,8 @@ void tcg_tb_remove(TranslationBlock *tb);
 size_t tcg_tb_phys_invalidate_count(void);
 TranslationBlock *tcg_tb_lookup(uintptr_t tc_ptr);
 void tcg_tb_foreach(GTraverseFunc func, gpointer user_data);
+void tcg_tb_foreach_region_tree(int rid, int tree_id,
+        GTraverseFunc func, gpointer user_data);
 size_t tcg_nb_tbs(void);
 
 /* user-mode: Called with mmap_lock held.  */

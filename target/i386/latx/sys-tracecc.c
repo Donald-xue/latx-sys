@@ -19,9 +19,11 @@
 #define LATXS_TRACECC_TB_TR           (1 << 0)
 #define LATXS_TRACECC_TB_EXEC         (1 << 1)
 #define LATXS_TRACECC_TB_INV          (1 << 2)
-#define LATXS_TRACECC_TB_FLUSH        (1 << 3)
-#define LATXS_TRACECC_TB_FLUSH_PRINT  (1 << 4)
+#define LATXS_TRACECC_TB_FLUSH_FULL   (1 << 3)
+#define LATXS_TRACECC_TB_FLUSH_FULL_PRINT  (1 << 4)
 #define LATXS_TRACECC_TB_LINK         (1 << 5)
+#define LATXS_TRACECC_TB_FLUSH_FIFO   (1 << 6)
+#define LATXS_TRACECC_TB_FLUSH_FIFO_PRINT  (1 << 7)
 
 #ifdef LATXS_TRACECC_ENABLE
 
@@ -64,6 +66,14 @@ void latx_tracecc_flush(void)
     }                                               \
 } while (0)
 
+#define TRACECC_RECORD_STR(str) do {        \
+    if (tracecc_log) {                      \
+        fprintf(tracecc_log, "%s", str);    \
+    } else {                                \
+        fprintf(stderr, "%s", str);         \
+    }                                       \
+} while (0)
+
 #define TRACECC_RECORD_ENDLINE() do {   \
     if (tracecc_log) {                  \
         fprintf(tracecc_log, "\n");     \
@@ -97,14 +107,24 @@ int tracecc_has_tb_inv(void)
     return option_trace_code_cache & LATXS_TRACECC_TB_INV;
 }
 
-int tracecc_has_tb_flush(void)
+int tracecc_has_tb_flush_full(void)
 {
-    return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH;
+    return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH_FULL;
 }
 
-int tracecc_has_tb_flush_print(void)
+int tracecc_has_tb_flush_full_print(void)
 {
-    return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH_PRINT;
+    return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH_FULL_PRINT;
+}
+
+int tracecc_has_tb_flush_fifo(void)
+{
+    return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH_FIFO;
+}
+
+int tracecc_has_tb_flush_fifo_print(void)
+{
+    return option_trace_code_cache & LATXS_TRACECC_TB_FLUSH_FIFO_PRINT;
 }
 
 int tracecc_has_tb_link(void)
@@ -201,14 +221,28 @@ static gboolean latxs_tracecc_tb(
     return false;
 }
 
-void __latxs_tracecc_do_tb_flush(void)
+void __latxs_tracecc_do_tb_flush_full(void)
 {
-    if (tracecc_has_tb_flush()) {
-        fprintf(stderr, "[CC] TB FLUSH\n");
+    if (tracecc_has_tb_flush_full()) {
+        TRACECC_RECORD_STR("[CC] TB FULL FLUSH");
+        TRACECC_RECORD_ENDLINE();
     }
 
-    if (tracecc_has_tb_flush_print()) {
+    if (tracecc_has_tb_flush_full_print()) {
         tcg_tb_foreach(latxs_tracecc_tb, &tb_ctx.tb_flush_count);
+    }
+}
+
+void __latxs_tracecc_do_tb_flush_fifo(int rid, int tid)
+{
+    if (tracecc_has_tb_flush_fifo()) {
+        TRACECC_RECORD_STR("[CC] TB FIFO FLUSH");
+        TRACECC_RECORD_ENDLINE();
+    }
+
+    if (tracecc_has_tb_flush_fifo_print()) {
+        tcg_tb_foreach_region_tree(rid, tid,
+                latxs_tracecc_tb, &tb_ctx.tb_flush_count);
     }
 }
 
@@ -229,7 +263,7 @@ void __latxs_tracecc_tb_inv(TranslationBlock *tb)
 
 void __latxs_tracecc_gen_tb_start(void)
 {
-    if (tracecc_has_tb_flush_print()) {
+    if (tracecc_has_tb_flush_full_print()) {
         TRANSLATION_DATA *td = lsenv->tr_data;
         TranslationBlock *tb = td->curr_tb;
 
