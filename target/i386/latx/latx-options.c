@@ -421,6 +421,10 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_BOOL,
             .help = "enable trace cc log file",
         }, {
+            .name = "cclogname",
+            .type = QEMU_OPT_STRING,
+            .help = "input trace cc log file",
+        }, {
             .name = "traceir1",
             .type = QEMU_OPT_NUMBER,
             .help = "trace ir1 by type or id",
@@ -538,7 +542,12 @@ static void parse_options_trace_code_cache(unsigned long long t)
 
 static void parse_options_cclog(bool enable)
 {
-    latx_tracecc_log_init(enable);
+    latx_tracecc_log_init(enable, NULL);
+}
+
+static void parse_options_cclogname(const char *name)
+{
+    latx_tracecc_log_init(true, name);
 }
 
 static void parse_options_traceir1(unsigned long long t)
@@ -728,6 +737,11 @@ void latx_sys_parse_options(QemuOpts *opts)
     opt = qemu_opt_find(opts, "cclog");
     if (opt) {
         parse_options_cclog(opt->value.boolean);
+    }
+
+    opt = qemu_opt_find(opts, "cclogname");
+    if (opt) {
+        parse_options_cclogname(opt->str);
     }
 
     opt = qemu_opt_find(opts, "traceir1");

@@ -35,13 +35,25 @@ void __attribute__((__constructor__)) tracecc_log_init_static(void)
     tracecc_log = NULL;
 }
 
-void latx_tracecc_log_init(bool enable)
+void latx_tracecc_log_init(bool enable, const char *logname)
 {
     char tracecc_file[64];
 
     if (enable) {
-        sprintf(tracecc_file, "/tmp/tracecc-%d.log", getpid());
-        tracecc_log = fopen(tracecc_file, "w");
+        if (tracecc_log) {
+            fprintf(stderr, "tracecc log close.\n");
+            fclose(tracecc_log);
+            tracecc_log = NULL;
+        }
+
+        if (logname) {
+            fprintf(stderr, "tracecc log open %s\n", logname);
+            tracecc_log = fopen(logname, "w");
+        } else {
+            sprintf(tracecc_file, "/tmp/tracecc-%d.log", getpid());
+            fprintf(stderr, "tracecc log open %s\n", tracecc_file);
+            tracecc_log = fopen(tracecc_file, "w");
+        }
         if (tracecc_log == NULL) {
             fprintf(stderr, "tracecc log open fail. output to stderr.\n");
         }
