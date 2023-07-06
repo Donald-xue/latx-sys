@@ -988,12 +988,10 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
             (int)region[rid].n,
             (int)region[rid].next_free);
 
-    if (region[rid].n_assigned == region[rid].n) {
-        __tcg_region_free_next(rid, tb_inv_func, data,
-                &region[rid], region_trees[rid]);
-    } else {
-        assert(0);
-    }
+    assert(region[rid].n_assigned == region[rid].n);
+
+    __tcg_region_free_next(rid, tb_inv_func, data,
+            &region[rid], region_trees[rid]);
 
     cc_info("region %d after " \
            "curr %d n_ass %d n %d next_free %d\n", rid,
