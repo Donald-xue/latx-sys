@@ -854,8 +854,8 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
 #endif /* TCG_USE_MULTI_REGION */
 
     (void)rid;
-    cc_info("[TCG] %p region[%d] curr=%d "\
-            "CGbuffer=%p CGptr=%p CGsize=0x%lx CGhw=%p\n",
+    cc_info("[TCG] %p region %d rid %d "\
+            "CGbuffer %p CGptr %p CGsize 0x%lx CGhw %p\n",
             s, rid, (int)curr_region,
             start, start, end-start, end-TCG_HIGHWATER);
     s->code_gen_buffer = start;
@@ -872,7 +872,7 @@ static bool tcg_region_alloc__locked(TCGContext *s)
 {
 #ifdef TCG_USE_MULTI_REGION
     int rid = s->region_id;
-    cc_info("[TCG] %p region[%d] curr=%d n_ass=%d n=%d next_free=%d\n",
+    cc_info("[TCG] %p region %d curr %d n_ass %d n %d next_free %d\n",
             s, rid,
             (int)region[rid].current,
             (int)region[rid].n_assigned,
@@ -894,7 +894,7 @@ static bool tcg_region_alloc__locked(TCGContext *s)
 
 #else /* no TCG_USE_MULTI_REGION */
 
-    cc_info("[TCG] %p region curr=%d n_ass=%d n=%d next_free=%d\n",
+    cc_info("[TCG] %p region curr %d n_ass %d n %d next_free %d\n",
             s,
             (int)region.current,
             (int)region.n_assigned,
@@ -928,14 +928,14 @@ static bool tcg_region_alloc(TCGContext *s)
 
 #ifdef TCG_USE_MULTI_REGION
     int rid = s->region_id;
-    cc_info("[TCG] %p region[%d]\n", s, rid);
+    cc_info("[TCG] %p region %d\n", s, rid);
     qemu_mutex_lock(&region[rid].lock);
     err = tcg_region_alloc__locked(s);
     if (!err) {
         region[rid].agg_size_full += size_full - TCG_HIGHWATER;
     }
     qemu_mutex_unlock(&region[rid].lock);
-    cc_info("[TCG] %p region[%d] err=%d\n", s, rid, err);
+    cc_info("[TCG] %p region %d err %d\n", s, rid, err);
     return err;
 
 #else /* no TCG_USE_MULTI_REGION */
@@ -963,7 +963,7 @@ static void __tcg_region_free_next(int rid,
         g_tree_ref(rt->tree);
         g_tree_destroy(rt->tree);
     } else {
-        cc_info("region[%d] nnodes = 0 , no need flush\n", rid);
+        cc_info("region %d nnodes is zero, no need flush\n", rid);
     }
 
     r->next_free += 1;
@@ -981,12 +981,12 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
         return false; /* do full flush */
     }
 
-    cc_info("region[%d] before : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n", rid,
-            (int)region[rid].next_free,
+    cc_info("region %d ahead " \
+           "curr %d n_ass %d n %d next_free %d\n", rid,
+            (int)region[rid].current,
             (int)region[rid].n_assigned,
             (int)region[rid].n,
-            (int)region[rid].current);
+            (int)region[rid].next_free);
 
     if (region[rid].n_assigned == region[rid].n) {
         __tcg_region_free_next(rid, tb_inv_func, data,
@@ -995,33 +995,33 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
         assert(0);
     }
 
-    cc_info("region[%d] after  : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n", rid,
-            (int)region[rid].next_free,
+    cc_info("region %d after " \
+           "curr %d n_ass %d n %d next_free %d\n", rid,
+            (int)region[rid].current,
             (int)region[rid].n_assigned,
             (int)region[rid].n,
-            (int)region[rid].current);
+            (int)region[rid].next_free);
 #else
     if (region.n == 1) {
         return false; /* do full flush */
     }
 
-    cc_info("region before : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n",
-            (int)region.next_free,
+    cc_info("region ahead " \
+           "curr=%d n_ass=%d n=%d next_free=%d\n",
+            (int)region.current,
             (int)region.n_assigned,
             (int)region.n,
-            (int)region.current);
+            (int)region.next_free);
 
     __tcg_region_free_next(rid, tb_inv_func, data,
             &region, region_trees);
 
     cc_info("region after  : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n",
-            (int)region.next_free,
+           "curr=%d n_ass=%d n=%d next_free=%d\n",
+            (int)region.current,
             (int)region.n_assigned,
             (int)region.n,
-            (int)region.current);
+            (int)region.next_free);
 #endif
     return true;
 }
