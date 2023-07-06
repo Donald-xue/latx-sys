@@ -66,6 +66,7 @@
 
 #include "tcg/tcg-ng.h"
 #include "tcg/tcg-multi-region.h"
+#include "tcg/tcg-ng-print-cc.h"
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-perfmap.h"
@@ -545,11 +546,8 @@ static void tcg_region_trees_init(void)
 
             qemu_mutex_init(&rt->lock);
             rt->tree = g_tree_new(tb_tc_cmp);
-#ifdef NG_TCG_DEBUG_CC
-            printf("%-20s [TCG][%p] region[%d] tree[%d] tree=%p\n",
-                    __func__, tcg_ctx,
-                    idx, (int)i, rt->tree);
-#endif
+            cc_info("[TCG][%p] region[%d] tree[%d] tree=%p\n",
+                    tcg_ctx, idx, (int)i, rt->tree);
         }
     }
 
@@ -561,10 +559,8 @@ static void tcg_region_trees_init(void)
 
         qemu_mutex_init(&rt->lock);
         rt->tree = g_tree_new(tb_tc_cmp);
-#ifdef NG_TCG_DEBUG_CC
-        printf("%-20s [TCG][%p] region[%d] tree=%p\n",
-                __func__, tcg_ctx, (int)i, rt->tree);
-#endif
+        cc_info("[TCG][%p] region[%d] tree=%p\n",
+                tcg_ctx, (int)i, rt->tree);
     }
 
 #endif /* TCG_USE_MULTI_REGION */
@@ -852,12 +848,10 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
 #endif /* TCG_USE_MULTI_REGION */
 
     (void)rid;
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG][%p] region[%d] curr=%d "\
+    cc_info("[TCG] %p region[%d] curr=%d "\
             "CGbuffer=%p CGptr=%p CGsize=0x%lx CGhw=%p\n",
-            __func__, s, rid, (int)curr_region,
+            s, rid, (int)curr_region,
             start, start, end-start, end-TCG_HIGHWATER);
-#endif
     s->code_gen_buffer = start;
     s->code_gen_ptr = start;
     s->code_gen_buffer_size = end - start;
@@ -872,13 +866,12 @@ static bool tcg_region_alloc__locked(TCGContext *s)
 {
 #ifdef TCG_USE_MULTI_REGION
     int rid = s->region_id;
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] %p region[%d] curr=%d n_ass=%d n=%d\n",
-            __func__, s, rid,
+    cc_info("[TCG] %p region[%d] curr=%d n_ass=%d n=%d next_free=%d\n",
+            s, rid,
             (int)region[rid].current,
             (int)region[rid].n_assigned,
-            (int)region[rid].n);
-#endif
+            (int)region[rid].n,
+            (int)region[rid].next_free);
 
     if (region[rid].n_assigned == region[rid].n) {
         return true;
@@ -895,8 +888,8 @@ static bool tcg_region_alloc__locked(TCGContext *s)
 
 #else /* no TCG_USE_MULTI_REGION */
 
-    printf("%-20s [TCG] %p region curr=%d n_ass=%d n=%d next_free=%d\n",
-            __func__, s,
+    cc_info("[TCG] %p region curr=%d n_ass=%d n=%d next_free=%d\n",
+            s,
             (int)region.current,
             (int)region.n_assigned,
             (int)region.n,
@@ -929,20 +922,14 @@ static bool tcg_region_alloc(TCGContext *s)
 
 #ifdef TCG_USE_MULTI_REGION
     int rid = s->region_id;
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] %p region[%d]\n",
-            __func__, s, rid);
-#endif
+    cc_info("[TCG] %p region[%d]\n", s, rid);
     qemu_mutex_lock(&region[rid].lock);
     err = tcg_region_alloc__locked(s);
     if (!err) {
         region[rid].agg_size_full += size_full - TCG_HIGHWATER;
     }
     qemu_mutex_unlock(&region[rid].lock);
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] %p region[%d] err=%d\n",
-            __func__, s, rid, err);
-#endif
+    cc_info("[TCG] %p region[%d] err=%d\n", s, rid, err);
     return err;
 
 #else /* no TCG_USE_MULTI_REGION */
@@ -970,10 +957,7 @@ static void __tcg_region_free_next(int rid,
         g_tree_ref(rt->tree);
         g_tree_destroy(rt->tree);
     } else {
-#ifdef NG_TCG_DEBUG_CC
-        printf("%-20s region[%d] nnodes = 0 , no need flush\n",
-                __func__, rid);
-#endif
+        cc_info("region[%d] nnodes = 0 , no need flush\n", rid);
     }
 
     r->next_free += 1;
@@ -991,13 +975,12 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
         return false; /* do full flush */
     }
 
-    printf("%s region[%d] before : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n"
-            ,__func__ ,rid
-            ,(int)region[rid].next_free
-            ,(int)region[rid].n_assigned
-            ,(int)region[rid].n
-            ,(int)region[rid].current);
+    cc_info("region[%d] before : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n", rid,
+            (int)region[rid].next_free,
+            (int)region[rid].n_assigned,
+            (int)region[rid].n,
+            (int)region[rid].current);
 
     if (region[rid].n_assigned == region[rid].n) {
         __tcg_region_free_next(rid, tb_inv_func, data,
@@ -1006,36 +989,33 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
         assert(0);
     }
 
-    printf("%s region[%d] after  : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n"
-            ,__func__ ,rid
-            ,(int)region[rid].next_free
-            ,(int)region[rid].n_assigned
-            ,(int)region[rid].n
-            ,(int)region[rid].current);
+    cc_info("region[%d] after  : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n", rid,
+            (int)region[rid].next_free,
+            (int)region[rid].n_assigned,
+            (int)region[rid].n,
+            (int)region[rid].current);
 #else
     if (region.n == 1) {
         return false; /* do full flush */
     }
 
-    printf("%s region before : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n"
-            ,__func__
-            ,(int)region.next_free
-            ,(int)region.n_assigned
-            ,(int)region.n
-            ,(int)region.current);
+    cc_info("region before : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n",
+            (int)region.next_free,
+            (int)region.n_assigned,
+            (int)region.n,
+            (int)region.current);
 
     __tcg_region_free_next(rid, tb_inv_func, data,
             &region, region_trees);
 
-    printf("%s region after  : " \
-           "next_free=%d n_ass=%d n=%d curr=%d\n"
-            ,__func__
-            ,(int)region.next_free
-            ,(int)region.n_assigned
-            ,(int)region.n
-            ,(int)region.current);
+    cc_info("region after  : " \
+           "next_free=%d n_ass=%d n=%d curr=%d\n",
+            (int)region.next_free,
+            (int)region.n_assigned,
+            (int)region.n,
+            (int)region.current);
 #endif
     return true;
 }
@@ -1046,9 +1026,7 @@ bool tcg_region_free_next(GTraverseFunc tb_inv_func,
  */
 static inline bool tcg_region_initial_alloc__locked(TCGContext *s)
 {
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] %p\n", __func__, s);
-#endif
+    cc_info("[TCG] %p\n", s);
     return tcg_region_alloc__locked(s);
 }
 
@@ -1117,9 +1095,7 @@ static size_t tcg_n_regions(void)
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
     int n = latx_region_n_parts();
-#ifdef NG_TCG_DEBUG_CC
-    printf("%s %d\n", __func__, n);
-#endif
+    cc_info("%d\n", n);
     return n;
 #endif
 
@@ -1189,10 +1165,7 @@ static void tcg_region_init_mr(int rid)
     size_t i;
 
     n_regions = tcg_n_regions();
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] n_regions=%d\n",
-            __func__, (int)n_regions);
-#endif
+    cc_info("[TCG] n_regions=%d\n", (int)n_regions);
 
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
     g_assert(aligned < tcg_init_ctx.mregion[rid].code_gen_buffer + size);
@@ -1247,10 +1220,7 @@ void tcg_region_init(void)
     size_t i;
 
     n_regions = tcg_n_regions();
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] n_regions=%d\n",
-            __func__, (int)n_regions);
-#endif
+    cc_info("[TCG] n_regions=%d\n", (int)n_regions);
 
     /* The first region will be 'aligned - buf' bytes larger than the others */
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
@@ -1386,10 +1356,8 @@ void tcg_register_thread(void)
     g_assert(n < ms->smp.max_cpus);
     qatomic_set(&tcg_ctxs[n], s);
 
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG][%p] n_tcg_ctxs=%d n=%d tcg_ctxs[%d]=%p\n",
-            __func__, s, n_tcg_ctxs, n, n, tcg_ctxs[n]);
-#endif
+    cc_info("[TCG][%p] n_tcg_ctxs=%d n=%d tcg_ctxs[%d]=%p\n",
+            s, n_tcg_ctxs, n, n, tcg_ctxs[n]);
 
     if (n > 0) {
         alloc_tcg_plugin_context(s);
@@ -1420,10 +1388,10 @@ void tcg_register_thread(void)
 #endif /* TCG_USE_MULTI_REGION */
 
 #if defined(TCG_USE_MULTI_REGION) && defined(NG_TCG_DEBUG_CC)
-    printf("%-20s finish\n", __func__);
+    cc_info_str("finish\n");
     int idx = 0;
     for (; idx < TCG_MULTI_REGION_N; ++idx) {
-        printf("TCGCTX %p Region %d buf %p hw %p\n",
+        cc_info("TCGCTX %p Region %d buf %p hw %p\n",
                 tcg_ctx, idx,
                 tcg_ctx->mregion[idx].code_gen_buffer,
                 tcg_ctx->mregion[idx].code_gen_highwater);
@@ -1593,13 +1561,12 @@ static TCGTemp *tcg_global_reg_new_internal(TCGContext *s, TCGType type,
 
 void tcg_context_init(TCGContext *s)
 {
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] init_ctx=%p\n", __func__, s);
-#endif
     int op, total_args, n, i;
     TCGOpDef *def;
     TCGArgConstraint *args_ct;
     TCGTemp *ts;
+
+    cc_info("[TCG] init_ctx=%p\n", s);
 
     memset(s, 0, sizeof(*s));
     s->nb_globals = 0;
@@ -1665,10 +1632,7 @@ void tcg_context_init(TCGContext *s)
     MachineState *ms = MACHINE(qdev_get_machine());
     unsigned int max_cpus = ms->smp.max_cpus;
     tcg_ctxs = g_new(TCGContext *, max_cpus);
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] tcg_ctxs=%p max_cpus=%d\n",
-            __func__, tcg_ctxs, max_cpus);
-#endif
+    cc_info("[TCG] tcg_ctxs=%p max_cpus=%d\n", tcg_ctxs, max_cpus);
 #endif
 
     tcg_debug_assert(!tcg_regset_test_reg(s->reserved_regs, TCG_AREG0));
@@ -1703,9 +1667,7 @@ TranslationBlock *tcg_tb_alloc(TCGContext *s)
 
 bool tcg_region_try_alloc(TCGContext *s)
 {
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] %p\n", __func__, s);
-#endif
+    cc_info("[TCG] %p\n", s);
     return tcg_region_alloc(s);
 }
 

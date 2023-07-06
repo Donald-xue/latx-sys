@@ -81,6 +81,7 @@
 
 #include "tcg/tcg-ng.h"
 #include "tcg/tcg-multi-region.h"
+#include "tcg/tcg-ng-print-cc.h"
 
 /* #define DEBUG_TB_INVALIDATE */
 /* #define DEBUG_TB_FLUSH */
@@ -1543,11 +1544,10 @@ static bool alloc_code_gen_buffer(size_t size, int splitwx, Error **errp)
 static bool alloc_code_gen_buffer_anon(size_t size, int prot,
                                        int flags, Error **errp)
 {
-#ifdef NG_TCG_DEBUG_CC
-    printf("[TCG] %s size=0x%lx prot=0x%x flags=0x%x\n",
-            __func__, size, prot, flags);
-#endif
     void *buf;
+
+    cc_info("[TCG] size=0x%lx prot=0x%x flags=0x%x\n",
+            size, prot, flags);
 
     buf = mmap(NULL, size, prot, flags, -1, 0);
     if (buf == MAP_FAILED) {
@@ -1595,12 +1595,9 @@ static bool alloc_code_gen_buffer_anon(size_t size, int prot,
     qemu_madvise(buf, size, QEMU_MADV_HUGEPAGE);
 
     tcg_ctx->code_gen_buffer = buf;
-#ifdef NG_TCG_DEBUG_CC
-    printf("%-20s [TCG] buf=%p size=0x%lx\n",
-            __func__,
+    cc_info("[TCG] buf=%p size=0x%lx\n",
             tcg_ctx->code_gen_buffer,
             tcg_ctx->code_gen_buffer_size);
-#endif
     return true;
 }
 
@@ -1745,10 +1742,7 @@ static bool alloc_code_gen_buffer_splitwx(size_t size, Error **errp)
 
 static bool alloc_code_gen_buffer(size_t size, int splitwx, Error **errp)
 {
-#ifdef NG_TCG_DEBUG_CC
-    printf("[TCG] %s size=0x%lx\n",
-            __func__, size);
-#endif
+    cc_info("[TCG] size=0x%lx\n", size);
     ERRP_GUARD();
     int prot, flags;
 
@@ -1828,12 +1822,10 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
     {
         tcg_ctx->region_id = 0;
         tcg_multi_region_save(tcg_ctx, 0);
-#ifdef NG_TCG_DEBUG_CC
-        printf("%-20s [TCG][%p] mregion[%d] buf=%p size=0x%lx\n",
-                __func__, tcg_ctx, 0,
+        cc_info("[TCG][%p] mregion[%d] buf=%p size=0x%lx\n",
+                tcg_ctx, 0,
                 tcg_ctx->mregion[0].code_gen_buffer,
                 tcg_ctx->mregion[0].code_gen_buffer_size);
-#endif
         int idx = 1;
         for (; idx < TCG_MULTI_REGION_N; ++idx) {
             tcg_multi_region_switch(tcg_ctx, idx);
@@ -1843,12 +1835,10 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
             assert(ok);
 
             tcg_multi_region_save(tcg_ctx, idx);
-#ifdef NG_TCG_DEBUG_CC
-            printf("%-20s [TCG][%p] mregion[%d] buf=%p size=0x%lx\n",
-                    __func__, tcg_ctx, idx,
+            cc_info("[TCG][%p] mregion[%d] buf=%p size=0x%lx\n",
+                    tcg_ctx, idx,
                     tcg_ctx->mregion[idx].code_gen_buffer,
                     tcg_ctx->mregion[idx].code_gen_buffer_size);
-#endif
         }
 
         tcg_multi_region_switch(tcg_ctx, 0);
