@@ -530,28 +530,33 @@ static gint tb_tc_cmp(gconstpointer ap, gconstpointer bp)
     return ptr_cmp_tb_tc(b->ptr, a);
 }
 
-static void tcg_region_trees_init(void)
+#ifdef TCG_USE_MULTI_REGION
+
+static void tcg_region_trees_init(int rid)
 {
     size_t i;
 
     tree_size = ROUND_UP(sizeof(struct tcg_region_tree), qemu_dcache_linesize);
 
-#ifdef TCG_USE_MULTI_REGION
-    int idx = 0;
-    for (; idx < TCG_MULTI_REGION_N; ++idx) {
-        region_trees[idx] = qemu_memalign(qemu_dcache_linesize,
-                region[idx].n * tree_size);
-        for (i = 0; i < region[idx].n; i++) {
-            struct tcg_region_tree *rt = region_trees[idx] + i * tree_size;
+    region_trees[rid] = qemu_memalign(qemu_dcache_linesize,
+            region[rid].n * tree_size);
+    for (i = 0; i < region[rid].n; i++) {
+        struct tcg_region_tree *rt = region_trees[rid] + i * tree_size;
 
-            qemu_mutex_init(&rt->lock);
-            rt->tree = g_tree_new(tb_tc_cmp);
-            cc_info("[TCG][%p] region[%d] tree[%d] tree=%p\n",
-                    tcg_ctx, idx, (int)i, rt->tree);
-        }
+        qemu_mutex_init(&rt->lock);
+        rt->tree = g_tree_new(tb_tc_cmp);
+        cc_info("[TCG] %p region %d tree %d treeptr %p\n",
+                tcg_ctx, rid, (int)i, rt->tree);
     }
+}
 
 #else /* no TCG_USE_MULTI_REGION */
+
+static void tcg_region_trees_init(void)
+{
+    size_t i;
+
+    tree_size = ROUND_UP(sizeof(struct tcg_region_tree), qemu_dcache_linesize);
 
     region_trees = qemu_memalign(qemu_dcache_linesize, region.n * tree_size);
     for (i = 0; i < region.n; i++) {
@@ -563,8 +568,9 @@ static void tcg_region_trees_init(void)
                 tcg_ctx, (int)i, rt->tree);
     }
 
-#endif /* TCG_USE_MULTI_REGION */
 }
+
+#endif /* TCG_USE_MULTI_REGION */
 
 static struct tcg_region_tree *tc_ptr_to_region_tree(const void *p)
 {
@@ -1165,7 +1171,7 @@ static void tcg_region_init_mr(int rid)
     size_t i;
 
     n_regions = tcg_n_regions();
-    cc_info("[TCG] n_regions=%d\n", (int)n_regions);
+    cc_info("[TCG] region %d n_regions=%d\n", rid, (int)n_regions);
 
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
     g_assert(aligned < tcg_init_ctx.mregion[rid].code_gen_buffer + size);
@@ -1189,7 +1195,7 @@ static void tcg_region_init_mr(int rid)
         (void)qemu_mprotect_none(end, page_size);
     }
 
-    tcg_region_trees_init();
+    tcg_region_trees_init(rid);
 
 #ifdef CONFIG_USER_ONLY
     {
