@@ -873,7 +873,7 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
 #endif /* TCG_USE_MULTI_REGION */
 
     (void)rid;
-    cc_info("[TCG] %p region %d rid %d "\
+    cc_info("[TCG] %p region %d curr %d "\
             "CGbuffer %p CGptr %p CGsize 0x%lx CGhw %p\n",
             s, rid, (int)curr_region,
             start, start, end-start, end-TCG_HIGHWATER);
