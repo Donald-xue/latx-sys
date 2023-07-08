@@ -1951,6 +1951,10 @@ static gboolean tb_host_size_iter(gpointer key, gpointer value, gpointer data)
 typedef struct region_fifo_stat {
     uint64_t tb_cpl0_nr;
     uint64_t tb_cpl3_nr;
+    uint64_t tb_cpl0_icount;
+    uint64_t tb_cpl3_icount;
+    uint64_t tb_cpl0_tcsize;
+    uint64_t tb_cpl3_tcsize;
 } region_fifo_stat;
 
 static gboolean tb_inv_iter(gpointer key, gpointer value, gpointer data)
@@ -1968,8 +1972,12 @@ static gboolean tb_inv_iter(gpointer key, gpointer value, gpointer data)
     if (stat) {
         if ((tb->flags & 0x3) == 3) {
             stat->tb_cpl3_nr += 1;
+            stat->tb_cpl3_icount += tb->icount;
+            stat->tb_cpl3_tcsize += tb->tc.size;
         } else {
             stat->tb_cpl0_nr += 1;
+            stat->tb_cpl0_icount += tb->icount;
+            stat->tb_cpl0_tcsize += tb->tc.size;
         }
     }
 
@@ -1985,14 +1993,17 @@ static bool do_tb_flush_fifo_region_locked(CPUState *cpu)
 #endif
 
     region_fifo_stat s;
-    s.tb_cpl0_nr = 0;
-    s.tb_cpl3_nr = 0;
+    s.tb_cpl0_nr = 0; s.tb_cpl0_icount = 0; s.tb_cpl0_tcsize = 0;
+    s.tb_cpl3_nr = 0; s.tb_cpl3_icount = 0; s.tb_cpl3_tcsize = 0;
 
     bool res = tcg_region_free_next(tb_inv_iter, rid, &s);
 
-    printf("%s region[%d] fifo flush : CPL0 %ld CPL3 %ld\n",
-            __func__, rid,
-            s.tb_cpl0_nr, s.tb_cpl3_nr);
+    printf("%s region[%d] fifo flush : " \
+            "CPL0 %-6ld %-8ld 0x%-16lx " \
+            "CPL3 %-6ld %-8ld 0x%-16lx" \
+            "\n", __func__, rid,
+            s.tb_cpl0_nr, s.tb_cpl0_icount, s.tb_cpl0_tcsize,
+            s.tb_cpl3_nr, s.tb_cpl3_icount, s.tb_cpl3_tcsize);
 
     return res;
 }
