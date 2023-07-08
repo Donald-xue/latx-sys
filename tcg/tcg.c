@@ -1192,7 +1192,6 @@ static void tcg_region_init_mr(int rid)
     size_t i;
 
     n_regions = tcg_n_regions();
-    cc_info("[TCG] region %d n_regions=%d\n", rid, (int)n_regions);
 
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
     g_assert(aligned < tcg_init_ctx.mregion[rid].code_gen_buffer + size);
@@ -1200,6 +1199,10 @@ static void tcg_region_init_mr(int rid)
     region_size = (size - (aligned - buf)) / n_regions;
     region_size = QEMU_ALIGN_DOWN(region_size, page_size);
     g_assert(region_size >= 2 * page_size);
+
+    cc_info("[TCG] region %d n_regions %d size 0x%lx regionsize 0x%lx\n",
+            rid, (int)n_regions,
+            (uint64_t)size, (uint64_t)region_size);
 
     qemu_mutex_init(&region[rid].lock);
     region[rid].n = n_regions;
@@ -1247,7 +1250,6 @@ void tcg_region_init(void)
     size_t i;
 
     n_regions = tcg_n_regions();
-    cc_info("[TCG] n_regions=%d\n", (int)n_regions);
 
     /* The first region will be 'aligned - buf' bytes larger than the others */
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
@@ -1262,6 +1264,10 @@ void tcg_region_init(void)
 
     /* A region must have at least 2 pages; one code, one guard */
     g_assert(region_size >= 2 * page_size);
+
+    cc_info("[TCG] n_regions %d size 0x%lx regionsize 0x%lx\n",
+            (int)n_regions,
+            (uint64_t)size, (uint64_t)region_size);
 
     /* init the region struct */
     qemu_mutex_init(&region.lock);
