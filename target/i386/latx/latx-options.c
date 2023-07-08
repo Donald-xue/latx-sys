@@ -64,6 +64,8 @@ int option_hamt_delay;
 int option_code_cache_pro;
 int option_code_cache_region;
 int option_code_cache_multi_region;
+size_t option_code_cache_multi_region_size[2];
+int    option_code_cache_multi_region_part[2];
 int option_sys_flag_reduction;
 int option_instptn;
 int option_risk_mem_offset;
@@ -365,6 +367,22 @@ QemuOptsList qemu_latx_opts = {
             .type = QEMU_OPT_NUMBER,
             .help = "code cache region",
         }, {
+            .name = "ccmrsize0",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache region 0 size",
+        }, {
+            .name = "ccmrsize1",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache region 1 size",
+        }, {
+            .name = "ccmrpart0",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache region 0 part",
+        }, {
+            .name = "ccmrpart1",
+            .type = QEMU_OPT_NUMBER,
+            .help = "code cache region 1 part",
+        }, {
             .name = "sysflag",
             .type = QEMU_OPT_NUMBER,
             .help = "optimization for eflags",
@@ -611,6 +629,17 @@ static void parse_options_code_cache_multi_region(unsigned long long t)
     option_code_cache_multi_region = t;
 }
 
+static void parse_options_code_cache_multi_region_size(int rid, 
+        unsigned long long t)
+{
+    option_code_cache_multi_region_size[rid] = t;
+}
+static void parse_options_code_cache_multi_region_part(int rid, 
+        unsigned long long t)
+{
+    option_code_cache_multi_region_part[rid] = t;
+}
+
 #define LATXS_OPT_FLAG_REDUCTION    (1 << 0)
 static void parse_options_sys_flag(unsigned long long t)
 {
@@ -837,6 +866,23 @@ void latx_sys_parse_options(QemuOpts *opts)
         parse_options_code_cache_region(opt->value.uint);
     }
 
+    opt = qemu_opt_find(opts, "ccmrsize0");
+    if (opt) {
+        parse_options_code_cache_multi_region_size(0, opt->value.uint);
+    }
+    opt = qemu_opt_find(opts, "ccmrsize1");
+    if (opt) {
+        parse_options_code_cache_multi_region_size(1, opt->value.uint);
+    }
+    opt = qemu_opt_find(opts, "ccmrpart0");
+    if (opt) {
+        parse_options_code_cache_multi_region_part(0, opt->value.uint);
+    }
+    opt = qemu_opt_find(opts, "ccmrpart1");
+    if (opt) {
+        parse_options_code_cache_multi_region_part(1, opt->value.uint);
+    }
+
     opt = qemu_opt_find(opts, "ccmultiregion");
     if (opt) {
         parse_options_code_cache_multi_region(opt->value.uint);
@@ -1028,6 +1074,10 @@ void latxs_options_init(void)
     /* one region for one code cache */
     option_code_cache_region = 1;
     option_code_cache_multi_region = 0;
+    option_code_cache_multi_region_size[0] = 128;
+    option_code_cache_multi_region_size[1] = 128;
+    option_code_cache_multi_region_part[0] = 8;
+    option_code_cache_multi_region_part[1] = 8;
     option_sys_flag_reduction = 0;
     option_instptn = 0;
 

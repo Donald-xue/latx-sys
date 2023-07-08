@@ -76,7 +76,12 @@
 #include "latx-counter-sys.h"
 #include "latx-multi-region-sys.h"
 #include "latx-callret-func.h"
+#include "latx-region-cfg.h"
 #endif
+#endif
+
+#if defined(CONFIG_LATX)
+#include "latx-options.h"
 #endif
 
 #include "tcg/tcg-ng.h"
@@ -1414,10 +1419,6 @@ static void page_lock_pair(PageDesc **ret_p1, tb_page_addr_t phys1,
   (DEFAULT_CODE_GEN_BUFFER_SIZE_1 < MAX_CODE_GEN_BUFFER_SIZE \
    ? DEFAULT_CODE_GEN_BUFFER_SIZE_1 : MAX_CODE_GEN_BUFFER_SIZE)
 
-#ifdef CONFIG_LATX
-#include "latx-options.h"
-#endif
-
 static size_t size_code_gen_buffer(size_t tb_size)
 {
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
@@ -1446,6 +1447,18 @@ static size_t size_code_gen_buffer(size_t tb_size)
     return tb_size;
 #endif
 }
+
+#ifdef TCG_USE_MULTI_REGION
+
+static size_t size_code_gen_buffer_mr(size_t tb_size, int rid)
+{
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    return latx_multi_region_size(tb_size, rid) * 1024 * 1024;
+#endif
+    return size_code_gen_buffer(tb_size);
+}
+
+#endif /* TCG_USE_MULTI_REGION */
 
 #ifdef __mips__
 /* In order to use J and JAL within the code_gen_buffer, we require
@@ -1815,9 +1828,15 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
 #endif
 #endif /* TCG_USE_MULTI_REGION */
 
+#ifdef TCG_USE_MULTI_REGION
+    ok = alloc_code_gen_buffer(size_code_gen_buffer_mr(tb_size, 0),
+                               splitwx, &error_fatal);
+#else
     ok = alloc_code_gen_buffer(size_code_gen_buffer(tb_size),
                                splitwx, &error_fatal);
+#endif
     assert(ok);
+
 #ifdef TCG_USE_MULTI_REGION
     {
         tcg_ctx->region_id = 0;
@@ -1830,8 +1849,9 @@ void tcg_exec_init(unsigned long tb_size, int splitwx)
         for (; idx < TCG_MULTI_REGION_N; ++idx) {
             tcg_multi_region_switch(tcg_ctx, idx);
 
-            ok = alloc_code_gen_buffer(size_code_gen_buffer(tb_size),
-                                       splitwx, &error_fatal);
+            ok = alloc_code_gen_buffer(
+                    size_code_gen_buffer_mr(tb_size, idx),
+                    splitwx, &error_fatal);
             assert(ok);
 
             tcg_multi_region_save(tcg_ctx, idx);

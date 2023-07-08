@@ -30,6 +30,16 @@ int latx_region_n_parts(void)
     return n ? n : 1 ;
 }
 
+int latx_multi_region_n_parts(int rid)
+{
+    return option_code_cache_multi_region_part[rid];
+}
+
+size_t latx_multi_region_size(size_t tbsize, int rid)
+{
+    return option_code_cache_multi_region_size[rid];
+}
+
 
 
 #ifdef LATX_USE_MULTI_REGION

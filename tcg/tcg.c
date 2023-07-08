@@ -1105,10 +1105,8 @@ void tcg_region_reset_all(void)
 }
 
 #ifdef CONFIG_USER_ONLY
-static size_t tcg_n_regions(void)
-{
-    return 1;
-}
+static size_t tcg_n_regions(void) { return 1; }
+static size_t tcg_n_regions_mr(int rid) { return tcg_n_regions(); }
 #else
 /*
  * It is likely that some vCPUs will translate more code than others, so we
@@ -1150,6 +1148,19 @@ static size_t tcg_n_regions(void)
     /* If we can't, then just allocate one region per vCPU thread */
     return max_cpus;
 }
+
+#ifdef TCG_USE_MULTI_REGION 
+static size_t tcg_n_regions_mr(int rid)
+{
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    int n = latx_multi_region_n_parts(rid);
+    cc_info("%d\n", n);
+    return n;
+#endif
+    return tcg_n_regions();
+}
+#endif /* TCG_USE_MULTI_REGION */
+
 #endif
 
 /*
@@ -1191,7 +1202,7 @@ static void tcg_region_init_mr(int rid)
     size_t n_regions;
     size_t i;
 
-    n_regions = tcg_n_regions();
+    n_regions = tcg_n_regions_mr(rid);
 
     aligned = QEMU_ALIGN_PTR_UP(buf, page_size);
     g_assert(aligned < tcg_init_ctx.mregion[rid].code_gen_buffer + size);
