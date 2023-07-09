@@ -1998,10 +1998,10 @@ static bool do_tb_flush_fifo_region_locked(CPUState *cpu)
 
     bool res = tcg_region_free_next(tb_inv_iter, rid, &s);
 
-    printf("%s region[%d] fifo flush : " \
+    cc_info("region %d fifo flush : " \
             "CPL0 %-6ld %-8ld 0x%-16lx " \
             "CPL3 %-6ld %-8ld 0x%-16lx" \
-            "\n", __func__, rid,
+            "\n", rid,
             s.tb_cpl0_nr, s.tb_cpl0_icount, s.tb_cpl0_tcsize,
             s.tb_cpl3_nr, s.tb_cpl3_icount, s.tb_cpl3_tcsize);
 
