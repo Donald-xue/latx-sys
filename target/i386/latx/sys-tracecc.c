@@ -307,6 +307,6 @@ void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
 
 #else
 
-void latx_tracecc_log_init(bool enable) {}
+void latx_tracecc_log_init(bool enable, const char *logname) {}
 
 #endif
