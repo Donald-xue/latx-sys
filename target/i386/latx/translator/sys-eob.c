@@ -635,28 +635,11 @@ static void tr_gen_branch_save_next_eip(IR1_INST *branch, int n)
 
 /*
  * Details of exit-tb
- *   > EOB: End-Of-TB worker  tr_gen_eob()
- *   > Load TB addr   $t8     tr_gen_exit_tb_load_tb_addr()
- *   > Load next EIP  $t9     tr_gen_exit_tb_load_next_eip()
- *   > TB-Link j 0            tr_gen_exit_tb_j_tb_link()
- *   > Context Switch         tr_gen_exit_tb_j_context_switch()
- *
- * Every exit-tb must contains:
- *   > EOB
- *   > Context Switch
- *
- * TB-Link j 0
- *   > if can_link
- *   > if not indirect jmp(jmp/call/ret)
- *
- * Load TB addr
- *   > always gen it for context switch
- *   > when no lsfpu, gen before TB-Link for FPU ratate
- *   > when FastCS, gen before TB-Link for context check
- *   > when cross-page-check, gen before TB-Link
- *     > for cross-page direct TB-Link
- *     > for indirect jmp(jmp/call/ret)
- *     > to do cross-page check
+ * <A> EOB: End-Of-TB worker  latxs_tr_gen_eob()
+ * <B> Load TB addr   $t8     latxs_tr_gen_exit_tb_load_tb_addr()
+ * <C> Save next EIP          latxs_tr_gen_exit_tb_update_eip()
+ * <D> TB-Link j 0            latxs_tr_gen_exit_tb_j_tb_link()
+ * <E> Context Switch         latxs_tr_gen_exit_tb_j_context_switch()
  */
 void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
 {
@@ -676,21 +659,23 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     lsassert(rid == 0);
 #endif
 
-    /*
-     * EOB worker will be generated before
-     * each TB's each exit (at most two exit)
-     */
-    if (!ir1_is_branch(branch)) {
-        latxs_tr_gen_eob();
-    }
-
     /* debug support : when hit break point, do NOT TB-link */
     if (cpu_hit_breakpoint()) {
         can_link = 0;
     }
 
     /*
-     * Load this TB's address into $a6
+     * <A> EOB end-of-tb worker
+     *
+     * for branch instructions, EOB will be called before branch
+     * since it contains two exit ports.
+     */
+    if (!ir1_is_branch(branch)) {
+        latxs_tr_gen_eob();
+    }
+
+    /*
+     * <B> load tb address
      *
      *        |       | need TB addr   |
      * FastCS | LSFPU | for jmp glue ? | Reason
@@ -704,26 +689,28 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     IR2_OPND tbptr = latxs_ra_alloc_dbt_arg1(); /* t8($24) */
     ADDR tb_addr = (ADDR)tb;
 
-    int need_tb_addr_for_jmp_glue = (option_lsfpu || option_soft_fpu) ? 0 : 1;
+    int load_tb_addr_before_tblink  = 0; /* <B> load tb address */
+    int save_next_eip_before_tblink = 0; /* <C> save next pc */
     
+    load_tb_addr_before_tblink = (option_lsfpu || option_soft_fpu) ? 0 : 1;
+
     if (option_lsfpu && latxs_fastcs_is_jmp_glue()) {
-        need_tb_addr_for_jmp_glue = 1;
+        load_tb_addr_before_tblink = 1;
     }
 
-    int already_save_next_eip = 0;
     if (option_cross_page_check && branch_is_cross_page(branch, succ_id)) {
         tb->next_tb_cross_page[succ_id] = 1;
-        need_tb_addr_for_jmp_glue = 1;
+        load_tb_addr_before_tblink = 1;
         tr_gen_branch_save_next_eip(branch, succ_id);
-        already_save_next_eip = 1;
+        save_next_eip_before_tblink = 1;
     }
 
-    /* load tb address before tb link */
-    if (need_tb_addr_for_jmp_glue) {
+    /* <B> load tb address before tb link */
+    if (load_tb_addr_before_tblink) {
         latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, tb_addr);
     }
 
-    /* Generate 'j 0' if not indrect jmp for TB-Link */
+    /* <D> generate 'j 0' for TB-Link */
     if (can_link &&
             !ir1_is_indirect_jmp(branch) &&
             !ir1_is_indirect_call(branch) &&
@@ -731,31 +718,18 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         latxs_tr_gen_exit_tb_j_tb_link(tb, succ_id);
     }
 
-    /* load tb address after tb link : for context switch */
-    if (!need_tb_addr_for_jmp_glue) {
+    /* <B> load tb address after tb link : for context switch */
+    if (!load_tb_addr_before_tblink) {
         latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, tb_addr);
     }
 
     int mask_cpdj = 1;
     /*
-     * Standard process:
-     * 1. prepare a6 and a7
-     *    > DBT arg1 : a6 Current TranslationBlock's address
-     *    > DBT arg2 : a7: Next TranslationBlock's EIP
-     * 2. prepare the return value (a0/v0) for TB-link
+     * <E> context swtich
+     * 1. prepare Current TranslationBlock's address <B>
+     *    as the return value (a0/v0) if tb link is allowed
+     * 2. update PC (eip) in cpu state <C>
      * 3. jump to context switch native to bt
-     *
-     * Cross Page Direct Jmp:
-     * 1. check with next_eip and curr_eip
-     * 2. set mask for cross page direct jmp
-     *    > mask = 1 : link according to @can_link
-     *      > when option_cpjl is enabled (force to allow link)
-     *      > when option_cpjl is disabled and
-     *             current branch is NOT a cross page direct jmp
-     *    > mask = 0 : force to disable link
-     *      > when option_cpjl is disabled and
-     *             current branch is a cross page direct jmp
-     * 3. generate exit tb according to can_link & mask_cpdj
      */
     switch (opcode) {
     case X86_INS_CALL:
@@ -767,7 +741,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (!already_save_next_eip) {
+        if (!save_next_eip_before_tblink) {
             tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
@@ -799,7 +773,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (!already_save_next_eip) {
+        if (!save_next_eip_before_tblink) {
             tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
@@ -877,7 +851,7 @@ indirect_jmp:
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (!already_save_next_eip) {
+        if (!save_next_eip_before_tblink) {
             tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
