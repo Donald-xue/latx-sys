@@ -15,6 +15,7 @@
 #include "latx-tracecc-init.h"
 #include "latxs-fastcs-cfg.h"
 #include "latxs-cc-pro.h"
+#include "latx-multi-region-sys.h"
 
 #define LATXS_TRACECC_TB_TR           (1 << 0)
 #define LATXS_TRACECC_TB_EXEC         (1 << 1)
@@ -151,9 +152,10 @@ void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
         return;
     }
 
-    TRACECC_RECORD("Insert %p %p %p %d 0x%lx",
-            (void *)tb, (void *)p1, (void *)p2, exist,
-            tb->tc.size);
+    TRACECC_RECORD("Insert %p ", (void *)tb);
+    TRACECC_RECORD("PAGE %x %x ", (uint32_t)p1, (uint32_t)p2);
+    TRACECC_RECORD("TCsize 0x%lx ", tb->tc.size);
+    TRACECC_RECORD("isnew %d", exist);
     TRACECC_RECORD_ENDLINE();
 }
 
@@ -169,14 +171,15 @@ void __latxs_tracecc_target_to_host(
     int ir1_nr = td->ir1_nr;
 
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    TRACECC_RECORD("TR %p %x %x %x %d %p %x %x %d ",
-            (void *)tb,
-            tb->flags, tb->cflags,
-            (int)tb->pc, tb->icount,
-            (void *)tb->tc.ptr,
-            (uint32_t)env->cr[3],
-            fcs, tb->cc_flags);
+    TRACECC_RECORD("TR %p %x %x 0x%x %x %d ",
+            (void *)tb, tb->flags, tb->cflags,
+            (int)tb->pc, tb->size, tb->icount);
+    TRACECC_RECORD("TCptr %p ", (void *)tb->tc.ptr);
+    TRACECC_RECORD("CR3 %x ", (uint32_t)env->cr[3]);
+    TRACECC_RECORD("FCS %x ", fcs);
+    TRACECC_RECORD("CC %x ", tb->cc_flags);
 
+    TRACECC_RECORD_STR("BYTES ");
     int i = 0, j = 0;
     IR1_INST *pir1 = NULL;
     for (i = 0; i < ir1_nr; ++i) {
@@ -200,34 +203,52 @@ void __latxs_tracecc_before_exec_tb(
         return;
     }
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    TRACECC_RECORD("EXEC %p %x %x %x %x %d %p %lx %x %x %x %x",
-            (void *)tb,
-            tb->flags, tb->cflags,
-            (int)tb->pc, tb->size, tb->icount,
-            (void *)tb->tc.ptr, tb->tc.size,
-            (uint32_t)env->cr[3],
+    TRACECC_RECORD("EXEC %p %x %x %x %x %d ",
+            (void *)tb, tb->flags, tb->cflags,
+            (int)tb->pc, tb->size, tb->icount);
+    TRACECC_RECORD("TC %p 0x%lx ", (void *)tb->tc.ptr, tb->tc.size);
+    TRACECC_RECORD("CR3 %x ", (uint32_t)env->cr[3]);
+    TRACECC_RECORD("PAGE %x %x ",
             (uint32_t)tb->page_addr[0],
-            (uint32_t)tb->page_addr[1], fcs);
+            (uint32_t)tb->page_addr[1]);
+    TRACECC_RECORD("FCS %x ", fcs);
     TRACECC_RECORD_ENDLINE();
     tb->trace_cc |= 0x1;
 }
+
+typedef struct tracecc_flush_data {
+    int flush_mode; /* 0 = FULL, 1 = FIFO */
+    int flush_nr;
+    int region_id;
+    int fifo_id;
+} tracecc_flush_data;
 
 static gboolean latxs_tracecc_tb(
         gpointer key, gpointer value, gpointer data)
 {
     const TranslationBlock *tb = value;
-    int *flushnr = data;
+    tracecc_flush_data *fdata = data;
 
     uint8_t fcs = (latxs_fastcs_enable_tbctx()) ? tb->fastcs_ctx : -1;
-    TRACECC_RECORD("FLUSH %d %p %x %x %x %x %d %p %lx %x %x %ld %x %d",
-            *flushnr, (void *)tb,
-            tb->flags, tb->cflags,
-            (int)tb->pc, tb->size, tb->icount,
-            (void *)tb->tc.ptr, tb->tc.size,
+
+    if (fdata->flush_mode == 0) {
+        TRACECC_RECORD("FLUSH %d FULL ", fdata->flush_nr);
+    }
+    if (fdata->flush_mode == 1) {
+        TRACECC_RECORD("FLUSH %d FIFO %d %d ",
+                fdata->flush_nr,
+                fdata->region_id, fdata->fifo_id);
+    }
+    TRACECC_RECORD("TB %p %x %x 0x%x %x %d ",
+            (void *)tb, tb->flags, tb->cflags,
+            (int)tb->pc, tb->size, tb->icount);
+    TRACECC_RECORD("exec %ld ", (uint64_t)tb->tb_exec_nr);
+    TRACECC_RECORD("TC %p 0x%lx ", (void *)tb->tc.ptr, tb->tc.size);
+    TRACECC_RECORD("PAGE %x %x ",
             (uint32_t)tb->page_addr[0],
-            (uint32_t)tb->page_addr[1],
-            (uint64_t)tb->tb_exec_nr,
-            fcs, tb->cc_flags);
+            (uint32_t)tb->page_addr[1]);
+    TRACECC_RECORD("FCS %x ", fcs);
+    TRACECC_RECORD("CC %x", tb->cc_flags);
     TRACECC_RECORD_ENDLINE();
 
     return false;
@@ -236,25 +257,35 @@ static gboolean latxs_tracecc_tb(
 void __latxs_tracecc_do_tb_flush_full(void)
 {
     if (tracecc_has_tb_flush_full()) {
-        TRACECC_RECORD_STR("[CC] TB FULL FLUSH");
+        TRACECC_RECORD_STR("DOFLUSH FULL");
         TRACECC_RECORD_ENDLINE();
     }
 
     if (tracecc_has_tb_flush_full_print()) {
-        tcg_tb_foreach(latxs_tracecc_tb, &tb_ctx.tb_flush_count);
+        tracecc_flush_data data;
+        data.flush_mode = 0;
+        data.flush_nr   = tb_ctx.tb_flush_count;
+        data.region_id  = -1;
+        data.fifo_id    = -1;
+        tcg_tb_foreach(latxs_tracecc_tb, &data);
     }
 }
 
-void __latxs_tracecc_do_tb_flush_fifo(int rid, int tid)
+void __latxs_tracecc_do_tb_flush_fifo(int rid, int fid)
 {
     if (tracecc_has_tb_flush_fifo()) {
-        TRACECC_RECORD_STR("[CC] TB FIFO FLUSH");
+        TRACECC_RECORD_STR("DOFLUSH FIFO");
         TRACECC_RECORD_ENDLINE();
     }
 
     if (tracecc_has_tb_flush_fifo_print()) {
-        tcg_tb_foreach_region_tree(rid, tid,
-                latxs_tracecc_tb, &tb_ctx.tb_flush_count);
+        tracecc_flush_data data;
+        data.flush_mode = 1;
+        data.flush_nr   = tb_ctx.tb_flush_count;
+        data.region_id  = rid;
+        data.fifo_id    = fid;
+        tcg_tb_foreach_region_tree(rid, fid,
+                latxs_tracecc_tb, &data);
     }
 }
 
@@ -264,10 +295,11 @@ void __latxs_tracecc_tb_inv(TranslationBlock *tb)
         return;
     }
 
-    TRACECC_RECORD("INV %p %x %x %x %x %d %p %lx %x %x", (void *)tb,
-            tb->flags, tb->cflags,
-            (int)tb->pc, tb->size, tb->icount,
-            (void *)tb->tc.ptr, tb->tc.size,
+    TRACECC_RECORD("INV %p %x %x 0x%x %x %d ",
+            (void *)tb, tb->flags, tb->cflags,
+            (int)tb->pc, tb->size, tb->icount);
+    TRACECC_RECORD("TC %p 0x%lx ", (void *)tb->tc.ptr, tb->tc.size);
+    TRACECC_RECORD("PAGE %x %x ",
             (uint32_t)tb->page_addr[0],
             (uint32_t)tb->page_addr[1]);
     TRACECC_RECORD_ENDLINE();

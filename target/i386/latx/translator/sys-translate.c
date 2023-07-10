@@ -315,11 +315,11 @@ int latxs_tr_translate_tb(TranslationBlock *tb, int *search_size)
 
     bool translation_done = latxs_tr_ir2_generate(tb);
 
-    latxs_tracecc_target_to_host(lsenv->cpu_state, tb);
-
     if (translation_done) {
         code_nr = latxs_tr_ir2_assemble(tb->tc.ptr);
     }
+
+    latxs_tracecc_target_to_host(lsenv->cpu_state, tb);
 
     if (likely(code_nr > 0)) {
         code_size = code_nr * 4;
