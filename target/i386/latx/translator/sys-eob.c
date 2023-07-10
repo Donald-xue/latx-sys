@@ -580,18 +580,21 @@ static int branch_is_cross_page(IR1_INST *branch, int n)
 
     if (ir1_is_call(branch) && !ir1_is_indirect_call(branch)) {
         next_eip = ir1_target_addr(branch);
+        return (next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS);
     }
 
     if (ir1_is_jump(branch) && !ir1_is_indirect_jmp(branch)) {
         next_eip = ir1_target_addr(branch);
+        return (next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS);
     }
 
     if (ir1_is_branch(branch)) {
         if (n == 0) next_eip = ir1_addr_next(branch);
         if (n == 1) next_eip = ir1_target_addr(branch);
+        return (next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS);
     }
 
-    return (next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS);
+    return 0;
 }
 
 static void tr_gen_branch_save_next_eip(IR1_INST *branch, int n)
