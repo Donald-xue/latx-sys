@@ -573,6 +573,27 @@ static int cpu_hit_breakpoint(void)
     return 0;
 }
 
+static int branch_is_cross_page(IR1_INST *branch, int n)
+{
+    ADDRX curr_eip = ir1_addr(branch);
+    ADDRX next_eip = 0;
+
+    if (ir1_is_call(branch) && !ir1_is_indirect_call(branch)) {
+        next_eip = ir1_target_addr(branch);
+    }
+
+    if (ir1_is_jump(branch) && !ir1_is_indirect_jmp(branch)) {
+        next_eip = ir1_target_addr(branch);
+    }
+
+    if (ir1_is_branch(branch)) {
+        if (n == 0) next_eip = ir1_addr_next(branch);
+        if (n == 1) next_eip = ir1_target_addr(branch);
+    }
+
+    return (next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS);
+}
+
 /*
  * Details of exit-tb
  *   > EOB: End-Of-TB worker  tr_gen_eob()
@@ -669,9 +690,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
                 next_eip_size = 16;
             }
             if ((next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS)) {
-                tb->next_tb_cross_page[0] = 1;
                 if (option_cross_page_check) {
-                    need_tb_addr_for_jmp_glue = 1;
                     latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
                     already_load_next_eip = 1;
                 }
@@ -684,9 +703,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
             curr_eip = ir1_addr(branch);
             next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
             if ((next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS)) {
-                tb->next_tb_cross_page[0] = 1;
                 if (option_cross_page_check) {
-                    need_tb_addr_for_jmp_glue = 1;
                     latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, next_eip_size);
                     already_load_next_eip = 1;
                 }
@@ -719,9 +736,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
         curr_eip = ir1_addr(branch);
         if ((next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS)) {
-            tb->next_tb_cross_page[succ_id] = 1;
             if (option_cross_page_check) {
-                need_tb_addr_for_jmp_glue = 1;
                 latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
                 already_load_next_eip = 1;
             }
@@ -731,12 +746,10 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         break;
     }
 
-    /*
-     * TODO
-     * if (xtm_cpc_enabled() && xtm_tb_need_cpc(tb, branch, succ_id)) {
-     * need_tb_addr_for_jmp_glue = 1;
-     * }
-     */
+    if (option_cross_page_check && branch_is_cross_page(branch, succ_id)) {
+        tb->next_tb_cross_page[succ_id] = 1;
+        need_tb_addr_for_jmp_glue = 1;
+    }
 
     if (!need_tb_addr_for_jmp_glue) {
         goto IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE;
