@@ -670,7 +670,6 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     next_eip_size = latxs_ir1_addr_size(branch) << 3;
 #endif
     ADDRX    next_eip;
-    ADDRX    curr_eip;
 
     IR1_OPCODE opcode = ir1_opcode(branch);
     int can_link = option_tb_link;
@@ -788,21 +787,12 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
             goto indirect_call;
         }
 
-        next_eip = ir1_target_addr(branch);
-        curr_eip = ir1_addr(branch);
-
-        if ((next_eip >> TARGET_PAGE_BITS) !=
-            (curr_eip >> TARGET_PAGE_BITS)) {
+        if (tb->next_tb_cross_page[0]) {
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (latxs_ir1_addr_size(branch) == 2 ||
-            ir1_opnd_size(ir1_get_opnd(branch, 0)) == 16) {
-            next_eip_size = 16;
-        }
-
         if (!already_load_next_eip) {
-            latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+            tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
@@ -829,18 +819,12 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
             goto indirect_jmp;
         }
 
-        next_eip = ir1_target_addr(branch);
-        curr_eip = ir1_addr(branch);
-
-        if ((next_eip >> TARGET_PAGE_BITS) !=
-            (curr_eip >> TARGET_PAGE_BITS)) {
+        if (tb->next_tb_cross_page[0]) {
             mask_cpdj = option_cross_page_jmp_link;
         }
 
         if (!already_load_next_eip) {
-            next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
-            latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip,
-                    next_eip_size);
+            tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
@@ -912,17 +896,13 @@ indirect_jmp:
     case X86_INS_LOOP:
     case X86_INS_LOOPE:
     case X86_INS_LOOPNE:
-        next_eip = succ_id ? ir1_target_addr(branch) : ir1_addr_next(branch);
-        next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
-        curr_eip = ir1_addr(branch);
 
-        if ((next_eip >> TARGET_PAGE_BITS) !=
-            (curr_eip >> TARGET_PAGE_BITS)) {
+        if (tb->next_tb_cross_page[succ_id]) {
             mask_cpdj = option_cross_page_jmp_link;
         }
 
         if (!already_load_next_eip) {
-            latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+            tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
