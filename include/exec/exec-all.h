@@ -594,6 +594,8 @@ struct TranslationBlock {
     target_ulong nextpc;
     TranslationBlock *jr_ra_call_from;
     TranslationBlock *jr_ra_call_to;
+    /* cross-page */
+    int next_tb_cross_page[2];
 #endif
 #endif
 };

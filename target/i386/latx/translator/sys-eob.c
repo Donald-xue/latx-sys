@@ -652,6 +652,79 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         need_tb_addr_for_jmp_glue = 1;
     }
 
+    int already_load_next_eip = 0;
+    switch (opcode) {
+    case X86_INS_CALL:
+        if (!ir1_is_indirect_call(branch)) {
+            next_eip = ir1_target_addr(branch);
+            curr_eip = ir1_addr(branch);
+            if (latxs_ir1_addr_size(branch) == 2 ||
+                ir1_opnd_size(ir1_get_opnd(branch, 0)) == 16) {
+                next_eip_size = 16;
+            }
+            if ((next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS)) {
+                tb->next_tb_cross_page[0] = 1;
+                if (option_cross_page_check) {
+                    need_tb_addr_for_jmp_glue = 1;
+                    latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+                    already_load_next_eip = 1;
+                }
+            }
+        }
+        break;
+    case X86_INS_JMP:
+        if (!ir1_is_indirect_jmp(branch)) {
+            next_eip = ir1_target_addr(branch);
+            curr_eip = ir1_addr(branch);
+            next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
+            if ((next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS)) {
+                tb->next_tb_cross_page[0] = 1;
+                if (option_cross_page_check) {
+                    need_tb_addr_for_jmp_glue = 1;
+                    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, next_eip_size);
+                    already_load_next_eip = 1;
+                }
+            }
+        }
+        break;
+    case X86_INS_JE:
+    case X86_INS_JNE:
+    case X86_INS_JS:
+    case X86_INS_JNS:
+    case X86_INS_JB:
+    case X86_INS_JAE:
+    case X86_INS_JO:
+    case X86_INS_JNO:
+    case X86_INS_JBE:
+    case X86_INS_JA:
+    case X86_INS_JP:
+    case X86_INS_JNP:
+    case X86_INS_JL:
+    case X86_INS_JGE:
+    case X86_INS_JLE:
+    case X86_INS_JG:
+    case X86_INS_JCXZ:
+    case X86_INS_JECXZ:
+    case X86_INS_JRCXZ:
+    case X86_INS_LOOP:
+    case X86_INS_LOOPE:
+    case X86_INS_LOOPNE:
+        next_eip = succ_id ? ir1_target_addr(branch) : ir1_addr_next(branch);
+        next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
+        curr_eip = ir1_addr(branch);
+        if ((next_eip >> TARGET_PAGE_BITS) != (curr_eip >> TARGET_PAGE_BITS)) {
+            tb->next_tb_cross_page[succ_id] = 1;
+            if (option_cross_page_check) {
+                need_tb_addr_for_jmp_glue = 1;
+                latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+                already_load_next_eip = 1;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
     /*
      * TODO
      * if (xtm_cpc_enabled() && xtm_tb_need_cpc(tb, branch, succ_id)) {
@@ -729,7 +802,9 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
             next_eip_size = 16;
         }
 
-        latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+        if (!already_load_next_eip) {
+            latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+        }
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
                 can_link & mask_cpdj, succ_id);
@@ -763,9 +838,11 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
-        latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip,
-                                           next_eip_size);
+        if (!already_load_next_eip) {
+            next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 0));
+            latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip,
+                    next_eip_size);
+        }
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
                 can_link & mask_cpdj, succ_id);
@@ -845,7 +922,9 @@ indirect_jmp:
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+        if (!already_load_next_eip) {
+            latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+        }
 
         latxs_tr_gen_exit_tb_j_context_switch(&tbptr,
                 can_link & mask_cpdj, succ_id);

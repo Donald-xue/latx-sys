@@ -48,6 +48,9 @@ typedef struct latx_sc_table_t {
     uint64_t jmp_glue_1;
     uint64_t jmp_glue_2;
 
+    uint64_t jmp_glue_cpc_0;
+    uint64_t jmp_glue_cpc_1;
+
     uint64_t fpu_rotate;
     uint64_t fpu_enable_top;
     uint64_t fpu_disable_top;

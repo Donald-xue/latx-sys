@@ -3205,6 +3205,7 @@ void tr_gen_top_mode_init(void)
 void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                                    TranslationBlock *next_tb)
 {
+    int allow_direct_link = 0;
 #ifdef CONFIG_SOFTMMU
     latxs_tracecc_tb_link(tb, n, next_tb);
     if (latxs_fastcs_enabled()) {
@@ -3216,9 +3217,18 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
         /* Fall through to normal TB Link */
     }
     if (option_lsfpu || option_soft_fpu || tb->_top_out == next_tb->_top_in) {
+        allow_direct_link = 1;
+    }
+    if (allow_direct_link && tb->next_tb_cross_page[n]) {
+        allow_direct_link = !option_cross_page_check;
+    }
 #else
     if (option_lsfpu || tb->_top_out == next_tb->_top_in) {
+        allow_direct_link = 1;
+    }
 #endif
+
+    if (allow_direct_link) {
         tb->next_tb[n] = next_tb;
         uintptr_t next_ptr = (uintptr_t)next_tb->tc.ptr;
 #ifdef CONFIG_SOFTMMU
@@ -3230,10 +3240,21 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
         tb->next_tb[n] = next_tb;
 #ifdef CONFIG_SOFTMMU
         int rid = tb->region_id;
-        if (n == 0)
-            tb_set_jmp_target(tb, 0, GET_SC_TABLE(rid, jmp_glue_0));
-        else
-            tb_set_jmp_target(tb, 1, GET_SC_TABLE(rid, jmp_glue_1));
+        uint64_t target_ptr = 0;
+        if (n == 0){
+            if (tb->next_tb_cross_page[0]) {
+                target_ptr = GET_SC_TABLE(rid, jmp_glue_cpc_0);
+            } else {
+                target_ptr = GET_SC_TABLE(rid, jmp_glue_0);
+            }
+        } else{
+            if (tb->next_tb_cross_page[0]) {
+                target_ptr = GET_SC_TABLE(rid, jmp_glue_cpc_1);
+            } else {
+                target_ptr = GET_SC_TABLE(rid, jmp_glue_1);
+            }
+        }
+        tb_set_jmp_target(tb, n, target_ptr);
 #else
         if (n == 0)
             tb_set_jmp_target(tb, 0, native_jmp_glue_0);

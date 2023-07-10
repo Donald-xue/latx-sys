@@ -2666,6 +2666,8 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb->scr_reg = -1;
     tb->jr_ra_call_from = NULL;
     tb->jr_ra_call_to   = NULL;
+    tb->next_tb_cross_page[0] = 0;
+    tb->next_tb_cross_page[1] = 0;
 #endif
 #endif
 

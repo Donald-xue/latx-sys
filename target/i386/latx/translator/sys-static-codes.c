@@ -12,7 +12,7 @@
 #include "latx-np-sys.h"
 #include "latx-sigint-sys.h"
 #include "latx-intb-sys.h"
-
+#include "latx-cross-page.h"
 #include "latx-multi-region-sys.h"
 #include "latx-static-codes.h"
 
@@ -804,6 +804,21 @@ int target_latxs_static_codes(void *code_base, int region_id)
                 "latxs NJC : native jmp cache lookup %p\n",
                 (void *)GET_SC_TABLE(region_id, intb_njc));
     }
+
+    /* cross-page jmp check */
+    SET_SC_TABLE(region_id, jmp_glue_cpc_0, (ADDR)code_ptr);
+    LATXS_GEN_STATIC_CODES("latxs_cpc_0",
+            gen_latxs_jmp_glue_cpc, code_ptr, 0);
+    LATXS_DUMP_STATIC_CODES_INFO(
+            "latxs CPC: jmp glue cpc 0 %p\n",
+            (void *)GET_SC_TABLE(region_id, jmp_glue_cpc_0));
+
+    SET_SC_TABLE(region_id, jmp_glue_cpc_1, (ADDR)code_ptr);
+    LATXS_GEN_STATIC_CODES("latxs_cpc_1",
+            gen_latxs_jmp_glue_cpc, code_ptr, 1);
+    LATXS_DUMP_STATIC_CODES_INFO(
+            "latxs CPC: jmp glue cpc 1 %p\n",
+            (void *)GET_SC_TABLE(region_id, jmp_glue_cpc_1));
 
     /* jmp glue for tb-link */
     if (option_tb_link) {

@@ -18,5 +18,6 @@ i386_softmmu_ss.add(when: 'CONFIG_LATX', if_true: files(
   'sys-flag-rdtn.c',
   'sys-inst-ptn.c',
   'sys-callret.c',
+  'sys-cross-page.c',
   'sys-em.c'
 ))
