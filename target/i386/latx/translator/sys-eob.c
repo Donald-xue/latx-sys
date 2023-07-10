@@ -302,6 +302,44 @@ void latxs_tr_gen_eob(void)
 #endif
 }
 
+static void latxs_tr_gen_exit_tb_update_eip(
+        int ignore_eip, ADDRX eip, int opnd_size)
+{
+    if (!ignore_eip) {
+        IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
+        switch (opnd_size) {
+        case 32:
+            latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
+            break;
+        case 16:
+            latxs_load_imm32_to_ir2(&eip_opnd, eip & 0xffff, EXMode_Z);
+            break;
+#ifdef TARGET_X86_64
+        case 64:
+            latxs_load_imm64_to_ir2(&eip_opnd, eip);
+            break;
+#endif
+        default:
+            lsassert(0);
+            break;
+        }
+#ifdef TARGET_X86_64
+        latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
+                lsenv_offset_of_eip(lsenv));
+#else
+        latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
+                lsenv_offset_of_eip(lsenv));
+#endif
+        latxs_ra_free_temp(&eip_opnd);
+    }
+
+    /* should correctly set env->eip */
+    if (lsenv->tr_data->sys.tf) {
+        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_single_step,
+                                         default_helper_cfg);
+    }
+}
+
 /*
  * Generate exit tb for system EOB situation, no TB-Link.
  *
@@ -352,9 +390,9 @@ void latxs_tr_gen_sys_eob(IR1_INST *pir1)
     /* t9: next x86 instruction's address */
     ADDRX next_eip = ir1_addr_next(pir1);
 #ifdef TARGET_X86_64
-    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 64);
+    latxs_tr_gen_exit_tb_update_eip(td->ignore_eip_update, next_eip, 64);
 #else
-    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 32);
+    latxs_tr_gen_exit_tb_update_eip(td->ignore_eip_update, next_eip, 32);
 #endif
 
     /* jump to context switch */
@@ -409,49 +447,6 @@ void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id)
     /* if nop was interrupt, and may just exec jirl without pcaddu18i  */
     latxs_append_ir2_opnda(LISA_B, 2);
     latxs_append_ir2_opnd0_(lisa_nop);
-}
-
-void latxs_tr_gen_exit_tb_load_next_eip(int reload_eip_from_env, ADDRX eip,
-                                        int opnd_size)
-{
-    /*
-     * reload_eip_from_env : pc has been stored to env
-     * Marked by special instruction that reaches special EOB
-     * This mark means that we should not update the eip in env.
-     */
-    if (!reload_eip_from_env) {
-        IR2_OPND eip_opnd = latxs_ra_alloc_itemp();
-        switch (opnd_size) {
-        case 32:
-            latxs_load_imm32_to_ir2(&eip_opnd, eip, EXMode_Z);
-            break;
-        case 16:
-            latxs_load_imm32_to_ir2(&eip_opnd, eip & 0xffff, EXMode_Z);
-            break;
-#ifdef TARGET_X86_64
-        case 64:
-            latxs_load_imm64_to_ir2(&eip_opnd, eip);
-            break;
-#endif
-        default:
-            lsassert(0);
-            break;
-        }
-#ifdef TARGET_X86_64
-    latxs_append_ir2_opnd2i(LISA_ST_D, &eip_opnd, &latxs_env_ir2_opnd,
-                            lsenv_offset_of_eip(lsenv));
-#else
-    latxs_append_ir2_opnd2i(LISA_ST_W, &eip_opnd, &latxs_env_ir2_opnd,
-                            lsenv_offset_of_eip(lsenv));
-#endif
-        latxs_ra_free_temp(&eip_opnd);
-    }
-
-    /* should correctly set env->eip */
-    if (lsenv->tr_data->sys.tf) {
-        latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_single_step,
-                                         default_helper_cfg);
-    }
 }
 
 void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
@@ -552,9 +547,9 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
     /* t9: next x86 instruction's address */
     ADDRX next_eip = ir1_addr_next(pir1);
 #ifdef TARGET_X86_64
-    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 64);
+    latxs_tr_gen_exit_tb_update_eip(td->ignore_eip_update, next_eip, 64);
 #else
-    latxs_tr_gen_exit_tb_load_next_eip(td->ignore_eip_update, next_eip, 32);
+    latxs_tr_gen_exit_tb_update_eip(td->ignore_eip_update, next_eip, 32);
 #endif
 
     /* jump to context switch */
@@ -634,7 +629,7 @@ static void tr_gen_branch_save_next_eip(IR1_INST *branch, int n)
     }
 
     if (doit) {
-        latxs_tr_gen_exit_tb_load_next_eip(ignore_eip, next_eip, next_eip_size);
+        latxs_tr_gen_exit_tb_update_eip(ignore_eip, next_eip, next_eip_size);
     }
 }
 
@@ -715,12 +710,12 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         need_tb_addr_for_jmp_glue = 1;
     }
 
-    int already_load_next_eip = 0;
+    int already_save_next_eip = 0;
     if (option_cross_page_check && branch_is_cross_page(branch, succ_id)) {
         tb->next_tb_cross_page[succ_id] = 1;
         need_tb_addr_for_jmp_glue = 1;
         tr_gen_branch_save_next_eip(branch, succ_id);
-        already_load_next_eip = 1;
+        already_save_next_eip = 1;
     }
 
     /* load tb address before tb link */
@@ -772,7 +767,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (!already_load_next_eip) {
+        if (!already_save_next_eip) {
             tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
@@ -784,11 +779,11 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         /* only ptr16:16/ptr16:32 is supported now */
         if (td->sys.pe && !td->sys.vm86) {
             lsassert(td->ignore_eip_update == 1);
-            latxs_tr_gen_exit_tb_load_next_eip(1, 0, 0);
+            latxs_tr_gen_exit_tb_update_eip(1, 0, 0);
         } else if (!ir1_opnd_is_mem(ir1_get_opnd(branch, 0))) {
             next_eip = ir1_opnd_uimm(ir1_get_opnd(branch, 1));
             next_eip_size = ir1_opnd_size(ir1_get_opnd(branch, 1));
-            latxs_tr_gen_exit_tb_load_next_eip(0, next_eip, next_eip_size);
+            latxs_tr_gen_exit_tb_update_eip(0, next_eip, next_eip_size);
         }
 
         /* Always no TB-link for jmp far */
@@ -804,7 +799,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (!already_load_next_eip) {
+        if (!already_save_next_eip) {
             tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
@@ -882,7 +877,7 @@ indirect_jmp:
             mask_cpdj = option_cross_page_jmp_link;
         }
 
-        if (!already_load_next_eip) {
+        if (!already_save_next_eip) {
             tr_gen_branch_save_next_eip(branch, succ_id);
         }
 
