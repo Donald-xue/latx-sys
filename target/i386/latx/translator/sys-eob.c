@@ -561,6 +561,18 @@ void latxs_tr_gen_eob_if_tb_too_large(IR1_INST *pir1)
     latxs_tr_gen_exit_tb_j_context_switch(&tbptr, can_link, succ_id);
 }
 
+static int cpu_hit_breakpoint(void)
+{
+    CPUState *cpu = env_cpu(lsenv->cpu_state);
+    TRANSLATION_DATA *td = lsenv->tr_data;
+    if (td->sys.bp_hit || cpu->singlestep_enabled) {
+        lsassert(cpu == current_cpu);
+        current_cpu->exception_index = EXCP_DEBUG;
+        return 1;
+    }
+    return 0;
+}
+
 /*
  * Details of exit-tb
  *   > EOB: End-Of-TB worker  tr_gen_eob()
@@ -614,13 +626,7 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
     }
 
     /* debug support : when hit break point, do NOT TB-link */
-    CPUState *cpu = env_cpu(lsenv->cpu_state);
-    if (td->sys.bp_hit || cpu->singlestep_enabled) {
-        current_cpu->exception_index = EXCP_DEBUG;
-        /*
-         * don't allow link to next tb, we already return to qemu to allow
-         * in time exception check
-         */
+    if (cpu_hit_breakpoint()) {
         can_link = 0;
     }
 
