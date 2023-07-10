@@ -3200,47 +3200,41 @@ void tr_gen_top_mode_init(void)
     }
 }
 
-
-/* check fpu rotate and patch the native jump address */
-void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
-                                   TranslationBlock *next_tb)
+#ifdef CONFIG_SOFTMMU
+static void latxs_tb_set_jmp_target(TranslationBlock *tb,
+        int n, TranslationBlock *next_tb)
 {
     int allow_direct_link = 0;
-#ifdef CONFIG_SOFTMMU
+
     latxs_tracecc_tb_link(tb, n, next_tb);
+
     if (latxs_fastcs_enabled()) {
         int res = latxs_fastcs_set_jmp_target(tb, n, next_tb);
-        if (res > 0) {
-            /* TB link is done inside */
+        if (res > 0) { /* TB link is done inside */
             return;
         }
-        /* Fall through to normal TB Link */
     }
+
     if (option_lsfpu || option_soft_fpu || tb->_top_out == next_tb->_top_in) {
         allow_direct_link = 1;
     }
+
     if (allow_direct_link && tb->next_tb_cross_page[n]) {
         allow_direct_link = !option_cross_page_check;
     }
-#else
-    if (option_lsfpu || tb->_top_out == next_tb->_top_in) {
-        allow_direct_link = 1;
-    }
-#endif
+
+    lsassert(next_tb != NULL);
+    tb->next_tb[n] = next_tb;
+
+    int rid = tb->region_id;
+    uint64_t target_ptr = 0;
 
     if (allow_direct_link) {
-        tb->next_tb[n] = next_tb;
-        uintptr_t next_ptr = (uintptr_t)next_tb->tc.ptr;
-#ifdef CONFIG_SOFTMMU
-        next_ptr = (uintptr_t)latxs_cc_pro_get_next_ptr(tb, next_tb);
-#endif
-        tb_set_jmp_target(tb, n, next_ptr);
+        target_ptr = (uint64_t)next_tb->tc.ptr;
+        if (latxs_cc_pro()) {
+            target_ptr = (uint64_t)latxs_cc_pro_get_next_ptr(tb, next_tb);
+        }
     } else {
-        lsassert(next_tb != NULL);
-        tb->next_tb[n] = next_tb;
-#ifdef CONFIG_SOFTMMU
-        int rid = tb->region_id;
-        uint64_t target_ptr = 0;
         if (n == 0){
             if (tb->next_tb_cross_page[0]) {
                 target_ptr = GET_SC_TABLE(rid, jmp_glue_cpc_0);
@@ -3254,14 +3248,31 @@ void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
                 target_ptr = GET_SC_TABLE(rid, jmp_glue_1);
             }
         }
-        tb_set_jmp_target(tb, n, target_ptr);
+    }
+
+    tb_set_jmp_target(tb, n, target_ptr);
+}
+#endif
+
+/* check fpu rotate and patch the native jump address */
+void latx_tb_set_jmp_target(TranslationBlock *tb, int n,
+                                   TranslationBlock *next_tb)
+{
+#ifdef CONFIG_SOFTMMU
+    latxs_tb_set_jmp_target(tb, n, next_tb);
 #else
+    if (option_lsfpu || tb->_top_out == next_tb->_top_in) {
+        tb->next_tb[n] = next_tb;
+        tb_set_jmp_target(tb, n, (uintptr_t)next_tb->tc.ptr);
+    } else {
+        lsassert(next_tb != NULL);
+        tb->next_tb[n] = next_tb;
         if (n == 0)
             tb_set_jmp_target(tb, 0, native_jmp_glue_0);
         else
             tb_set_jmp_target(tb, 1, native_jmp_glue_1);
-#endif
     }
+#endif
 }
 
 void rotate_fpu_by(int step)
