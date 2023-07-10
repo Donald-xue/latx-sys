@@ -694,13 +694,6 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         can_link = 0;
     }
 
-    /* Cross Pgae Check */
-    /*
-     * TODO
-     * tb->extra_tb->tb_need_cpc[succ_id] =
-     * xtm_tb_need_cpc(tb, branch, succ_id);
-     */
-
     /*
      * Load this TB's address into $a6
      *
@@ -730,22 +723,10 @@ void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id)
         already_load_next_eip = 1;
     }
 
-    if (!need_tb_addr_for_jmp_glue) {
-        goto IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE;
-    }
-
-    if (!ir1_is_branch(branch)) {
+    /* load tb address before tb link */
+    if (need_tb_addr_for_jmp_glue) {
         latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, tb_addr);
-    } else {
-        if (option_lsfpu &&
-            /* xtm_cpc_enabled() && TODO */
-            need_tb_addr_for_jmp_glue)
-        {
-            latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, tb_addr);
-        }
     }
-
-IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
 
     /* Generate 'j 0' if not indrect jmp for TB-Link */
     if (can_link &&
@@ -755,8 +736,8 @@ IGNORE_LOAD_TB_ADDR_FOR_JMP_GLUE:
         latxs_tr_gen_exit_tb_j_tb_link(tb, succ_id);
     }
 
+    /* load tb address after tb link : for context switch */
     if (!need_tb_addr_for_jmp_glue) {
-        /* Always need to load TB addr for context switch : for TB-Link */
         latxs_tr_gen_exit_tb_load_tb_addr(&tbptr, tb_addr);
     }
 
