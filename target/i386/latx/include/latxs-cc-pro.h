@@ -15,15 +15,14 @@ int latxs_cc_pro_dyinst_with_filter(void);
 int latxs_cc_pro_for_tb(void *tb);
 
 #define CCPRO_SET_INST(tb) do {     \
+    tb->cc_flags |= 0x2;            \
     if (latxs_cc_pro_for_tb(tb)) {  \
-        tb->cc_flags |= 0x2;        \
         tb->cc_mask = ~0x0;         \
     }                               \
 } while (0)
 
-#define CCPRO_SET_EXCP(tb) do {     \
-    if (latxs_cc_pro_for_tb(tb))    \
-        tb->cc_flags |= 0x1;        \
+#define CCPRO_SET_EXCP(tb) do { \
+    tb->cc_flags |= 0x1;        \
 } while (0)
 
 void latxs_cc_pro_init_tb(void *tb);
@@ -35,8 +34,6 @@ void latxs_cc_pro_gen_tb_start(void);
 
 void *latxs_cc_pro_get_next_ptr(void *tb, void *nexttb);
 
-int latxs_cc_pro_tb_flags_cmp(
-        const TranslationBlock *tb,
-        uint32_t cpu_flags);
+#include "latxs-cc-pro-tb-cmp.h"
 
 #endif

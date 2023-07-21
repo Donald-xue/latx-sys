@@ -17,7 +17,7 @@
 #include "exec/tb-hash.h"
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
-#include "latxs-cc-pro.h"
+#include "latxs-cc-pro-tb-cmp.h"
 #endif
 
 /* Might cause an exception, so have a longjmp destination ready */
