@@ -7,6 +7,7 @@
 #include "sys-excp.h"
 #include "flag-lbt.h"
 #include "latx-callret-internal.h"
+#include "latx-interrupt.h"
 #include <string.h>
 
 void latxs_sys_misc_register_ir1(void)
@@ -756,6 +757,11 @@ bool latxs_translate_lidt(IR1_INST *pir1)
 
     latxs_append_ir2_opnd2i(LISA_ST_W, &limit, &latxs_env_ir2_opnd,
             lsenv_offset_of_idtr_limit(lsenv));
+
+#ifdef USE_INTERRUPT_CACHE
+    latxs_tr_gen_call_to_helper1_cfg((ADDR)helper_idt_cache_clear,
+            default_helper_cfg);
+#endif
 
     return true;
 }

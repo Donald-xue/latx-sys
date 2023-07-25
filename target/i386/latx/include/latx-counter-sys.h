@@ -142,21 +142,35 @@ void __latxs_counter_excp_pf_cpl3(void *cpu);
 #if defined(BG_COUNTER_ENABLE) && defined(BG_COUNTER_GROUP_INT)
 
 #define BG_COUNTER_DEF_INT  \
-    uint64_t interrupt_nr;
+    uint64_t interrupt_nr;  \
+    uint64_t doint_nr;      \
+    uint64_t dointcache_nr;
 
-#define BG_COUNTER_LOG_INT "Intpt %d "
-#define BG_COUNTER_LOG_DATA_INT(n) \
-   ,BG_LOG_DIFF(n, interrupt)
+#define BG_COUNTER_LOG_INT "Intpt %d %d %d "
+#define BG_COUNTER_LOG_DATA_INT(n)  \
+   ,BG_LOG_DIFF(n, interrupt)       \
+   ,BG_LOG_DIFF(n, doint)           \
+   ,BG_LOG_DIFF(n, dointcache)
 
 #define BG_COUNTER_MAP_INT  \
-    SYSCOUNTER_MAP("interrupt", index++);   \
+    SYSCOUNTER_MAP("interrupt",  index++);  \
+    SYSCOUNTER_MAP("doint",      index++);  \
+    SYSCOUNTER_MAP("dointcache", index++);  \
     SYSCOUNTER_MAP_NEXT(1);
 
 #define latxs_counter_interrupt(cpu) do {    \
       __latxs_counter_interrupt(cpu);        \
 } while (0)
+#define latxs_counter_doint(cpu) do {   \
+      __latxs_counter_doint(cpu);       \
+} while (0)
+#define latxs_counter_dointcache(cpu) do {  \
+      __latxs_counter_dointcache(cpu);      \
+} while (0)
 
 void __latxs_counter_interrupt(void *cpu);
+void __latxs_counter_doint(void *cpu);
+void __latxs_counter_dointcache(void *cpu);
 
 #else
 
@@ -167,6 +181,8 @@ void __latxs_counter_interrupt(void *cpu);
 #define BG_COUNTER_LOG_DATA_INT(n)
 
 #define latxs_counter_interrupt(cpu)
+#define latxs_counter_doint(cpu)
+#define latxs_counter_dointcache(cpu)
 
 #endif
 

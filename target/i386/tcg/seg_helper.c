@@ -609,6 +609,197 @@ static int exception_has_error_code(int intno)
 #define POPW(ssp, sp, sp_mask, val) POPW_RA(ssp, sp, sp_mask, val, 0)
 #define POPL(ssp, sp, sp_mask, val) POPL_RA(ssp, sp, sp_mask, val, 0)
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latx-interrupt.h"
+#include "latx-counter-sys.h"
+#endif
+
+#ifdef USE_INTERRUPT_CACHE
+
+typedef struct intno_cache_entry {
+    int valid;
+    int intno;
+    int dpl, new_stack;
+    uint32_t e1, e2, ee1, ee2;
+    uint32_t ss, ss_e1, ss_e2;
+} intno_cache_entry;
+
+static intno_cache_entry intcache[4][16];
+
+static void do_interrupt_cache_insert(CPUX86State *env,
+        intno_cache_entry *e)
+{
+    int cpl = env->hflags & HF_CPL_MASK;
+    int intno = e->intno;
+    intcache[cpl][ intno & 0xf ].valid = e->valid;
+
+    intcache[cpl][ intno & 0xf ].intno = e->intno;
+
+    intcache[cpl][ intno & 0xf ].dpl   = e->dpl;
+    intcache[cpl][ intno & 0xf ].new_stack = e->new_stack;
+
+    intcache[cpl][ intno & 0xf ].e1    = e->e1;
+    intcache[cpl][ intno & 0xf ].e2    = e->e2;
+    intcache[cpl][ intno & 0xf ].ee1   = e->ee1;
+    intcache[cpl][ intno & 0xf ].ee2   = e->ee2;
+
+    intcache[cpl][ intno & 0xf ].ss    = e->ss;
+    intcache[cpl][ intno & 0xf ].ss_e1 = e->ss_e1;
+    intcache[cpl][ intno & 0xf ].ss_e2 = e->ss_e2;
+}
+
+static void* do_interrupt_cache_lookup(CPUX86State *env, int intno)
+{
+    int cpl = env->hflags & HF_CPL_MASK;
+    return &intcache[cpl][ intno & 0xf ];
+}
+
+void do_interrupt_cache_clear(void)
+{
+    int i, j;
+    for (i = 0; i < 4; ++i)
+        for (j = 0; j < 16; ++j)
+            intcache[i][j].valid = 0;
+}
+
+void helper_idt_cache_clear(CPUX86State *env)
+{
+    do_interrupt_cache_clear();
+}
+
+static int do_interrupt_cached(CPUX86State *env, int intno, int is_int,
+        int error_code, unsigned int next_eip, int is_hw)
+{
+    intno_cache_entry *inte = do_interrupt_cache_lookup(env, intno);
+
+    target_ulong ptr, ssp;
+    uint32_t e1, e2, offset, ss = 0, esp, ss_e1 = 0, ss_e2 = 0;
+    uint32_t old_eip, sp_mask;
+    int vm86 = env->eflags & VM_MASK;
+
+    int selector, dpl;
+
+    if (!inte->valid) return 1;
+    if (inte->intno != intno) return 2;
+
+    int new_stack = inte->new_stack;
+    int has_error_code = 0;
+    if (!is_int && !is_hw) {
+        has_error_code = exception_has_error_code(intno);
+    }
+
+    SegmentCache *dt = &env->idt;
+    if (intno * 8 + 7 > dt->limit) return 3;
+    ptr = dt->base + intno * 8;
+    e1 = cpu_ldl_kernel(env, ptr);
+    e2 = cpu_ldl_kernel(env, ptr + 4);
+
+    if (inte->e1 != e1 || inte->e2 != e2) return 4;
+
+    int type, shift;
+    type = (e2 >> DESC_TYPE_SHIFT) & 0x1f;
+    shift = type >> 3;
+
+    selector = e1 >> 16;
+    offset = (e2 & 0xffff0000) | (e1 & 0x0000ffff);
+
+    if (load_segment(env, &e1, &e2, selector) != 0) return 21;
+    if (inte->ee1 != e1 || inte->ee2 != e2) return 22;
+
+    dpl = inte->dpl;
+
+    if (new_stack) {
+        get_ss_esp_from_tss(env, &ss, &esp, dpl, 0);
+        if (inte->ss != ss) return 5;
+
+        if (load_segment(env, &ss_e1, &ss_e2, ss) != 0) return 6;
+        if (inte->ss_e1 != ss_e1 || inte->ss_e2 != ss_e2) return 7;
+
+        sp_mask = get_sp_mask(ss_e2);
+        ssp = get_seg_base(ss_e1, ss_e2);
+    } else {
+        if (vm86) return 8;
+        sp_mask = get_sp_mask(env->segs[R_SS].flags);
+        ssp = env->segs[R_SS].base;
+        esp = env->regs[R_ESP];
+    }
+
+    if (is_int) old_eip = next_eip;
+    else        old_eip = env->eip;
+
+    /* begin emulate interrupt */
+
+    if (shift == 1) {
+        if (new_stack) {
+            if (vm86) {
+                PUSHL(ssp, esp, sp_mask, env->segs[R_GS].selector);
+                PUSHL(ssp, esp, sp_mask, env->segs[R_FS].selector);
+                PUSHL(ssp, esp, sp_mask, env->segs[R_DS].selector);
+                PUSHL(ssp, esp, sp_mask, env->segs[R_ES].selector);
+            }
+            PUSHL(ssp, esp, sp_mask, env->segs[R_SS].selector);
+            PUSHL(ssp, esp, sp_mask, env->regs[R_ESP]);
+        }
+        PUSHL(ssp, esp, sp_mask, cpu_compute_eflags(env));
+        PUSHL(ssp, esp, sp_mask, env->segs[R_CS].selector);
+        PUSHL(ssp, esp, sp_mask, old_eip);
+        if (has_error_code) {
+            PUSHL(ssp, esp, sp_mask, error_code);
+        }
+    } else {
+        if (new_stack) {
+            if (vm86) {
+                PUSHW(ssp, esp, sp_mask, env->segs[R_GS].selector);
+                PUSHW(ssp, esp, sp_mask, env->segs[R_FS].selector);
+                PUSHW(ssp, esp, sp_mask, env->segs[R_DS].selector);
+                PUSHW(ssp, esp, sp_mask, env->segs[R_ES].selector);
+            }
+            PUSHW(ssp, esp, sp_mask, env->segs[R_SS].selector);
+            PUSHW(ssp, esp, sp_mask, env->regs[R_ESP]);
+        }
+        PUSHW(ssp, esp, sp_mask, cpu_compute_eflags(env));
+        PUSHW(ssp, esp, sp_mask, env->segs[R_CS].selector);
+        PUSHW(ssp, esp, sp_mask, old_eip);
+        if (has_error_code) {
+            PUSHW(ssp, esp, sp_mask, error_code);
+        }
+    }
+
+    /* interrupt gate clear IF mask */
+    if ((type & 1) == 0) {
+        env->eflags &= ~IF_MASK;
+    }
+    env->eflags &= ~(TF_MASK | VM_MASK | RF_MASK | NT_MASK);
+
+    if (new_stack) {
+        if (vm86) {
+            cpu_x86_load_seg_cache(env, R_ES, 0, 0, 0, 0);
+            cpu_x86_load_seg_cache(env, R_DS, 0, 0, 0, 0);
+            cpu_x86_load_seg_cache(env, R_FS, 0, 0, 0, 0);
+            cpu_x86_load_seg_cache(env, R_GS, 0, 0, 0, 0);
+        }
+        ss = (ss & ~3) | dpl;
+        cpu_x86_load_seg_cache(env, R_SS, ss,
+                               ssp, get_seg_limit(ss_e1, ss_e2), ss_e2);
+    }
+    SET_ESP(esp, sp_mask);
+
+    selector = (selector & ~3) | dpl;
+    cpu_x86_load_seg_cache(env, R_CS, selector,
+                   get_seg_base(e1, e2),
+                   get_seg_limit(e1, e2),
+                   e2);
+    env->eip = offset;
+
+    return 0;
+}
+
+#else
+
+void helper_idt_cache_clear(CPUX86State *env) {}
+
+#endif
+
 /* protected mode interrupt */
 static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
                                    int error_code, unsigned int next_eip,
@@ -621,6 +812,25 @@ static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
     uint32_t e1, e2, offset, ss = 0, esp, ss_e1 = 0, ss_e2 = 0;
     uint32_t old_eip, sp_mask;
     int vm86 = env->eflags & VM_MASK;
+
+#ifdef USE_INTERRUPT_CACHE
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_counter_doint(env_cpu(env));
+#endif
+    int cache_fail = do_interrupt_cached(env, intno,
+            is_int, error_code, next_eip, is_hw);
+    if (!cache_fail) {
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+        latxs_counter_dointcache(env_cpu(env));
+#endif
+        return;
+    }
+
+    intno_cache_entry inte;
+    memset(&inte, 0, sizeof(intno_cache_entry));
+    inte.intno = intno;
+    inte.valid = 1;
+#endif
 
     has_error_code = 0;
     if (!is_int && !is_hw) {
@@ -639,6 +849,10 @@ static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
     ptr = dt->base + intno * 8;
     e1 = cpu_ldl_kernel(env, ptr);
     e2 = cpu_ldl_kernel(env, ptr + 4);
+#ifdef USE_INTERRUPT_CACHE
+    inte.e1 = e1;
+    inte.e2 = e2;
+#endif
     /* check gate type */
     type = (e2 >> DESC_TYPE_SHIFT) & 0x1f;
     switch (type) {
@@ -704,6 +918,10 @@ static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
     if (load_segment(env, &e1, &e2, selector) != 0) {
         raise_exception_err(env, EXCP0D_GPF, selector & 0xfffc);
     }
+#ifdef USE_INTERRUPT_CACHE
+    inte.ee1 = e1;
+    inte.ee2 = e2;
+#endif
     if (!(e2 & DESC_S_MASK) || !(e2 & (DESC_CS_MASK))) {
         raise_exception_err(env, EXCP0D_GPF, selector & 0xfffc);
     }
@@ -729,6 +947,11 @@ static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
         if (load_segment(env, &ss_e1, &ss_e2, ss) != 0) {
             raise_exception_err(env, EXCP0A_TSS, ss & 0xfffc);
         }
+#ifdef USE_INTERRUPT_CACHE
+        inte.ss = ss;
+        inte.ss_e1 = ss_e1;
+        inte.ss_e2 = ss_e2;
+#endif
         ss_dpl = (ss_e2 >> DESC_DPL_SHIFT) & 3;
         if (ss_dpl != dpl) {
             raise_exception_err(env, EXCP0A_TSS, ss & 0xfffc);
@@ -756,6 +979,11 @@ static void do_interrupt_protected(CPUX86State *env, int intno, int is_int,
     }
 
     shift = type >> 3;
+
+#ifdef USE_INTERRUPT_CACHE
+    inte.new_stack = new_stack;
+    do_interrupt_cache_insert(env, &inte);
+#endif
 
 #if 0
     /* XXX: check that enough room is available */

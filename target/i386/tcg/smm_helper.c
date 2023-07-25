@@ -24,6 +24,9 @@
 #include "exec/log.h"
 #include "helper-tcg.h"
 
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+#include "latx-interrupt.h"
+#endif
 
 /* SMM support */
 
@@ -211,6 +214,10 @@ void helper_rsm(CPUX86State *env)
     target_ulong sm_state;
     int i, offset;
     uint32_t val;
+
+#ifdef USE_INTERRUPT_CACHE
+    do_interrupt_cache_clear();
+#endif
 
     sm_state = env->smbase + 0x8000;
 #ifdef TARGET_X86_64

@@ -133,6 +133,8 @@ IMP_COUNTER_FUNC(excp_pf_cpl3)
 
 #ifdef BG_COUNTER_GROUP_INT
 IMP_COUNTER_FUNC(interrupt)
+IMP_COUNTER_FUNC(doint)
+IMP_COUNTER_FUNC(dointcache)
 #endif
 
 #ifdef BG_COUNTER_GROUP_JC
