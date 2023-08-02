@@ -877,6 +877,9 @@ static void tcg_region_assign(TCGContext *s, size_t curr_region)
             "CGbuffer %p CGptr %p CGsize 0x%lx CGhw %p\n",
             s, rid, (int)curr_region,
             start, start, end-start, end-TCG_HIGHWATER);
+#if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
+    latxs_tracecc_region_assign(rid, (int)curr_region, start, end);
+#endif
     s->code_gen_buffer = start;
     s->code_gen_ptr = start;
     s->code_gen_buffer_size = end - start;

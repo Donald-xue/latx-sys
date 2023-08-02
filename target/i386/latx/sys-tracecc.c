@@ -25,6 +25,7 @@
 #define LATXS_TRACECC_TB_LINK         (1 << 5)
 #define LATXS_TRACECC_TB_FLUSH_FIFO   (1 << 6)
 #define LATXS_TRACECC_TB_FLUSH_FIFO_PRINT  (1 << 7)
+#define LATXS_TRACECC_REGION_ASSIGN   (1 << 8)
 
 #ifdef LATXS_TRACECC_ENABLE
 
@@ -143,6 +144,11 @@ int tracecc_has_tb_flush_fifo_print(void)
 int tracecc_has_tb_link(void)
 {
     return option_trace_code_cache & LATXS_TRACECC_TB_LINK;
+}
+
+int tracecc_has_region_assign(void)
+{
+    return option_trace_code_cache & LATXS_TRACECC_REGION_ASSIGN;
 }
 
 void __latxs_tracecc_gen_tb_insert(TranslationBlock *tb,
@@ -334,6 +340,16 @@ void __latxs_tracecc_tb_link(TranslationBlock *tb, int n, TranslationBlock *ntb)
     TRACECC_RECORD("LINK %p %d %p %p %p\n",
             (void *)tb, n, (void *)ntb,
             tb->tc.ptr, ntb->tc.ptr);
+    TRACECC_RECORD_ENDLINE();
+}
+
+void __latxs_tracecc_region_assign(int rid, int cid, void *st, void *ed)
+{
+    if (!tracecc_has_region_assign()) {
+        return;
+    }
+    TRACECC_RECORD("REGION assign %d %d %p %p",
+            rid, cid, st, ed);
     TRACECC_RECORD_ENDLINE();
 }
 
