@@ -71,7 +71,7 @@ void __latxs_tracecc_region_assign(int rid, int cid, void *st, void *ed);
 #define latxs_tracecc_do_tb_flush_fifo(rid, tid)
 #define latxs_tracecc_tb_inv(tb)
 #define latxs_tracecc_tb_link(tb, n, ntb)
-#define latxs_tracecc_region_assign(tb, n, ntb)
+#define latxs_tracecc_region_assign(rid, cid, st, ed)
 
 #endif /* LATXS_TRACECC_ENABLE */
 
