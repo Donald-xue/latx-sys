@@ -485,6 +485,7 @@ static inline int is_write_inst(uint32_t *epc)
         case OPC_FLD_S:
         case OPC_FLD_D:
         case OPC_VLD:
+//		case OPC_XVLD:
             return 0;
         case OPC_ST_B:
         case OPC_ST_H:
@@ -493,9 +494,10 @@ static inline int is_write_inst(uint32_t *epc)
         case OPC_FST_S:
         case OPC_FST_D:
         case OPC_VST:
+//		case OPC_XVST:
             return 1;
         default: {
-            pr_info("inst: %x", *epc);
+            pr_info("epc %p inst: %x", epc, *epc);
             die("invalid opc in is_write_inst");
         }
     }
@@ -829,6 +831,9 @@ static TCGMemOpIdx hamt_get_oi(uint32_t *epc, int mmu_idx)
         case OPC_FLD_D:
         case OPC_FST_D:
         case OPC_VLD:
+		case OPC_XVLD:
+			if (opc == OPC_XVLD)
+				printf("epc %p inst %x In hamt_get_oi OPC_XVLD!\n", epc, *epc);
             return make_memop_idx(MO_LEQ, mmu_idx);
         case OPC_LD_BU:
             return make_memop_idx(MO_UB, mmu_idx);
@@ -838,6 +843,9 @@ static TCGMemOpIdx hamt_get_oi(uint32_t *epc, int mmu_idx)
         case OPC_FLD_S:
         case OPC_FST_S:
         case OPC_VST:
+		case OPC_XVST:
+			if (opc == OPC_XVST)
+				printf("epc %p inst %x In hamt_get_oi OPC_XVST!\n", epc, *epc);
             return make_memop_idx(MO_LEUL, mmu_idx);
         default: {
             pr_info("inst: %x", *epc);
@@ -1843,7 +1851,8 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
         case OPC_ST_D: helper_le_stq_mmu(env, addr, val, oi, retaddr);  break;
         /* @val is not used for VST, env->temp_xmm will be used */
         case OPC_VST: latxs_helper_le_stdq_mmu(env, addr, val, oi, retaddr); break;
-        default: assert(0); break;
+        case OPC_XVST: latxs_helper_le_xstdq_mmu(env, addr, val, oi, retaddr); break;
+		default: assert(0); break;
         }
     } else {
         switch(opc) {
@@ -1858,6 +1867,7 @@ void hamt_exception_handler_softmmu(uint64_t hamt_badvaddr,
         case OPC_LD_D:  val = helper_le_ldq_mmu(env, addr, oi, retaddr);   break;
         /* no return for VLD, env->temp_xmm will be used */
         case OPC_VLD:  latxs_helper_le_lddq_mmu(env, addr, oi, retaddr);   break;
+		case OPC_XVLD:  latxs_helper_le_xlddq_mmu(env, addr, oi, retaddr);   break;
         default: assert(0); break;
         }
         load_into_reg_softmmu(env, val, epc, cpuid);

@@ -175,7 +175,7 @@ static void init_fpu(struct kvm_cpu *cpu)
     get_fpu_regs(&fpu_regs);
 
     BUILD_ASSERT(offsetof(struct kvm_fpu, fcsr)    == VCPU_FCSR0);
-    BUILD_ASSERT(offsetof(struct kvm_fpu, vcsr)    == VCPU_VCSR);
+   // BUILD_ASSERT(offsetof(struct kvm_fpu, vcsr)    == VCPU_VCSR);
     BUILD_ASSERT(offsetof(struct kvm_fpu, fcc)     == VCPU_FCC);
     BUILD_ASSERT(offsetof(struct kvm_fpu, fpr[0])  == VCPU_FPR0);
     BUILD_ASSERT(offsetof(struct kvm_fpu, fpr[31]) == VCPU_FPR0 + 31 * VCPU_FPR_LEN);

@@ -924,8 +924,8 @@ ENTRY (get_fpu_regs)
     st.d    t1, a0, VCPU_FCC
     movgr2fcsr    fcsr0, zero
 
-    movfcsr2gr    t0, $r16
-    st.w    t0, a0, VCPU_VCSR
+//    movfcsr2gr    t0, $r16
+//    st.w    t0, a0, VCPU_VCSR
 
   __tmp = 12 /* #define t0 $r12 */
     li.d            t0, VCPU_FPR0

@@ -587,7 +587,7 @@ struct TranslationBlock {
         void *tc_ptr;
         uint32_t flags;
         uint32_t mask;
-    } intb_target[1];
+    } intb_target[1]; // 目前仅支持缓存一个跳转目标
     /* jr ra */
     void *jr_ra_ptr;
     int scr_reg;

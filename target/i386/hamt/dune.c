@@ -416,6 +416,13 @@ void host_loop(struct kvm_cpu *vcpu)
             continue;
         }
 
+		if (vcpu->kvm_run->exit_reason == KVM_EXIT_MMIO) {
+            pr_info("VM exit: MMIO");
+            err = ioctl(vcpu->vcpu_fd, KVM_GET_REGS, &regs);
+            pr_info("         PC  %p", (void*)regs.pc);
+            continue;
+        }
+
         if (vcpu->kvm_run->exit_reason != KVM_EXIT_HYPERCALL) {
             err = ioctl(vcpu->vcpu_fd, KVM_GET_REGS, &regs);
 
@@ -497,7 +504,11 @@ void host_loop(struct kvm_cpu *vcpu)
             err = ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &csr);
             pr_info("   STLBPS    0x%lx", csr_value);
 
-            die("KVM_EXIT_IS_NOT_HYPERCALL vcpu=%d exit_reason=%d",
+            if(vcpu->kvm_run->exit_reason == KVM_EXIT_INTERNAL_ERROR){
+				pr_info("KVM_EXIT_INTERNAL_ERROR: suberror = 0x%x", vcpu->kvm_run->internal.suberror);
+			}
+
+			die("KVM_EXIT_IS_NOT_HYPERCALL vcpu=%d exit_reason=%d",
                 vcpu->cpu_id, vcpu->kvm_run->exit_reason);
         }
 

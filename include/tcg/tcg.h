@@ -1433,6 +1433,10 @@ void latxs_helper_le_lddq_mmu(CPUArchState *env, target_ulong addr,
                            TCGMemOpIdx oi, uintptr_t retaddr);
 void latxs_helper_le_stdq_mmu(CPUArchState *env, target_ulong addr,
                               uint64_t val, TCGMemOpIdx oi, uintptr_t retaddr);
+void latxs_helper_le_xlddq_mmu(CPUArchState *env, target_ulong addr,
+                           TCGMemOpIdx oi, uintptr_t retaddr);
+void latxs_helper_le_xstdq_mmu(CPUArchState *env, target_ulong addr,
+                              uint64_t val, TCGMemOpIdx oi, uintptr_t retaddr);
 #endif
 
 /* Temporary aliases until backends are converted.  */

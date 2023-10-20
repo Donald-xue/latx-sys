@@ -88,6 +88,8 @@ typedef enum {
     OPC_FST_D    = 0x2BC00000,
     OPC_VLD      = 0x2C000000,
     OPC_VST      = 0x2C400000,
+	OPC_XVLD     = 0x2C800000,
+	OPC_XVST     = 0x2CC00000,
 
 /*
     OPC_LDX_B    = 0b00111000000000 << 18,

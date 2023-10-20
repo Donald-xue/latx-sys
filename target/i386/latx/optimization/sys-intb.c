@@ -273,17 +273,21 @@ int gen_latxs_intb_lookup(void *code_ptr)
     /* ======== 2. helper_lookup_tb ======== */
 
     /* 2.1 call helper lookup tb    => 3. if find TB */
+	// 保存 Native 上下文(使用scs_prologue)
     offset = (td->ir2_asm_nr << 2) - start;
     ins_offset = (GET_SC_TABLE(rid, scs_prologue) - (ADDR)code_ptr - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 1);
 
+	// 构建并调用函数
     latxs_append_ir2_opnd2_(lisa_mov, arg0, env);
     latxs_tr_gen_call_to_helper((ADDR)latx_helper_lookup_tb_hashtable);
 
+	// 恢复 Native 上下文
     offset = (td->ir2_asm_nr << 2) - start;
     ins_offset = (GET_SC_TABLE(rid, scs_epilogue) - (ADDR)code_ptr - offset) >> 2;
     latxs_append_ir2_jmp_far(ins_offset, 1);
 
+	// 判断返回结果
     latxs_append_ir2_opnd3(LISA_BNE, ret0, zero, &label_next_tb_exist);
 
     /* label for 3.1 FastCS.nolink check */

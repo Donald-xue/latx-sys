@@ -96,6 +96,8 @@ int gen_latxs_intb_njc_lookup(void *code_ptr)
 
     /* latxs_load_imm32_to_ir2(&tmp, (int)offset, EXMode_S); */
     /* latxs_append_ir2_opnd3(LISA_SUB_D, &tmp, &latxs_env_ir2_opnd, &tmp); */
+
+	//根据偏移读取 JmpCache
     latxs_append_ir2_opnd2i(LISA_LD_D, &tmp, &latxs_env_ir2_opnd,
             lsenv_offset_of_tb_jmp_cache_ptr(lsenv));
 
@@ -110,6 +112,7 @@ int gen_latxs_intb_njc_lookup(void *code_ptr)
     latxs_append_ir2_opnd3(LISA_ADD_D, &tmp, &tmp, stmp1);
     latxs_append_ir2_opnd2i(LISA_LD_D, &latxs_ret0_ir2_opnd, &tmp, 0);
 
+	//返回
     /* jirl     zero, ra, 0 */
     latxs_append_ir2_opnd0_(lisa_return);
 

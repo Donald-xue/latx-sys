@@ -1,7 +1,7 @@
 #ifndef _LATX_TB_TRACE_H_
 #define _LATX_TB_TRACE_H_
 
-/*#define LATXS_TB_TRACE_ENABLE*/
+#define LATXS_TB_TRACE_ENABLE
 
 #ifdef LATXS_TB_TRACE_ENABLE
 

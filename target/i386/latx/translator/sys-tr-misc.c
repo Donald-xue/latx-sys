@@ -454,6 +454,7 @@ bool latxs_translate_call(IR1_INST *pir1)
         latxs_ra_free_temp(&tmp);
     }
 
+	// 留下空间，记录信息
     if (jr_ra) {
         IR2_OPND scr = latxs_ra_alloc_itemp();
         latxs_jr_ra_gen_call(pir1, &return_addr_opnd, &scr);
