@@ -145,6 +145,13 @@ void latxs_label_dispose(const void *code_buffer)
                 tb->jmp_target_arg[1] = (label_pos[label_id_1] << 2);
             }
 
+			if(option_bne_b){
+				int label_id = tb->first_jmp_align;
+				if (label_id != TB_JMP_RESET_OFFSET_INVALID) {
+					tb->first_jmp_align = (label_pos[label_id] << 2);
+				}
+			}
+
             if (latxs_cc_pro_checktb() && (tb->flags & 0x3) == 3) {
                 tb->cc_ck_ptr = (void *)tb->tc.ptr;
 
@@ -410,6 +417,9 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
 {
     TRANSLATION_DATA *td = lsenv->tr_data;
     int i = 0;
+
+	if ((tb->flags & 0x3) == 3&& tb->pc == 0x9123123) {optioon_dump = 1;}
+	else = 0;
 
     IR1_INST *ir1_list = td->ir1_inst_array;
     int ir1_nr = td->ir1_nr;

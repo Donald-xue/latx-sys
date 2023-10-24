@@ -598,6 +598,8 @@ struct TranslationBlock {
     int next_tb_cross_page[2];
 #endif
 #endif
+	bool opt_bcc;
+	uint16_t first_jmp_align;
 };
 
 /* Hide the qatomic_read to make code a little easier on the eyes */

@@ -23,6 +23,7 @@ extern int option_shadow_stack;
 extern int option_lsfpu;
 extern int option_xmm128map;
 extern int option_ibtc;
+extern int option_bne_b;
 
 void option_config_dump(int cpl);
 

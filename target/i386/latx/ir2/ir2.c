@@ -6,6 +6,9 @@
 #include <string.h>
 
 #include "ir2.h"
+#include "ir2-inst.h"
+
+static IR2_INST *ir2_allocate(void);
 
 static const char *ir2_name(int value)
 {
@@ -85,6 +88,10 @@ IR2_OPND ir2_opnd_new_none(void)
     IR2_OPND opnd;
     ir2_opnd_build_none(&opnd);
     return opnd;
+}
+
+bool ir2_opcode_is_branch_with_2opnds(IR2_OPCODE opcode){
+	return (opcode == LISA_BEQZ || opcode == LISA_BNEZ);
 }
 
 void ir2_opnd_build_type(IR2_OPND *opnd, IR2_OPND_TYPE t)

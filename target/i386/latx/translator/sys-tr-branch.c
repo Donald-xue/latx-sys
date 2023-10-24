@@ -64,7 +64,8 @@ bool latxs_translate_jz(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_E);
 
-    latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
+	latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
     latxs_tr_generate_exit_tb(pir1, 0);
@@ -84,6 +85,7 @@ bool latxs_translate_jnz(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_NE);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -103,6 +105,7 @@ bool latxs_translate_js(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_S);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -122,6 +125,7 @@ bool latxs_translate_jns(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_NS);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -141,6 +145,7 @@ bool latxs_translate_jb(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_B);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -160,6 +165,7 @@ bool latxs_translate_jae(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_AE);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -179,6 +185,7 @@ bool latxs_translate_jo(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_O);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -198,6 +205,7 @@ bool latxs_translate_jno(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_NO);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -217,6 +225,7 @@ bool latxs_translate_jbe(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_BE);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -236,6 +245,7 @@ bool latxs_translate_ja(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_A);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -255,6 +265,7 @@ bool latxs_translate_jp(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_PE);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -274,6 +285,7 @@ bool latxs_translate_jnp(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_PO);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -293,6 +305,7 @@ bool latxs_translate_jl(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_L);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -312,6 +325,7 @@ bool latxs_translate_jge(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_GE);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -331,6 +345,7 @@ bool latxs_translate_jle(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_LE);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -350,6 +365,7 @@ bool latxs_translate_jg(IR1_INST *pir1)
     IR2_OPND cond = latxs_ra_alloc_itemp();
     latxs_append_ir2_opnd1i(LISA_SETX86J, &cond, COND_G);
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &cond, &target_label_opnd);
     latxs_ra_free_temp(&cond);
 
@@ -368,6 +384,7 @@ bool latxs_translate_jcxz(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&cx_opnd, &cx_ir1_opnd, EXMode_Z);
 
     IR2_OPND target_label_opnd = latxs_ir2_opnd_new_label();
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BEQZ, &cx_opnd, &target_label_opnd);
 
     latxs_tr_generate_exit_tb(pir1, 0);
@@ -385,6 +402,7 @@ bool latxs_translate_jecxz(IR1_INST *pir1)
     latxs_load_ir1_to_ir2(&ecx_opnd, &ecx_ir1_opnd, EXMode_Z);
 
     IR2_OPND target_label_opnd = latxs_ir2_opnd_new_label();
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BEQZ, &ecx_opnd, &target_label_opnd);
 
     latxs_tr_generate_exit_tb(pir1, 0);
@@ -401,6 +419,7 @@ bool latxs_translate_jrcxz(IR1_INST *pir1)
     IR2_OPND rcx_opnd = latxs_ra_alloc_gpr(ecx_index);
 
     IR2_OPND target_label_opnd = latxs_ir2_opnd_new_label();
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BEQZ, &rcx_opnd, &target_label_opnd);
 
     latxs_tr_generate_exit_tb(pir1, 0);
@@ -452,6 +471,7 @@ bool latxs_translate_loopnz(IR1_INST *pir1)
     GEN_EOB;
     LOAD_TB_PTR_TO_DBT_ARG1;
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &temp_zf, &target_label);
     latxs_ra_free_temp(&temp_zf);
 
@@ -508,6 +528,7 @@ bool latxs_translate_loopz(IR1_INST *pir1)
     GEN_EOB;
     LOAD_TB_PTR_TO_DBT_ARG1;
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &temp_zf, &target_label);
     latxs_ra_free_temp(&temp_zf);
 
@@ -558,6 +579,7 @@ bool latxs_translate_loop(IR1_INST *pir1)
     GEN_EOB;
     LOAD_TB_PTR_TO_DBT_ARG1;
 
+    latxs_tr_gen_exit_tb_jcc_tb_link(lsenv->tr_data->curr_tb);
     latxs_append_ir2_opnd2(LISA_BNEZ, &ir2_xcx, &target_label);
 
     latxs_tr_generate_exit_tb(pir1, 0);

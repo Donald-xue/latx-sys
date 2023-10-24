@@ -1447,6 +1447,7 @@ ADDR latxs_tr_cvt_cpu_addr_code(CPUX86State *, target_ulong, int *);
 /* End of TB related functions */
 void latxs_tr_generate_exit_tb(IR1_INST *branch, int succ_id);
 void latxs_tr_gen_exit_tb_load_tb_addr(IR2_OPND *tbptr, ADDR tb_addr);
+void latxs_tr_gen_exit_tb_jcc_tb_link(TranslationBlock *tb);
 void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id);
 void latxs_tr_gen_exit_tb_j_context_switch(IR2_OPND *tbptr,
         int can_link, int succ_id);

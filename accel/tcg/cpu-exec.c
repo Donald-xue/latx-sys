@@ -41,6 +41,7 @@
 #include "sysemu/cpu-timers.h"
 #include "sysemu/replay.h"
 #include "internal.h"
+#include "qemu/cacheflush.h"
 
 #if defined(CONFIG_SOFTMMU) && defined(CONFIG_LATX)
 #include "latx-test-sys.h"
@@ -462,6 +463,84 @@ int tb_set_jmp_target_fastcs(TranslationBlock *tb, int n,
 
 void tb_set_jmp_target(TranslationBlock *tb, int n, uintptr_t addr)
 {
+	if(option_bne_b){
+
+		/*                                              
+		* The code is used to optimizate condition JMP
+		* Condition JMP is translated to BCC + B + B
+		*
+		*    before                 optimization
+		* BCC b1_offset   ---->    BCC tb1_offset
+		* B tb0_offset             B tb0_offset
+		* B tb1_offset             B tb1_offset
+		*/
+
+		int b_shift = 26;
+		int off16_bits = 0xfc0003ff;
+		int off21_bits = 0xfc0003e0;
+		int offrd_bits = 0x0000001f;
+		int max_offs = 0x00020000;
+		int max_offsz = 0x00400000;
+
+		bool is_ptn = false;
+		if (n == 1 && /* taken b */
+		    ((tb->jmp_reset_offset[0] | tb->jmp_reset_offset[1]) !=
+		     TB_JMP_RESET_OFFSET_INVALID) && /* direct jmp */
+		    tb->opt_bcc) {
+			uintptr_t bcc_addr;
+			uint32_t bcc_insn;
+
+			/* get bcc_insn */
+			int ptn_off = is_ptn ? 4 : 0;
+			bcc_addr = (uintptr_t)tb->tc.ptr + tb->first_jmp_align - ptn_off;
+			bcc_insn = *(uint *)bcc_addr;
+			
+			/* get taken b addr */
+			uintptr_t taken_b_addr = (uintptr_t)tb->tc.ptr + tb->jmp_target_arg[1];
+
+			uint32_t b_opcode = bcc_insn >> b_shift;
+			/* BEQ BNE BLT BGE BLTU BGEU */
+			if (b_opcode >= 0x16 && b_opcode <= 0x1b) {
+				long offset;
+				if (addr - taken_b_addr == 8) {
+					/* if the function is used to unlink */
+					offset = tb->jmp_target_arg[1] - tb->first_jmp_align + 4;
+					bcc_insn &= off16_bits;
+					bcc_insn |= (offset << 8) & ~off16_bits;
+					*(uint *)(bcc_addr) = bcc_insn;
+				} else {
+					/* if the function is used to patch second B */
+					offset = addr - bcc_addr;
+					if ((offset < max_offs) && (offset >= -max_offs)) {
+						bcc_insn &= off16_bits;
+						bcc_insn |= (offset << 8) & ~off16_bits;
+						*(uint *)(bcc_addr) = bcc_insn;
+					}
+				}
+				flush_idcache_range(bcc_addr, bcc_addr, 4);
+			} else if (b_opcode >= 0x10 && b_opcode <= 0x12){
+				long offset;
+				if (addr - taken_b_addr == 8) {
+					/* if the function is used to unlink */
+					offset = tb->jmp_target_arg[1] - tb->first_jmp_align + 4;
+					bcc_insn &= off21_bits;
+					bcc_insn |= (offset << 8) & ~off16_bits;
+					bcc_insn |= (offset >> 18) & offrd_bits;
+					*(uint *)(bcc_addr) = bcc_insn;
+				} else {
+					/* if the function is used to patch second B */
+					offset = addr - bcc_addr;
+					if ((offset < max_offsz) && (offset >= -max_offsz)) {
+						bcc_insn &= off21_bits;
+						bcc_insn |= (offset << 8) & ~off16_bits;
+						bcc_insn |= (offset >> 18) & offrd_bits;
+						*(uint *)(bcc_addr) = bcc_insn;
+					}
+				}
+				flush_idcache_range(bcc_addr, bcc_addr, 4);
+			}
+		}
+	}
     if (TCG_TARGET_HAS_direct_jump) {
         uintptr_t offset = tb->jmp_target_arg[n];
         uintptr_t tc_ptr = (uintptr_t)tb->tc.ptr;

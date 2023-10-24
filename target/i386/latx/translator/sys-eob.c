@@ -425,6 +425,13 @@ void latxs_tr_gen_exit_tb_load_tb_addr(IR2_OPND *tbptr, ADDR tb_addr)
     }
 }
 
+void latxs_tr_gen_exit_tb_jcc_tb_link(TranslationBlock *tb)
+{
+	IR2_OPND label_first_jmp_align = latxs_ir2_opnd_new_label();
+	latxs_append_ir2_opnd1(LISA_LABEL, &label_first_jmp_align);
+	tb->first_jmp_align = label_first_jmp_align.val;
+}
+
 void latxs_tr_gen_exit_tb_j_tb_link(TranslationBlock *tb, int succ_id)
 {
     if (latxs_fastcs_is_jmp_glue_direct()) {

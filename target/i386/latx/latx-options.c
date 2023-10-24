@@ -27,6 +27,7 @@ int option_shadow_stack;
 int option_lsfpu;
 int option_xmm128map;
 int option_ibtc;
+int option_bne_b;
 
 #ifdef CONFIG_SOFTMMU
 /* For debug in softmmu */
@@ -108,6 +109,7 @@ void options_init(void)
     option_shadow_stack = 0;
     option_lsfpu = 0;
     option_xmm128map = 1;
+	option_bne_b = 0;
 
     counter_tb_exec = 0;
     counter_tb_tr = 0;
@@ -259,6 +261,7 @@ int latxs_allow_cross_page_link(void)
 #define LATXS_OPT_fast_fpr_ldst         14
 #define LATXS_OPT_by_hand_64            15
 #define LATXS_OPT_fastcs                16
+#define LATXS_OPT_bne_b                 17
 
 void latx_sys_parse_options(QemuOpts *opts);
 void parse_options_bool(int index, bool set);
@@ -294,6 +297,10 @@ QemuOptsList qemu_latx_opts = {
             .name = "intblink",
             .type = QEMU_OPT_BOOL,
             .help = "enable/disable indirect TB-link",
+        }, {
+            .name = "bne_b",
+            .type = QEMU_OPT_BOOL,
+            .help = "enable/disable jcc branch combination",
         }, {
             .name = "trbh64",
             .type = QEMU_OPT_BOOL,
@@ -537,6 +544,9 @@ void set_options(int index, int v)
     case LATXS_OPT_by_hand_64:
         option_by_hand_64 = v;
         break;
+	case LATXS_OPT_bne_b:
+        option_bne_b = v;
+        break;
     default: break;
     }
 }
@@ -696,6 +706,7 @@ void latx_sys_parse_options(QemuOpts *opts)
         set_options(LATXS_OPT_by_hand, 1);
         set_options(LATXS_OPT_tb_link, 1);
         set_options(LATXS_OPT_lsfpu, 1);
+        set_options(LATXS_OPT_bne_b, 1);
         set_options(LATXS_OPT_staticcs, 1);
         set_options(LATXS_OPT_intb_njc, 1);
         need_parse_optimizations = 0;
@@ -796,6 +807,9 @@ void latx_sys_parse_options(QemuOpts *opts)
 
     opt = qemu_opt_find(opts, "lsfpu");
     if (opt) parse_options_bool(LATXS_OPT_lsfpu, opt->value.boolean);
+
+	opt = qemu_opt_find(opts, "bne_b");                              
+	if (opt) parse_options_bool(LATXS_OPT_bne_b, opt->value.boolean);
 
     opt = qemu_opt_find(opts, "staticcs");
     if (opt) parse_options_bool(LATXS_OPT_staticcs, opt->value.boolean);
@@ -1024,7 +1038,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] lsfpu = %d\n", option_lsfpu);
     printf("[LATXS-OPT] staticcs = %d\n", option_staticcs);
     printf("[LATXS-OPT] large code cache = %d\n", option_large_code_cache);
-    printf("[LATXS-OPT] large code cache = %d\n", option_soft_fpu);
+    printf("[LATXS-OPT] large soft fpu = %d\n", option_soft_fpu);
     printf("[LATXS-OPT] fast frp ldst = %d\n", option_fast_fpr_ldst);
     printf("[LATXS-OPT] indirect branch loolup helper = %d\n", option_intb_link);
     printf("[LATXS-OPT] native jmp cache loolup = %d\n", option_intb_njc);
@@ -1032,6 +1046,7 @@ void dump_latxs_options(void)
     printf("[LATXS-OPT] by_hand_64 = %d\n", option_by_hand_64);
     printf("[LATXS-OPT] fastcs = %d\n", option_fastcs);
     printf("[LATXS-OPT] Code Cache Pro = %d\n", option_code_cache_pro);
+    printf("[LATXS-OPT] bne_b = %d\n", option_bne_b);
 #ifdef CONFIG_SOFTMMU
     printf("[LATXS-OPT] monitor 1 simple    counter = %d\n", option_monitor_sc);
     printf("[LATXS-OPT] monitor 2 timer     counter = %d\n", option_monitor_tc);
@@ -1056,6 +1071,7 @@ void latxs_options_init(void)
     option_by_hand = 1;
     option_staticcs = 1;
     option_lsfpu = 1;
+    option_bne_b = 1;
 
     option_intb_link = 0;
     option_intb_njc  = 0;
