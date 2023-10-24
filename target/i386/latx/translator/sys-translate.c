@@ -418,9 +418,6 @@ bool latxs_tr_ir2_generate(TranslationBlock *tb)
     TRANSLATION_DATA *td = lsenv->tr_data;
     int i = 0;
 
-	if ((tb->flags & 0x3) == 3&& tb->pc == 0x9123123) {optioon_dump = 1;}
-	else = 0;
-
     IR1_INST *ir1_list = td->ir1_inst_array;
     int ir1_nr = td->ir1_nr;
 

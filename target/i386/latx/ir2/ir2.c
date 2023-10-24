@@ -6,9 +6,6 @@
 #include <string.h>
 
 #include "ir2.h"
-#include "ir2-inst.h"
-
-static IR2_INST *ir2_allocate(void);
 
 static const char *ir2_name(int value)
 {
