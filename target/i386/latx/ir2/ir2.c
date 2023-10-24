@@ -90,10 +90,6 @@ IR2_OPND ir2_opnd_new_none(void)
     return opnd;
 }
 
-bool ir2_opcode_is_branch_with_2opnds(IR2_OPCODE opcode){
-	return (opcode == LISA_BEQZ || opcode == LISA_BNEZ);
-}
-
 void ir2_opnd_build_type(IR2_OPND *opnd, IR2_OPND_TYPE t)
 {
     lsassert(t == IR2_OPND_LABEL);

@@ -92,7 +92,6 @@ bool ir2_op_check(IR2_INST *);
 
 bool ir2_opcode_is_branch(IR2_OPCODE);
 bool ir2_opcode_is_branch_with_3opnds(IR2_OPCODE);
-bool ir2_opcode_is_branch_with_2opnds(IR2_OPCODE);
 bool ir2_opcode_is_f_branch(IR2_OPCODE opcode);
 bool ir2_opcode_is_convert(IR2_OPCODE opcode);
 bool ir2_opcode_is_fcmp(IR2_OPCODE opcode);
